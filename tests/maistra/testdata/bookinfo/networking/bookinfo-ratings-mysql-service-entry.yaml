@@ -1,0 +1,14 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: mysql-external
+spec:
+  hosts:
+  - istioci-registry.usersys.redhat.com
+  addresses:
+  - 10.8.240.194/32
+  ports:
+  - name: tcp
+    number: 3306
+    protocol: tcp
+  location: MESH_EXTERNAL
