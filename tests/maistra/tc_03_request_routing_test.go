@@ -18,7 +18,7 @@
 package maistra
 
 import (
-	"fmt"
+	"io/ioutil"
 	"testing"
 	"time"
 
@@ -27,24 +27,16 @@ import (
 )
 
 
-const (
-	modelDir					= "testdata/bookinfo/output/"
-	bookinfoAllv1Yaml			= "testdata/bookinfo/networking/virtual-service-all-v1.yaml"
-	testRule					= "testdata/bookinfo/networking/virtual-service-reviews-test-v2.yaml"
-	testUsername				= "jason"
-)
-
-
-func cleanup(namespace string, kubeconfig string) {
-	log.Infof("Cleanup. Following error can be ignored.")
+func cleanup03(namespace string, kubeconfig string) {
+	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
-	util.KubeDelete(namespace, testRule, kubeconfig)
+	util.KubeDelete(namespace, bookinfoReviewTestv2Yaml, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 }
 
 func routeTraffic(namespace string, kubeconfig string) error {
-	log.Infof("Routing traffic to all v1")
+	log.Infof("# Routing traffic to all v1")
 	if err := util.KubeApply(namespace, bookinfoAllv1Yaml, kubeconfig); err != nil {
 		return err
 	}
@@ -54,8 +46,8 @@ func routeTraffic(namespace string, kubeconfig string) error {
 }
 
 func routeTrafficUser(namespace string, kubeconfig string) error {
-	log.Infof("Traffic routing based on user identity")
-	if err := util.KubeApply(namespace, testRule, kubeconfig); err != nil {
+	log.Infof("# Traffic routing based on user identity")
+	if err := util.KubeApply(namespace, bookinfoReviewTestv2Yaml, kubeconfig); err != nil {
 		return err
 	}
 	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
@@ -64,40 +56,40 @@ func routeTrafficUser(namespace string, kubeconfig string) error {
 }
 
 func Test03(t *testing.T) {
-	log.Infof("TC_03 Traffic Routing")
-	fail := false
-	host, _ := util.GetIngress("istio-ingressgateway","ingressgateway", "istio-system", "", "NodePort")
-	productpageURL := fmt.Sprintf("http://%s/productpage", host)
-	testUserJar, _ := setupCookieJar(testUsername, "", "http://" + host)
-
+	log.Infof("# TC_03 Traffic Routing")
+	
 	t.Run("A1", func(t *testing.T) {
-		routeTraffic("bookinfo", "")
-		for i := 0; i <= 4; i++ {
-			duration, err := checkRoutingResponse( nil, productpageURL, modelDir + "productpage-normal-user-v1.html")
+		inspect(routeTraffic("bookinfo", ""), "failed to apply rules", "", t)
+		for i := 0; i <= testRetryTimes; i++ {
+			resp, duration, err := getHTTPResponse(productpageURL, nil)
+			inspect(err, "failed to get HTTP Response", "", t)
 			log.Infof("bookinfo productpage returned in %d ms", duration)
-			if err != nil {
-				fail = true
-				break
-			} 
+			defer closeResponseBody(resp)
+			body, err := ioutil.ReadAll(resp.Body)
+			inspect(err, "failed to read response body", "", t)
+			inspect(
+				compareHTTPResponse(body, "productpage-normal-user-v1.html"), 
+				"Didn't get expected response.", 
+				"Success. Response matches with expected.", 
+				t)	
 		}
 	})
 	t.Run("A2", func(t *testing.T) {
-		routeTrafficUser("bookinfo", "")
-		for i := 0; i <= 4; i++ {
-			duration, err := checkRoutingResponse( testUserJar, productpageURL, modelDir + "productpage-test-user-v2.html")
+		inspect(routeTrafficUser("bookinfo", ""), "failed to apply rules", "", t)
+		for i := 0; i <= testRetryTimes; i++ {
+			resp, duration, err := getHTTPResponse(productpageURL, testUserJar)
+			inspect(err, "failed to get HTTP Response", "", t)
 			log.Infof("bookinfo productpage returned in %d ms", duration)
-			if err != nil {
-				fail = true
-				break
-			} 
+			defer closeResponseBody(resp)
+			body, err := ioutil.ReadAll(resp.Body)
+			inspect(err, "failed to read response body", "", t)
+			inspect(
+				compareHTTPResponse(body, "productpage-test-user-v2.html"), 
+				"Didn't get expected response.", 
+				"Success. Respones matches with expected.",
+				t)
 		}
 	})
-	
-	if !fail {
-		log.Infof("TC_03 passed")
-	} else {
-		log.Infof("TC_03 failed")
-	}
-	
-	defer cleanup("bookinfo", "")
+		
+	defer cleanup03("bookinfo", "")
 }
