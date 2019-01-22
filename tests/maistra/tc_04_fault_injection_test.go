@@ -79,10 +79,10 @@ func abortInject(namespace, kubeconfig string) error {
 
 func Test04(t *testing.T) {
 	log.Infof("# TC_04 Fault injection")
-	inspect(setup04("bookinfo", ""), "failed to apply rules", "", t)
+	inspect(setup04(testNamespace, ""), "failed to apply rules", "", t)
 
 	t.Run("A1", func(t *testing.T) {
-		inspect(faultInject("bookinfo", ""), "failed to apply rules", "", t)
+		inspect(faultInject(testNamespace, ""), "failed to apply rules", "", t)
 		
 		minDuration := 5000
 		maxDuration := 8000
@@ -114,7 +114,7 @@ func Test04(t *testing.T) {
 	})
 
 	t.Run("A2", func(t *testing.T) {
-		inspect(faultFix("bookinfo", ""), "failed to apply rules", "", t)
+		inspect(faultFix(testNamespace, ""), "failed to apply rules", "", t)
 		resp, duration, err := getHTTPResponse(productpageURL, testUserJar)
 		defer closeResponseBody(resp)
 		inspect(err, "failed to get HTTP Response", "", t)
@@ -129,7 +129,7 @@ func Test04(t *testing.T) {
 	})
 
 	t.Run("A3", func(t *testing.T) {
-		inspect(abortInject("bookinfo", ""), "failed to apply rules", "", t)
+		inspect(abortInject(testNamespace, ""), "failed to apply rules", "", t)
 		resp, duration, err := getHTTPResponse(productpageURL, testUserJar)
 		defer closeResponseBody(resp)
 		inspect(err, "failed to get HTTP Response", "", t)
@@ -143,5 +143,5 @@ func Test04(t *testing.T) {
 			t)
 	})
 
-	defer cleanup04("bookinfo", "")
+	defer cleanup04(testNamespace, "")
 }

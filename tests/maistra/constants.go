@@ -20,12 +20,22 @@ package maistra
 const (
 	modelDir					= "testdata/modelDir"
 	bookinfoAllv1Yaml			= "testdata/bookinfo/networking/virtual-service-all-v1.yaml"
-	bookinfoReviewTestv2Yaml	= "testdata/bookinfo/networking/virtual-service-reviews-test-v2.yaml"
 	bookinfoRatingDelayYaml		= "testdata/bookinfo/networking/virtual-service-ratings-test-delay.yaml"
 	bookinfoRatingDelayv2Yaml	= "testdata/bookinfo/networking/virtual-service-ratings-test-delay-2.yaml"
 	bookinfoRatingAbortYaml		= "testdata/bookinfo/networking/virtual-service-ratings-test-abort.yaml"
+	bookinfoReviewTestv2Yaml	= "testdata/bookinfo/networking/virtual-service-reviews-test-v2.yaml"
 	bookinfoReview50v3Yaml 		= "testdata/bookinfo/networking/virtual-service-reviews-50-v3.yaml"
 	bookinfoReviewv3Yaml 		= "testdata/bookinfo/networking/virtual-service-reviews-v3.yaml"
+	bookinfoReviewTimeoutYaml	= "testdata/bookinfo/networking/virtual-service-reviews-timeout.yaml"
+	
+	httpbinYaml					= "testdata/kubeInject/httpbin.yaml"
+	httpbinGatewayYaml			= "testdata/httpbin/networking/httpbin-gateway.yaml"
+	httpbinGatewayv2Yaml		= "testdata/httpbin/networking/httpbin-gateway-2.yaml"
+	httpbinRouteYaml			= "testdata/httpbin/networking/httpbin-route.yaml"
+	httpbinRoutev2Yaml			= "testdata/httpbin/networking/httpbin-route-2.yaml"
+	httpbinOCPRouteYaml			= "testdata/httpbin/networking/httpbin-ocp-route.yaml"   // will be handled by maistra/ior
+
+	testNamespace				= "bookinfo"
 	testUsername				= "jason"
 	
 )

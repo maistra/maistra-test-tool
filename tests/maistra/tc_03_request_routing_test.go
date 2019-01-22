@@ -59,7 +59,7 @@ func Test03(t *testing.T) {
 	log.Infof("# TC_03 Traffic Routing")
 	
 	t.Run("A1", func(t *testing.T) {
-		inspect(routeTraffic("bookinfo", ""), "failed to apply rules", "", t)
+		inspect(routeTraffic(testNamespace, ""), "failed to apply rules", "", t)
 		for i := 0; i <= testRetryTimes; i++ {
 			resp, duration, err := getHTTPResponse(productpageURL, nil)
 			inspect(err, "failed to get HTTP Response", "", t)
@@ -75,7 +75,7 @@ func Test03(t *testing.T) {
 		}
 	})
 	t.Run("A2", func(t *testing.T) {
-		inspect(routeTrafficUser("bookinfo", ""), "failed to apply rules", "", t)
+		inspect(routeTrafficUser(testNamespace, ""), "failed to apply rules", "", t)
 		for i := 0; i <= testRetryTimes; i++ {
 			resp, duration, err := getHTTPResponse(productpageURL, testUserJar)
 			inspect(err, "failed to get HTTP Response", "", t)
@@ -91,5 +91,5 @@ func Test03(t *testing.T) {
 		}
 	})
 		
-	defer cleanup03("bookinfo", "")
+	defer cleanup03(testNamespace, "")
 }

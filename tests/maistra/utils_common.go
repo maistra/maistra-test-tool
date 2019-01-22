@@ -99,6 +99,20 @@ func getWithCookieJar(url string, jar *cookiejar.Jar) (*http.Response, error) {
 	return client.Do(req)
 }
 
+func getWithHost(url string, host string) (*http.Response, error) {
+	// Declare http client
+	client := &http.Client{}
+
+	// Declare HTTP Method and Url
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Host = host
+	req.Header.Set("Host", req.Host)
+	return client.Do(req)
+}
+
 func closeResponseBody(r *http.Response) {
 	if err := r.Body.Close(); err != nil {
 		log.Errora(err)

@@ -71,10 +71,10 @@ func isWithinPercentage(count int, total int, rate float64, tolerance float64) b
 
 func Test05(t *testing.T) {
 	log.Infof("# TC_05 Traffic Shifting")
-	inspect(setup05("bookinfo", ""), "failed to apply rules", "", t)
+	inspect(setup05(testNamespace, ""), "failed to apply rules", "", t)
 
 	t.Run("A1", func(t *testing.T) {
-		inspect(trafficShift50v3("bookinfo", ""), "failed to apply rules", "", t)
+		inspect(trafficShift50v3(testNamespace, ""), "failed to apply rules", "", t)
 		tolerance := 0.05
 		totalShot := 100
 		once := sync.Once{}
@@ -118,7 +118,7 @@ func Test05(t *testing.T) {
 	})
 
 	t.Run("A2", func(t *testing.T) {
-		inspect(trafficShiftAllv3("bookinfo", ""), "failed to apply rules", "", t)
+		inspect(trafficShiftAllv3(testNamespace, ""), "failed to apply rules", "", t)
 
 		tolerance := 0.0
 		totalShot := 100
@@ -160,5 +160,5 @@ func Test05(t *testing.T) {
 		}	
 	})
 
-	defer cleanup05("bookinfo", "")
+	defer cleanup05(testNamespace, "")
 }
