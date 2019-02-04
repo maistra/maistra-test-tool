@@ -55,6 +55,8 @@ func deployHttpbin(namespace, kubeconfig string) error {
 	if err := util.CheckPodRunning(testNamespace, "app=httpbin", ""); err != nil {
 		return err
 	}
+	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
+	time.Sleep(time.Duration(10) * time.Second)
 	return nil
 }
 

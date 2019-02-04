@@ -28,7 +28,7 @@ const (
 	bookinfoReviewv3Yaml 		= "testdata/bookinfo/networking/virtual-service-reviews-v3.yaml"
 	bookinfoReviewTimeoutYaml	= "testdata/bookinfo/networking/virtual-service-reviews-timeout.yaml"
 	
-	httpbinYaml					= "testdata/kubeInject/httpbin.yaml"
+	httpbinYaml					= "testdata/httpbin/httpbin.yaml"
 	httpbinGatewayYaml			= "testdata/httpbin/networking/httpbin-gateway.yaml"
 	httpbinGatewayv2Yaml		= "testdata/httpbin/networking/httpbin-gateway-2.yaml"
 	httpbinRouteYaml			= "testdata/httpbin/networking/httpbin-route.yaml"

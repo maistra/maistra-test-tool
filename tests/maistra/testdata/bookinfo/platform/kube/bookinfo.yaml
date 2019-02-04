@@ -36,13 +36,15 @@ spec:
   replicas: 1
   template:
     metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
       labels:
         app: details
         version: v1
     spec:
       containers:
       - name: details
-        image: istio/examples-bookinfo-details-v1:1.8.0
+        image: istio/examples-bookinfo-details-v1:1.10.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9080
@@ -71,13 +73,15 @@ spec:
   replicas: 1
   template:
     metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
       labels:
         app: ratings
         version: v1
     spec:
       containers:
       - name: ratings
-        image: istio/examples-bookinfo-ratings-v1:1.8.0
+        image: istio/examples-bookinfo-ratings-v1:1.10.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9080
@@ -106,13 +110,15 @@ spec:
   replicas: 1
   template:
     metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
       labels:
         app: reviews
         version: v1
     spec:
       containers:
       - name: reviews
-        image: istio/examples-bookinfo-reviews-v1:1.8.0
+        image: istio/examples-bookinfo-reviews-v1:1.10.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9080
@@ -125,13 +131,15 @@ spec:
   replicas: 1
   template:
     metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
       labels:
         app: reviews
         version: v2
     spec:
       containers:
       - name: reviews
-        image: istio/examples-bookinfo-reviews-v2:1.8.0
+        image: istio/examples-bookinfo-reviews-v2:1.10.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9080
@@ -144,13 +152,15 @@ spec:
   replicas: 1
   template:
     metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
       labels:
         app: reviews
         version: v3
     spec:
       containers:
       - name: reviews
-        image: istio/examples-bookinfo-reviews-v3:1.8.0
+        image: istio/examples-bookinfo-reviews-v3:1.10.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9080
@@ -179,13 +189,15 @@ spec:
   replicas: 1
   template:
     metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
       labels:
         app: productpage
         version: v1
     spec:
       containers:
       - name: productpage
-        image: istio/examples-bookinfo-productpage-v1:1.8.0
+        image: istio/examples-bookinfo-productpage-v1:1.10.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9080
