@@ -13,38 +13,35 @@
 #   limitations under the License.
 
 ##################################################################################################
-# httpbin service
+# Sleep service
 ##################################################################################################
 apiVersion: v1
 kind: Service
 metadata:
-  name: httpbin
+  name: sleep
   labels:
-    app: httpbin
+    app: sleep
 spec:
   ports:
-  - name: http
-    port: 8000
+  - port: 80
+    name: http
   selector:
-    app: httpbin
+    app: sleep
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: httpbin
+  name: sleep
 spec:
   replicas: 1
   template:
     metadata:
-      annotations:
-        sidecar.istio.io/inject: "true"
       labels:
-        app: httpbin
-        version: v1
+        app: sleep
     spec:
       containers:
-      - image: docker.io/citizenstig/httpbin
+      - name: sleep
+        image: pstauffer/curl
+        command: ["/bin/sleep", "3650d"]
         imagePullPolicy: IfNotPresent
-        name: httpbin
-        ports:
-        - containerPort: 8000
+---
