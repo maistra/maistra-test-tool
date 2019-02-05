@@ -27,6 +27,10 @@ import (
 )
 
 func cleanup06(namespace, kubeconfig string) {
+	if err := recover(); err != nil {
+		log.Infof("Test failed: %v", err)
+	}
+	
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
@@ -57,23 +61,22 @@ func setTimeout(namespace, kubeconfig string) error {
 
 func Test06(t *testing.T) {
 	log.Infof("# TC_06 Setting Request Timeouts")
-	inspect(setup06(testNamespace, ""), "failed to apply rules", "", t)
-	t.Run("A1", func(t *testing.T) {
-		inspect(setTimeout(testNamespace, ""), "failed to apply rules", "", t)
+	Inspect(setup06(testNamespace, ""), "failed to apply rules", "", t)
+	t.Run("timout", func(t *testing.T) {
+		Inspect(setTimeout(testNamespace, ""), "failed to apply rules", "", t)
 
-		resp, duration, err := getHTTPResponse(productpageURL, testUserJar)
-		defer closeResponseBody(resp)
-		inspect(err, "failed to get HTTP Response", "", t)
+		resp, duration, err := GetHTTPResponse(productpageURL, testUserJar)
+		defer CloseResponseBody(resp)
+		Inspect(err, "failed to get HTTP Response", "", t)
 		log.Infof("bookinfo productpage returned in %d ms", duration)
 		body, err := ioutil.ReadAll(resp.Body)
-		inspect(err, "failed to read response body", "", t)
-		inspect(
-			compareHTTPResponse(body, "productpage-test-user-v2-review-timeout.html"),
+		Inspect(err, "failed to read response body", "", t)
+		Inspect(
+			CompareHTTPResponse(body, "productpage-test-user-v2-review-timeout.html"),
 			"Didn't get expected response.",
 			"Success. Response timeout matches with expected.",
 			t)
 	})
-
 	defer cleanup06(testNamespace, "")
 }
 

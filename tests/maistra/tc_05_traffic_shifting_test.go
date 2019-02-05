@@ -28,6 +28,10 @@ import (
 )
 
 func cleanup05(namespace, kubeconfig string) {
+	if err := recover(); err != nil {
+		log.Infof("Test failed: %v", err)
+	}
+	
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
@@ -44,7 +48,7 @@ func setup05(namespace, kubeconfig string) error {
 }
 
 func trafficShift50v3(namespace, kubeconfig string) error {
-	log.Infof("# Traffic shifting 50% v1 and 50% v3")
+	log.Infof("# Traffic shifting 50% v1 and 50% v3, tolerance 10%")
 	if err := util.KubeApply(namespace, bookinfoReview50v3Yaml, kubeconfig); err != nil {
 		return err
 	}
@@ -71,30 +75,30 @@ func isWithinPercentage(count int, total int, rate float64, tolerance float64) b
 
 func Test05(t *testing.T) {
 	log.Infof("# TC_05 Traffic Shifting")
-	inspect(setup05(testNamespace, ""), "failed to apply rules", "", t)
+	Inspect(setup05(testNamespace, ""), "failed to apply rules", "", t)
 
-	t.Run("A1", func(t *testing.T) {
-		inspect(trafficShift50v3(testNamespace, ""), "failed to apply rules", "", t)
-		tolerance := 0.05
+	t.Run("50%_shift", func(t *testing.T) {
+		Inspect(trafficShift50v3(testNamespace, ""), "failed to apply rules", "", t)
+		tolerance := 0.10
 		totalShot := 100
 		once := sync.Once{}
 		c1, cVersionToMigrate := 0, 0
 		for i := 0; i < totalShot; i++ {
-			resp, _, err := getHTTPResponse(productpageURL, nil)
-			inspect(err, "failed to get response", "", t)
-			if err := checkHTTPResponse200(resp); err != nil {
+			resp, _, err := GetHTTPResponse(productpageURL, nil)
+			Inspect(err, "failed to get response", "", t)
+			if err := CheckHTTPResponse200(resp); err != nil {
 				log.Errorf("unexpected response status %d", resp.StatusCode)
 				continue
 			}
 			
 			body, err := ioutil.ReadAll(resp.Body)
-			inspect(err, "failed to read response body", "", t)
+			Inspect(err, "failed to read response body", "", t)
 
 			var c1CompareError, cVersionToMigrateError error
 			
-			if c1CompareError = compareHTTPResponse(body, "productpage-normal-user-v1.html"); c1CompareError == nil {
+			if c1CompareError = CompareHTTPResponse(body, "productpage-normal-user-v1.html"); c1CompareError == nil {
 				c1++
-			} else if cVersionToMigrateError = compareHTTPResponse(body, "productpage-normal-user-v3.html"); cVersionToMigrateError == nil {
+			} else if cVersionToMigrateError = CompareHTTPResponse(body, "productpage-normal-user-v3.html"); cVersionToMigrateError == nil {
 				cVersionToMigrate++
 			} else {
 				log.Errorf("received unexpected version")
@@ -103,7 +107,7 @@ func Test05(t *testing.T) {
 					log.Infof("comparing to the version to migrate to: %v", cVersionToMigrateError)
 				})
 			}
-			closeResponseBody(resp)
+			CloseResponseBody(resp)
 		}
 		
 		if isWithinPercentage(c1, totalShot, 0.5, tolerance) && isWithinPercentage(cVersionToMigrate, totalShot, 0.5, tolerance) {
@@ -117,8 +121,8 @@ func Test05(t *testing.T) {
 		}
 	})
 
-	t.Run("A2", func(t *testing.T) {
-		inspect(trafficShiftAllv3(testNamespace, ""), "failed to apply rules", "", t)
+	t.Run("100%_shift", func(t *testing.T) {
+		Inspect(trafficShiftAllv3(testNamespace, ""), "failed to apply rules", "", t)
 
 		tolerance := 0.0
 		totalShot := 100
@@ -126,19 +130,19 @@ func Test05(t *testing.T) {
 		cVersionToMigrate := 0
 
 		for i := 0; i < totalShot; i++ {
-			resp, _, err := getHTTPResponse(productpageURL, nil)
-			inspect(err, "failed to get response", "", t)
-			if err := checkHTTPResponse200(resp); err != nil {
+			resp, _, err := GetHTTPResponse(productpageURL, nil)
+			Inspect(err, "failed to get response", "", t)
+			if err := CheckHTTPResponse200(resp); err != nil {
 				log.Errorf("unexpected response status %d", resp.StatusCode)
 				continue
 			}
 			
 			body, err := ioutil.ReadAll(resp.Body)
-			inspect(err, "failed to read response body", "", t)
+			Inspect(err, "failed to read response body", "", t)
 
 			var cVersionToMigrateError error
 			
-			if cVersionToMigrateError = compareHTTPResponse(body, "productpage-normal-user-v3.html"); cVersionToMigrateError == nil {
+			if cVersionToMigrateError = CompareHTTPResponse(body, "productpage-normal-user-v3.html"); cVersionToMigrateError == nil {
 				cVersionToMigrate++
 			} else {
 				log.Errorf("received unexpected version")
@@ -146,7 +150,7 @@ func Test05(t *testing.T) {
 					log.Infof("comparing to the version to migrate to: %v", cVersionToMigrateError)
 				})
 			}
-			closeResponseBody(resp)
+			CloseResponseBody(resp)
 		}
 		
 		if isWithinPercentage(cVersionToMigrate, totalShot, 1, tolerance) {
@@ -159,6 +163,5 @@ func Test05(t *testing.T) {
 				"new version hit %d", cVersionToMigrate)
 		}	
 	})
-
 	defer cleanup05(testNamespace, "")
 }

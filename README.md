@@ -17,3 +17,12 @@ Prerequisite
 
 
 
+How to run each test case
+-------------------------
+
+
+**Note** Test08/general_tls and Test08/mutual_tls need to edit the `constants.go` file by replacing the testIngressHostname value with your OCP cluster Ingress host.
+
+User can go to directory `tests/maistra` 
+- To run all the test cases: `go test -v`
+- To run a specific test case: `go test -run [test case number] -v`
