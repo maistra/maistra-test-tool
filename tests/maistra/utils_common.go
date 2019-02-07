@@ -37,13 +37,14 @@ var (
 	cjopts 					= cookiejar.Options { PublicSuffixList: publicsuffix.List,}
 	testRetryTimes			= 5
 
-	host					= getOCPIngress("istio-ingressgateway","ingressgateway", "istio-system", "", "NodePort")
-	productpageURL 			= fmt.Sprintf("http://%s/productpage", host)
-	testUserJar				= getCookieJar(testUsername, "", "http://" + host)
+	ingressURL				= GetOCPIngress("istio-ingressgateway","ingressgateway", "istio-system", "", "NodePort")
+	secureIngressPort 		= GetSecureIngressPort("istio-system", "istio-ingressgateway", "")
+	productpageURL 			= fmt.Sprintf("http://%s/productpage", ingressURL)
+	testUserJar				= GetCookieJar(testUsername, "", "http://" + ingressURL)
 )
 
-
-func inspect(err error, fMsg, sMsg string, t *testing.T) {
+// Inspect error handling function
+func Inspect(err error, fMsg, sMsg string, t *testing.T) {
 	if err != nil {
 		log.Errorf("%s. Error %s", fMsg, err)
 		t.Error(err)
@@ -52,17 +53,9 @@ func inspect(err error, fMsg, sMsg string, t *testing.T) {
 	}
 }
 
-func getOCPIngress(serviceName, podLabel, namespace, kubeconfig string, serviceType string) string {
-	host, err := util.GetIngress(serviceName, podLabel, namespace, kubeconfig, serviceType)
-	if err != nil {
-		log.Errorf("failed to get ingressgateway: %v", err)
-		return ""
-	}
-	return host
-}
-
-func getCookieJar(username, pass, gateway string) *cookiejar.Jar {
-	jar, err := setupCookieJar(username, pass, gateway)
+// GetCookieJar ...
+func GetCookieJar(username, pass, gateway string) *cookiejar.Jar {
+	jar, err := SetupCookieJar(username, pass, gateway)
 	if err != nil {
 		log.Errorf("failed to get login user cookiejar: %v", err)
 		return nil
@@ -70,7 +63,8 @@ func getCookieJar(username, pass, gateway string) *cookiejar.Jar {
 	return jar
 }
 
-func setupCookieJar(username, pass, gateway string) (*cookiejar.Jar, error) {
+// SetupCookieJar sends http post request with user login
+func SetupCookieJar(username, pass, gateway string) (*cookiejar.Jar, error) {
 	jar, err := cookiejar.New(&cjopts)
 	if err != nil {
 		return nil, fmt.Errorf("failed building cookiejar: %v", err)
@@ -87,7 +81,8 @@ func setupCookieJar(username, pass, gateway string) (*cookiejar.Jar, error) {
 	return jar, nil
 }
 
-func getWithCookieJar(url string, jar *cookiejar.Jar) (*http.Response, error) {
+// GetWithCookieJar constructs reqeusts with login user cookie and returns a http response
+func GetWithCookieJar(url string, jar *cookiejar.Jar) (*http.Response, error) {
 	// Declare http client
 	client := &http.Client{Jar: jar}
 
@@ -99,7 +94,9 @@ func getWithCookieJar(url string, jar *cookiejar.Jar) (*http.Response, error) {
 	return client.Do(req)
 }
 
-func getWithHost(url string, host string) (*http.Response, error) {
+// GetWithHost constructs a http request with Host and returns a http Response
+// it is equal to curl -HHost:
+func GetWithHost(url string, host string) (*http.Response, error) {
 	// Declare http client
 	client := &http.Client{}
 
@@ -113,22 +110,40 @@ func getWithHost(url string, host string) (*http.Response, error) {
 	return client.Do(req)
 }
 
-func closeResponseBody(r *http.Response) {
+// GetWithJWT constructs a http request with Host and JWT auth token in header
+func GetWithJWT(url, token, host string) (*http.Response, error) {
+	// Declare http client
+	client := &http.Client{}
+
+	// Declare HTTP Method and Url
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Host = host
+	req.Header.Set("Host", req.Host)
+	req.Header.Add("Authorization", "Bearer " + token)
+	return client.Do(req)
+}
+
+
+// CloseResponseBody ...
+func CloseResponseBody(r *http.Response) {
 	if err := r.Body.Close(); err != nil {
 		log.Errora(err)
 	}
 }
 
-// getHTTPResponse returns a HTTP Response object and response time in milliseconds.
+// GetHTTPResponse returns a HTTP Response object and response time in milliseconds.
 // if cookiejar is nil, it sends a HTTP GET Request without user login.
-func getHTTPResponse(url string, jar *cookiejar.Jar) (*http.Response, int, error) {
+func GetHTTPResponse(url string, jar *cookiejar.Jar) (*http.Response, int, error) {
 	var resp *http.Response
 	var duration int
 	var err error
 
 	if jar != nil {
 		startT := time.Now()
-		resp, err = getWithCookieJar(url, jar)
+		resp, err = GetWithCookieJar(url, jar)
 		duration = int(time.Since(startT) / (time.Second / time.Microsecond))
 	} else {
 		startT := time.Now()
@@ -138,8 +153,8 @@ func getHTTPResponse(url string, jar *cookiejar.Jar) (*http.Response, int, error
 	return resp, duration, err
 }
 
-// checkHTTPResposeCode returns an error if Response code is not 200
-func checkHTTPResponse200(resp *http.Response) error {
+// CheckHTTPResponse200 returns an error if Response code is not 200
+func CheckHTTPResponse200(resp *http.Response) error {
 	if resp.StatusCode != http.StatusOK {
 		log.Errorf("Get response failed!")
 		return fmt.Errorf("status code is %d", resp.StatusCode)
@@ -147,8 +162,8 @@ func checkHTTPResponse200(resp *http.Response) error {
 	return nil
 }
 
-// saveHTTPResponse writes  a Response body to a file dst
-func saveHTTPResponse(body []byte, dst string) error {
+// SaveHTTPResponse writes  a Response body to a file dst
+func SaveHTTPResponse(body []byte, dst string) error {
 	log.Infof("Write response body to file: %s", dst)
 	if err := ioutil.WriteFile(dst, body, 0644); err != nil {
 		return err
@@ -156,9 +171,9 @@ func saveHTTPResponse(body []byte, dst string) error {
 	return nil
 }
 
-// compareHTTPResponse compares a HTTP Response body with a model HTML file
+// CompareHTTPResponse compares a HTTP Response body with a model HTML file
 // modelFile is the file name. Not the file path. 
-func compareHTTPResponse(body []byte, modelFile string) error {
+func CompareHTTPResponse(body []byte, modelFile string) error {
 	modelPath := filepath.Join(modelDir, modelFile)
 	if err := util.CompareToFile(body, modelPath); err != nil {
 		ioutil.WriteFile("/tmp/diffbody", body, 0644)

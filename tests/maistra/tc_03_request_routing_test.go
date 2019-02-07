@@ -28,6 +28,10 @@ import (
 
 
 func cleanup03(namespace string, kubeconfig string) {
+	if err := recover(); err != nil {
+		log.Infof("Test failed: %v", err)
+	}
+
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
 	util.KubeDelete(namespace, bookinfoReviewTestv2Yaml, kubeconfig)
@@ -58,38 +62,37 @@ func routeTrafficUser(namespace string, kubeconfig string) error {
 func Test03(t *testing.T) {
 	log.Infof("# TC_03 Traffic Routing")
 	
-	t.Run("A1", func(t *testing.T) {
-		inspect(routeTraffic(testNamespace, ""), "failed to apply rules", "", t)
+	t.Run("general_route", func(t *testing.T) {
+		Inspect(routeTraffic(testNamespace, ""), "failed to apply rules", "", t)
 		for i := 0; i <= testRetryTimes; i++ {
-			resp, duration, err := getHTTPResponse(productpageURL, nil)
-			inspect(err, "failed to get HTTP Response", "", t)
+			resp, duration, err := GetHTTPResponse(productpageURL, nil)
+			Inspect(err, "failed to get HTTP Response", "", t)
 			log.Infof("bookinfo productpage returned in %d ms", duration)
-			defer closeResponseBody(resp)
+			defer CloseResponseBody(resp)
 			body, err := ioutil.ReadAll(resp.Body)
-			inspect(err, "failed to read response body", "", t)
-			inspect(
-				compareHTTPResponse(body, "productpage-normal-user-v1.html"), 
+			Inspect(err, "failed to read response body", "", t)
+			Inspect(
+				CompareHTTPResponse(body, "productpage-normal-user-v1.html"), 
 				"Didn't get expected response.", 
 				"Success. Response matches with expected.", 
 				t)	
 		}
 	})
-	t.Run("A2", func(t *testing.T) {
-		inspect(routeTrafficUser(testNamespace, ""), "failed to apply rules", "", t)
+	t.Run("user_route", func(t *testing.T) {
+		Inspect(routeTrafficUser(testNamespace, ""), "failed to apply rules", "", t)
 		for i := 0; i <= testRetryTimes; i++ {
-			resp, duration, err := getHTTPResponse(productpageURL, testUserJar)
-			inspect(err, "failed to get HTTP Response", "", t)
+			resp, duration, err := GetHTTPResponse(productpageURL, testUserJar)
+			Inspect(err, "failed to get HTTP Response", "", t)
 			log.Infof("bookinfo productpage returned in %d ms", duration)
-			defer closeResponseBody(resp)
+			defer CloseResponseBody(resp)
 			body, err := ioutil.ReadAll(resp.Body)
-			inspect(err, "failed to read response body", "", t)
-			inspect(
-				compareHTTPResponse(body, "productpage-test-user-v2.html"), 
+			Inspect(err, "failed to read response body", "", t)
+			Inspect(
+				CompareHTTPResponse(body, "productpage-test-user-v2.html"), 
 				"Didn't get expected response.", 
 				"Success. Respones matches with expected.",
 				t)
 		}
 	})
-		
 	defer cleanup03(testNamespace, "")
 }

@@ -27,6 +27,10 @@ import (
 )
 
 func cleanup07(namespace, kubeconfig string) {
+	if err := recover(); err != nil {
+		log.Infof("Test failed: %v", err)
+	}
+	
 	log.Infof("# Cleanup. Following error can be ignored...")
 	OcDelete("", httpbinOCPRouteYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinGatewayYaml, kubeconfig)
@@ -75,23 +79,22 @@ func updateHttpbin(namespace, kubeconfig string) error {
 
 func Test07 (t *testing.T) {
 	log.Infof("# TC_07 Control Ingress Traffic")
-	inspect(deployHttpbin(testNamespace, ""), "failed to deploy httpbin", "", t)
+	Inspect(deployHttpbin(testNamespace, ""), "failed to deploy httpbin", "", t)
 
-	t.Run("A1", func(t *testing.T) {
-		resp, err := getWithHost(fmt.Sprintf("http://%s/status/200", host), "httpbin.example.com")
-		defer closeResponseBody(resp)
-		inspect(err, "failed to get response", "", t)
-		inspect(checkHTTPResponse200(resp), "failed to get HTTP 200", resp.Status, t)
+	t.Run("status_200", func(t *testing.T) {
+		resp, err := GetWithHost(fmt.Sprintf("http://%s/status/200", ingressURL), "httpbin.example.com")
+		defer CloseResponseBody(resp)
+		Inspect(err, "failed to get response", "", t)
+		Inspect(CheckHTTPResponse200(resp), "failed to get HTTP 200", resp.Status, t)
 	})
 	
-	t.Run("A2", func(t *testing.T) {
-		inspect(updateHttpbin(testNamespace, ""), "failed to apply rules", "", t)
-		resp, duration, err := getHTTPResponse(fmt.Sprintf("http://%s/headers", host), nil)
-		defer closeResponseBody(resp)
-		inspect(err, "failed to get HTTP Response", "", t)
+	t.Run("headers", func(t *testing.T) {
+		Inspect(updateHttpbin(testNamespace, ""), "failed to apply rules", "", t)
+		resp, duration, err := GetHTTPResponse(fmt.Sprintf("http://%s/headers", ingressURL), nil)
+		defer CloseResponseBody(resp)
+		Inspect(err, "failed to get HTTP Response", "", t)
 		log.Infof("httpbin headers page returned in %d ms", duration)
-		inspect(checkHTTPResponse200(resp), "failed to get HTTP 200", resp.Status, t)
+		Inspect(CheckHTTPResponse200(resp), "failed to get HTTP 200", resp.Status, t)
 	})
-
 	defer cleanup07(testNamespace, "")
 }

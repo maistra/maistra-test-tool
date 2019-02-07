@@ -20,15 +20,18 @@ package maistra
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 	
+	"istio.io/istio/pkg/log"
 	"istio.io/istio/tests/util"
 )
 
 
 // OcLogin runs oc login command to log into the OCP CLI
 // the host and token can be found from OCP web console Command Line Tools
-func OcLogin(host, token string) error {
-	_, err := util.Shell("oc login https://%s:8443 --token=%s", host, token)
+func OcLogin(host, port, token string) error {
+	_, err := util.ShellMuteOutput("oc login https://%s:%s --token=%s", host, port, token)
 	return err
 }
 
@@ -49,4 +52,38 @@ func OcApply(namespace, yamlFileName string, kubeconfig string) error {
 func OcDelete(namespace, yamlFileName string, kubeconfig string) error {
 	_, err := util.Shell(ocCommand("delete", namespace, yamlFileName, kubeconfig))
 	return err
+}
+
+// GetOCPIngress returns the OCP cluster ingressgateway ip and port.
+// Istio Ingress Gateway, by serviceName and podLabel. Handles two cases: when the Ingress/Ingress Gateway
+// Kubernetes Service is a LoadBalancer or NodePort (for tests within the  cluster, including for minikube)
+func GetOCPIngress(serviceName, podLabel, namespace, kubeconfig string, serviceType string) string {
+	host, err := util.GetIngress(serviceName, podLabel, namespace, kubeconfig, serviceType)
+	if err != nil {
+		log.Errorf("failed to get ingressgateway: %v", err)
+		return ""
+	}
+	return host
+}
+
+
+
+// GetSecureIngressPort returns the https ingressgateway port
+// "$(${OC_COMMAND} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}')"
+func GetSecureIngressPort(namespace, serviceName, kubeconfig string) string {
+	port, err := util.Shell(
+		"kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"https\")].port}' --kubeconfig=%s",
+		namespace, serviceName, kubeconfig)
+	if err != nil {
+		log.Errorf("failed to get secure port: %v", err)
+		return ""
+	}
+	port = strings.Trim(port, "'")
+	rp := regexp.MustCompile(`^[0-9]{1,5}$`)
+	if rp.FindString(port) == "" {
+		err = fmt.Errorf("unable to find the port of %s", serviceName)
+		log.Warna(err)
+		return ""
+	}
+	return port
 }
