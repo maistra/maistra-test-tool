@@ -70,6 +70,7 @@ const (
 	egressGoogleYaml			= "testdata/egress/serviceEntry-google.yaml"
 	
 	jwtAuthYaml					= "testdata/policy/jwt-auth.yaml"
+	jwtURL 						= "https://raw.githubusercontent.com/istio/istio/release-1.0/security/tools/jwt/samples/demo.jwt"
 
 	livenessHTTPYaml 			= "testdata/health-check/liveness-http.yaml"
 	livenessCommandYaml 		= "testdata/health-check/liveness-command.yaml"
@@ -99,8 +100,4 @@ const (
 
 	testNamespace				= "bookinfo"
 	testUsername				= "jason"
-
-	// testIngressHostname is only used in Test08/general_tls and Test08/mutual_tls
-	testIngressHostname 		= "istio-ingressgateway-istio-system.tmorcloud2.jonqe.lab.eng.bos.redhat.com"
-	
 )

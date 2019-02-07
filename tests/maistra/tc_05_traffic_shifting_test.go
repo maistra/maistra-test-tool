@@ -28,10 +28,6 @@ import (
 )
 
 func cleanup05(namespace, kubeconfig string) {
-	if err := recover(); err != nil {
-		log.Infof("Test failed: %v", err)
-	}
-	
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
@@ -164,4 +160,10 @@ func Test05(t *testing.T) {
 		}	
 	})
 	defer cleanup05(testNamespace, "")
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test failed: %v", err)
+		}
+	}()
 }

@@ -28,12 +28,25 @@ import (
 )
 
 
+// TBD
 // OcLogin runs oc login command to log into the OCP CLI
 // the host and token can be found from OCP web console Command Line Tools
-func OcLogin(host, port, token string) error {
+/*
+func OcLogin(token string) error {
+	host, err := util.Shell("")
+	if err != nil {
+		return err
+	}
+
+	port, err := util.Shell("")
+	if err != nil {
+		return err
+	}
+
 	_, err := util.ShellMuteOutput("oc login https://%s:%s --token=%s", host, port, token)
 	return err
 }
+*/
 
 func ocCommand(subCommand, namespace, yamlFileName string, kubeconfig string) string {
 	if namespace == "" {
@@ -66,8 +79,6 @@ func GetOCPIngress(serviceName, podLabel, namespace, kubeconfig string, serviceT
 	return host
 }
 
-
-
 // GetSecureIngressPort returns the https ingressgateway port
 // "$(${OC_COMMAND} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}')"
 func GetSecureIngressPort(namespace, serviceName, kubeconfig string) string {
@@ -86,4 +97,13 @@ func GetSecureIngressPort(namespace, serviceName, kubeconfig string) string {
 		return ""
 	}
 	return port
+}
+
+// GetIngressHostIP returns the OCP ingressgateway Host IP address from the OCP router endpoint
+func GetIngressHostIP(kubeconfig string) (string, error) {
+	ip, err := util.Shell("kubectl get endpoints -n default -l router -o jsonpath='{.items[0].subsets[0].addresses[0].ip}' --kubeconfig=%s", kubeconfig)
+	if err != nil {
+		return "", err
+	}
+	return ip, nil
 }
