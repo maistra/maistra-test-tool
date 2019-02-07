@@ -26,18 +26,14 @@ import (
 	"istio.io/istio/tests/util"
 )
 
-func cleanup06(namespace, kubeconfig string) {
-	if err := recover(); err != nil {
-		log.Infof("Test failed: %v", err)
-	}
-	
+func cleanup07(namespace, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 }
 
-func setup06(namespace, kubeconfig string) error {
+func setup07(namespace, kubeconfig string) error {
 	if err := util.KubeApply(namespace, bookinfoAllv1Yaml, kubeconfig); err != nil {
 		return err
 	}
@@ -59,9 +55,9 @@ func setTimeout(namespace, kubeconfig string) error {
 	return nil
 }
 
-func Test06(t *testing.T) {
-	log.Infof("# TC_06 Setting Request Timeouts")
-	Inspect(setup06(testNamespace, ""), "failed to apply rules", "", t)
+func Test07(t *testing.T) {
+	log.Infof("# TC_07 Setting Request Timeouts")
+	Inspect(setup07(testNamespace, ""), "failed to apply rules", "", t)
 	t.Run("timout", func(t *testing.T) {
 		Inspect(setTimeout(testNamespace, ""), "failed to apply rules", "", t)
 
@@ -77,6 +73,12 @@ func Test06(t *testing.T) {
 			"Success. Response timeout matches with expected.",
 			t)
 	})
-	defer cleanup06(testNamespace, "")
+	defer cleanup07(testNamespace, "")
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test failed: %v", err)
+		}
+	}()
 }
 

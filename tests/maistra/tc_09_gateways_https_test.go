@@ -18,7 +18,13 @@
 package maistra
 
 import (
+	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
+	"net"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -27,18 +33,16 @@ import (
 	"istio.io/istio/tests/util"
 )
 
-func cleanup08(namespace, kubeconfig string) {
-	if err := recover(); err != nil {
-		log.Infof("Test failed: %v", err)
-	}
-
+func cleanup09(namespace, kubeconfig string) {
+	
 	log.Infof("# Cleanup. Following error can be ignored...")
+	util.KubeDelete("istio-system", jwtAuthYaml, kubeconfig)
 	OcDelete("", httpbinOCPRouteYaml, kubeconfig)
-	OcDelete("", httpbinOCPRouteHTTPSYaml, kubeconfig)
-	util.KubeDelete(namespace, httpbinGatewayHTTPSYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinGatewayHTTPSMutualYaml, kubeconfig)
+	OcDelete("", httpbinOCPRouteHTTPSYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinRouteHTTPSYaml, kubeconfig)
-
+	util.KubeDelete(namespace, httpbinGatewayHTTPSYaml, kubeconfig)
+	
 	util.ShellSilent("kubectl delete secret %s -n %s --kubeconfig=%s", 
 		"istio-ingressgateway-certs", "istio-system", kubeconfig)
 	util.ShellSilent("kubectl delete secret %s -n %s --kubeconfig=%s",
@@ -50,7 +54,7 @@ func cleanup08(namespace, kubeconfig string) {
 	time.Sleep(time.Duration(10) * time.Second)
 	
 	util.KubeDelete(namespace, httpbinYaml, kubeconfig)
-	util.KubeDelete("istio-system", jwtAuthYaml, kubeconfig)
+	
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 }
@@ -134,53 +138,108 @@ func configJWT(kubeconfig string) error {
 	return nil
 }
 
-// TBD: there may be a better way to implement this curl in Go
-func checkTeapot(ingressHostIP string) (string, error) {
-	url := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
-
-	msg, err := util.ShellMuteOutput("curl -v -HHost:%s --resolve %s:%s:%s --cacert %s %s",
-							"httpbin.example.com", "httpbin.example.com",
-							secureIngressPort,
-							ingressHostIP,
-							httpbinSampleCACert,
-							url)
-	
+func checkTeapot(url, ingressHostIP, host, cacertFile string) (*http.Response, error) {
+	// Load CA cert
+	caCert, err := ioutil.ReadFile(cacertFile)
 	if err != nil {
-		return "curl command error", err
+		return nil, err
 	}
-	if !strings.Contains(msg, "SSL certificate verify ok") || !strings.Contains(msg, "-=[ teapot ]=-") {
-		return msg, fmt.Errorf("error response")
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	// Setup HTTPS transport
+	tlsConfig := &tls.Config{
+		RootCAs:	caCertPool,
 	}
-	return msg, nil
+	tlsConfig.BuildNameToCertificate()
+	transport := &http.Transport{TLSClientConfig: tlsConfig}
+
+	// Custom DialContext
+	dialer := &net.Dialer{
+		Timeout:		30 * time.Second,
+		KeepAlive:		30 * time.Second,
+		DualStack:		true,
+	}
+
+	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		if addr == host + ":" + secureIngressPort {
+			addr = ingressHostIP + ":" + secureIngressPort
+		}
+		return dialer.DialContext(ctx, network, addr)
+	}
+
+	// Setup HTTPS client
+	client := &http.Client{Transport: transport}
+
+	// GET something
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	// Set host
+	req.Host = host
+	req.Header.Set("Host", req.Host)
+	// Get response
+	return client.Do(req)
 }
 
-// TBD: there may be a better way to implement this curl in Go
-func checkTeapot2(ingressHostIP string) (string, error) {
-	url := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
-
-	msg, err := util.ShellMuteOutput("curl -HHost:%s --resolve %s:%s:%s --cacert %s --cert %s --key %s %s",
-							"httpbin.example.com", "httpbin.example.com",
-							secureIngressPort,
-							ingressHostIP,
-							httpbinSampleCACert,
-							httpbinSampleClientCert,
-							httpbinSampleClientCertKey,
-							url)
-	
+func checkTeapot2(url, ingressHostIP, host, cacertFile, certFile, keyFile string) (*http.Response, error) {
+	// Load client cert
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		return "curl command error", err
+		return nil, err
 	}
-	if !strings.Contains(msg, "-=[ teapot ]=-") {
-		return msg, fmt.Errorf("error response")
+
+	// Load CA cert
+	caCert, err := ioutil.ReadFile(cacertFile)
+	if err != nil {
+		return nil, err
 	}
-	return msg, nil
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	// Setup HTTPS transport
+	tlsConfig := &tls.Config{
+		Certificates:		[]tls.Certificate{cert},
+		RootCAs:			caCertPool,
+	}
+	tlsConfig.BuildNameToCertificate()
+	transport := &http.Transport{TLSClientConfig: tlsConfig}
+
+	// Custom DialContext
+	dialer := &net.Dialer{
+		Timeout:		30 * time.Second,
+		KeepAlive:		30 * time.Second,
+		DualStack:		true,
+	}
+
+	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		if addr == host + ":" + secureIngressPort {
+			addr = ingressHostIP + ":" + secureIngressPort
+		}
+		return dialer.DialContext(ctx, network, addr)
+	}
+
+	// Setup HTTPS client
+	client := &http.Client{Transport: transport}
+
+	// GET something
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	// Set host
+	req.Host = host
+	req.Header.Set("Host", req.Host)
+	// Get response
+	return client.Do(req)
 }
 
-func Test08 (t *testing.T) {
-	log.Infof("# TC_08 Securing Gateways with HTTPS")
+func Test09 (t *testing.T) {
+	log.Infof("# TC_09 Securing Gateways with HTTPS")
 
 	// TBD maybe a better way to find the ip
-	ingressHostIP, err := util.Shell("dig +short %s | tr -d '\n'", testIngressHostname)
+	ingressHostIP, err := GetIngressHostIP("")
 	if err != nil {
 		t.Errorf("cannot get ingress host ip: %v", err)
 	}
@@ -189,8 +248,21 @@ func Test08 (t *testing.T) {
 
 	t.Run("general_tls", func(t *testing.T) {
 		// check teapot
-		msg, err := checkTeapot(ingressHostIP)
-		Inspect(err, msg, msg, t)
+		url := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
+		resp, err := checkTeapot(url, ingressHostIP, "httpbin.example.com", httpbinSampleCACert)
+		defer CloseResponseBody(resp)
+		if err != nil {
+			t.Errorf("failed to get response: %v", err)
+		}
+		bodyByte, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			t.Errorf("failed to read response body: %v", err)
+		}
+		if strings.Contains(string(bodyByte), "-=[ teapot ]=-") {
+			log.Info(string(bodyByte))
+		} else {
+			t.Errorf("failed to get teapot: %v", string(bodyByte))
+		}
 	})
 
 	t.Run("mutual_tls", func(t *testing.T) {
@@ -198,16 +270,36 @@ func Test08 (t *testing.T) {
 		Inspect(updateHttpbinHTTPS(testNamespace, ""), "failed to configure mutual tls gateway", "", t)
 		
 		log.Info("Check SSL handshake failure as expected")
-		msg, err := checkTeapot(ingressHostIP)
+		url := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
+		resp, err := checkTeapot(url, ingressHostIP, "httpbin.example.com", httpbinSampleCACert)
 		if err != nil {
-			log.Infof("Expected failure: %s", msg)
+			log.Infof("Expected failure: %v", err)
+			// Don't need to close resp because resp is nil when err is not nil
 		} else {
-			t.Errorf("Unexpected response: %s", msg)
+			bodyByte, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				t.Errorf("failed to read response body: %v", err)
+			}
+			t.Errorf("Unexpected response: %s", string(bodyByte))
+			CloseResponseBody(resp)
 		}
-
+		
 		log.Info("Check SSL return a teapot again")
-		msg, err = checkTeapot2(ingressHostIP)
-		Inspect(err, msg, msg, t)
+		resp, err = checkTeapot2(url, ingressHostIP, "httpbin.example.com", 
+									httpbinSampleCACert, httpbinSampleClientCert, httpbinSampleClientCertKey)
+		defer CloseResponseBody(resp)
+		if err != nil {
+			t.Errorf("failed to get response: %v", err)
+		}
+		bodyByte, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			t.Errorf("failed to read response body: %v", err)
+		}
+		if strings.Contains(string(bodyByte), "-=[ teapot ]=-") {
+			log.Info(string(bodyByte))
+		} else {
+			t.Errorf("failed to get teapot: %v", string(bodyByte))
+		}
 	})
 
 	t.Run("jwt", func(t *testing.T) {
@@ -224,14 +316,27 @@ func Test08 (t *testing.T) {
 		CloseResponseBody(resp)
 
 		// check 200
-		token, err := util.ShellMuteOutput("curl https://raw.githubusercontent.com/istio/istio/release-1.0/security/tools/jwt/samples/demo.jwt -s | tr -d '\n'")
+		resp, err = http.Get(jwtURL)
 		if err != nil {
-			t.Error(err)
+			t.Errorf("failed to get JWT response: %v", err)
 		}
+		tokenByte, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			t.Errorf("failed to read JWT response body: %v", err)
+		}
+		token := strings.Trim(string(tokenByte),"\n")
+		CloseResponseBody(resp)
+
 		resp, err = GetWithJWT(fmt.Sprintf("http://%s/status/200", ingressURL), token, "httpbin.example.com")
 		Inspect(err, "failed to get response", "", t)
-		Inspect(CheckHTTPResponse200(resp), "failed to get HTTP 200", resp.Status, t)
+		Inspect(CheckHTTPResponse200(resp), "failed to get HTTP 200", "Get expected response code: 200", t)
 		CloseResponseBody(resp)
 	})
-	defer cleanup08(testNamespace, "")
+	defer cleanup09(testNamespace, "")
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test failed: %v", err)
+		}
+	}()
 }

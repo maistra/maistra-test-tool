@@ -129,6 +129,9 @@ func GetWithJWT(url, token, host string) (*http.Response, error) {
 
 // CloseResponseBody ...
 func CloseResponseBody(r *http.Response) {
+	if r == nil {
+		return
+	}
 	if err := r.Body.Close(); err != nil {
 		log.Errora(err)
 	}

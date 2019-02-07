@@ -26,11 +26,7 @@ import (
 	"istio.io/istio/tests/util"
 )
 
-func cleanup07(namespace, kubeconfig string) {
-	if err := recover(); err != nil {
-		log.Infof("Test failed: %v", err)
-	}
-	
+func cleanup08(namespace, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
 	OcDelete("", httpbinOCPRouteYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinGatewayYaml, kubeconfig)
@@ -77,8 +73,8 @@ func updateHttpbin(namespace, kubeconfig string) error {
 	return nil
 }
 
-func Test07 (t *testing.T) {
-	log.Infof("# TC_07 Control Ingress Traffic")
+func Test08 (t *testing.T) {
+	log.Infof("# TC_08 Control Ingress Traffic")
 	Inspect(deployHttpbin(testNamespace, ""), "failed to deploy httpbin", "", t)
 
 	t.Run("status_200", func(t *testing.T) {
@@ -96,5 +92,11 @@ func Test07 (t *testing.T) {
 		log.Infof("httpbin headers page returned in %d ms", duration)
 		Inspect(CheckHTTPResponse200(resp), "failed to get HTTP 200", resp.Status, t)
 	})
-	defer cleanup07(testNamespace, "")
+	defer cleanup08(testNamespace, "")
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test failed: %v", err)
+		}
+	}()
 }
