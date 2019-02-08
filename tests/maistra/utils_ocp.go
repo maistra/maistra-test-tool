@@ -81,22 +81,40 @@ func GetOCPIngress(serviceName, podLabel, namespace, kubeconfig string, serviceT
 
 // GetSecureIngressPort returns the https ingressgateway port
 // "$(${OC_COMMAND} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}')"
-func GetSecureIngressPort(namespace, serviceName, kubeconfig string) string {
+func GetSecureIngressPort(namespace, serviceName, kubeconfig string) (string, error) {
 	port, err := util.Shell(
 		"kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"https\")].port}' --kubeconfig=%s",
 		namespace, serviceName, kubeconfig)
 	if err != nil {
-		log.Errorf("failed to get secure port: %v", err)
-		return ""
+		return "", err
 	}
 	port = strings.Trim(port, "'")
 	rp := regexp.MustCompile(`^[0-9]{1,5}$`)
 	if rp.FindString(port) == "" {
 		err = fmt.Errorf("unable to find the port of %s", serviceName)
 		log.Warna(err)
-		return ""
+		return "", err
 	}
-	return port
+	return port, nil
+}
+
+// GetTCPIngressPort returns the tcp ingressgateway port
+// kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="tcp")].port}'
+func GetTCPIngressPort(namespace, serviceName, kubeconfig string) (string, error) {
+	port, err := util.Shell(
+		"kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"tcp\")].port}' --kubeconfig=%s",
+		namespace, serviceName, kubeconfig)
+	if err != nil {
+		return "", err
+	}
+	port = strings.Trim(port, "'")
+	rp := regexp.MustCompile(`^[0-9]{1,5}$`)
+	if rp.FindString(port) == "" {
+		err = fmt.Errorf("unable to find the port of %s", serviceName)
+		log.Warna(err)
+		return "", err
+	}
+	return port, nil
 }
 
 // GetIngressHostIP returns the OCP ingressgateway Host IP address from the OCP router endpoint
