@@ -138,7 +138,7 @@ func configJWT(kubeconfig string) error {
 	return nil
 }
 
-func checkTeapot(url, ingressHostIP, host, cacertFile string) (*http.Response, error) {
+func checkTeapot(url, ingressHostIP, secureIngressPort, host, cacertFile string) (*http.Response, error) {
 	// Load CA cert
 	caCert, err := ioutil.ReadFile(cacertFile)
 	if err != nil {
@@ -183,7 +183,7 @@ func checkTeapot(url, ingressHostIP, host, cacertFile string) (*http.Response, e
 	return client.Do(req)
 }
 
-func checkTeapot2(url, ingressHostIP, host, cacertFile, certFile, keyFile string) (*http.Response, error) {
+func checkTeapot2(url, ingressHostIP, secureIngressPort, host, cacertFile, certFile, keyFile string) (*http.Response, error) {
 	// Load client cert
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
@@ -237,27 +237,24 @@ func checkTeapot2(url, ingressHostIP, host, cacertFile, certFile, keyFile string
 
 func Test09 (t *testing.T) {
 	log.Infof("# TC_09 Securing Gateways with HTTPS")
-
-	// TBD maybe a better way to find the ip
 	ingressHostIP, err := GetIngressHostIP("")
-	if err != nil {
-		t.Errorf("cannot get ingress host ip: %v", err)
-	}
-
+	Inspect(err, "cannot get ingress host ip", "", t)
+	
+	secureIngressPort, err := GetSecureIngressPort("istio-system", "istio-ingressgateway", "")
+	Inspect(err, "cannot get ingress secure port", "", t)
+	
 	Inspect(deployHttpbinHTTPS(testNamespace, ""), "failed to deploy httpbin with tls certs", "", t)
 
 	t.Run("general_tls", func(t *testing.T) {
 		// check teapot
 		url := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
-		resp, err := checkTeapot(url, ingressHostIP, "httpbin.example.com", httpbinSampleCACert)
+		resp, err := checkTeapot(url, ingressHostIP, secureIngressPort, "httpbin.example.com", httpbinSampleCACert)
 		defer CloseResponseBody(resp)
-		if err != nil {
-			t.Errorf("failed to get response: %v", err)
-		}
+		Inspect(err, "failed to get response", "", t)
+		
 		bodyByte, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			t.Errorf("failed to read response body: %v", err)
-		}
+		Inspect(err, "failed to read response body", "", t)
+		
 		if strings.Contains(string(bodyByte), "-=[ teapot ]=-") {
 			log.Info(string(bodyByte))
 		} else {
@@ -271,30 +268,27 @@ func Test09 (t *testing.T) {
 		
 		log.Info("Check SSL handshake failure as expected")
 		url := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
-		resp, err := checkTeapot(url, ingressHostIP, "httpbin.example.com", httpbinSampleCACert)
+		resp, err := checkTeapot(url, ingressHostIP, secureIngressPort, "httpbin.example.com", httpbinSampleCACert)
 		if err != nil {
 			log.Infof("Expected failure: %v", err)
 			// Don't need to close resp because resp is nil when err is not nil
 		} else {
 			bodyByte, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				t.Errorf("failed to read response body: %v", err)
-			}
+			Inspect(err, "failed to read response body", "", t)
+			
 			t.Errorf("Unexpected response: %s", string(bodyByte))
 			CloseResponseBody(resp)
 		}
 		
 		log.Info("Check SSL return a teapot again")
-		resp, err = checkTeapot2(url, ingressHostIP, "httpbin.example.com", 
+		resp, err = checkTeapot2(url, ingressHostIP, secureIngressPort, "httpbin.example.com", 
 									httpbinSampleCACert, httpbinSampleClientCert, httpbinSampleClientCertKey)
 		defer CloseResponseBody(resp)
-		if err != nil {
-			t.Errorf("failed to get response: %v", err)
-		}
+		Inspect(err, "failed to get response", "", t)
+		
 		bodyByte, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			t.Errorf("failed to read response body: %v", err)
-		}
+		Inspect(err, "failed to read response body", "", t)
+		
 		if strings.Contains(string(bodyByte), "-=[ teapot ]=-") {
 			log.Info(string(bodyByte))
 		} else {
@@ -317,13 +311,11 @@ func Test09 (t *testing.T) {
 
 		// check 200
 		resp, err = http.Get(jwtURL)
-		if err != nil {
-			t.Errorf("failed to get JWT response: %v", err)
-		}
+		Inspect(err, "failed to get JWT response", "", t)
+		
 		tokenByte, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			t.Errorf("failed to read JWT response body: %v", err)
-		}
+		Inspect(err, "failed to read JWT response body", "", t)
+		
 		token := strings.Trim(string(tokenByte),"\n")
 		CloseResponseBody(resp)
 

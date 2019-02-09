@@ -69,6 +69,10 @@ const (
 	egressHTTPBinYaml 			= "testdata/egress/serviceEntry-httpbin.yaml"
 	egressGoogleYaml			= "testdata/egress/serviceEntry-google.yaml"
 	
+	echoYaml 					= "testdata/tcp-echo/tcp-echo-services.yaml"
+	echoAllv1Yaml 				= "testdata/tcp-echo/tcp-echo-all-v1.yaml"
+	echo20v2Yaml 				= "testdata/tcp-echo/tcp-echo-20-v2.yaml"
+
 	jwtAuthYaml					= "testdata/policy/jwt-auth.yaml"
 	jwtURL 						= "https://raw.githubusercontent.com/istio/istio/release-1.0/security/tools/jwt/samples/demo.jwt"
 

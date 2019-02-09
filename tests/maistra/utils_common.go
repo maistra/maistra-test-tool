@@ -38,7 +38,6 @@ var (
 	testRetryTimes			= 5
 
 	ingressURL				= GetOCPIngress("istio-ingressgateway","ingressgateway", "istio-system", "", "NodePort")
-	secureIngressPort 		= GetSecureIngressPort("istio-system", "istio-ingressgateway", "")
 	productpageURL 			= fmt.Sprintf("http://%s/productpage", ingressURL)
 	testUserJar				= GetCookieJar(testUsername, "", "http://" + ingressURL)
 )

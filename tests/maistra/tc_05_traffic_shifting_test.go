@@ -73,7 +73,7 @@ func Test05(t *testing.T) {
 	log.Infof("# TC_05 Traffic Shifting")
 	Inspect(setup05(testNamespace, ""), "failed to apply rules", "", t)
 
-	t.Run("50%_shift", func(t *testing.T) {
+	t.Run("50%_v3_shift", func(t *testing.T) {
 		Inspect(trafficShift50v3(testNamespace, ""), "failed to apply rules", "", t)
 		tolerance := 0.10
 		totalShot := 100
@@ -117,7 +117,7 @@ func Test05(t *testing.T) {
 		}
 	})
 
-	t.Run("100%_shift", func(t *testing.T) {
+	t.Run("100%_v3_shift", func(t *testing.T) {
 		Inspect(trafficShiftAllv3(testNamespace, ""), "failed to apply rules", "", t)
 
 		tolerance := 0.0
