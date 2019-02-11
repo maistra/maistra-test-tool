@@ -8,6 +8,12 @@ This project aims to follow [Istio Doc Tasks](https://preliminary.istio.io/docs/
 
 Most of the utilities are imported from upstream "istio.io/istio/tests/util". For more utilities information, user can check upstream [Istio release-1.1 util directory](https://github.com/istio/istio/tree/release-1.1/tests/util).
 
+
+Go Version
+-----------------
+
+go1.10.7 or above
+
 Prerequisite
 ---------------------
 
@@ -18,6 +24,8 @@ Prerequisite
 * Namespace `bookinfo` has been created and Bookinfo sample application has been deployed in the namespace `bookinfo`
 
 * If there is only `oc` client installed and no `kubectl` installed,  need to have a soft link. `sudo ln -s oc /usr/bin/kubectl`
+
+* Two utility packages from Istio upstream are needed before running tests. `go get "istio.io/istio/tests/util"`;  `go get "istio.io/istio/pkg/log"`
 
 
 How to run each test case
