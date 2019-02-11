@@ -36,11 +36,7 @@ func cleanup08(namespace, kubeconfig string) {
 	time.Sleep(time.Duration(10) * time.Second)
 }
 
-func deployHttpbin(namespace, kubeconfig string) error {
-	log.Infof("# Deploy Httpbin")
-	if err := util.KubeApply(namespace, httpbinYaml, kubeconfig); err != nil {
-		return err
-	}
+func configHttpbin(namespace, kubeconfig string) error {
 	if err := util.KubeApply(namespace, httpbinGatewayYaml, kubeconfig); err != nil {
 		return err
 	}
@@ -48,11 +44,6 @@ func deployHttpbin(namespace, kubeconfig string) error {
 		return err
 	}
 	if err := OcApply("", httpbinOCPRouteYaml, kubeconfig); err != nil {
-		return err
-	}
-	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
-	if err := util.CheckPodRunning(testNamespace, "app=httpbin", ""); err != nil {
 		return err
 	}
 	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
@@ -76,6 +67,7 @@ func updateHttpbin(namespace, kubeconfig string) error {
 func Test08 (t *testing.T) {
 	log.Infof("# TC_08 Control Ingress Traffic")
 	Inspect(deployHttpbin(testNamespace, ""), "failed to deploy httpbin", "", t)
+	Inspect(configHttpbin(testNamespace, ""), "failed to config httpbin", "", t)
 
 	t.Run("status_200", func(t *testing.T) {
 		resp, err := GetWithHost(fmt.Sprintf("http://%s/status/200", ingressURL), "httpbin.example.com")
