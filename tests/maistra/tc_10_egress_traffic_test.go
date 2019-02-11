@@ -40,22 +40,6 @@ func cleanup10(namespace, kubeconfig string) {
 	time.Sleep(time.Duration(10) * time.Second)
 }
 
-
-func deploySleep(namespace, kubeconfig string) error {
-	log.Info("Deploy Sleep")
-	if err := util.KubeApply(namespace, sleepYaml, kubeconfig); err != nil {
-		return err
-	}
-	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
-	if err := util.CheckPodRunning(testNamespace, "app=sleep", ""); err != nil {
-		return err
-	}
-	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
-	return nil
-}
-
 func configEgress(namespace, kubeconfig string) error {
 	if err := util.KubeApply(namespace, egressHTTPBinYaml , kubeconfig); err != nil {
 		return err

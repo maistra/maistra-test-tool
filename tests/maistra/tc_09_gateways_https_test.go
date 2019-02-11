@@ -60,12 +60,8 @@ func cleanup09(namespace, kubeconfig string) {
 }
 
 
-// deployHttpbinHTTPS deploys httpbin and configures https certs
-func deployHttpbinHTTPS(namespace, kubeconfig string) error {
-	log.Infof("# Deploy Httpbin")
-	if err := util.KubeApply(namespace, httpbinYaml, kubeconfig); err != nil {
-		return err
-	}
+// configHttpbinHTTPS configures https certs
+func configHttpbinHTTPS(namespace, kubeconfig string) error {
 	// create tls certs
 	if _, err := util.CreateTLSSecret("istio-ingressgateway-certs", "istio-system", httpbinSampleServerCertKey, httpbinSampleServerCert, kubeconfig); err != nil {
 		log.Infof("Failed to create secret %s\n", "istio-ingressgateway-certs")
@@ -242,8 +238,8 @@ func Test09 (t *testing.T) {
 	
 	secureIngressPort, err := GetSecureIngressPort("istio-system", "istio-ingressgateway", "")
 	Inspect(err, "cannot get ingress secure port", "", t)
-	
-	Inspect(deployHttpbinHTTPS(testNamespace, ""), "failed to deploy httpbin with tls certs", "", t)
+	Inspect(deployHttpbin(testNamespace, ""), "failed to deploy httpbin", "", t)
+	Inspect(configHttpbinHTTPS(testNamespace, ""), "failed to config httpbin with tls certs", "", t)
 
 	t.Run("general_tls", func(t *testing.T) {
 		// check teapot

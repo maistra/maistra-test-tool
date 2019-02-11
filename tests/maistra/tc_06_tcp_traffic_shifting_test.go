@@ -35,23 +35,6 @@ func cleanup06(namespace, kubeconfig string) {
 	time.Sleep(time.Duration(10) * time.Second)
 }
 
-
-func deployEcho(namespace, kubeconfig string) error {
-	log.Infof("# Deploy tcp-echo")
-	if err := util.KubeApply(namespace, echoYaml, kubeconfig); err != nil {
-		return err
-	}
-	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
-	
-	if err := util.CheckPodRunning(testNamespace, "app=tcp-echo", ""); err != nil {
-		return err
-	}
-	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
-	return nil
-}
-
 func routeTrafficAllv1(namespace, kubeconfig string) error {
 	log.Info("Route all TCP traffic to v1 echo")
 	if err := util.KubeApply(namespace, echoAllv1Yaml, kubeconfig); err != nil {
