@@ -19,6 +19,12 @@ package maistra
 
 const (
 	modelDir					= "testdata/modelDir"
+	
+	bookinfoYaml 				= "testdata/bookinfo/platform/kube/bookinfo.yaml"
+	bookinfoGateway 			= "testdata/bookinfo/networking/bookinfo-gateway.yaml"
+	bookinfoRuleAllYaml 		= "testdata/bookinfo/networking/destination-rule-all.yaml"
+	bookinfoRuleAllTLSYaml 		= "testdata/bookinfo/networking/destination-rule-all-mtls.yaml"
+	
 	bookinfoAllv1Yaml			= "testdata/bookinfo/networking/virtual-service-all-v1.yaml"
 	bookinfoRatingDelayYaml		= "testdata/bookinfo/networking/virtual-service-ratings-test-delay.yaml"
 	bookinfoRatingDelayv2Yaml	= "testdata/bookinfo/networking/virtual-service-ratings-test-delay-2.yaml"
@@ -33,7 +39,6 @@ const (
 	bookinfoReviewv2v3Yaml 		= "testdata/bookinfo/networking/virtual-service-reviews-jason-v2-v3.yaml"
 	bookinfoReviewTimeoutYaml	= "testdata/bookinfo/networking/virtual-service-reviews-timeout.yaml"
 	bookinfoDBYaml 				= "testdata/bookinfo/networking/bookinfo-db.yaml"
-	bookinfoRuleAllYaml 		= "testdata/bookinfo/networking/destination-rule-all.yaml"
 	bookinfoAddServiceAccountYaml = "testdata/bookinfo/platform/kube/bookinfo-add-serviceaccount.yaml"
 	bookinfoRBACOnYaml 			= "testdata/bookinfo/platform/kube/rbac/rbac-config-ON.yaml"
 	bookinfoNamespacePolicyYaml = "testdata/bookinfo/platform/kube/rbac/namespace-policy.yaml"
@@ -104,4 +109,5 @@ const (
 
 	testNamespace				= "bookinfo"
 	testUsername				= "jason"
+	kubeconfigFile				= ""
 )

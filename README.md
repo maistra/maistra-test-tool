@@ -21,7 +21,8 @@ Prerequisite
 
 * Istio system has been installed on an OpenShift 3.11 or 4.0 cluster
 
-* Namespace `bookinfo` has been created and Bookinfo sample application has been deployed in the namespace `bookinfo`
+* A test namespace/project `bookinfo` need to be created and OCP cluster priviledge has been granted to the `bookinfo` namespace/project. There is No requirement to deploy the sample application `bookinfo` before running tests. Our test cases cover all of the sample applications deployment and cleanup.
+  (Priviledge permission is a temporary requirement for any OCP namespace/project to work with sidecar deployments)
 
 * If there is only `oc` client installed and no `kubectl` installed,  need to have a soft link. `sudo ln -s oc /usr/bin/kubectl`
 
@@ -32,5 +33,5 @@ How to run each test case
 -------------------------
 
 User can go to directory `tests/maistra` 
-- To run all the test cases: `go test -v`
+- To run all the test cases (End-to-End run): `go test -timeout 2h -v`
 - To run a specific test case: `go test -run [test case number] -v`

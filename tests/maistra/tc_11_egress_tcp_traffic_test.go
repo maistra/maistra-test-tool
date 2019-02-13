@@ -33,6 +33,7 @@ func cleanup11(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, bookinfoRatingMySQLServiceEntryYaml, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
+	cleanBookinfo(namespace, kubeconfig)
 }
 
 func configTCPRatings(namespace, kubeconfig string) error {
@@ -61,7 +62,9 @@ func configEgressTCP(namespace, kubeconfig string) error {
 
 func Test11(t *testing.T) {
 	log.Info("# TC_11 Control Egress TCP Traffic")
-	Inspect(configTCPRatings(testNamespace, ""), "failed to apply rules", "", t)
+	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+	
+	Inspect(configTCPRatings(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 	resp, _, err := GetHTTPResponse(productpageURL, nil)
 	Inspect(err, "failed to get productpage", "", t)
 	body, err := ioutil.ReadAll(resp.Body)
@@ -74,7 +77,7 @@ func Test11(t *testing.T) {
 	CloseResponseBody(resp)
 
 	log.Info("# Define a TCP mesh-external service entry")
-	Inspect(configEgressTCP(testNamespace, ""), "failed to apply service entry", "", t)
+	Inspect(configEgressTCP(testNamespace, kubeconfigFile), "failed to apply service entry", "", t)
 
 	resp, _, err = GetHTTPResponse(productpageURL, nil)
 	Inspect(err, "failed to get productpage", "", t)
@@ -87,7 +90,7 @@ func Test11(t *testing.T) {
 		t)
 	CloseResponseBody(resp)
 
-	defer cleanup11(testNamespace, "")
+	defer cleanup11(testNamespace, kubeconfigFile)
 	defer func() {
 		// recover from panic if one occured. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {

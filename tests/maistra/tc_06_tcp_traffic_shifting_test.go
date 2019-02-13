@@ -33,6 +33,7 @@ func cleanup06(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, echoYaml, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
+	cleanBookinfo(namespace, kubeconfig)
 }
 
 func routeTrafficAllv1(namespace, kubeconfig string) error {
@@ -67,19 +68,21 @@ func checkEcho(ingressHost, ingressTCPPort string) (string, error) {
 
 func Test06(t *testing.T) {
 	log.Infof("# TC_06 TCP Traffic Shifting")
-	ingressHostIP, err := GetIngressHostIP("")
+	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+	
+	ingressHostIP, err := GetIngressHostIP(kubeconfigFile)
 	Inspect(err, "cannot get ingress host ip", "", t)
 	
-	ingressTCPPort, err := GetTCPIngressPort("istio-system", "istio-ingressgateway", "")
+	ingressTCPPort, err := GetTCPIngressPort("istio-system", "istio-ingressgateway", kubeconfigFile)
 	Inspect(err, "cannot get ingress TCP port", "", t)
 
-	Inspect(deployEcho(testNamespace, ""), "failed to apply rules", "", t)
+	Inspect(deployEcho(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 
 	t.Run("100%_v1_shift", func(t *testing.T) {
 		log.Info("# Shifting all TCP traffic to v1")
-		Inspect(routeTrafficAllv1(testNamespace, ""), "failed to apply rules", "", t)
+		Inspect(routeTrafficAllv1(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		tolerance := 0.0
-		totalShot := 100
+		totalShot := 20
 		versionCount := 0
 		
 		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot)
@@ -105,9 +108,9 @@ func Test06(t *testing.T) {
 
 	t.Run("20%_v2_shift", func(t *testing.T) {
 		log.Info("# Shifting 20% TCP traffic to v2 tolerance 10% ")
-		Inspect(routeTraffic20v2(testNamespace, ""), "failed to apply rules", "", t)
-		tolerance := 0.10
-		totalShot := 100
+		Inspect(routeTraffic20v2(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+		tolerance := 0.20
+		totalShot := 20
 		c1, c2 := 0, 0
 
 		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot)
@@ -133,7 +136,7 @@ func Test06(t *testing.T) {
 		}
 	})
 
-	defer cleanup06(testNamespace, "")
+	defer cleanup06(testNamespace, kubeconfigFile)
 	defer func() {
 		// recover from panic if one occured. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {

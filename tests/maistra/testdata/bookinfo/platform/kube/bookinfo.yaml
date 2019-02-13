@@ -139,7 +139,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: reviews-v2
-  lables:
+  labels:
     app: reviews
     version: v2
 spec:
@@ -204,7 +204,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: productpage-v1
-  lables:
+  labels:
     app: productpage
     version: v1
 spec:

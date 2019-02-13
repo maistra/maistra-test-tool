@@ -32,6 +32,7 @@ func cleanup04(namespace string, kubeconfig string) {
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
+	cleanBookinfo(namespace, kubeconfig)
 }
 
 func setup04(namespace, kubeconfig string) error {
@@ -79,10 +80,13 @@ func abortInject(namespace, kubeconfig string) error {
 
 func Test04(t *testing.T) {
 	log.Infof("# TC_04 Fault injection")
-	Inspect(setup04(testNamespace, ""), "failed to apply rules", "", t)
+	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+	Inspect(setup04(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+
+	testUserJar	:= GetCookieJar(testUsername, "", "http://" + ingressURL)
 
 	t.Run("delay_fault", func(t *testing.T) {
-		Inspect(faultInject(testNamespace, ""), "failed to apply rules", "", t)
+		Inspect(faultInject(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		
 		minDuration := 5000
 		maxDuration := 8000
@@ -114,7 +118,7 @@ func Test04(t *testing.T) {
 	})
 
 	t.Run("fix_fault", func(t *testing.T) {
-		Inspect(faultFix(testNamespace, ""), "failed to apply rules", "", t)
+		Inspect(faultFix(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		resp, duration, err := GetHTTPResponse(productpageURL, testUserJar)
 		defer CloseResponseBody(resp)
 		Inspect(err, "failed to get HTTP Response", "", t)
@@ -129,7 +133,7 @@ func Test04(t *testing.T) {
 	})
 
 	t.Run("abort_fault", func(t *testing.T) {
-		Inspect(abortInject(testNamespace, ""), "failed to apply rules", "", t)
+		Inspect(abortInject(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		resp, duration, err := GetHTTPResponse(productpageURL, testUserJar)
 		defer CloseResponseBody(resp)
 		Inspect(err, "failed to get HTTP Response", "", t)
@@ -142,7 +146,7 @@ func Test04(t *testing.T) {
 			"Success. Response abort matches with expected.",
 			t)
 	})
-	defer cleanup04(testNamespace, "")
+	defer cleanup04(testNamespace, kubeconfigFile)
 	defer func() {
 		// recover from panic if one occured. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
