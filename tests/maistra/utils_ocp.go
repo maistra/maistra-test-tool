@@ -55,6 +55,13 @@ func ocCommand(subCommand, namespace, yamlFileName string, kubeconfig string) st
 	return fmt.Sprintf("oc %s -n %s -f %s --kubeconfig=%s", subCommand, namespace, yamlFileName, kubeconfig)
 }
 
+// OcGrantPermission OCP cluster specific requirements for deploying an application with sidecar.
+// This is a temporary permission config
+func OcGrantPermission(namespace, kubeconfig string) {
+	util.Shell("oc adm policy add-scc-to-user privileged -z default -n %s --kubeconfig=%s", namespace, kubeconfig)
+	util.Shell("oc adm policy add-scc-to-user anyuid -z default -n %s --kubeconfig=%s", namespace, kubeconfig)
+}
+
 // OcApply oc apply from file
 func OcApply(namespace, yamlFileName string, kubeconfig string) error {
 	_, err := util.Shell(ocCommand("apply", namespace, yamlFileName, kubeconfig))
@@ -68,15 +75,21 @@ func OcDelete(namespace, yamlFileName string, kubeconfig string) error {
 }
 
 // GetOCPIngress returns the OCP cluster ingressgateway ip and port.
-// Istio Ingress Gateway, by serviceName and podLabel. Handles two cases: when the Ingress/Ingress Gateway
-// Kubernetes Service is a LoadBalancer or NodePort (for tests within the  cluster, including for minikube)
-func GetOCPIngress(serviceName, podLabel, namespace, kubeconfig string, serviceType string) string {
-	host, err := util.GetIngress(serviceName, podLabel, namespace, kubeconfig, serviceType)
+func GetOCPIngress(serviceName, podLabel, namespace, kubeconfig string) string {
+	ip, err := util.Shell("kubectl get po -l %s -n %s -o jsonpath='{.items[0].status.hostIP}' --kubeconfig=%s",
+							podLabel, namespace, kubeconfig)
 	if err != nil {
 		log.Errorf("failed to get ingressgateway: %v", err)
 		return ""
 	}
-	return host
+
+	port, err := util.Shell("kubectl get svc %s -n %s -o jsonpath='{.spec.ports[0].nodePort}' --kubeconfig=%s",
+							serviceName, namespace, kubeconfig)
+	if err != nil {
+		log.Errorf("failed to get ingressgateway: %v", err)
+		return ""
+	}
+	return ip + ":" + port 
 }
 
 // GetSecureIngressPort returns the https ingressgateway port

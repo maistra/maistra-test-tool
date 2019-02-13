@@ -32,6 +32,7 @@ func cleanup05(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
+	cleanBookinfo(namespace, kubeconfig)
 }
 
 func setup05(namespace, kubeconfig string) error {
@@ -71,10 +72,11 @@ func isWithinPercentage(count int, total int, rate float64, tolerance float64) b
 
 func Test05(t *testing.T) {
 	log.Infof("# TC_05 Traffic Shifting")
-	Inspect(setup05(testNamespace, ""), "failed to apply rules", "", t)
+	Inspect(setup05(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 
 	t.Run("50%_v3_shift", func(t *testing.T) {
-		Inspect(trafficShift50v3(testNamespace, ""), "failed to apply rules", "", t)
+		Inspect(trafficShift50v3(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		tolerance := 0.10
 		totalShot := 100
 		once := sync.Once{}
@@ -118,7 +120,7 @@ func Test05(t *testing.T) {
 	})
 
 	t.Run("100%_v3_shift", func(t *testing.T) {
-		Inspect(trafficShiftAllv3(testNamespace, ""), "failed to apply rules", "", t)
+		Inspect(trafficShiftAllv3(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 
 		tolerance := 0.0
 		totalShot := 100
@@ -159,7 +161,7 @@ func Test05(t *testing.T) {
 				"new version hit %d", cVersionToMigrate)
 		}	
 	})
-	defer cleanup05(testNamespace, "")
+	defer cleanup05(testNamespace, kubeconfigFile)
 	defer func() {
 		// recover from panic if one occured. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {

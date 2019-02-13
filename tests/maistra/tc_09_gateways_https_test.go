@@ -57,6 +57,7 @@ func cleanup09(namespace, kubeconfig string) {
 	
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
+	cleanBookinfo(namespace, kubeconfig)
 }
 
 
@@ -233,13 +234,15 @@ func checkTeapot2(url, ingressHostIP, secureIngressPort, host, cacertFile, certF
 
 func Test09 (t *testing.T) {
 	log.Infof("# TC_09 Securing Gateways with HTTPS")
-	ingressHostIP, err := GetIngressHostIP("")
+	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+	
+	ingressHostIP, err := GetIngressHostIP(kubeconfigFile)
 	Inspect(err, "cannot get ingress host ip", "", t)
 	
-	secureIngressPort, err := GetSecureIngressPort("istio-system", "istio-ingressgateway", "")
+	secureIngressPort, err := GetSecureIngressPort("istio-system", "istio-ingressgateway", kubeconfigFile)
 	Inspect(err, "cannot get ingress secure port", "", t)
-	Inspect(deployHttpbin(testNamespace, ""), "failed to deploy httpbin", "", t)
-	Inspect(configHttpbinHTTPS(testNamespace, ""), "failed to config httpbin with tls certs", "", t)
+	Inspect(deployHttpbin(testNamespace, kubeconfigFile), "failed to deploy httpbin", "", t)
+	Inspect(configHttpbinHTTPS(testNamespace, kubeconfigFile), "failed to config httpbin with tls certs", "", t)
 
 	t.Run("general_tls", func(t *testing.T) {
 		// check teapot
@@ -260,7 +263,7 @@ func Test09 (t *testing.T) {
 
 	t.Run("mutual_tls", func(t *testing.T) {
 		log.Info("Configure Mutual TLS Gateway")
-		Inspect(updateHttpbinHTTPS(testNamespace, ""), "failed to configure mutual tls gateway", "", t)
+		Inspect(updateHttpbinHTTPS(testNamespace, kubeconfigFile), "failed to configure mutual tls gateway", "", t)
 		
 		log.Info("Check SSL handshake failure as expected")
 		url := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
@@ -294,7 +297,7 @@ func Test09 (t *testing.T) {
 
 	t.Run("jwt", func(t *testing.T) {
 		log.Info("Configure JWT Authentication")
-		Inspect(configJWT(""), "failed to configure JWT authentication", "", t)
+		Inspect(configJWT(kubeconfigFile), "failed to configure JWT authentication", "", t)
 		// check 401
 		resp, err := GetWithHost(fmt.Sprintf("http://%s/status/200", ingressURL), "httpbin.example.com")
 		Inspect(err, "failed to get response", "", t)
@@ -320,7 +323,7 @@ func Test09 (t *testing.T) {
 		Inspect(CheckHTTPResponse200(resp), "failed to get HTTP 200", "Get expected response code: 200", t)
 		CloseResponseBody(resp)
 	})
-	defer cleanup09(testNamespace, "")
+	defer cleanup09(testNamespace, kubeconfigFile)
 	defer func() {
 		// recover from panic if one occured. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {

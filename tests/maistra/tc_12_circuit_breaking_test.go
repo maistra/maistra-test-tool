@@ -52,15 +52,15 @@ func configHttpbinCircuitBreaker(namespace, kubeconfig string) error {
 
 func Test12(t *testing.T) {
 	log.Info("# TC_12 Circuit Breaking")
-	Inspect(deployHttpbin(testNamespace, ""), "failed to deploy httpbin", "", t)
-	Inspect(configHttpbinCircuitBreaker(testNamespace, ""), "failed to apply rule", "", t)
-	Inspect(deployFortio(testNamespace, ""), "failed to deploy fortio", "", t)
+	Inspect(deployHttpbin(testNamespace, kubeconfigFile), "failed to deploy httpbin", "", t)
+	Inspect(configHttpbinCircuitBreaker(testNamespace, kubeconfigFile), "failed to apply rule", "", t)
+	Inspect(deployFortio(testNamespace, kubeconfigFile), "failed to deploy fortio", "", t)
 
 	// trip breaker
-	pod, err := util.GetPodName(testNamespace, "app=fortio", "")
+	pod, err := util.GetPodName(testNamespace, "app=fortio", kubeconfigFile)
 	Inspect(err, "failed to get fortio pod", "", t)
 	command := "load -curl  http://httpbin:8000/get"
-	msg, err := util.PodExec(testNamespace, pod, "fortio /usr/local/bin/fortio", command, false, "")
+	msg, err := util.PodExec(testNamespace, pod, "fortio /usr/local/bin/fortio", command, false, kubeconfigFile)
 	Inspect(err, "failed to get response", "", t)
 	if strings.Contains(msg, "200 OK") {
 		log.Infof("Success. Get correct response")
@@ -74,7 +74,7 @@ func Test12(t *testing.T) {
 	tolerance := 0.30
 	
 	command = fmt.Sprintf("load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount)
-	msg, err = util.PodExec(testNamespace, pod, "fortio /usr/local/bin/fortio", command, false, "")
+	msg, err = util.PodExec(testNamespace, pod, "fortio /usr/local/bin/fortio", command, false, kubeconfigFile)
 	Inspect(err, "failed to get response", "", t)
 
 	re := regexp.MustCompile(`Code 200.*`)
@@ -101,7 +101,7 @@ func Test12(t *testing.T) {
 			"Code 200 hit %d, Code 503 hit %d", c200, c503)
 	}
 
-	defer cleanup12(testNamespace, "")
+	defer cleanup12(testNamespace, kubeconfigFile)
 	defer func() {
 		// recover from panic if one occured. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {

@@ -31,6 +31,7 @@ func cleanup07(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
+	cleanBookinfo(namespace, kubeconfig)
 }
 
 func setup07(namespace, kubeconfig string) error {
@@ -57,9 +58,13 @@ func setTimeout(namespace, kubeconfig string) error {
 
 func Test07(t *testing.T) {
 	log.Infof("# TC_07 Setting Request Timeouts")
-	Inspect(setup07(testNamespace, ""), "failed to apply rules", "", t)
+	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+	
+	testUserJar	:= GetCookieJar(testUsername, "", "http://" + ingressURL)
+
+	Inspect(setup07(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 	t.Run("timout", func(t *testing.T) {
-		Inspect(setTimeout(testNamespace, ""), "failed to apply rules", "", t)
+		Inspect(setTimeout(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 
 		resp, duration, err := GetHTTPResponse(productpageURL, testUserJar)
 		defer CloseResponseBody(resp)
@@ -73,7 +78,7 @@ func Test07(t *testing.T) {
 			"Success. Response timeout matches with expected.",
 			t)
 	})
-	defer cleanup07(testNamespace, "")
+	defer cleanup07(testNamespace, kubeconfigFile)
 	defer func() {
 		// recover from panic if one occured. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {

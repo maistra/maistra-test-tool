@@ -66,8 +66,8 @@ func updateHttpbin(namespace, kubeconfig string) error {
 
 func Test08 (t *testing.T) {
 	log.Infof("# TC_08 Control Ingress Traffic")
-	Inspect(deployHttpbin(testNamespace, ""), "failed to deploy httpbin", "", t)
-	Inspect(configHttpbin(testNamespace, ""), "failed to config httpbin", "", t)
+	Inspect(deployHttpbin(testNamespace, kubeconfigFile), "failed to deploy httpbin", "", t)
+	Inspect(configHttpbin(testNamespace, kubeconfigFile), "failed to config httpbin", "", t)
 
 	t.Run("status_200", func(t *testing.T) {
 		resp, err := GetWithHost(fmt.Sprintf("http://%s/status/200", ingressURL), "httpbin.example.com")
@@ -77,14 +77,14 @@ func Test08 (t *testing.T) {
 	})
 	
 	t.Run("headers", func(t *testing.T) {
-		Inspect(updateHttpbin(testNamespace, ""), "failed to apply rules", "", t)
+		Inspect(updateHttpbin(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		resp, duration, err := GetHTTPResponse(fmt.Sprintf("http://%s/headers", ingressURL), nil)
 		defer CloseResponseBody(resp)
 		Inspect(err, "failed to get HTTP Response", "", t)
 		log.Infof("httpbin headers page returned in %d ms", duration)
 		Inspect(CheckHTTPResponse200(resp), "failed to get HTTP 200", resp.Status, t)
 	})
-	defer cleanup08(testNamespace, "")
+	defer cleanup08(testNamespace, kubeconfigFile)
 	defer func() {
 		// recover from panic if one occured. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {

@@ -33,6 +33,7 @@ func cleanup03(namespace string, kubeconfig string) {
 	util.KubeDelete(namespace, bookinfoReviewTestv2Yaml, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
+	cleanBookinfo(namespace, kubeconfig)
 }
 
 func routeTraffic(namespace string, kubeconfig string) error {
@@ -57,9 +58,12 @@ func routeTrafficUser(namespace string, kubeconfig string) error {
 
 func Test03(t *testing.T) {
 	log.Infof("# TC_03 Traffic Routing")
+	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 	
+	testUserJar	:= GetCookieJar(testUsername, "", "http://" + ingressURL)
+
 	t.Run("general_route", func(t *testing.T) {
-		Inspect(routeTraffic(testNamespace, ""), "failed to apply rules", "", t)
+		Inspect(routeTraffic(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		for i := 0; i <= testRetryTimes; i++ {
 			resp, duration, err := GetHTTPResponse(productpageURL, nil)
 			Inspect(err, "failed to get HTTP Response", "", t)
@@ -75,7 +79,7 @@ func Test03(t *testing.T) {
 		}
 	})
 	t.Run("user_route", func(t *testing.T) {
-		Inspect(routeTrafficUser(testNamespace, ""), "failed to apply rules", "", t)
+		Inspect(routeTrafficUser(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		for i := 0; i <= testRetryTimes; i++ {
 			resp, duration, err := GetHTTPResponse(productpageURL, testUserJar)
 			Inspect(err, "failed to get HTTP Response", "", t)
@@ -90,7 +94,7 @@ func Test03(t *testing.T) {
 				t)
 		}
 	})
-	defer cleanup03(testNamespace, "")
+	defer cleanup03(testNamespace, kubeconfigFile)
 	defer func() {
 		// recover from panic if one occured. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
