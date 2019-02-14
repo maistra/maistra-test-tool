@@ -1,4 +1,4 @@
-// Copyright 2019 Istio Authors
+// Copyright 2019 Red Hat, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package dashboard provides testing of the grafana dashboards used in Istio
-// to provide mesh monitoring capabilities.
-
 package maistra
 
 import (
+	"fmt"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -81,9 +79,13 @@ func abortInject(namespace, kubeconfig string) error {
 func Test04(t *testing.T) {
 	log.Infof("# TC_04 Fault injection")
 	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+	ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	Inspect(err, "failed to get ingressgateway URL", "", t)
+	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
+	
 	Inspect(setup04(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 
-	testUserJar	:= GetCookieJar(testUsername, "", "http://" + ingressURL)
+	testUserJar	:= GetCookieJar(testUsername, "", "http://" + ingress)
 
 	t.Run("delay_fault", func(t *testing.T) {
 		Inspect(faultInject(testNamespace, kubeconfigFile), "failed to apply rules", "", t)

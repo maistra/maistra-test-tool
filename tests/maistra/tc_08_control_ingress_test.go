@@ -1,4 +1,4 @@
-// Copyright 2019 Istio Authors
+// Copyright 2019 Red Hat, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,9 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-// Package dashboard provides testing of the grafana dashboards used in Istio
-// to provide mesh monitoring capabilities.
 
 package maistra
 
@@ -32,8 +29,8 @@ func cleanup08(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, httpbinGatewayYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinRouteYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinYaml, kubeconfig)
-	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	log.Info("Waiting for rules to be cleaned up. Sleep 30 seconds...")
+	time.Sleep(time.Duration(30) * time.Second)
 }
 
 func configHttpbin(namespace, kubeconfig string) error {
@@ -66,11 +63,14 @@ func updateHttpbin(namespace, kubeconfig string) error {
 
 func Test08 (t *testing.T) {
 	log.Infof("# TC_08 Control Ingress Traffic")
+	ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	Inspect(err, "failed to get ingressgateway URL", "", t)
+
 	Inspect(deployHttpbin(testNamespace, kubeconfigFile), "failed to deploy httpbin", "", t)
 	Inspect(configHttpbin(testNamespace, kubeconfigFile), "failed to config httpbin", "", t)
 
 	t.Run("status_200", func(t *testing.T) {
-		resp, err := GetWithHost(fmt.Sprintf("http://%s/status/200", ingressURL), "httpbin.example.com")
+		resp, err := GetWithHost(fmt.Sprintf("http://%s/status/200", ingress), "httpbin.example.com")
 		defer CloseResponseBody(resp)
 		Inspect(err, "failed to get response", "", t)
 		Inspect(CheckHTTPResponse200(resp), "failed to get HTTP 200", resp.Status, t)
@@ -78,7 +78,7 @@ func Test08 (t *testing.T) {
 	
 	t.Run("headers", func(t *testing.T) {
 		Inspect(updateHttpbin(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
-		resp, duration, err := GetHTTPResponse(fmt.Sprintf("http://%s/headers", ingressURL), nil)
+		resp, duration, err := GetHTTPResponse(fmt.Sprintf("http://%s/headers", ingress), nil)
 		defer CloseResponseBody(resp)
 		Inspect(err, "failed to get HTTP Response", "", t)
 		log.Infof("httpbin headers page returned in %d ms", duration)

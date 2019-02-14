@@ -1,4 +1,4 @@
-// Copyright 2019 Istio Authors
+// Copyright 2019 Red Hat, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package dashboard provides testing of the grafana dashboards used in Istio
-// to provide mesh monitoring capabilities.
-
 package maistra
 
 import (
+	"fmt"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -64,6 +62,10 @@ func Test11(t *testing.T) {
 	log.Info("# TC_11 Control Egress TCP Traffic")
 	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 	
+	ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	Inspect(err, "failed to get ingressgateway URL", "", t)
+	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
+
 	Inspect(configTCPRatings(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 	resp, _, err := GetHTTPResponse(productpageURL, nil)
 	Inspect(err, "failed to get productpage", "", t)

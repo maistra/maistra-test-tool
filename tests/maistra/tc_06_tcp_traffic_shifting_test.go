@@ -1,4 +1,4 @@
-// Copyright 2019 Istio Authors
+// Copyright 2019 Red Hat, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,9 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-// Package dashboard provides testing of the grafana dashboards used in Istio
-// to provide mesh monitoring capabilities.
 
 package maistra
 
@@ -29,6 +26,7 @@ import (
 
 func cleanup06(namespace, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
+	util.KubeDelete(namespace, echo20v2Yaml, kubeconfig)
 	util.KubeDelete(namespace, echoAllv1Yaml, kubeconfig)
 	util.KubeDelete(namespace, echoYaml, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
