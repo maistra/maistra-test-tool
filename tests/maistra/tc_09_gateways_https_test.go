@@ -231,13 +231,19 @@ func checkTeapot2(url, ingressHostIP, secureIngressPort, host, cacertFile, certF
 
 func Test09 (t *testing.T) {
 	log.Infof("# TC_09 Securing Gateways with HTTPS")
-	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+	log.Info("Waiting for previous run to be cleaned up. Sleep 10 seconds...")
+	time.Sleep(time.Duration(10) * time.Second)
+
+	ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	Inspect(err, "failed to get ingressgateway URL", "", t)
 	
 	ingressHostIP, err := GetIngressHostIP(kubeconfigFile)
 	Inspect(err, "cannot get ingress host ip", "", t)
 	
 	secureIngressPort, err := GetSecureIngressPort("istio-system", "istio-ingressgateway", kubeconfigFile)
 	Inspect(err, "cannot get ingress secure port", "", t)
+	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+	
 	Inspect(deployHttpbin(testNamespace, kubeconfigFile), "failed to deploy httpbin", "", t)
 	Inspect(configHttpbinHTTPS(testNamespace, kubeconfigFile), "failed to config httpbin with tls certs", "", t)
 
@@ -296,7 +302,7 @@ func Test09 (t *testing.T) {
 		log.Info("Configure JWT Authentication")
 		Inspect(configJWT(kubeconfigFile), "failed to configure JWT authentication", "", t)
 		// check 401
-		resp, err := GetWithHost(fmt.Sprintf("http://%s/status/200", ingressURL), "httpbin.example.com")
+		resp, err := GetWithHost(fmt.Sprintf("http://%s/status/200", ingress), "httpbin.example.com")
 		Inspect(err, "failed to get response", "", t)
 		if resp.StatusCode != 401 {
 			t.Errorf("Unexpected response code: %v", resp.StatusCode)
@@ -315,7 +321,7 @@ func Test09 (t *testing.T) {
 		token := strings.Trim(string(tokenByte),"\n")
 		CloseResponseBody(resp)
 
-		resp, err = GetWithJWT(fmt.Sprintf("http://%s/status/200", ingressURL), token, "httpbin.example.com")
+		resp, err = GetWithJWT(fmt.Sprintf("http://%s/status/200", ingress), token, "httpbin.example.com")
 		Inspect(err, "failed to get response", "", t)
 		Inspect(CheckHTTPResponse200(resp), "failed to get HTTP 200", "Get expected response code: 200", t)
 		CloseResponseBody(resp)

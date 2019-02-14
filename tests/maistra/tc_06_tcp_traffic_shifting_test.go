@@ -26,6 +26,7 @@ import (
 
 func cleanup06(namespace, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
+	util.KubeDelete(namespace, echo20v2Yaml, kubeconfig)
 	util.KubeDelete(namespace, echoAllv1Yaml, kubeconfig)
 	util.KubeDelete(namespace, echoYaml, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")

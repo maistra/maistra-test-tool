@@ -15,6 +15,7 @@
 package maistra
 
 import (
+	"fmt"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -78,9 +79,13 @@ func abortInject(namespace, kubeconfig string) error {
 func Test04(t *testing.T) {
 	log.Infof("# TC_04 Fault injection")
 	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+	ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	Inspect(err, "failed to get ingressgateway URL", "", t)
+	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
+	
 	Inspect(setup04(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 
-	testUserJar	:= GetCookieJar(testUsername, "", "http://" + ingressURL)
+	testUserJar	:= GetCookieJar(testUsername, "", "http://" + ingress)
 
 	t.Run("delay_fault", func(t *testing.T) {
 		Inspect(faultInject(testNamespace, kubeconfigFile), "failed to apply rules", "", t)

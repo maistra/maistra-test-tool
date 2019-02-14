@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 	
 	"istio.io/istio/pkg/log"
 	"istio.io/istio/tests/util"
@@ -27,23 +28,6 @@ import (
 
 // TBD
 // OcLogin runs oc login command to log into the OCP CLI
-// the host and token can be found from OCP web console Command Line Tools
-/*
-func OcLogin(token string) error {
-	host, err := util.Shell("")
-	if err != nil {
-		return err
-	}
-
-	port, err := util.Shell("")
-	if err != nil {
-		return err
-	}
-
-	_, err := util.ShellMuteOutput("oc login https://%s:%s --token=%s", host, port, token)
-	return err
-}
-*/
 
 func ocCommand(subCommand, namespace, yamlFileName string, kubeconfig string) string {
 	if namespace == "" {
@@ -71,22 +55,23 @@ func OcDelete(namespace, yamlFileName string, kubeconfig string) error {
 	return err
 }
 
-// GetOCPIngress returns the OCP cluster ingressgateway ip and port.
-func GetOCPIngress(serviceName, podLabel, namespace, kubeconfig string) string {
-	ip, err := util.Shell("kubectl get po -l %s -n %s -o jsonpath='{.items[0].status.hostIP}' --kubeconfig=%s",
+// GetOCPIngressgateway returns the OCP cluster ingressgateway host URL.
+func GetOCPIngressgateway(podLabel, namespace, kubeconfig string) (string, error) {
+	ingress, err := util.Shell("kubectl get routes -l %s -n %s -o jsonpath='{.items[0].spec.host}' --kubeconfig=%s",
 							podLabel, namespace, kubeconfig)
-	if err != nil {
-		log.Errorf("failed to get ingressgateway: %v", err)
-		return ""
+	
+	for i := 0; i < testRetryTimes; i++ {
+		if err == nil {
+			break
+		}
+		time.Sleep(time.Duration(5) * time.Second)
+		ingress, err = util.Shell("kubectl get routes -l %s -n %s -o jsonpath='{.items[0].spec.host}' --kubeconfig=%s",
+							podLabel, namespace, kubeconfig)
 	}
-
-	port, err := util.Shell("kubectl get svc %s -n %s -o jsonpath='{.spec.ports[0].nodePort}' --kubeconfig=%s",
-							serviceName, namespace, kubeconfig)
 	if err != nil {
-		log.Errorf("failed to get ingressgateway: %v", err)
-		return ""
+		return "", err
 	}
-	return ip + ":" + port 
+	return ingress, nil
 }
 
 // GetSecureIngressPort returns the https ingressgateway port

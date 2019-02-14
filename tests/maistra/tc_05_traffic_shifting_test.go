@@ -15,6 +15,7 @@
 package maistra
 
 import (
+	"fmt"
 	"io/ioutil"
 	"sync"
 	"testing"
@@ -69,8 +70,12 @@ func isWithinPercentage(count int, total int, rate float64, tolerance float64) b
 
 func Test05(t *testing.T) {
 	log.Infof("# TC_05 Traffic Shifting")
-	Inspect(setup05(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+	ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	Inspect(err, "failed to get ingressgateway URL", "", t)
+	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
+
+	Inspect(setup05(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 
 	t.Run("50%_v3_shift", func(t *testing.T) {
 		Inspect(trafficShift50v3(testNamespace, kubeconfigFile), "failed to apply rules", "", t)

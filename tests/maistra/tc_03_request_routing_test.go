@@ -15,6 +15,7 @@
 package maistra
 
 import (
+	"fmt"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -56,8 +57,11 @@ func routeTrafficUser(namespace string, kubeconfig string) error {
 func Test03(t *testing.T) {
 	log.Infof("# TC_03 Traffic Routing")
 	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
-	
-	testUserJar	:= GetCookieJar(testUsername, "", "http://" + ingressURL)
+	ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	Inspect(err, "failed to get ingressgateway URL", "", t)
+	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
+
+	testUserJar	:= GetCookieJar(testUsername, "", "http://" + ingress)
 
 	t.Run("general_route", func(t *testing.T) {
 		Inspect(routeTraffic(testNamespace, kubeconfigFile), "failed to apply rules", "", t)

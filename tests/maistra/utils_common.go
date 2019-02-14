@@ -33,9 +33,6 @@ import (
 var (
 	cjopts 					= cookiejar.Options { PublicSuffixList: publicsuffix.List,}
 	testRetryTimes			= 5
-
-	ingressURL				= GetOCPIngress("istio-ingressgateway","istio=ingressgateway", "istio-system", kubeconfigFile)
-	productpageURL 			= fmt.Sprintf("http://%s/productpage", ingressURL)
 )
 
 // Inspect error handling function
