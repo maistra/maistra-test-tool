@@ -65,7 +65,7 @@ func deploySleepIPRange(namespace, kubeconfig string) error {
 	}
 	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
-	if err := util.CheckPodRunning(testNamespace, "app=sleep", kubeconfigFile); err != nil {
+	if err := util.CheckPodRunning(namespace, "app=sleep", kubeconfig); err != nil {
 		return err
 	}
 	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
