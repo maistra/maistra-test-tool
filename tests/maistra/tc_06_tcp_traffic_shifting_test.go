@@ -55,7 +55,7 @@ func routeTraffic20v2(namespace, kubeconfig string) error {
 }
 
 func checkEcho(ingressHost, ingressTCPPort string) (string, error) {
-	msg, err := util.ShellSilent("docker run -e INGRESS_HOST=%s -e INGRESS_PORT=%s --rm busybox sh -c \"(date; sleep 1) | nc %s %s\"",
+	msg, err := util.ShellSilent("docker run -e INGRESS_HOST=%s -e INGRESS_PORT=%s --rm busybox sh -c \"(date; sleep 3) | nc %s %s\"",
 				ingressHost, ingressTCPPort, ingressHost, ingressTCPPort)
 	if err != nil {
 		return "", err
@@ -68,7 +68,7 @@ func Test06(t *testing.T) {
 	log.Infof("# TC_06 TCP Traffic Shifting")
 	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 	
-	ingressHostIP, err := GetIngressHostIP(kubeconfigFile)
+	ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
 	Inspect(err, "cannot get ingress host ip", "", t)
 	
 	ingressTCPPort, err := GetTCPIngressPort("istio-system", "istio-ingressgateway", kubeconfigFile)
@@ -83,10 +83,10 @@ func Test06(t *testing.T) {
 		totalShot := 20
 		versionCount := 0
 		
-		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot)
+		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot * 3)
 
 		for i := 0; i < totalShot; i++ {
-			msg, err := checkEcho(ingressHostIP, ingressTCPPort)
+			msg, err := checkEcho(ingress, ingressTCPPort)
 			Inspect(err, "faild to get date", "", t)
 			if strings.Contains(msg, "one") {
 				versionCount++
@@ -107,14 +107,14 @@ func Test06(t *testing.T) {
 	t.Run("20%_v2_shift", func(t *testing.T) {
 		log.Info("# Shifting 20% TCP traffic to v2 tolerance 10% ")
 		Inspect(routeTraffic20v2(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
-		tolerance := 0.20
+		tolerance := 0.10
 		totalShot := 20
 		c1, c2 := 0, 0
 
-		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot)
+		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot * 3)
 
 		for i := 0; i < totalShot; i++ {
-			msg, err := checkEcho(ingressHostIP, ingressTCPPort)
+			msg, err := checkEcho(ingress, ingressTCPPort)
 			Inspect(err, "failed to get date", "", t)
 			if strings.Contains(msg, "one") {
 				c1++
