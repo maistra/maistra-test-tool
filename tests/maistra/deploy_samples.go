@@ -81,6 +81,8 @@ func deployHttpbin(namespace, kubeconfig string) error {
 	if err := util.CheckPodRunning(namespace, "app=httpbin", kubeconfig); err != nil {
 		return err
 	}
+	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
+	time.Sleep(time.Duration(10) * time.Second)
 	return nil
 }
 
@@ -94,6 +96,8 @@ func deployFortio(namespace, kubeconfig string) error {
 	if err := util.CheckPodRunning(namespace, "app=fortio", kubeconfig); err != nil {
 		return err
 	}
+	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
+	time.Sleep(time.Duration(10) * time.Second)
 	return nil
 }
 
@@ -107,6 +111,8 @@ func deployEcho(namespace, kubeconfig string) error {
 	if err := util.CheckPodRunning(namespace, "app=tcp-echo", kubeconfig); err != nil {
 		return err
 	}
+	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
+	time.Sleep(time.Duration(10) * time.Second)
 	return nil
 }
 
@@ -120,5 +126,7 @@ func deploySleep(namespace, kubeconfig string) error {
 	if err := util.CheckPodRunning(namespace, "app=sleep", kubeconfig); err != nil {
 		return err
 	}
+	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
+	time.Sleep(time.Duration(10) * time.Second)
 	return nil
 }

@@ -55,7 +55,7 @@ func routeTraffic20v2(namespace, kubeconfig string) error {
 }
 
 func checkEcho(ingressHost, ingressTCPPort string) (string, error) {
-	msg, err := util.ShellSilent("docker run -e INGRESS_HOST=%s -e INGRESS_PORT=%s --rm busybox sh -c \"(date; sleep 3) | nc %s %s\"",
+	msg, err := util.ShellSilent("docker run -e INGRESS_HOST=%s -e INGRESS_PORT=%s --rm busybox sh -c \"(date; sleep 1) | nc %s %s\"",
 				ingressHost, ingressTCPPort, ingressHost, ingressTCPPort)
 	if err != nil {
 		return "", err
@@ -83,7 +83,7 @@ func Test06(t *testing.T) {
 		totalShot := 20
 		versionCount := 0
 		
-		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot * 3)
+		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot * 1)
 
 		for i := 0; i < totalShot; i++ {
 			msg, err := checkEcho(ingress, ingressTCPPort)
@@ -108,10 +108,10 @@ func Test06(t *testing.T) {
 		log.Info("# Shifting 20% TCP traffic to v2 tolerance 10% ")
 		Inspect(routeTraffic20v2(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		tolerance := 0.10
-		totalShot := 20
+		totalShot := 100
 		c1, c2 := 0, 0
 
-		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot * 3)
+		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot * 1)
 
 		for i := 0; i < totalShot; i++ {
 			msg, err := checkEcho(ingress, ingressTCPPort)

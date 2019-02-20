@@ -31,7 +31,7 @@ func cleanup10(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, egressGoogleYaml, kubeconfig)
 	util.KubeDelete(namespace, egressHTTPBinYaml , kubeconfig)
 	util.KubeDelete(namespace, sleepYaml, kubeconfig)
-	util.KubeDelete(namespace, sleepIPRangeYaml, kubeconfig)
+	//util.KubeDelete(namespace, sleepIPRangeYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinTimeoutYaml, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)

@@ -68,6 +68,8 @@ func Test08 (t *testing.T) {
 
 	Inspect(deployHttpbin(testNamespace, kubeconfigFile), "failed to deploy httpbin", "", t)
 	Inspect(configHttpbin(testNamespace, kubeconfigFile), "failed to config httpbin", "", t)
+	log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 
 	t.Run("status_200", func(t *testing.T) {
 		resp, err := GetWithHost(fmt.Sprintf("http://%s/status/200", ingress), "httpbin.example.com")

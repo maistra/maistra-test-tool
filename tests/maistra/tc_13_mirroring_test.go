@@ -125,7 +125,7 @@ func Test13(t *testing.T) {
 		}
 	})
 
-	defer cleanup13(testNamespace, "")
+	defer cleanup13(testNamespace, kubeconfigFile)
 	defer func() {
 		// recover from panic if one occured. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
