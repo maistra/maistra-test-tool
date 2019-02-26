@@ -14,7 +14,7 @@
 
 package maistra
 
-var (
+const (
 
 meshPolicy = `
 apiVersion: "authentication.istio.io/v1alpha1"
@@ -253,6 +253,47 @@ spec:
         number: 1234
       tls:
         mode: ISTIO_MUTUAL
+`
+
+tlsPermissivePolicy = `
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "example-httpbin-permissive"
+  namespace: foo
+spec:
+  targets:
+  - name: httpbin
+  peers:
+  - mtls:
+      mode: PERMISSIVE
+`
+
+tlsRule = `
+apiVersion: "networking.istio.io/v1alpha3"
+kind: "DestinationRule"
+metadata:
+  name: "example-httpbin-istio-client-mtls"
+  namespace: foo
+spec:
+  host: httpbin.foo.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+`
+
+tlsStrictPolicy = `
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "example-httpbin-permissive"
+  namespace: foo
+spec:
+  targets:
+  - name: httpbin
+  peers:
+  - mtls:
+      mode: STRICT
 `
 
 )
