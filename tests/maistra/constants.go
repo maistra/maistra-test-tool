@@ -77,6 +77,8 @@ const (
 
 	jwtAuthYaml					= "testdata/policy/jwt-auth.yaml"
 	jwtURL 						= "https://raw.githubusercontent.com/istio/istio/release-1.0/security/tools/jwt/samples/demo.jwt"
+	jwtGen						= "testdata/security/gen-jwt.py"
+	jwtKey 						= "testdata/security/key.pem"
 
 	livenessHTTPYaml 			= "testdata/health-check/liveness-http.yaml"
 	livenessCommandYaml 		= "testdata/health-check/liveness-command.yaml"
