@@ -99,6 +99,7 @@ const (
 
 	nginxYaml 					= "testdata/https/nginx-app.yaml"
 	nginxNoSidecarYaml 			= "testdata/https/nginx-app-without-sidecar.yaml"
+	nginxConf 					= "testdata/https/default.conf"
 
 	httpbinSampleServerCertKey 	= "testdata/certs/httpbin.example.com/3_application/private/httpbin.example.com.key.pem"
 	httpbinSampleServerCert 	= "testdata/certs/httpbin.example.com/3_application/certs/httpbin.example.com.cert.pem"

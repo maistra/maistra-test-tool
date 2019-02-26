@@ -130,3 +130,24 @@ func deploySleep(namespace, kubeconfig string) error {
 	time.Sleep(time.Duration(10) * time.Second)
 	return nil
 }
+
+func deployNginx(enableSidecar bool, namespace, kubeconfig string) error {
+	log.Info("Deploy Nginx")
+	if enableSidecar {
+		if err := util.KubeApply(namespace, nginxYaml, kubeconfig); err != nil {
+			return err
+		}
+	} else {
+		if err := util.KubeApply(namespace, nginxNoSidecarYaml, kubeconfig); err != nil {
+			return err
+		}
+	}
+	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
+	time.Sleep(time.Duration(10) * time.Second)
+	if err := util.CheckPodRunning(namespace, "app=nginx", kubeconfig); err != nil {
+		return err
+	}
+	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
+	time.Sleep(time.Duration(10) * time.Second)
+	return nil
+}
