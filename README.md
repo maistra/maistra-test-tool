@@ -1,4 +1,7 @@
-# maistra-ocp-istio-test-tool
+# moitt
+
+moitt stands for Maistra OpenShift Istio Test Tool
+
 A Testing Tool For Running Istio Doc Tasks on OpenShift
 
 Introduction
@@ -31,6 +34,10 @@ Prerequisite
 How to run each test case
 -------------------------
 
-User can go to directory `tests/maistra` 
+When Maistra Istio global mutual TLS is not enabled after installation, user can go to directory "`maistra`" 
 - To run all the test cases (End-to-End run): `go test -timeout 2h -v`
 - To run a specific test case: `go test -run [test case number, e.g. 03] -v`
+
+When Maistra Istio global mutual TLS is enabled after installation, user can go to directory "`maistramtls`" 
+- To run all the test cases (End-to-End run): `go test -timeout 1h -v`
+- To run a specific test case: `go test -run [test case number, e.g. 17] -v`
