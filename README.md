@@ -37,7 +37,3 @@ How to run each test case
 When Maistra Istio global mutual TLS is not enabled after installation, user can go to directory "`maistra`" 
 - To run all the test cases (End-to-End run): `go test -timeout 2h -v`
 - To run a specific test case: `go test -run [test case number, e.g. 03] -v`
-
-When Maistra Istio global mutual TLS is enabled after installation, user can go to directory "`maistramtls`" 
-- To run all the test cases (End-to-End run): `go test -timeout 1h -v`
-- To run a specific test case: `go test -run [test case number, e.g. 17] -v`

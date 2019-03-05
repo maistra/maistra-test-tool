@@ -296,4 +296,27 @@ spec:
       mode: STRICT
 `
 
+mtlsPolicy = `
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "default"
+spec:
+  peers:
+  - mtls: {}
+`
+
+mtlsRuleTemplate = `
+apiVersion: "networking.istio.io/v1alpha3"
+kind: "DestinationRule"
+metadata:
+  name: "default"
+  namespace: "@token@"
+spec:
+  host: "*.@token@.svc.cluster.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+`
+
 )
