@@ -30,13 +30,15 @@ func cleanup16(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, nginxYaml, kubeconfig)
 	util.ShellSilent("kubectl delete configmap nginxconfigmap -n %s --kubeconfig=%s", namespace, kubeconfig)
 	util.ShellSilent("kubectl delete secret nginxsecret -n %s --kubeconfig=%s", namespace, kubeconfig)
+	util.ShellSilent("kubectl delete policy -n %s default", namespace)
+	util.ShellSilent("kubeclt delete destinationrule -n %s default", namespace)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 }
 
 
 func Test16(t *testing.T) {
-	log.Infof("# TC_16 Mutual TLS Disabled over HTTPS Services")
+	log.Infof("# TC_16 Mutual TLS over HTTPS Services")
 	// generate secrets
 	// TBD 
 	util.ShellSilent("openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /tmp/nginx.key -out /tmp/nginx.crt -subj \"/CN=my-nginx/O=my-nginx\"")
@@ -80,6 +82,42 @@ func Test16(t *testing.T) {
 			log.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)
 		} else {
 			log.Infof("Success. Get expected response: %s", msg)
+		}
+	})
+
+	util.KubeDelete(testNamespace, nginxYaml, kubeconfigFile)
+	util.KubeDelete(testNamespace, sleepYaml, kubeconfigFile)
+	log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
+
+	t.Run("nginx_with_sidecar_mtls", func(t *testing.T) {
+		log.Info("Enable mutual TLS")
+		Inspect(util.KubeApplyContents(testNamespace, mtlsPolicy, kubeconfigFile), "failed to apply policy", "", t)
+		mtlsRule := strings.Replace(mtlsRuleTemplate, "@token@", testNamespace, -1)
+		Inspect(util.KubeApplyContents(testNamespace, mtlsRule, kubeconfigFile), "failed to apply rule", "", t)
+
+		log.Info("Deploy an HTTPS service with Istio sidecar with mutual TLS enabled")
+		Inspect(deploySleep(testNamespace, kubeconfigFile), "failed to deploy sleep", "", t)
+		Inspect(deployNginx(true, testNamespace, kubeconfigFile), "failed to deploy nginx", "", t)
+
+		sleepPod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfigFile)
+		Inspect(err, "failed to get sleep pod name", "", t)
+		cmd := fmt.Sprintf("curl https://my-nginx -k | grep \"Welcome to nginx\"")
+		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", cmd, true, kubeconfigFile)
+		Inspect(err, "failed to get response", "", t)
+		if !strings.Contains(msg, "Welcome to nginx") {
+			t.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)
+			log.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)
+		} else {
+			log.Infof("Success. Get expected response: %s", msg)
+		}
+		
+		msg, err = util.PodExec(testNamespace, sleepPod, "istio-proxy", cmd, true, kubeconfigFile)
+		if err != nil {
+			log.Infof("Expected fail from container istio-proxy: %v", err)
+		} else {
+			t.Errorf("Expected fail from container istio-proxy. Got unexpected response: %s", msg)
+			log.Errorf("Expected fail from container istio-proxy. Got unexpected response: %s", msg)
 		}
 	})
 
