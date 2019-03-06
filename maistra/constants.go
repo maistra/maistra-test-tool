@@ -37,11 +37,12 @@ const (
 	bookinfoReviewTimeoutYaml	= "testdata/bookinfo/networking/virtual-service-reviews-timeout.yaml"
 	bookinfoDBYaml 				= "testdata/bookinfo/networking/bookinfo-db.yaml"
 	bookinfoAddServiceAccountYaml = "testdata/bookinfo/platform/kube/bookinfo-add-serviceaccount.yaml"
-	bookinfoRBACOnYaml 			= "testdata/bookinfo/platform/kube/rbac/rbac-config-ON.yaml"
-	bookinfoNamespacePolicyYaml = "testdata/bookinfo/platform/kube/rbac/namespace-policy.yaml"
-	bookinfoProductpagePolicyYaml = "testdata/bookinfo/platform/kube/rbac/productpage-policy.yaml"
-	bookinfoReviewPolicyYaml 	= "testdata/bookinfo/platform/kube/rbac/details-reviews-policy.yaml"
-	bookinfoRatingPolicyYaml 	= "testdata/bookinfo/platform/kube/rbac/ratings-policy.yaml"
+	bookinfoRBACOnTemplate 		= "testdata/bookinfo/platform/kube/rbac/rbac-config-ON.yaml"
+	bookinfoNamespacePolicyTemplate = "testdata/bookinfo/platform/kube/rbac/namespace-policy.yaml"
+	bookinfoProductpagePolicyTemplate = "testdata/bookinfo/platform/kube/rbac/productpage-policy.yaml"
+	bookinfoReviewPolicyTemplate = "testdata/bookinfo/platform/kube/rbac/details-reviews-policy.yaml"
+	bookinfoRatingPolicyTemplate = "testdata/bookinfo/platform/kube/rbac/ratings-policy.yaml"
+	bookinfoRatingv2ServiceAccount = "testdata/bookinfo/platform/kube/rbac/ratings-v2-add-serviceaccount.yaml"
 
 	
 	httpbinYaml					= "testdata/httpbin/httpbin.yaml"

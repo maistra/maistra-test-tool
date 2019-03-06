@@ -38,9 +38,9 @@ func ocCommand(subCommand, namespace, yamlFileName string, kubeconfig string) st
 
 // OcGrantPermission OCP cluster specific requirements for deploying an application with sidecar.
 // This is a temporary permission config
-func OcGrantPermission(namespace, kubeconfig string) {
-	util.Shell("oc adm policy add-scc-to-user privileged -z default -n %s --kubeconfig=%s", namespace, kubeconfig)
-	util.Shell("oc adm policy add-scc-to-user anyuid -z default -n %s --kubeconfig=%s", namespace, kubeconfig)
+func OcGrantPermission(account, namespace, kubeconfig string) {
+	util.Shell("oc adm policy add-scc-to-user privileged -z %s -n %s --kubeconfig=%s", account, namespace, kubeconfig)
+	util.Shell("oc adm policy add-scc-to-user anyuid -z %s -n %s --kubeconfig=%s", account, namespace, kubeconfig)
 }
 
 // OcApply oc apply from file

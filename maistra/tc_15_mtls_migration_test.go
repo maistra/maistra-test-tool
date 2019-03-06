@@ -85,7 +85,7 @@ func Test15(t *testing.T) {
 	// Create namespaces
 	for _, ns := range namespaces {
 		Inspect(util.CreateNamespace(ns, kubeconfigFile), "failed to create namespace", "", t)
-		OcGrantPermission(ns, kubeconfigFile)
+		OcGrantPermission("default", ns, kubeconfigFile)
 	}
 	time.Sleep(time.Duration(5) * time.Second)
 	Inspect(setup15(kubeconfigFile), "failed to apply deployments", "", t)

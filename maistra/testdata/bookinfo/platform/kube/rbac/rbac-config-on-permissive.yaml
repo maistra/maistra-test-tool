@@ -6,3 +6,4 @@ spec:
   mode: 'ON_WITH_INCLUSION'
   inclusion:
     namespaces: ["default"]
+  enforcement_mode: PERMISSIVE
