@@ -5,4 +5,5 @@ metadata:
 spec:
   mode: 'ON_WITH_INCLUSION'
   inclusion:
-    namespaces: ["default"]
+    services: ["mongodb.default.svc.cluster.local"]
+---

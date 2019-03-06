@@ -36,7 +36,13 @@ func deployBookinfo(namespace, kubeconfig string, mtls bool) error {
 	if err := util.CheckPodRunning(namespace, "app=ratings", kubeconfig); err != nil {
 		return err
 	}
-	if err := util.CheckPodRunning(namespace, "app=reviews", kubeconfig); err != nil {
+	if err := util.CheckPodRunning(namespace, "app=reviews,version=v1", kubeconfig); err != nil {
+		return err
+	}
+	if err := util.CheckPodRunning(namespace, "app=reviews,version=v2", kubeconfig); err != nil {
+		return err
+	}
+	if err := util.CheckPodRunning(namespace, "app=reviews,version=v3", kubeconfig); err != nil {
 		return err
 	}
 	if err := util.CheckPodRunning(namespace, "app=productpage", kubeconfig); err != nil {
@@ -108,7 +114,10 @@ func deployEcho(namespace, kubeconfig string) error {
 	}
 	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
-	if err := util.CheckPodRunning(namespace, "app=tcp-echo", kubeconfig); err != nil {
+	if err := util.CheckPodRunning(namespace, "app=tcp-echo,version=v1", kubeconfig); err != nil {
+		return err
+	}
+	if err := util.CheckPodRunning(namespace, "app=tcp-echo,version=v2", kubeconfig); err != nil {
 		return err
 	}
 	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
