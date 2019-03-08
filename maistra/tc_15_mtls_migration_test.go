@@ -32,8 +32,8 @@ func cleanup15(kubeconfig string) {
 	util.KubeDelete("bar", sleepYaml, kubeconfig)
 	util.KubeDelete("legacy", sleepLegacyYaml, kubeconfig)
 
-	util.ShellSilent("kubectl delete policy example-httpbin-permissive -n foo")
-	util.ShellSilent("kubectl delete destinationrule example-httpbin-istio-client-mtls -n foo")
+	util.ShellMuteOutput("kubectl delete policy example-httpbin-permissive -n foo")
+	util.ShellMuteOutput("kubectl delete destinationrule example-httpbin-istio-client-mtls -n foo")
 
 	util.DeleteNamespace("foo bar legacy", kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
