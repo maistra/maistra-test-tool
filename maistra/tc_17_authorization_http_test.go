@@ -17,56 +17,12 @@ package maistra
 import (
 	"fmt"
 	"io/ioutil"
-	"strings"
 	"testing"
 	"time"
 
 	"istio.io/istio/pkg/log"
 	"istio.io/istio/tests/util"
 )
-
-var (
-	bookinfoRBACOn string
-	bookinfoNamespacePolicy string
-	bookinfoProductpagePolicy string
-	bookinfoReviewPolicy string
-	bookinfoRatingPolicy string
-)
-
-func updateYaml(namespace string) error {
-	data, err := ioutil.ReadFile(bookinfoRBACOnTemplate)
-	if err != nil {
-		return err
-	}	
-	bookinfoRBACOn = strings.Replace(string(data), "\"default\"", "\"" + namespace + "\"", -1)
-
-	data, err = ioutil.ReadFile(bookinfoNamespacePolicyTemplate)
-	if err != nil {
-		return err
-	}	
-	bookinfoNamespacePolicy = strings.Replace(string(data), "default", namespace, -1)
-
-	data, err = ioutil.ReadFile(bookinfoProductpagePolicyTemplate)
-	if err != nil {
-		return err
-	}
-	bookinfoProductpagePolicy = strings.Replace(string(data), "default", namespace, -1)
-
-	data, err = ioutil.ReadFile(bookinfoReviewPolicyTemplate)
-	if err != nil {
-		return err
-	}
-	bookinfoReviewPolicy = strings.Replace(string(data), "default", namespace, -1)
-
-	data, err = ioutil.ReadFile(bookinfoRatingPolicyTemplate)
-	if err != nil {
-		return err
-	}
-	bookinfoRatingPolicy = strings.Replace(string(data), "default", namespace, -1)
-
-	return nil
-}
-
 
 func cleanup17(namespace, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
@@ -77,14 +33,14 @@ func cleanup17(namespace, kubeconfig string) {
 	util.KubeDeleteContents(namespace, bookinfoRBACOn, kubeconfig)
 	
 	util.KubeDelete(namespace, bookinfoReviewv3Yaml, kubeconfig)	
-	util.ShellSilent("kubectl delete serviceaccount -n %s bookinfo-productpage", namespace)
-	util.ShellSilent("kubectl delete serviceaccount -n %s bookinfo-reviews", namespace)
+	util.ShellMuteOutput("kubectl delete serviceaccount -n %s bookinfo-productpage", namespace)
+	util.ShellMuteOutput("kubectl delete serviceaccount -n %s bookinfo-reviews", namespace)
 
-	util.KubeDelete(namespace, bookinfoRuleAllYaml, kubeconfig)
+	util.KubeDelete(namespace, bookinfoRuleAllTLSYaml, kubeconfig)
 	util.KubeDelete(namespace, bookinfoGateway, kubeconfig)
 	util.KubeDelete(namespace, bookinfoYaml, kubeconfig)
 	
-	util.ShellSilent("kubectl delete meshpolicy default")
+	util.ShellMuteOutput("kubectl delete meshpolicy default")
 	log.Info("Waiting... Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)	
 }
@@ -92,17 +48,17 @@ func cleanup17(namespace, kubeconfig string) {
 
 func cleanupRbac() {
 	log.Info("Cleanup old RBAC. Following error can be ignored ...")
-	util.ShellSilent("kubectl delete authorization requestcontext -n istio-system")
-	util.ShellSilent("kubectl delete rbac handler -n istio-system")
-	util.ShellSilent("kubectl delete rule rbaccheck -n istio-system")
+	util.ShellMuteOutput("kubectl delete authorization requestcontext -n istio-system")
+	util.ShellMuteOutput("kubectl delete rbac handler -n istio-system")
+	util.ShellMuteOutput("kubectl delete rule rbaccheck -n istio-system")
 
-	util.ShellSilent("kubectl delete servicerole --all")
-	util.ShellSilent("kubectl delete servicerolebinding --all")
+	util.ShellMuteOutput("kubectl delete servicerole --all")
+	util.ShellMuteOutput("kubectl delete servicerolebinding --all")
 	log.Info("Waiting for rules to be cleaned up. Sleep 5 seconds...")
 	time.Sleep(time.Duration(5) * time.Second)
 }
 
-func createServiceAccount(namespace, kubeconfig string) error {
+func setup17(namespace, kubeconfig string) error {
 	OcGrantPermission("bookinfo-productpage", namespace, kubeconfig)
 	OcGrantPermission("bookinfo-reviews", namespace, kubeconfig)
 	if err := util.KubeApply(namespace, bookinfoAddServiceAccountYaml, kubeconfig); err != nil {
@@ -139,7 +95,7 @@ func Test17(t *testing.T) {
 	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
 
 	log.Info("Create Service Accounts")
-	Inspect(createServiceAccount(testNamespace, kubeconfigFile), "failed to create service account", "", t)
+	Inspect(setup17(testNamespace, kubeconfigFile), "failed to create service account", "", t)
 	Inspect(util.KubeApply(testNamespace, bookinfoReviewv3Yaml, kubeconfigFile), "failed to apply rule", "", t)
 	log.Info("Waiting... Sleep 5 seconds...")
 	time.Sleep(time.Duration(5) * time.Second)	

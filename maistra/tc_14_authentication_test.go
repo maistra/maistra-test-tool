@@ -53,31 +53,31 @@ func cleanup14(kubeconfig string) {
 
 func cleanupPart1() {
 	log.Infof("# Cleanup part 1. Following error can be ignored...")
-	util.ShellSilent("kubectl delete meshpolicy default")
-	util.ShellSilent("kubectl delete destinationrules httpbin-legacy")
-	util.ShellSilent("kubectl delete destinationrules -n default api-server")
-	util.ShellSilent("kubectl delete destinationrule default -n default")
+	util.ShellMuteOutput("kubectl delete meshpolicy default")
+	util.ShellMuteOutput("kubectl delete destinationrules httpbin-legacy")
+	util.ShellMuteOutput("kubectl delete destinationrules -n default api-server")
+	util.ShellMuteOutput("kubectl delete destinationrule default -n default")
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 }
 
 func cleanupPart2() {
 	log.Infof("# Cleanup part 2. Following error can be ignored...")
-	util.ShellSilent("kubectl delete policy default overwrite-example -n foo")
-	util.ShellSilent("kubectl delete policy httpbin -n bar")
-	util.ShellSilent("kubectl delete destinationrules default overwrite-example -n foo")
-	util.ShellSilent("kubectl delete destinationrules httpbin -n bar")
+	util.ShellMuteOutput("kubectl delete policy default overwrite-example -n foo")
+	util.ShellMuteOutput("kubectl delete policy httpbin -n bar")
+	util.ShellMuteOutput("kubectl delete destinationrules default overwrite-example -n foo")
+	util.ShellMuteOutput("kubectl delete destinationrules httpbin -n bar")
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 }
 
 func cleanupPart3() {
 	log.Infof("# Cleanup part 3. Following error can be ignored...")
-	util.ShellSilent("kubectl delete policy jwt-example -n foo")
-	util.ShellSilent("kubectl delete policy httpbin -n bar")
-	util.ShellSilent("kubectl delete destinationrule httpbin -n foo")
-	util.ShellSilent("kubectl delete gateway httpbin-gateway -n foo")
-	util.ShellSilent("kubectl delete virtualservice httpbin -n foo")
+	util.ShellMuteOutput("kubectl delete policy jwt-example -n foo")
+	util.ShellMuteOutput("kubectl delete policy httpbin -n bar")
+	util.ShellMuteOutput("kubectl delete destinationrule httpbin -n foo")
+	util.ShellMuteOutput("kubectl delete gateway httpbin-gateway -n foo")
+	util.ShellMuteOutput("kubectl delete virtualservice httpbin -n foo")
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 }
@@ -497,9 +497,13 @@ func Test14(t *testing.T) {
 		util.Shell("kubectl get policies.authentication.istio.io -n foo")
 
 		Inspect(util.KubeApplyContents("foo", fooJWTPolicy, kubeconfigFile), "failed to apply foo JWT Policy", "", t)
-		log.Info("Waiting for rules to propagate. Sleep 40 seconds...")
-		time.Sleep(time.Duration(40) * time.Second)
+		log.Info("Waiting for rules to propagate. Sleep 45 seconds...")
+		time.Sleep(time.Duration(45) * time.Second)
 
+		resp, _, err = GetHTTPResponse(url, nil)
+		CloseResponseBody(resp)
+		resp, _, err = GetHTTPResponse(url, nil)
+		CloseResponseBody(resp)
 		resp, _, err = GetHTTPResponse(url, nil)
 		Inspect(err, "failed to get httpbin header response", "", t)
 		if resp.StatusCode != 401 {

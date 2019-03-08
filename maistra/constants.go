@@ -14,6 +14,11 @@
 
 package maistra
 
+import (
+	"io/ioutil"
+	"strings"
+)
+
 const (
 	modelDir					= "testdata/modelDir"
 	
@@ -35,14 +40,17 @@ const (
 	bookinfoReviewv3Yaml 		= "testdata/bookinfo/networking/virtual-service-reviews-v3.yaml"
 	bookinfoReviewv2v3Yaml 		= "testdata/bookinfo/networking/virtual-service-reviews-jason-v2-v3.yaml"
 	bookinfoReviewTimeoutYaml	= "testdata/bookinfo/networking/virtual-service-reviews-timeout.yaml"
-	bookinfoDBYaml 				= "testdata/bookinfo/networking/bookinfo-db.yaml"
+	bookinfoDBYaml 				= "testdata/bookinfo/platform/kube/bookinfo-db.yaml"
 	bookinfoAddServiceAccountYaml = "testdata/bookinfo/platform/kube/bookinfo-add-serviceaccount.yaml"
 	bookinfoRBACOnTemplate 		= "testdata/bookinfo/platform/kube/rbac/rbac-config-ON.yaml"
+	bookinfoRBACOnDBTemplate 	= "testdata/bookinfo/platform/kube/rbac/rbac-config-on-mongodb.yaml"
 	bookinfoNamespacePolicyTemplate = "testdata/bookinfo/platform/kube/rbac/namespace-policy.yaml"
 	bookinfoProductpagePolicyTemplate = "testdata/bookinfo/platform/kube/rbac/productpage-policy.yaml"
 	bookinfoReviewPolicyTemplate = "testdata/bookinfo/platform/kube/rbac/details-reviews-policy.yaml"
 	bookinfoRatingPolicyTemplate = "testdata/bookinfo/platform/kube/rbac/ratings-policy.yaml"
 	bookinfoRatingv2ServiceAccount = "testdata/bookinfo/platform/kube/rbac/ratings-v2-add-serviceaccount.yaml"
+	bookinfoMongodbPolicyTemplate 	= "testdata/bookinfo/platform/kube/rbac/mongodb-policy.yaml"
+	bookinfoRatingv2Yaml 		= "testdata/bookinfo/platform/kube/bookinfo-ratings-v2.yaml"
 
 	
 	httpbinYaml					= "testdata/httpbin/httpbin.yaml"
@@ -112,3 +120,59 @@ const (
 	testUsername				= "jason"
 	kubeconfigFile				= ""
 )
+
+var (
+	bookinfoRBACOn string
+	bookinfoRBAConDB string
+	bookinfoNamespacePolicy string
+	bookinfoProductpagePolicy string
+	bookinfoReviewPolicy string
+	bookinfoRatingPolicy string
+	bookinfoMongodbPolicy string
+)
+
+func updateYaml(namespace string) error {
+	data, err := ioutil.ReadFile(bookinfoRBACOnTemplate)
+	if err != nil {
+		return err
+	}	
+	bookinfoRBACOn = strings.Replace(string(data), "\"default\"", "\"" + namespace + "\"", -1)
+
+	data, err = ioutil.ReadFile(bookinfoRBACOnDBTemplate)
+	if err != nil {
+		return err
+	}
+	bookinfoRBAConDB = strings.Replace(string(data), "mongodb.default", "mongodb." + namespace, -1)
+
+	data, err = ioutil.ReadFile(bookinfoNamespacePolicyTemplate)
+	if err != nil {
+		return err
+	}	
+	bookinfoNamespacePolicy = strings.Replace(string(data), "default", namespace, -1)
+
+	data, err = ioutil.ReadFile(bookinfoProductpagePolicyTemplate)
+	if err != nil {
+		return err
+	}
+	bookinfoProductpagePolicy = strings.Replace(string(data), "default", namespace, -1)
+
+	data, err = ioutil.ReadFile(bookinfoReviewPolicyTemplate)
+	if err != nil {
+		return err
+	}
+	bookinfoReviewPolicy = strings.Replace(string(data), "default", namespace, -1)
+
+	data, err = ioutil.ReadFile(bookinfoRatingPolicyTemplate)
+	if err != nil {
+		return err
+	}
+	bookinfoRatingPolicy = strings.Replace(string(data), "default", namespace, -1)
+
+	data, err = ioutil.ReadFile(bookinfoMongodbPolicyTemplate)
+	if err != nil {
+		return err
+	}
+	bookinfoMongodbPolicy = strings.Replace(string(data), "default", namespace, -1)
+
+	return nil
+}

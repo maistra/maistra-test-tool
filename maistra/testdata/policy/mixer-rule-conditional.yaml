@@ -5,7 +5,7 @@ metadata:
   namespace: istio-system
 spec:
   # quota only applies if you are not logged in.
-  match: match(request.headers["cookie"], "user=*") == false
+  match: match(request.headers["cookie"], "session=*") == false
   actions:
   - handler: handler.memquota
     instances:

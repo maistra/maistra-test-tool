@@ -40,11 +40,11 @@ func cleanup09(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, httpbinRouteHTTPSYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinGatewayHTTPSYaml, kubeconfig)
 	
-	util.ShellSilent("kubectl delete secret %s -n %s --kubeconfig=%s", 
+	util.ShellMuteOutput("kubectl delete secret %s -n %s --kubeconfig=%s", 
 		"istio-ingressgateway-certs", "istio-system", kubeconfig)
-	util.ShellSilent("kubectl delete secret %s -n %s --kubeconfig=%s",
+	util.ShellMuteOutput("kubectl delete secret %s -n %s --kubeconfig=%s",
 		"istio-ingressgateway-ca-certs", "istio-system", kubeconfig)
-	util.ShellSilent("kubectl delete secret %s -n %s --kubeconfig=%s",
+	util.ShellMuteOutput("kubectl delete secret %s -n %s --kubeconfig=%s",
 		"istio.istio-ingressgateway-service-account", "istio-system", kubeconfig)
 	
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")

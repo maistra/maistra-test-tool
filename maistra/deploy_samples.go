@@ -160,3 +160,16 @@ func deployNginx(enableSidecar bool, namespace, kubeconfig string) error {
 	time.Sleep(time.Duration(10) * time.Second)
 	return nil
 }
+
+func deployMongoDB(namespace, kubeconfig string) error {
+	log.Info("Deploy MongoDB")
+	if err := util.KubeApply(namespace, bookinfoDBYaml, kubeconfig); err != nil {
+		return err
+	}
+	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
+	time.Sleep(time.Duration(10) * time.Second)
+	if err := util.CheckPodRunning(namespace, "app=mongodb", kubeconfig); err != nil {
+		return err
+	}
+	return nil
+}
