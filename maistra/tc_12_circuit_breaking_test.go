@@ -48,6 +48,14 @@ func configHttpbinCircuitBreaker(namespace, kubeconfig string) error {
 
 
 func Test12(t *testing.T) {
+	defer cleanup12(testNamespace, kubeconfigFile)
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test panic: %v", err)
+		}
+	}()
+
 	log.Info("# TC_12 Circuit Breaking")
 	Inspect(deployHttpbin(testNamespace, kubeconfigFile), "failed to deploy httpbin", "", t)
 	Inspect(configHttpbinCircuitBreaker(testNamespace, kubeconfigFile), "failed to apply rule", "", t)
@@ -98,11 +106,4 @@ func Test12(t *testing.T) {
 			"Code 200 hit %d, Code 503 hit %d", c200, c503)
 	}
 
-	defer cleanup12(testNamespace, kubeconfigFile)
-	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
-		if err := recover(); err != nil {
-			log.Infof("Test failed: %v", err)
-		}
-	}()
 }

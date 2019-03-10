@@ -62,6 +62,14 @@ func setup18(namespace, kubeconfig string) error {
 }
 
 func Test18(t *testing.T) {
+	defer cleanup18(testNamespace, kubeconfigFile)
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test panic: %v", err)
+		}
+	}()
+
 	log.Infof("# TC_18 Authorization for TCP Services")
 	Inspect(updateYaml(testNamespace), "failed to update yaml", "", t)
 	log.Info("Clean existing mesh policy")
@@ -89,7 +97,14 @@ func Test18(t *testing.T) {
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)	
 
-	t.Run("general_check", func(t *testing.T) {
+	t.Run("verify_setup", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		resp, _, err := GetHTTPResponse(productpageURL, nil)
 		Inspect(err, "failed to get HTTP Response", "", t)
 		defer CloseResponseBody(resp)
@@ -121,6 +136,13 @@ func Test18(t *testing.T) {
 	})
 
 	t.Run("enable_rbac", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("Enable Istio Authorization")
 		Inspect(util.KubeApplyContents(testNamespace, bookinfoRBAConDB, kubeconfigFile), "failed to apply policy", "", t)
 		log.Info("Waiting... Sleep 20 seconds...")
@@ -138,6 +160,13 @@ func Test18(t *testing.T) {
 	})
 
 	t.Run("service_rbac_pass", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("Enforcing Service-level access control")
 		Inspect(util.KubeApplyContents(testNamespace, bookinfoMongodbPolicy, kubeconfigFile), "failed to apply policy", "", t)
 		log.Info("Waiting... Sleep 10 seconds...")
@@ -155,6 +184,13 @@ func Test18(t *testing.T) {
 	})
 
 	t.Run("service_rbac_fail", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+		
 		util.KubeDelete(testNamespace, bookinfoRatingv2ServiceAccount, kubeconfigFile)
 		Inspect(util.KubeApply(testNamespace, bookinfoRatingv2Yaml, kubeconfigFile), "failed to apply rule", "", t)
 		log.Info("Waiting... Sleep 10 seconds...")
@@ -171,11 +207,4 @@ func Test18(t *testing.T) {
 			t)	
 	})
 
-	defer cleanup18(testNamespace, kubeconfigFile)
-	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
-		if err := recover(); err != nil {
-			log.Infof("Test failed: %v", err)
-		}
-	}()
 }

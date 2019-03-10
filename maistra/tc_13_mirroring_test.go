@@ -67,11 +67,25 @@ func setup13(namespace, kubeconfig string) error {
 
 
 func Test13(t *testing.T) {
-	log.Info("# TC_13 Mirroring")
+	defer cleanup13(testNamespace, kubeconfigFile)
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test panic: %v", err)
+		}
+	}()
 
+	log.Info("# TC_13 Mirroring")
 	Inspect(setup13(testNamespace, kubeconfigFile), "failed to deploy samples", "", t)
 
 	t.Run("no_mirror", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		Inspect(util.KubeApply(testNamespace, httpbinAllv1Yaml, kubeconfigFile), "failed to apply rule", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 		time.Sleep(time.Duration(10) * time.Second)
@@ -99,6 +113,13 @@ func Test13(t *testing.T) {
 	})
 
 	t.Run("mirror_v2", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+		
 		Inspect(util.KubeApply(testNamespace, httpbinMirrorv2Yaml, kubeconfigFile), "failed to apply rule", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 		time.Sleep(time.Duration(10) * time.Second)
@@ -125,11 +146,4 @@ func Test13(t *testing.T) {
 		}
 	})
 
-	defer cleanup13(testNamespace, kubeconfigFile)
-	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
-		if err := recover(); err != nil {
-			log.Infof("Test failed: %v", err)
-		}
-	}()
 }

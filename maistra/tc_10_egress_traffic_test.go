@@ -74,6 +74,14 @@ func deploySleepIPRange(namespace, kubeconfig string) error {
 }
 
 func Test10(t *testing.T) {
+	defer cleanup10(testNamespace, kubeconfigFile)
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test panic: %v", err)
+		}
+	}()
+
 	log.Infof("# TC_10 Control Egress Traffic")
 	Inspect(deploySleep(testNamespace, kubeconfigFile), "failed to deploy sleep", "", t)
 	Inspect(configEgress(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
@@ -81,6 +89,13 @@ func Test10(t *testing.T) {
 	Inspect(err, "failed to get sleep pod", "", t)
 
 	t.Run("external_httpbin", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("# Make requests to external httpbin service")
 		command := "curl -s http://httpbin.org/headers"
 		msg, err := util.PodExec(testNamespace, pod, "sleep", command, false, kubeconfigFile)
@@ -111,6 +126,13 @@ func Test10(t *testing.T) {
 	})
 	
 	t.Run("external_google", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("# Make requets to external google service")
 		command := "curl -s https://www.google.com | grep -o \"<title>.*</title>\""
 		msg, err := util.PodExec(testNamespace, pod, "sleep", command, false, kubeconfigFile)
@@ -132,6 +154,13 @@ func Test10(t *testing.T) {
 	})
 
 	t.Run("block_external", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("Set route rules on external services")
 		Inspect(blockExternal(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		command := "sh -c \"curl -o /dev/null -s -w '%{http_code}' http://httpbin.org/delay/5\""
@@ -145,6 +174,13 @@ func Test10(t *testing.T) {
 	})
 
 	t.Run("bypass_ip_range", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		cleanup10(testNamespace, kubeconfigFile)
 
 		log.Info("# Redeploy sleep app with IP range exclusive and calling external services directly")
@@ -155,6 +191,9 @@ func Test10(t *testing.T) {
 		
 		t.Run("external_httpbin", func(t *testing.T) {
 			log.Info("# Make requests to external httpbin service")
+			log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
+			time.Sleep(time.Duration(10) * time.Second)
+			
 			command := "curl -s http://httpbin.org/headers"
 			msg, err := util.PodExec(testNamespace, pod, "sleep", command, false, kubeconfigFile)
 			Inspect(err, "failed to get response", "", t)
@@ -176,6 +215,13 @@ func Test10(t *testing.T) {
 		})
 		
 		t.Run("external_google", func(t *testing.T) {
+			defer func() {
+				// recover from panic if one occured. This allows cleanup to be executed after panic.
+				if err := recover(); err != nil {
+					log.Infof("Test panic: %v", err)
+				}
+			}()
+
 			log.Info("# Make requets to external google service")
 			command := "curl -s https://www.google.com | grep -o \"<title>.*</title>\""
 			msg, err := util.PodExec(testNamespace, pod, "sleep", command, false, kubeconfigFile)
@@ -188,6 +234,13 @@ func Test10(t *testing.T) {
 		})
 	
 		t.Run("block_external", func(t *testing.T) {
+			defer func() {
+				// recover from panic if one occured. This allows cleanup to be executed after panic.
+				if err := recover(); err != nil {
+					log.Infof("Test panic: %v", err)
+				}
+			}()
+			
 			log.Info("Set route rules on external services")
 			Inspect(blockExternal(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 			command := "sh -c \"curl -o /dev/null -s -w '%{http_code}' http://httpbin.org/delay/5\""
@@ -200,12 +253,5 @@ func Test10(t *testing.T) {
 			}
 		})
 	})
-
-	defer cleanup10(testNamespace, kubeconfigFile)
-	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
-		if err := recover(); err != nil {
-			log.Infof("Test failed: %v", err)
-		}
-	}()
+	
 }

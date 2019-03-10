@@ -196,6 +196,73 @@ spec:
       mode: ISTIO_MUTUAL
 `
 
+fooRBAC = `
+apiVersion: "rbac.istio.io/v1alpha1"
+kind: ClusterRbacConfig
+metadata:
+  name: default
+spec:
+  mode: 'ON_WITH_INCLUSION'
+  inclusion:
+    namespaces: ["foo"]
+`
+
+fooRBACRole = `
+apiVersion: "rbac.istio.io/v1alpha1"
+kind: ServiceRole
+metadata:
+  name: httpbin-viewer
+  namespace: foo
+spec:
+  rules:
+  - services: ["httpbin.foo.svc.cluster.local"]
+    methods: ["GET"]
+`
+
+fooRBACRoleBinding = `
+apiVersion: "rbac.istio.io/v1alpha1"
+kind: ServiceRoleBinding
+metadata:
+  name: bind-httpbin-viewer
+  namespace: foo
+spec:
+  subjects:
+  - properties:
+      request.auth.claims[groups]: "group1"
+  roleRef:
+    kind: ServiceRole
+    name: "httpbin-viewer"
+`
+
+fooRBACRoleBinding2 = `
+apiVersion: "rbac.istio.io/v1alpha1"
+kind: ServiceRoleBinding
+metadata:
+  name: bind-httpbin-viewer
+  namespace: foo
+spec:
+  subjects:
+  - group: "group1"
+  roleRef:
+    kind: ServiceRole
+    name: "httpbin-viewer"
+`
+
+fooRBACRoleBinding3 = `
+apiVersion: "rbac.istio.io/v1alpha1"
+kind: ServiceRoleBinding
+metadata:
+  name: bind-httpbin-viewer
+  namespace: foo
+spec:
+  subjects:
+  - properties:
+      request.auth.claims[scope]: "scope1"
+  roleRef:
+    kind: ServiceRole
+    name: "httpbin-viewer"
+`
+
 barPolicy = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"

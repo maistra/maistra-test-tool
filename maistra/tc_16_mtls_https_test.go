@@ -38,6 +38,14 @@ func cleanup16(namespace, kubeconfig string) {
 
 
 func Test16(t *testing.T) {
+	defer cleanup16(testNamespace, kubeconfigFile)
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test panic: %v", err)
+		}
+	}()
+
 	log.Infof("# TC_16 Mutual TLS over HTTPS Services")
 	// generate secrets
 	// TBD 
@@ -46,6 +54,13 @@ func Test16(t *testing.T) {
 	util.ShellSilent("kubectl create configmap nginxconfigmap --from-file=%s", nginxConf)
 	
 	t.Run("nginx_without_sidecar", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Infof("Deploy an HTTPS service without the Istio sidecar")
 		Inspect(deployNginx(false, testNamespace, kubeconfigFile), "failed to deploy nginx", "", t)
 		Inspect(deploySleep(testNamespace, kubeconfigFile), "failed to deploy sleep", "", t)
@@ -68,6 +83,13 @@ func Test16(t *testing.T) {
 	time.Sleep(time.Duration(20) * time.Second)
 
 	t.Run("nginx_with_sidecar", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("Deploy an HTTPS service with the Istio sidecar and mutual TLS disabled")
 		Inspect(deployNginx(true, testNamespace, kubeconfigFile), "failed to deploy nginx", "", t)
 		Inspect(deploySleep(testNamespace, kubeconfigFile), "failed to deploy sleep", "", t)
@@ -91,6 +113,13 @@ func Test16(t *testing.T) {
 	time.Sleep(time.Duration(20) * time.Second)
 
 	t.Run("nginx_with_sidecar_mtls", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+		
 		log.Info("Enable mutual TLS")
 		Inspect(util.KubeApplyContents(testNamespace, mtlsPolicy, kubeconfigFile), "failed to apply policy", "", t)
 		mtlsRule := strings.Replace(mtlsRuleTemplate, "@token@", testNamespace, -1)
@@ -121,11 +150,4 @@ func Test16(t *testing.T) {
 		}
 	})
 
-	defer cleanup16(testNamespace, kubeconfigFile)
-	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
-		if err := recover(); err != nil {
-			log.Infof("Test failed: %v", err)
-		}
-	}()
 }
