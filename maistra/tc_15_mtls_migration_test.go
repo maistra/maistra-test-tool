@@ -74,7 +74,7 @@ func setup15(kubeconfig string) error {
 		return err
 	}
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(15) * time.Second)
 	return nil
 }
 
@@ -97,21 +97,26 @@ func Test15(t *testing.T) {
 	}
 	time.Sleep(time.Duration(5) * time.Second)
 	Inspect(setup15(kubeconfigFile), "failed to apply deployments", "", t)
-	log.Info("Verify setup")
+	
+	t.Run("verify_setup", func(t *testing.T) {
+		log.Info("Verify setup")
 
-	for _, from := range namespaces {
-		sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
-		Inspect(err, "failed to get sleep pod name", "", t)
-		cmd := fmt.Sprintf("curl http://httpbin.foo:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.foo: %%{http_code}\"", from)
-		msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
-		Inspect(err, "failed to get response", "", t)
-		if !strings.Contains(msg, "200") {
-			t.Errorf("Verify setup expected 200; Got unexpected response code: %s", msg)
-			log.Errorf("Verify setup expected 200; Got unexpected response code: %s", msg)
-		} else {
-			log.Infof("Success. Get expected response: %s", msg)
+		for _, from := range namespaces {
+			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
+			Inspect(err, "failed to get sleep pod name", "", t)
+			cmd := fmt.Sprintf("curl http://httpbin.foo:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.foo: %%{http_code}\"", from)
+			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
+			Inspect(err, "failed to get response", "", t)
+			if !strings.Contains(msg, "200") {
+				t.Errorf("Verify setup expected 200; Got unexpected response code: %s", msg)
+				log.Errorf("Verify setup expected 200; Got unexpected response code: %s", msg)
+			} else {
+				log.Infof("Success. Get expected response: %s", msg)
+			}
 		}
-	}
+	})
+
+	
 
 	t.Run("mTLS_and_plain_text", func(t *testing.T) {
 		defer func() {

@@ -46,7 +46,10 @@ func setup13(namespace, kubeconfig string) error {
 	}
 	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
-	if err := util.CheckPodRunning(namespace, "app=httpbin", kubeconfig); err != nil {
+	if err := util.CheckPodRunning(namespace, "app=httpbin,version=v1", kubeconfig); err != nil {
+		return err
+	}
+	if err := util.CheckPodRunning(namespace, "app=httpbin,version=v2", kubeconfig); err != nil {
 		return err
 	}
 	if err := util.KubeApply(namespace, httpbinServiceYaml, kubeconfig); err != nil {
@@ -98,12 +101,12 @@ func Test13(t *testing.T) {
 		// check httpbin v1 logs
 		v1Pod, err := util.GetPodName(testNamespace, "app=httpbin,version=v1", kubeconfigFile)
 		Inspect(err, "failed to get httpbin v1 pod name", "", t)
-		v1msg, err := util.Shell("kubectl logs --follow=false %s -c %s", v1Pod, "httpbin")
+		v1msg, err := util.Shell("kubectl logs -n %s --follow=false %s -c %s", testNamespace, v1Pod, "httpbin")
 		Inspect(err, "failed to get httpbin v1 log", "", t)
 		// check httpbin v2 logs
 		v2Pod, err := util.GetPodName(testNamespace, "app=httpbin,version=v2", kubeconfigFile)
 		Inspect(err, "failed to get httpbin v2 pod name", "", t)
-		v2msg, err := util.Shell("kubectl logs --follow=false %s -c %s", v2Pod, "httpbin")
+		v2msg, err := util.Shell("kubectl logs -n %s --follow=false %s -c %s", testNamespace, v2Pod, "httpbin")
 		Inspect(err, "failed to get httpbin v2 log", "", t)
 		if strings.Contains(v1msg, "\"GET /headers HTTP/1.1\" 200") && !strings.Contains(v2msg, "\"GET /headers HTTP/1.1\" 200") {
 			log.Info("Success. v1 an v2 logs are expected")
@@ -132,12 +135,12 @@ func Test13(t *testing.T) {
 		// check httpbin v1 logs
 		v1Pod, err := util.GetPodName(testNamespace, "app=httpbin,version=v1", kubeconfigFile)
 		Inspect(err, "failed to get httpbin v1 pod name", "", t)
-		v1msg, err := util.Shell("kubectl logs --follow=false %s -c %s", v1Pod, "httpbin")
+		v1msg, err := util.Shell("kubectl logs -n %s --follow=false %s -c %s", testNamespace, v1Pod, "httpbin")
 		Inspect(err, "failed to get httpbin v1 log", "", t)
 		// check httpbin v2 logs
 		v2Pod, err := util.GetPodName(testNamespace, "app=httpbin,version=v2", kubeconfigFile)
 		Inspect(err, "failed to get httpbin v2 pod name", "", t)
-		v2msg, err := util.Shell("kubectl logs --follow=false %s -c %s", v2Pod, "httpbin")
+		v2msg, err := util.Shell("kubectl logs -n %s --follow=false %s -c %s", testNamespace, v2Pod, "httpbin")
 		Inspect(err, "failed to get httpbin v2 log", "", t)
 		if strings.Contains(v1msg, "\"GET /headers HTTP/1.1\" 200") && strings.Contains(v2msg, "\"GET /headers HTTP/1.1\" 200") {
 			log.Info("Success. v1 an v2 logs are expected")

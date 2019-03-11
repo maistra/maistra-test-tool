@@ -152,6 +152,7 @@ func Test05(t *testing.T) {
 		cVersionToMigrate := 0
 
 		for i := 0; i < totalShot; i++ {
+			time.Sleep(time.Duration(1) * time.Second)
 			resp, _, err := GetHTTPResponse(productpageURL, nil)
 			Inspect(err, "failed to get response", "", t)
 			if err := CheckHTTPResponse200(resp); err != nil {
