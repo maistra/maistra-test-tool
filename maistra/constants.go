@@ -85,7 +85,8 @@ const (
 	echo20v2Yaml 				= "testdata/tcp-echo/tcp-echo-20-v2.yaml"
 
 	jwtAuthYaml					= "testdata/policy/jwt-auth.yaml"
-	jwtURL 						= "https://raw.githubusercontent.com/istio/istio/release-1.0/security/tools/jwt/samples/demo.jwt"
+	jwtURL						= "https://raw.githubusercontent.com/istio/istio/release-1.1/security/tools/jwt/samples/demo.jwt"
+	jwtURLGroup					= "https://raw.githubusercontent.com/istio/istio/release-1.1/security/tools/jwt/samples/groups-scope.jwt"
 	jwtGen						= "testdata/security/gen-jwt.py"
 	jwtKey 						= "testdata/security/key.pem"
 

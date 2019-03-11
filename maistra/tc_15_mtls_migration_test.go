@@ -79,6 +79,14 @@ func setup15(kubeconfig string) error {
 }
 
 func Test15(t *testing.T) {
+	defer cleanup15(kubeconfigFile)
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test panic: %v", err)
+		}
+	}()
+
 	log.Infof("# TC_15 Mutual TLS Migration")
 	namespaces := []string{"foo", "bar", "legacy"}
 
@@ -106,6 +114,13 @@ func Test15(t *testing.T) {
 	}
 
 	t.Run("mTLS_and_plain_text", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("Configure the server to accept both mutual TLS and plain text traffic")
 		Inspect(util.KubeApplyContents("foo", tlsPermissivePolicy, kubeconfigFile), "failed to apply foo permissive policy", "", t)
 		time.Sleep(time.Duration(5) * time.Second)
@@ -126,6 +141,13 @@ func Test15(t *testing.T) {
 	})
 
 	t.Run("mTLS", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("Configure clients to send mutual TLS traffic")
 		Inspect(util.KubeApplyContents("foo", tlsRule, kubeconfigFile), "failed to apply foo tls rule", "", t)
 		time.Sleep(time.Duration(5) * time.Second)
@@ -146,6 +168,13 @@ func Test15(t *testing.T) {
 	})
 
 	t.Run("lock_down_mTLS", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+		
 		log.Info("Lock down to mutual TLS")
 		Inspect(util.KubeApplyContents("foo", tlsStrictPolicy, kubeconfigFile), "failed to apply foo tls strict policy", "", t)
 		time.Sleep(time.Duration(5) * time.Second)
@@ -176,11 +205,4 @@ func Test15(t *testing.T) {
 		}		
 	})
 
-	defer cleanup15(kubeconfigFile)
-	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
-		if err := recover(); err != nil {
-			log.Infof("Test failed: %v", err)
-		}
-	}()
 }

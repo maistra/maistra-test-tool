@@ -55,6 +55,14 @@ func routeTrafficUser(namespace string, kubeconfig string) error {
 }
 
 func Test03(t *testing.T) {
+	defer cleanup03(testNamespace, kubeconfigFile)
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test panic: %v", err)
+		}
+	}()
+	
 	log.Infof("# TC_03 Traffic Routing")
 	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 	ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
@@ -64,6 +72,13 @@ func Test03(t *testing.T) {
 	testUserJar	:= GetCookieJar(testUsername, "", "http://" + ingress)
 
 	t.Run("general_route", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		Inspect(routeTraffic(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		for i := 0; i <= testRetryTimes; i++ {
 			resp, duration, err := GetHTTPResponse(productpageURL, nil)
@@ -80,6 +95,13 @@ func Test03(t *testing.T) {
 		}
 	})
 	t.Run("user_route", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+		
 		Inspect(routeTrafficUser(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		for i := 0; i <= testRetryTimes; i++ {
 			resp, duration, err := GetHTTPResponse(productpageURL, testUserJar)
@@ -95,11 +117,5 @@ func Test03(t *testing.T) {
 				t)
 		}
 	})
-	defer cleanup03(testNamespace, kubeconfigFile)
-	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
-		if err := recover(); err != nil {
-			log.Infof("Test failed: %v", err)
-		}
-	}()
+	
 }

@@ -28,11 +28,11 @@ import (
 
 func cleanup10(namespace, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
+	util.KubeDelete(namespace, httpbinTimeoutYaml, kubeconfig)
 	util.KubeDelete(namespace, egressGoogleYaml, kubeconfig)
 	util.KubeDelete(namespace, egressHTTPBinYaml , kubeconfig)
+	util.KubeDelete(namespace, sleepIPRangeYaml, kubeconfig)
 	util.KubeDelete(namespace, sleepYaml, kubeconfig)
-	//util.KubeDelete(namespace, sleepIPRangeYaml, kubeconfig)
-	util.KubeDelete(namespace, httpbinTimeoutYaml, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 }
@@ -74,6 +74,14 @@ func deploySleepIPRange(namespace, kubeconfig string) error {
 }
 
 func Test10(t *testing.T) {
+	defer cleanup10(testNamespace, kubeconfigFile)
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test panic: %v", err)
+		}
+	}()
+
 	log.Infof("# TC_10 Control Egress Traffic")
 	Inspect(deploySleep(testNamespace, kubeconfigFile), "failed to deploy sleep", "", t)
 	Inspect(configEgress(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
@@ -81,6 +89,13 @@ func Test10(t *testing.T) {
 	Inspect(err, "failed to get sleep pod", "", t)
 
 	t.Run("external_httpbin", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("# Make requests to external httpbin service")
 		command := "curl -s http://httpbin.org/headers"
 		msg, err := util.PodExec(testNamespace, pod, "sleep", command, false, kubeconfigFile)
@@ -111,6 +126,13 @@ func Test10(t *testing.T) {
 	})
 	
 	t.Run("external_google", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("# Make requets to external google service")
 		command := "curl -s https://www.google.com | grep -o \"<title>.*</title>\""
 		msg, err := util.PodExec(testNamespace, pod, "sleep", command, false, kubeconfigFile)
@@ -132,6 +154,13 @@ func Test10(t *testing.T) {
 	})
 
 	t.Run("block_external", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("Set route rules on external services")
 		Inspect(blockExternal(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		command := "sh -c \"curl -o /dev/null -s -w '%{http_code}' http://httpbin.org/delay/5\""
@@ -145,6 +174,13 @@ func Test10(t *testing.T) {
 	})
 
 	t.Run("bypass_ip_range", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		cleanup10(testNamespace, kubeconfigFile)
 
 		log.Info("# Redeploy sleep app with IP range exclusive and calling external services directly")
@@ -155,27 +191,28 @@ func Test10(t *testing.T) {
 		
 		t.Run("external_httpbin", func(t *testing.T) {
 			log.Info("# Make requests to external httpbin service")
-			command := "curl -s http://httpbin.org/headers"
+			log.Info("Waiting for rules to propagate. Sleep 50 seconds...")
+			time.Sleep(time.Duration(50) * time.Second)
+			
+			command := "curl http://httpbin.org/headers"
 			msg, err := util.PodExec(testNamespace, pod, "sleep", command, false, kubeconfigFile)
+			msg, err = util.PodExec(testNamespace, pod, "sleep", command, false, kubeconfigFile)
 			Inspect(err, "failed to get response", "", t)
 			if strings.Contains(msg, "X-Envoy-Decorator-Operation") || strings.Contains(msg, "X-Istio-Attributes") {
 				t.Errorf("Error response header: %s", msg)
 			} else {
 				log.Infof("Success. Get response header without Istio sidecar: %s", msg)
 			}
-	
-			log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-			time.Sleep(time.Duration(10) * time.Second)
-			logMsg := util.GetPodLogs(testNamespace, pod, "istio-proxy", true, false, kubeconfigFile)
-			
-			if !strings.Contains(logMsg, "httpbin.org") {
-				log.Infof("Get correct sidecar proxy log without httpbin.org")
-			} else {
-				t.Errorf("Error wrong sidecar proxy log for httpbin.org")
-			}
 		})
 		
 		t.Run("external_google", func(t *testing.T) {
+			defer func() {
+				// recover from panic if one occured. This allows cleanup to be executed after panic.
+				if err := recover(); err != nil {
+					log.Infof("Test panic: %v", err)
+				}
+			}()
+
 			log.Info("# Make requets to external google service")
 			command := "curl -s https://www.google.com | grep -o \"<title>.*</title>\""
 			msg, err := util.PodExec(testNamespace, pod, "sleep", command, false, kubeconfigFile)
@@ -186,26 +223,6 @@ func Test10(t *testing.T) {
 				t.Errorf("Error response: %s", msg)
 			}
 		})
-	
-		t.Run("block_external", func(t *testing.T) {
-			log.Info("Set route rules on external services")
-			Inspect(blockExternal(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
-			command := "sh -c \"curl -o /dev/null -s -w '%{http_code}' http://httpbin.org/delay/5\""
-			msg, err := util.PodExec(testNamespace, pod, "sleep", command, false, kubeconfigFile)
-			Inspect(err, "failed to get response", "", t)
-			if msg == "200" {
-				log.Infof("Get expected response code: %s", msg)
-			} else {
-				t.Errorf("Error response code: %s", msg)
-			}
-		})
 	})
-
-	defer cleanup10(testNamespace, kubeconfigFile)
-	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
-		if err := recover(); err != nil {
-			log.Infof("Test failed: %v", err)
-		}
-	}()
+	
 }

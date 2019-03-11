@@ -65,6 +65,14 @@ func checkEcho(ingressHost, ingressTCPPort string) (string, error) {
 
 
 func Test06(t *testing.T) {
+	defer cleanup06(testNamespace, kubeconfigFile)
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test panic: %v", err)
+		}
+	}()
+	
 	log.Infof("# TC_06 TCP Traffic Shifting")
 	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 	
@@ -77,6 +85,13 @@ func Test06(t *testing.T) {
 	Inspect(deployEcho(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 
 	t.Run("100%_v1_shift", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("# Shifting all TCP traffic to v1")
 		Inspect(routeTrafficAllv1(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		tolerance := 0.0
@@ -105,6 +120,13 @@ func Test06(t *testing.T) {
 	})
 
 	t.Run("20%_v2_shift", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+		
 		log.Info("# Shifting 20% TCP traffic to v2 tolerance 10% ")
 		Inspect(routeTraffic20v2(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		tolerance := 0.10
@@ -134,11 +156,4 @@ func Test06(t *testing.T) {
 		}
 	})
 
-	defer cleanup06(testNamespace, kubeconfigFile)
-	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
-		if err := recover(); err != nil {
-			log.Infof("Test failed: %v", err)
-		}
-	}()
 }

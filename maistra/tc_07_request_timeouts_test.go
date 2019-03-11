@@ -55,6 +55,14 @@ func setTimeout(namespace, kubeconfig string) error {
 }
 
 func Test07(t *testing.T) {
+	defer cleanup07(testNamespace, kubeconfigFile)
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test panic: %v", err)
+		}
+	}()
+
 	log.Infof("# TC_07 Setting Request Timeouts")
 	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 	ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
@@ -65,6 +73,13 @@ func Test07(t *testing.T) {
 
 	Inspect(setup07(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 	t.Run("timout", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+		
 		Inspect(setTimeout(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 
 		resp, duration, err := GetHTTPResponse(productpageURL, testUserJar)
@@ -79,12 +94,6 @@ func Test07(t *testing.T) {
 			"Success. Response timeout matches with expected.",
 			t)
 	})
-	defer cleanup07(testNamespace, kubeconfigFile)
-	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
-		if err := recover(); err != nil {
-			log.Infof("Test failed: %v", err)
-		}
-	}()
+	
 }
 

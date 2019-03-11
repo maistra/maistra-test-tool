@@ -69,6 +69,14 @@ func isWithinPercentage(count int, total int, rate float64, tolerance float64) b
 }
 
 func Test05(t *testing.T) {
+	defer cleanup05(testNamespace, kubeconfigFile)
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test panic: %v", err)
+		}
+	}()
+	
 	log.Infof("# TC_05 Traffic Shifting")
 	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 	ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
@@ -78,6 +86,13 @@ func Test05(t *testing.T) {
 	Inspect(setup05(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 
 	t.Run("50%_v3_shift", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		Inspect(trafficShift50v3(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		tolerance := 0.10
 		totalShot := 100
@@ -122,6 +137,13 @@ func Test05(t *testing.T) {
 	})
 
 	t.Run("100%_v3_shift", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+		
 		Inspect(trafficShiftAllv3(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 
 		tolerance := 0.0
@@ -163,11 +185,5 @@ func Test05(t *testing.T) {
 				"new version hit %d", cVersionToMigrate)
 		}	
 	})
-	defer cleanup05(testNamespace, kubeconfigFile)
-	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
-		if err := recover(); err != nil {
-			log.Infof("Test failed: %v", err)
-		}
-	}()
+
 }

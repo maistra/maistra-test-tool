@@ -62,6 +62,14 @@ func updateHttpbin(namespace, kubeconfig string) error {
 }
 
 func Test08 (t *testing.T) {
+	defer cleanup08(testNamespace, kubeconfigFile)
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test panic: %v", err)
+		}
+	}()
+
 	log.Infof("# TC_08 Control Ingress Traffic")
 	ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
 	Inspect(err, "failed to get ingressgateway URL", "", t)
@@ -72,6 +80,13 @@ func Test08 (t *testing.T) {
 	time.Sleep(time.Duration(20) * time.Second)
 
 	t.Run("status_200", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		resp, err := GetWithHost(fmt.Sprintf("http://%s/status/200", ingress), "httpbin.example.com")
 		defer CloseResponseBody(resp)
 		Inspect(err, "failed to get response", "", t)
@@ -79,6 +94,13 @@ func Test08 (t *testing.T) {
 	})
 	
 	t.Run("headers", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+		
 		Inspect(updateHttpbin(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		resp, duration, err := GetHTTPResponse(fmt.Sprintf("http://%s/headers", ingress), nil)
 		defer CloseResponseBody(resp)
@@ -86,11 +108,5 @@ func Test08 (t *testing.T) {
 		log.Infof("httpbin headers page returned in %d ms", duration)
 		Inspect(CheckHTTPResponse200(resp), "failed to get HTTP 200", resp.Status, t)
 	})
-	defer cleanup08(testNamespace, kubeconfigFile)
-	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
-		if err := recover(); err != nil {
-			log.Infof("Test failed: %v", err)
-		}
-	}()
+	
 }

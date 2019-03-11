@@ -230,6 +230,14 @@ func checkTeapot2(url, ingressHostIP, secureIngressPort, host, cacertFile, certF
 }
 
 func Test09 (t *testing.T) {
+	defer cleanup09(testNamespace, kubeconfigFile)
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test panic: %v", err)
+		}
+	}()
+
 	log.Infof("# TC_09 Securing Gateways with HTTPS")
 	log.Info("Waiting for previous run to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
@@ -248,6 +256,13 @@ func Test09 (t *testing.T) {
 	Inspect(configHttpbinHTTPS(testNamespace, kubeconfigFile), "failed to config httpbin with tls certs", "", t)
 
 	t.Run("general_tls", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		// check teapot
 		url := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
 		resp, err := checkTeapot(url, ingressHostIP, secureIngressPort, "httpbin.example.com", httpbinSampleCACert)
@@ -265,6 +280,13 @@ func Test09 (t *testing.T) {
 	})
 
 	t.Run("mutual_tls", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("Configure Mutual TLS Gateway")
 		Inspect(updateHttpbinHTTPS(testNamespace, kubeconfigFile), "failed to configure mutual tls gateway", "", t)
 		
@@ -299,6 +321,13 @@ func Test09 (t *testing.T) {
 	})
 
 	t.Run("jwt", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+		
 		log.Info("Configure JWT Authentication")
 		Inspect(configJWT(kubeconfigFile), "failed to configure JWT authentication", "", t)
 		// check 401
@@ -326,11 +355,5 @@ func Test09 (t *testing.T) {
 		Inspect(CheckHTTPResponse200(resp), "failed to get HTTP 200", "Get expected response code: 200", t)
 		CloseResponseBody(resp)
 	})
-	defer cleanup09(testNamespace, kubeconfigFile)
-	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
-		if err := recover(); err != nil {
-			log.Infof("Test failed: %v", err)
-		}
-	}()
+	
 }

@@ -59,6 +59,14 @@ func configEgressTCP(namespace, kubeconfig string) error {
 
 
 func Test11(t *testing.T) {
+	defer cleanup11(testNamespace, kubeconfigFile)
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test panic: %v", err)
+		}
+	}()
+
 	log.Info("# TC_11 Control Egress TCP Traffic")
 	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 	
@@ -92,11 +100,4 @@ func Test11(t *testing.T) {
 		t)
 	CloseResponseBody(resp)
 
-	defer cleanup11(testNamespace, kubeconfigFile)
-	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
-		if err := recover(); err != nil {
-			log.Infof("Test failed: %v", err)
-		}
-	}()
 }

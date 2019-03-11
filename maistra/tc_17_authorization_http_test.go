@@ -80,6 +80,14 @@ func setup17(namespace, kubeconfig string) error {
 }
 
 func Test17(t *testing.T) {
+	defer cleanup17(testNamespace, kubeconfigFile)
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test panic: %v", err)
+		}
+	}()
+
 	log.Infof("# TC_17 Authorization for HTTP Services")
 	Inspect(updateYaml(testNamespace), "failed to update yaml", "", t)
 	cleanupRbac()
@@ -100,7 +108,14 @@ func Test17(t *testing.T) {
 	log.Info("Waiting... Sleep 5 seconds...")
 	time.Sleep(time.Duration(5) * time.Second)	
 	
-	t.Run("general_check", func(t *testing.T) {
+	t.Run("verify_setup", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		for i := 0; i <= testRetryTimes; i++ {
 			resp, _, err := GetHTTPResponse(productpageURL, nil)
 			Inspect(err, "failed to get HTTP Response", "", t)
@@ -116,6 +131,13 @@ func Test17(t *testing.T) {
 	})
 	
 	t.Run("global_rbac", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("Enabling Istio authorization")
 		Inspect(util.KubeApplyContents(testNamespace, bookinfoRBACOn, kubeconfigFile), "failed to apply policy", "", t)
 		log.Info("Waiting... Sleep 50 seconds...")
@@ -136,6 +158,13 @@ func Test17(t *testing.T) {
 	})
 
 	t.Run("namespace_rbac", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("Namespace-level access control")
 		Inspect(util.KubeApplyContents(testNamespace, bookinfoNamespacePolicy, kubeconfigFile), "failed to apply policy", "", t)
 		log.Info("Waiting... Sleep 50 seconds...")
@@ -159,6 +188,13 @@ func Test17(t *testing.T) {
 	})
 
 	t.Run("service_rbac", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+		
 		log.Info("Service-level access control")
 		log.Info("Step 1. allowing access to the productpage")
 		Inspect(util.KubeApplyContents(testNamespace, bookinfoProductpagePolicy, kubeconfigFile), "failed to apply policy", "", t)
@@ -214,11 +250,4 @@ func Test17(t *testing.T) {
 		}
 	})
 
-	defer cleanup17(testNamespace, kubeconfigFile)
-	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
-		if err := recover(); err != nil {
-			log.Infof("Test failed: %v", err)
-		}
-	}()
 }

@@ -159,6 +159,14 @@ func jwcryptoCleanup() {
 
 
 func Test14(t *testing.T) {
+	defer cleanup14(kubeconfigFile)
+	defer func() {
+		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		if err := recover(); err != nil {
+			log.Infof("Test panic: %v", err)
+		}
+	}()
+
 	log.Infof("# TC_14 Authentication Policy")
 	namespaces := []string{"foo", "bar", "legacy"}
 
@@ -189,6 +197,13 @@ func Test14(t *testing.T) {
 	}
 
 	t.Run("global_mTLS", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("Globally enabling Istio mutual TLS")
 		Inspect(util.KubeApplyContents("", meshPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 60 seconds...")
@@ -234,6 +249,13 @@ func Test14(t *testing.T) {
 	})
 
 	t.Run("non_istio_to_istio", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("Request from non-Istio services to Istio services")
 
 		ns := []string{"foo", "bar", "legacy"}
@@ -266,6 +288,13 @@ func Test14(t *testing.T) {
 	})
 
 	t.Run("istio_to_non_istio", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("Request from Istio services to non-Istio services")
 		ns := []string{"foo", "bar"}
 		to := "legacy"
@@ -302,6 +331,13 @@ func Test14(t *testing.T) {
 	})
 
 	t.Run("istio_to_k8s_api", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("Request from Istio services to Kubernetes API server")
 		token, err := getSecretToken()
 		Inspect(err, "failed to get secret token", "", t)
@@ -333,6 +369,13 @@ func Test14(t *testing.T) {
 	cleanupPart1()
 
 	t.Run("namespace_mTLS", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("Enable mutual TLS per namespace")
 		Inspect(util.KubeApplyContents("", fooPolicy, kubeconfigFile), "failed to apply foo Policy", "", t)
 		Inspect(util.KubeApplyContents("", fooRule, kubeconfigFile), "failed to apply foo rule", "", t)
@@ -368,6 +411,13 @@ func Test14(t *testing.T) {
 	})
 
 	t.Run("service_mTLS", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("Enable mutual TLS per service")
 		Inspect(util.KubeApplyContents("", barPolicy, kubeconfigFile), "failed to apply bar Policy", "", t)
 		Inspect(util.KubeApplyContents("", barRule, kubeconfigFile), "failed to apply bar rule", "", t)
@@ -413,6 +463,13 @@ func Test14(t *testing.T) {
 	})
 
 	t.Run("port_mTLS", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("Edit mutual TLS only on httpbin bar port 1234")
 		Inspect(util.KubeApplyContents("", barPolicy2, kubeconfigFile), "failed to apply bar Policy 2", "", t)
 		Inspect(util.KubeApplyContents("", barRule2, kubeconfigFile), "failed to apply bar Rule 2", "", t)
@@ -448,6 +505,13 @@ func Test14(t *testing.T) {
 	})
 
 	t.Run("overwrite_policy", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("Overwrite foo namespace policy by service policy")
 		Inspect(util.KubeApplyContents("", fooPolicy2, kubeconfigFile), "failed to apply foo Policy 2", "", t)
 		Inspect(util.KubeApplyContents("", fooRule2, kubeconfigFile), "failed to apply foo Rule 2", "", t)
@@ -474,6 +538,13 @@ func Test14(t *testing.T) {
 	cleanupPart2()
 
 	t.Run("end_user_auth", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+
 		log.Info("End-user authentication")
 		ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
 		Inspect(err, "failed to get ingressgateway URL", "", t)
@@ -560,6 +631,13 @@ func Test14(t *testing.T) {
 	})
 
 	t.Run("end_user_auth_mTLS", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				log.Infof("Test panic: %v", err)
+			}
+		}()
+		
 		log.Info("End-user authentication with mutual TLS")
 		Inspect(util.KubeApplyContents("", fooJWTPolicy2, kubeconfigFile), "failed to apply foo JWT Policy 2", "", t)		
 		Inspect(util.KubeApplyContents("", fooRule3, kubeconfigFile), "failed to apply foo rule 3", "", t)
@@ -594,11 +672,4 @@ func Test14(t *testing.T) {
 	
 	cleanupPart3()
 
-	defer cleanup14(kubeconfigFile)
-	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
-		if err := recover(); err != nil {
-			log.Infof("Test failed: %v", err)
-		}
-	}()
 }
