@@ -161,7 +161,7 @@ spec:
   origins:
   - jwt:
       issuer: "testing@secure.istio.io"
-      jwksUri: "https://raw.githubusercontent.com/istio/istio/release-1.0/security/tools/jwt/samples/jwks.json"
+      jwksUri: "https://raw.githubusercontent.com/istio/istio/release-1.1/security/tools/jwt/samples/jwks.json"
   principalBinding: USE_ORIGIN
 `
 
@@ -179,7 +179,7 @@ spec:
   origins:
   - jwt:
       issuer: "testing@secure.istio.io"
-      jwksUri: "https://raw.githubusercontent.com/istio/istio/release-1.0/security/tools/jwt/samples/jwks.json"
+      jwksUri: "https://raw.githubusercontent.com/istio/istio/release-1.1/security/tools/jwt/samples/jwks.json"
   principalBinding: USE_ORIGIN
 `
 

@@ -75,15 +75,9 @@ func Test11(t *testing.T) {
 	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
 
 	Inspect(configTCPRatings(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+	
 	resp, _, err := GetHTTPResponse(productpageURL, nil)
 	Inspect(err, "failed to get productpage", "", t)
-	body, err := ioutil.ReadAll(resp.Body)
-	Inspect(err, "failed to read response body", "", t)
-	Inspect(
-		CompareHTTPResponse(body, "productpage-normal-user-rating-unavailable.html"),
-		"Didn't get expected response",
-		"Success. Response matches expected Ratings unavailable",
-		t)
 	CloseResponseBody(resp)
 
 	log.Info("# Define a TCP mesh-external service entry")
@@ -91,7 +85,7 @@ func Test11(t *testing.T) {
 
 	resp, _, err = GetHTTPResponse(productpageURL, nil)
 	Inspect(err, "failed to get productpage", "", t)
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	Inspect(err, "failed to read response body", "", t)
 	Inspect(
 		CompareHTTPResponse(body, "productpage-normal-user-rating-one-star.html"),

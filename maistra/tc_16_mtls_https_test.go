@@ -51,7 +51,7 @@ func Test16(t *testing.T) {
 	// TBD 
 	util.ShellSilent("openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /tmp/nginx.key -out /tmp/nginx.crt -subj \"/CN=my-nginx/O=my-nginx\"")
 	util.CreateTLSSecret("nginxsecret", testNamespace, "/tmp/nginx.key", "/tmp/nginx.crt", kubeconfigFile)
-	util.ShellSilent("kubectl create configmap nginxconfigmap --from-file=%s", nginxConf)
+	util.ShellSilent("kubectl create configmap -n %s nginxconfigmap --from-file=%s", testNamespace,	nginxConf)
 	
 	t.Run("nginx_without_sidecar", func(t *testing.T) {
 		defer func() {

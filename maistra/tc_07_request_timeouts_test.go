@@ -69,8 +69,6 @@ func Test07(t *testing.T) {
 	Inspect(err, "failed to get ingressgateway URL", "", t)
 	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
 
-	testUserJar	:= GetCookieJar(testUsername, "", "http://" + ingress)
-
 	Inspect(setup07(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 	t.Run("timout", func(t *testing.T) {
 		defer func() {
@@ -82,14 +80,14 @@ func Test07(t *testing.T) {
 		
 		Inspect(setTimeout(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 
-		resp, duration, err := GetHTTPResponse(productpageURL, testUserJar)
+		resp, duration, err := GetHTTPResponse(productpageURL, nil)
 		defer CloseResponseBody(resp)
 		Inspect(err, "failed to get HTTP Response", "", t)
 		log.Infof("bookinfo productpage returned in %d ms", duration)
 		body, err := ioutil.ReadAll(resp.Body)
 		Inspect(err, "failed to read response body", "", t)
 		Inspect(
-			CompareHTTPResponse(body, "productpage-test-user-v2-review-timeout.html"),
+			CompareHTTPResponse(body, "productpage-review-timeout.html"),
 			"Didn't get expected response.",
 			"Success. Response timeout matches with expected.",
 			t)
