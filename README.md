@@ -28,7 +28,7 @@ Prerequisite
 
 * If there is only `oc` client installed and no `kubectl` installed,  need to have a soft link. `sudo ln -s oc /usr/bin/kubectl`
 
-* Two utility packages from Istio upstream are needed before running tests. `go get "istio.io/istio/tests/util"`;  `go get "istio.io/istio/pkg/log"`
+* Three utility packages from Istio upstream are needed before running tests. `go get "istio.io/istio/tests/util"`;  `go get "istio.io/istio/pkg/log"`; `go get "golang.org/x/net/publicsuffix"`
 
 
 How to run each test case

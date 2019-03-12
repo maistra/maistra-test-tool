@@ -43,7 +43,7 @@ func setup05(namespace, kubeconfig string) error {
 }
 
 func trafficShift50v3(namespace, kubeconfig string) error {
-	log.Infof("# Traffic shifting 50% v1 and 50% v3, tolerance 10%")
+	log.Info("# Traffic shifting 50 percent v1 and 50 percent v3, tolerance 10 percent")
 	if err := util.KubeApply(namespace, bookinfoReview50v3Yaml, kubeconfig); err != nil {
 		return err
 	}
