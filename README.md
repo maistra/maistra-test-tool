@@ -25,14 +25,14 @@ Python Version: Python 3.7 or above
 Installation
 ---------------------
 
-OCP/AWS
+1. OCP/AWS
 
 * Prepare aws configuration files or configure them from awscli.
 
 * Install language runtime and tools. Run `scripts/setup.sh`
 
 * Go to directory "`install`"
-* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -p [profile name] -c all`" will install all components
+* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -s [secret.yaml file] -p [profile name] -c ocp`" will install an OCP cluster on AWS.
 * After `Deploying the cluster...` starts, follow the prompts
   * Select a SSH public key
   * Select Platform > aws
@@ -43,12 +43,27 @@ OCP/AWS
 * Waiting for the cluster creation completes. It usually takes 40 - 50 minutes.
 * After the cluster creation, this script downloads an oc client and moves it to `/usr/bin/`. This script also creates a kubectl soft link using `sudo ln -s oc /usr/bin/kubectl`
 
+2. Login the OCP cluster
+* After OCP cluster deployment, follow the INFO message:
+  * Run `export KUBECONFIG=[kubeconfig file]`
+  * Run `oc login -u [login user] -p [token]`
 
-registry-puller
+
+3. registry-puller
+
+* Download your istio private image pull secret and create a file called secret.yaml
+* Go the directory "`install`"
+* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -s [secret.yaml file] -p [profile name] -c registry-puller`" will deploy the registry-puller pod on OCP.
 
 
 
 Maistra/Istio
+
+Maistra-09
+
+
+
+Maistra-10
 
 
 
