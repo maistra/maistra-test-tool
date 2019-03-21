@@ -75,7 +75,7 @@ class OCP(object):
         # deploy the cluster
         print('Deploying the cluster...')
         os.makedirs(self.assets, mode=0o775, exist_ok=True)
-        proc = sp.run(['./openshift-install', '--dir=' + self.assets, 'create', 'cluster', '--log-level=debug'], check=True)
+        proc = sp.run(['./openshift-install', '--dir=' + self.assets, 'create', 'cluster'], check=True)
 
         print('Cluster deployment completed.')
         os.environ['KUBECONFIG'] = self.assets + '/auth/kubeconfig'
