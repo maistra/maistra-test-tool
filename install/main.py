@@ -19,6 +19,7 @@ import os
 import argparse
 
 from ocp.ocp import OCP
+from puller import Puller
 
 
 def main():
@@ -27,17 +28,23 @@ def main():
     group.add_argument('-i', '--install', help='install operation', action='store_true')
     group.add_argument('-u', '--uninstall', help='uninstall operation', action='store_true')
     parser.add_argument('-p', '--profile', type=str, required=True, help='AWS profile name')
-    parser.add_argument('-c', '--component', nargs='+', type=str, required=True, choices=['ocp', 'registry-puller', 'istio', 'bookinfo', 'all'], default='all' , help='Specify Component(s) from ocp, registry-puller, istio, bookinfo and all')
+    parser.add_argument('-s', '--pullsecret', type=str, required=True, help='Istio private images pull secret.yaml file. This is not the OCP cluster pull secret.')
+    parser.add_argument('-c', '--component', nargs='+', type=str, required=True, choices=['ocp', 'registry-puller', 'istio'], help='Specify Component(s) from ocp, registry-puller, istio')
     
     args = parser.parse_args()
     
-    if 'ocp' in args.component or 'all' in args.component:
+    if 'ocp' in args.component in args.component:
         ocp = OCP(profile=args.profile)
         if args.install:
             ocp.install()
         elif args.uninstall:
             ocp.uninstall()
     
+    if 'registry-puller' in args.component:
+        puller = Puller(secret_file=args.pullsecret)
+        if args.install:
+            puller.build()
+            puller.execute()
 
 
    

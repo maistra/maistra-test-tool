@@ -23,6 +23,7 @@ sudo dnf install -y golang
 go get "istio.io/istio/tests/util"
 go get "istio.io/istio/pkg/log"
 go get "golang.org/x/net/publicsuffix"
+go get "github.com/knrc/registry-puller"
 
 # install pipenv
 sudo pip3 install pipenv

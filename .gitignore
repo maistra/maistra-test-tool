@@ -25,3 +25,5 @@ __pycache__
 **/oc.tar.gz
 **/istioctl
 
+# registry-puller
+**/registry-puller
