@@ -137,6 +137,7 @@ func Test06(t *testing.T) {
 		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot * 1)
 
 		for i := 0; i < totalShot; i++ {
+			time.Sleep(time.Duration(1) * time.Second)
 			msg, err := checkEcho(ingress, ingressTCPPort)
 			Inspect(err, "failed to get date", "", t)
 			if strings.Contains(msg, "one") {
