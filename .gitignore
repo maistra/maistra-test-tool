@@ -11,4 +11,17 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
+# vscode
+.vscode
+
+# python
+*.pyc
+__pycache__
+
+# OCP4 assets
+**/assets/*
+**/openshift-install
+**/oc
+**/oc.tar.gz
 **/istioctl
+
