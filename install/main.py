@@ -20,6 +20,7 @@ import argparse
 
 from ocp.ocp import OCP
 from puller import Puller
+from istio.operator import Operator
 
 
 def main():
@@ -29,11 +30,13 @@ def main():
     group.add_argument('-u', '--uninstall', help='uninstall operation', action='store_true')
     parser.add_argument('-p', '--profile', type=str, help='AWS profile name. Alternatively, export AWS_PROFILE environment variable')
     parser.add_argument('-s', '--pullsec', type=str, help='Istio private registry pull secret.yaml file path (This is not the OpenShift pull secret). Alternatively, export PULL_SEC environment variable')
+    parser.add_argument('-cr', '--crfile', type=str, help='Istio ControlPlane CR file path. Alternatively, export CR_FILE environment variable')
     parser.add_argument('-c', '--component', type=str, choices=['ocp', 'registry-puller', 'istio'], help='Specify Component from ocp, registry-puller, istio')
     
     args = parser.parse_args()
     arg_profile = args.profile
     arg_pullsec = args.pullsec
+    arg_crfile = args.crfile
     arg_component = args.component
 
     if arg_profile is None and os.environ['AWS_PROFILE'] is not None:
@@ -45,7 +48,11 @@ def main():
         arg_pullsec = os.environ['PULL_SEC']
     elif arg_pullsec is None and os.environ['PULL_SEC'] is None:
         raise RuntimeError('Missing -s argument or missing PULL_SEC environment variable')
-            
+
+    if arg_crfile is None and os.environ['CR_FILE'] is not None:
+        arg_crfile = os.environ['CR_FILE']
+    if arg_crfile is None and os.environ['CR_FILE'] is None:
+        raise RuntimeError('Missing -cr argument or missing CR_FILE environment variable')
     
     if 'ocp' in args.component:
         ocp = OCP(profile=arg_profile)
@@ -59,6 +66,14 @@ def main():
         if args.install:
             puller.build()
             puller.execute()
+    
+    if 'istio' in args.component:
+        operator = Operator()
+        if args.install:
+            operator.deploy()
+            operator.install(cr_file=arg_crfile)
+        if args.uninstall:
+            operator.uninstall(cr_file=arg_crfile)
 
 
    

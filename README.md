@@ -5,7 +5,7 @@ moitt stands for Maistra OpenShift Istio Test Tool
 A Testing Tool For Running Istio Doc Tasks on OpenShift
 
 Introduction
----------------------
+=========================
 
 This project aims to follow [Istio Doc Tasks](https://preliminary.istio.io/docs/tasks/) structure and organize upstream [Istio release-1.1 tests directory](https://github.com/istio/istio/tree/release-1.1/tests). All test cases can be run against an Istio system running on an OpenShift cluster on AWS.
 
@@ -23,17 +23,28 @@ Python Version: Python 3.7 or above
 
 
 Installation
+=====================
+
+* Prepare aws configuration files or configure them from `awscli`
+* Install language runtime and tools. Run `scripts/setup.sh`
+* Save OpenShift Pull Secret content and we need to paste all the content in one line later
+* Download your Istio private registry pull secret and create a file called secret.yaml
+
+Environment Variables
 ---------------------
 
+| Name        | Description |
+| ----------- | ----------- |
+| AWS_PROFILE | AWS profile name |
+| PULL_SEC    | Istio private registry pull secret.yaml file path |
+| CR_FILE     | Istio ControlPlane CR file path  |
+
+
 1. OCP/AWS
-
-* Prepare aws configuration files or configure them from awscli.
-
-* Install language runtime and tools. Run `scripts/setup.sh`
-
 * Go to directory "`install`"
-* If the environment variables `AWS_PROFILE` and `PULL_SEC` were exported, the following `-p` and `-s` arguments are optional
-* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -p [profile name] -s [secret.yaml file] -c ocp`" will install an OCP cluster on AWS. The arguments overwrite environment variables `AWS_PROFILE` and `PULL_SEC`.
+* Export the environment variables (See the table above) with their values
+* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -c ocp`" will install an OCP cluster on AWS 
+  * The arguments `-p`, `-s`, `-cr` overwrite environment variables `AWS_PROFILE`, `PULL_SEC` and `CR_FILE`
 * After `Deploying the cluster...` starts, follow the prompts
   * Select a SSH public key
   * Select Platform > aws
@@ -42,7 +53,7 @@ Installation
   * Create a Cluster Name
   * Paste the Pull Secret content ( This Pull Secret content is different from the argument `-s` or the environment variable `PULL_SEC` )
 * Waiting for the cluster creation completes. It usually takes 40 - 50 minutes.
-* After the cluster creation, this script downloads an oc client and moves it to `/usr/bin/`. This script also creates a kubectl soft link using `sudo ln -s oc /usr/bin/kubectl`
+* After the cluster creation, this script automatically downloads an oc client and moves it to `/usr/bin/`. This script also automatically creates a kubectl soft link using `sudo ln -s oc /usr/bin/kubectl`
 
 2. Login the OCP cluster
 * After OCP cluster deployment, follow the INFO message:
@@ -51,11 +62,9 @@ Installation
 
 
 3. registry-puller
-
-* Download your istio private image pull secret and create a file called secret.yaml
 * Go the directory "`install`"
-* If the environment variables `AWS_PROFILE` and `PULL_SEC` were exported, the following `-p` and `-s` arguments are optional
-* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -p [profile name] -s [secret.yaml file] -c registry-puller`" will deploy the registry-puller pod on OCP. The arguments overwrite environment variables `AWS_PROFILE` and `PULL_SEC`.
+* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -c registry-puller`" will deploy the registry-puller pod on OCP
+  * The arguments `-p`, `-s`, `-cr` overwrite environment variables `AWS_PROFILE`, `PULL_SEC` and `CR_FILE`
 
 
 
@@ -66,7 +75,7 @@ Maistra/Istio
 
 
 Testing Prerequisite
----------------------
+=====================
 
 * `oc` client tool need to be installed and command `oc login [host] [--token=<hidden>]` need to be executed before running tests
 

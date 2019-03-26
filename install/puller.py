@@ -57,8 +57,6 @@ class Puller(object):
         sp.run(['make'])
         os.chdir(self.savedPath)
         
-
-
     def execute(self):
         # check environment variable KUBECONFIG
         try:
