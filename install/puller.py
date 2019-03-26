@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Copyright 2019 Red Hat, Inc.
@@ -57,8 +57,6 @@ class Puller(object):
         sp.run(['make'])
         os.chdir(self.savedPath)
         
-
-
     def execute(self):
         # check environment variable KUBECONFIG
         try:

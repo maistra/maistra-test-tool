@@ -27,3 +27,6 @@ __pycache__
 
 # registry-puller
 **/registry-puller
+
+# istio-operator
+**/istio-operator
