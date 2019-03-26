@@ -32,14 +32,15 @@ Installation
 * Install language runtime and tools. Run `scripts/setup.sh`
 
 * Go to directory "`install`"
-* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -s [secret.yaml file] -p [profile name] -c ocp`" will install an OCP cluster on AWS.
+* If the environment variables `AWS_PROFILE` and `PULL_SEC` were exported, the following `-p` and `-s` arguments are optional
+* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -p [profile name] -s [secret.yaml file] -c ocp`" will install an OCP cluster on AWS. The arguments overwrite environment variables `AWS_PROFILE` and `PULL_SEC`.
 * After `Deploying the cluster...` starts, follow the prompts
   * Select a SSH public key
   * Select Platform > aws
   * Select a Region
   * Select a Base Domain
   * Create a Cluster Name
-  * Paste the Pull Secret
+  * Paste the Pull Secret content ( This Pull Secret content is different from the argument `-s` or the environment variable `PULL_SEC` )
 * Waiting for the cluster creation completes. It usually takes 40 - 50 minutes.
 * After the cluster creation, this script downloads an oc client and moves it to `/usr/bin/`. This script also creates a kubectl soft link using `sudo ln -s oc /usr/bin/kubectl`
 
@@ -53,17 +54,14 @@ Installation
 
 * Download your istio private image pull secret and create a file called secret.yaml
 * Go the directory "`install`"
-* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -s [secret.yaml file] -p [profile name] -c registry-puller`" will deploy the registry-puller pod on OCP.
+* If the environment variables `AWS_PROFILE` and `PULL_SEC` were exported, the following `-p` and `-s` arguments are optional
+* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -p [profile name] -s [secret.yaml file] -c registry-puller`" will deploy the registry-puller pod on OCP. The arguments overwrite environment variables `AWS_PROFILE` and `PULL_SEC`.
 
 
 
 Maistra/Istio
 
-Maistra-09
 
-
-
-Maistra-10
 
 
 
@@ -80,6 +78,6 @@ Testing Prerequisite
 Testing
 -------------------------
 
-Go to directory "`maistra`" 
+Go to directory "`test/maistra`" 
 - To run all the test cases (End-to-End run): `go test -timeout 2h -v`
 - To run a specific test case: `go test -run [test case number, e.g. 03] -v`
