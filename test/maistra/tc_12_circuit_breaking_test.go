@@ -52,7 +52,7 @@ func Test12(t *testing.T) {
 	defer func() {
 		// recover from panic if one occured. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
-			log.Infof("Test panic: %v", err)
+			t.Errorf("Test panic: %v", err)
 		}
 	}()
 
@@ -65,7 +65,7 @@ func Test12(t *testing.T) {
 	pod, err := util.GetPodName(testNamespace, "app=fortio", kubeconfigFile)
 	Inspect(err, "failed to get fortio pod", "", t)
 	command := "load -curl  http://httpbin:8000/get"
-	msg, err := util.PodExec(testNamespace, pod, "fortio /usr/local/bin/fortio", command, false, kubeconfigFile)
+	msg, err := util.PodExec(testNamespace, pod, "fortio /usr/bin/fortio", command, false, kubeconfigFile)
 	Inspect(err, "failed to get response", "", t)
 	if strings.Contains(msg, "200 OK") {
 		log.Infof("Success. Get correct response")
@@ -79,7 +79,7 @@ func Test12(t *testing.T) {
 	tolerance := 0.30
 	
 	command = fmt.Sprintf("load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount)
-	msg, err = util.PodExec(testNamespace, pod, "fortio /usr/local/bin/fortio", command, false, kubeconfigFile)
+	msg, err = util.PodExec(testNamespace, pod, "fortio /usr/bin/fortio", command, false, kubeconfigFile)
 	Inspect(err, "failed to get response", "", t)
 
 	re := regexp.MustCompile(`Code 200.*`)

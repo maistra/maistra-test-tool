@@ -69,9 +69,10 @@ func Test06(t *testing.T) {
 	defer func() {
 		// recover from panic if one occured. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
-			log.Infof("Test panic: %v", err)
+			t.Errorf("Test panic: %v", err)
 		}
 	}()
+	panic("blocked by maistra-348")
 	
 	log.Infof("# TC_06 TCP Traffic Shifting")
 	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
