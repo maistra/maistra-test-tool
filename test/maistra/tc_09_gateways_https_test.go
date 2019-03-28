@@ -234,9 +234,10 @@ func Test09 (t *testing.T) {
 	defer func() {
 		// recover from panic if one occured. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
-			log.Infof("Test panic: %v", err)
+			t.Errorf("Test panic: %v", err)
 		}
 	}()
+	panic("blocked by maistra-348")
 
 	log.Infof("# TC_09 Securing Gateways with HTTPS")
 	log.Info("Waiting for previous run to be cleaned up. Sleep 10 seconds...")
