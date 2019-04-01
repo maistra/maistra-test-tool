@@ -7,7 +7,7 @@ A Testing Tool For Running Istio Doc Tasks on OpenShift
 Introduction
 =========================
 
-This project aims to follow [Istio Doc Tasks](https://preliminary.istio.io/docs/tasks/) structure and organize upstream [Istio release-1.1 tests directory](https://github.com/istio/istio/tree/release-1.1/tests). All test cases can be run against an Istio system running on an OpenShift cluster on AWS.
+This project aims to follow [Istio Doc Tasks](https://istio.io/docs/tasks/) structure and organize upstream [Istio release-1.1 tests directory](https://github.com/istio/istio/tree/release-1.1/tests). All test cases can be run against an Istio system running on an OpenShift cluster on AWS.
 
 Most of the utilities are imported from upstream "istio.io/istio/tests/util". For more utilities information, user can check upstream [Istio release-1.1 util directory](https://github.com/istio/istio/tree/release-1.1/tests/util).
 
@@ -28,7 +28,7 @@ Installation
 * Prepare aws configuration files or configure them from `awscli`
 * Install language runtime and tools. Run `scripts/setup.sh`
 * Save OpenShift Pull Secret content and we need to paste all the content in one line later
-* Download your Istio private registry pull secret and create a file called secret.yaml
+* Download your Istio private registry pull secret and create a file called "`secret.yaml`"
 
 
 1. Environment Variables
@@ -53,25 +53,25 @@ Installation
   * Select a Region
   * Select a Base Domain
   * Create a Cluster Name
-  * Paste the Pull Secret content ( This Pull Secret content is different from the argument `-s` or the environment variable `PULL_SEC` )
+  * Paste the Pull Secret content ( This Pull Secret content is different from the environment variable `PULL_SEC` )
 * Waiting for the cluster creation completes. It usually takes 40 - 50 minutes.
 * After the cluster creation, this script automatically downloads an oc client and moves it to `/usr/bin/`. This script also automatically creates a kubectl soft link using `sudo ln -s oc /usr/bin/kubectl`
 
 
 3. Login the OCP cluster
-* After OCP cluster deployment, follow the INFO message:
+* After OCP cluster deployment, follow the INFO message and execute the following two commands manually:
   * Run `export KUBECONFIG=[kubeconfig file]`
   * Run `oc login -u [login user] -p [token]`
 
 
 4. registry-puller
 * Go to directory "`install`"
-* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -c registry-puller`" will deploy the registry-puller pod on OCP
+* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -c registry-puller`" will deploy the registry-puller pod in registry-puller namespace on OCP
 
 
 5. Maistra/Istio
 * Go to directory "`install`"
-* Run "`python main -h`" and follow arguments help message. e.g. "`python main.py -i -c istio`" will install Maistra istio-operator and istio system on OCP
+* Run "`python main -h`" and follow arguments help message. e.g. "`python main.py -i -c istio`" will install Maistra istio-operator and Istio system on OCP
 * Waiting for the Istio system installation completes. It usually takes 10 - 15 minutes
 
 
