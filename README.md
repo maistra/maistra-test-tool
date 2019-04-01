@@ -30,21 +30,23 @@ Installation
 * Save OpenShift Pull Secret content and we need to paste all the content in one line later
 * Download your Istio private registry pull secret and create a file called secret.yaml
 
-Environment Variables
+
+1. Environment Variables
 ---------------------
 
 | Name        | Description |
 | ----------- | ----------- |
 | AWS_PROFILE | AWS profile name |
 | PULL_SEC    | Istio private registry pull secret.yaml file path |
+| OPERATOR_FILE | Maistra Istio operator.yaml file path |
 | CR_FILE     | Istio ControlPlane CR file path  |
 
-
-1. OCP/AWS
-* Go to directory "`install`"
 * Export the environment variables (See the table above) with their values
+
+
+2. OCP/AWS
+* Go to directory "`install`"
 * Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -c ocp`" will install an OCP cluster on AWS 
-  * The arguments `-p`, `-s`, `-cr` overwrite environment variables `AWS_PROFILE`, `PULL_SEC` and `CR_FILE`
 * After `Deploying the cluster...` starts, follow the prompts
   * Select a SSH public key
   * Select Platform > aws
@@ -55,33 +57,34 @@ Environment Variables
 * Waiting for the cluster creation completes. It usually takes 40 - 50 minutes.
 * After the cluster creation, this script automatically downloads an oc client and moves it to `/usr/bin/`. This script also automatically creates a kubectl soft link using `sudo ln -s oc /usr/bin/kubectl`
 
-2. Login the OCP cluster
+
+3. Login the OCP cluster
 * After OCP cluster deployment, follow the INFO message:
   * Run `export KUBECONFIG=[kubeconfig file]`
   * Run `oc login -u [login user] -p [token]`
 
 
-3. registry-puller
-* Go the directory "`install`"
+4. registry-puller
+* Go to directory "`install`"
 * Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -c registry-puller`" will deploy the registry-puller pod on OCP
-  * The arguments `-p`, `-s`, `-cr` overwrite environment variables `AWS_PROFILE`, `PULL_SEC` and `CR_FILE`
 
 
-
-Maistra/Istio
-
-
+5. Maistra/Istio
+* Go to directory "`install`"
+* Run "`python main -h`" and follow arguments help message. e.g. "`python main.py -i -c istio`" will install Maistra istio-operator and istio system on OCP
+* Waiting for the Istio system installation completes. It usually takes 10 - 15 minutes
 
 
 
 Testing Prerequisite
 =====================
 
-* `oc` client tool need to be installed and command `oc login [host] [--token=<hidden>]` need to be executed before running tests
+* Step 2 from Installation above need to be executed before running tests
 
 * Istio system has been installed on an OpenShift cluster
 
-* A test namespace/project `bookinfo` need to be created and OCP cluster priviledge has been granted to the `bookinfo` namespace/project. (Priviledge permission is a temporary requirement for any OCP namespace/project to work with sidecar deployments).  We don't need to deploy the sample application `bookinfo` before running tests. Our test cases cover all of the sample applications deployment and cleanup.
+* A test namespace/project `bookinfo` need to be created and OCP cluster priviledge has been granted to the `bookinfo` namespace/project. 
+  * Priviledge permission is a temporary requirement for any OCP namespace/project to work with sidecar deployments. We don't need to deploy the sample application `bookinfo` before running tests
 
 
 Testing

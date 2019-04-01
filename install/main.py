@@ -23,57 +23,69 @@ from puller import Puller
 from istio.operator import Operator
 
 
+class Moitt(object):
+
+    def __init__(self):
+        self.profile = None
+        self.pullsec = None
+        self.operatorfile = None
+        self.crfile = None
+        self.install = False
+        self.uninstall = False
+        self.component = None
+        
+    def envParse(self):
+        if 'AWS_PROFILE' in os.environ:
+            self.profile = os.environ['AWS_PROFILE']
+        if 'PULL_SEC' in os.environ:
+            self.pullsec = os.environ['PULL_SEC']
+        if 'OPERATOR_FILE' in os.environ:
+            self.operatorfile = os.environ['OPERATOR_FILE']
+        if 'CR_FILE' in os.environ:
+            self.crfile = os.environ['CR_FILE']
+    
+    def argParse(self):
+        parser = argparse.ArgumentParser(description='Select an operation and component(s)')
+        group = parser.add_mutually_exclusive_group(required=True)
+        group.add_argument('-i', '--install', help='install operation', action='store_true')
+        group.add_argument('-u', '--uninstall', help='uninstall operation', action='store_true')
+        parser.add_argument('-c', '--component', type=str, choices=['ocp', 'registry-puller', 'istio'], help='Specify Component from ocp, registry-puller, istio')
+        args = parser.parse_args()
+        self.install = args.install
+        self.uninstall = args.uninstall
+        self.component = args.component        
+      
+
 def main():
-    parser = argparse.ArgumentParser(description='Select an operation and component(s)')
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('-i', '--install', help='install operation', action='store_true')
-    group.add_argument('-u', '--uninstall', help='uninstall operation', action='store_true')
-    parser.add_argument('-p', '--profile', type=str, help='AWS profile name. Alternatively, export AWS_PROFILE environment variable')
-    parser.add_argument('-s', '--pullsec', type=str, help='Istio private registry pull secret.yaml file path (This is not the OpenShift pull secret). Alternatively, export PULL_SEC environment variable')
-    parser.add_argument('-cr', '--crfile', type=str, help='Istio ControlPlane CR file path. Alternatively, export CR_FILE environment variable')
-    parser.add_argument('-c', '--component', type=str, choices=['ocp', 'registry-puller', 'istio'], help='Specify Component from ocp, registry-puller, istio')
+    moitt = Moitt()
+    moitt.envParse()
+    moitt.argParse()
     
-    args = parser.parse_args()
-    arg_profile = args.profile
-    arg_pullsec = args.pullsec
-    arg_crfile = args.crfile
-    arg_component = args.component
-
-    if arg_profile is None and os.environ['AWS_PROFILE'] is not None:
-        arg_profile = os.environ['AWS_PROFILE']
-    elif arg_profile is None and os.environ['AWS_PROFILE'] is None:
-        raise RuntimeError('Missing -p argument or missing AWS_PROFILE environment variable')
-
-    if arg_pullsec is None and os.environ['PULL_SEC'] is not None:
-        arg_pullsec = os.environ['PULL_SEC']
-    elif arg_pullsec is None and os.environ['PULL_SEC'] is None:
-        raise RuntimeError('Missing -s argument or missing PULL_SEC environment variable')
-
-    if arg_crfile is None and os.environ['CR_FILE'] is not None:
-        arg_crfile = os.environ['CR_FILE']
-    if arg_crfile is None and os.environ['CR_FILE'] is None:
-        raise RuntimeError('Missing -cr argument or missing CR_FILE environment variable')
+    if not moitt.profile:
+        raise KeyError("Missing AWS_PROFILE environment variable")
+    if not moitt.pullsec:
+        raise KeyError("Missing PULL_SEC environment variable")
     
-    if 'ocp' in args.component:
-        ocp = OCP(profile=arg_profile)
-        if args.install:
+    if moitt.component == 'ocp':
+        ocp = OCP(profile=moitt.profile)
+        if moitt.install:
             ocp.install()
-        elif args.uninstall:
+        elif moitt.uninstall:
             ocp.uninstall()
     
-    if 'registry-puller' in args.component:
-        puller = Puller(secret_file=arg_pullsec)
-        if args.install:
+    if moitt.component == 'registry-puller':
+        puller = Puller(secret_file=moitt.pullsec)
+        if moitt.install:
             puller.build()
             puller.execute()
     
-    if 'istio' in args.component:
+    if moitt.component == 'istio':
         operator = Operator()
-        if args.install:
-            operator.deploy()
-            operator.install(cr_file=arg_crfile)
-        if args.uninstall:
-            operator.uninstall(cr_file=arg_crfile)
+        if moitt.install:
+            operator.deploy(operator_file=moitt.operatorfile)
+            operator.install(cr_file=moitt.crfile)
+        elif moitt.uninstall:
+            operator.uninstall(cr_file=moitt.crfile)
 
 
    
