@@ -72,12 +72,11 @@ func Test06(t *testing.T) {
 			t.Errorf("Test panic: %v", err)
 		}
 	}()
-	panic("blocked by maistra-348")
 	
 	log.Infof("# TC_06 TCP Traffic Shifting")
 	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 	
-	ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	ingress, err := GetOCP4Ingressgateway("istio-system", kubeconfigFile)
 	Inspect(err, "cannot get ingress host ip", "", t)
 	
 	ingressTCPPort, err := GetTCPIngressPort("istio-system", "istio-ingressgateway", kubeconfigFile)
@@ -89,18 +88,20 @@ func Test06(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
 		log.Info("# Shifting all TCP traffic to v1")
 		Inspect(routeTrafficAllv1(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+		time.Sleep(time.Duration(5) * time.Second)
+
 		tolerance := 0.0
-		totalShot := 20
+		totalShot := 10
 		versionCount := 0
 		
 		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot * 1)
-
+		
 		for i := 0; i < totalShot; i++ {
 			time.Sleep(time.Duration(1) * time.Second)
 			msg, err := checkEcho(ingress, ingressTCPPort)
@@ -125,14 +126,16 @@ func Test06(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 		
 		log.Info("# Shifting 20% TCP traffic to v2 tolerance 10% ")
 		Inspect(routeTraffic20v2(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+		time.Sleep(time.Duration(5) * time.Second)
+		
 		tolerance := 0.10
-		totalShot := 100
+		totalShot := 40
 		c1, c2 := 0, 0
 
 		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot * 1)

@@ -69,6 +69,7 @@ func Test18(t *testing.T) {
 			t.Errorf("Test panic: %v", err)
 		}
 	}()
+	panic("TBD fix sample html error")
 
 	log.Infof("# TC_18 Authorization for TCP Services")
 	Inspect(updateYaml(testNamespace), "failed to update yaml", "", t)
@@ -101,7 +102,7 @@ func Test18(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
@@ -117,8 +118,8 @@ func Test18(t *testing.T) {
 			t)	
 
 		Inspect(deployMongoDB(testNamespace, kubeconfigFile), "failed to deploy mongoDB", "", t)
-		log.Info("Waiting... Sleep 45 seconds...")
-		time.Sleep(time.Duration(45) * time.Second)	
+		log.Info("Waiting... Sleep 50 seconds...")
+		time.Sleep(time.Duration(50) * time.Second)	
 		resp, _, err = GetHTTPResponse(productpageURL, nil)
 		CloseResponseBody(resp)
 		resp, _, err = GetHTTPResponse(productpageURL, nil)
@@ -139,7 +140,7 @@ func Test18(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
@@ -163,14 +164,14 @@ func Test18(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
 		log.Info("Enforcing Service-level access control")
 		Inspect(util.KubeApplyContents(testNamespace, bookinfoMongodbPolicy, kubeconfigFile), "failed to apply policy", "", t)
-		log.Info("Waiting... Sleep 10 seconds...")
-		time.Sleep(time.Duration(10) * time.Second)
+		log.Info("Waiting... Sleep 20 seconds...")
+		time.Sleep(time.Duration(20) * time.Second)
 		resp, _, err := GetHTTPResponse(productpageURL, nil)
 		Inspect(err, "failed to get HTTP Response", "", t)
 		defer CloseResponseBody(resp)
@@ -187,7 +188,7 @@ func Test18(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 		

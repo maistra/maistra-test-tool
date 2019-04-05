@@ -15,18 +15,22 @@
 package maistra
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"golang.org/x/net/publicsuffix"
 	"istio.io/istio/pkg/log"
 	"istio.io/istio/tests/util"
+	
 )
 
 
@@ -175,4 +179,49 @@ func CompareHTTPResponse(body []byte, modelFile string) error {
 		return err
 	}
 	return nil
+}
+
+
+func sh(ctx context.Context, format string, logCommand, logOutput, logError bool, args ...interface{}) (string, error) {
+	command :=fmt.Sprintf(format, args...)
+	if logCommand {
+		log.Infof("Running command %s", command)
+	}
+	c := exec.CommandContext(ctx, "sh", "-c", command) // #nosec
+	bytes, err := c.CombinedOutput()
+	if logOutput {
+		if output := strings.TrimSuffix(string(bytes), "\n"); len(output) > 0 {
+			log.Infof("Command output: \n%s", output)
+		}
+	}
+
+	if err != nil {
+		if logError {
+			log.Infof("Command error: %v", err)
+		}
+		return string(bytes), fmt.Errorf("command failed: %q %v", string(bytes), err)
+	}
+	return string(bytes), nil
+}
+
+// Shell run command on shell and get back output and error if get one
+func Shell(format string, args ...interface{}) (string, error) {
+	return sh(context.Background(), format, true, true, true, args...)
+}
+
+// ShellContext run command on shell and get back output and error if get one
+func ShellContext(ctx context.Context, format string, args ...interface{}) (string, error) {
+	return sh(ctx, format, true, true, true, args...)
+}
+
+// ShellMuteOutput run command on shell and get back output and error if get one
+// without logging the output
+func ShellMuteOutput(format string, args ...interface{}) (string, error) {
+	return sh(context.Background(), format, true, false, true, args...)
+}
+
+// ShellSilent runs command on Shell and get back output and error if get one
+// without logging the command or output
+func ShellSilent(format string, args ...interface{}) (string, error) {
+	return sh(context.Background(), format, false, false, false, args...)
 }

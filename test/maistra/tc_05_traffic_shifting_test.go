@@ -89,13 +89,15 @@ func Test05(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
 		Inspect(trafficShift50v3(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+		time.Sleep(time.Duration(5) * time.Second)
+		
 		tolerance := 0.10
-		totalShot := 100
+		totalShot := 40
 		once := sync.Once{}
 		c1, cVersionToMigrate := 0, 0
 		for i := 0; i < totalShot; i++ {
@@ -140,14 +142,15 @@ func Test05(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 		
 		Inspect(trafficShiftAllv3(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+		time.Sleep(time.Duration(5) * time.Second)
 
 		tolerance := 0.0
-		totalShot := 100
+		totalShot := 10
 		once := sync.Once{}
 		cVersionToMigrate := 0
 

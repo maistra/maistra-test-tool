@@ -88,6 +88,8 @@ func Test17(t *testing.T) {
 		}
 	}()
 
+	Retry := 3
+
 	log.Infof("# TC_17 Authorization for HTTP Services")
 	Inspect(updateYaml(testNamespace), "failed to update yaml", "", t)
 	cleanupRbac()
@@ -112,11 +114,11 @@ func Test17(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
-		for i := 0; i <= testRetryTimes; i++ {
+		for i := 0; i <= Retry; i++ {
 			time.Sleep(time.Duration(1) * time.Second)
 			resp, _, err := GetHTTPResponse(productpageURL, nil)
 			Inspect(err, "failed to get HTTP Response", "", t)
@@ -135,7 +137,7 @@ func Test17(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
@@ -143,7 +145,7 @@ func Test17(t *testing.T) {
 		Inspect(util.KubeApplyContents(testNamespace, bookinfoRBACOn, kubeconfigFile), "failed to apply policy", "", t)
 		log.Info("Waiting... Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)	
-		for i := 0; i <= testRetryTimes; i++ {
+		for i := 0; i <= Retry; i++ {
 			time.Sleep(time.Duration(1) * time.Second)
 			resp, _, err := GetHTTPResponse(productpageURL, nil)
 			Inspect(err, "failed to get HTTP Response", "", t)
@@ -163,7 +165,7 @@ func Test17(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
@@ -172,7 +174,7 @@ func Test17(t *testing.T) {
 		log.Info("Waiting... Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)	
 
-		for i := 0; i <= testRetryTimes; i++ {
+		for i := 0; i <= Retry; i++ {
 			time.Sleep(time.Duration(1) * time.Second)
 			resp, _, err := GetHTTPResponse(productpageURL, nil)
 			Inspect(err, "failed to get HTTP Response", "", t)
@@ -194,7 +196,7 @@ func Test17(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 		
@@ -204,7 +206,7 @@ func Test17(t *testing.T) {
 		log.Info("Waiting... Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)	
 		
-		for i := 0; i <= testRetryTimes; i++ {
+		for i := 0; i <= Retry; i++ {
 			time.Sleep(time.Duration(1) * time.Second)
 			resp, _, err := GetHTTPResponse(productpageURL, nil)
 			Inspect(err, "failed to get HTTP Response", "", t)
@@ -223,7 +225,7 @@ func Test17(t *testing.T) {
 		log.Info("Waiting... Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)
 
-		for i := 0; i <= testRetryTimes; i++ {
+		for i := 0; i <= Retry; i++ {
 			time.Sleep(time.Duration(1) * time.Second)
 			resp, _, err := GetHTTPResponse(productpageURL, nil)
 			Inspect(err, "failed to get HTTP Response", "", t)
@@ -241,7 +243,7 @@ func Test17(t *testing.T) {
 		Inspect(util.KubeApplyContents(testNamespace, bookinfoRatingPolicy, kubeconfigFile), "failed to apply policy", "", t)
 		log.Info("Waiting... Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)
-		for i := 0; i <= testRetryTimes; i++ {
+		for i := 0; i <= Retry; i++ {
 			time.Sleep(time.Duration(1) * time.Second)
 			resp, _, err := GetHTTPResponse(productpageURL, nil)
 			Inspect(err, "failed to get HTTP Response", "", t)

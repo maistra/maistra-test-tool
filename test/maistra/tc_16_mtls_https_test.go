@@ -86,7 +86,7 @@ func Test16(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
@@ -116,7 +116,7 @@ func Test16(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 		

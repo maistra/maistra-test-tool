@@ -74,6 +74,18 @@ func GetOCPIngressgateway(podLabel, namespace, kubeconfig string) (string, error
 	return ingress, nil
 }
 
+// OCP4 INGRESS_HOST  oc -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+// if it's empty, fallback  oc -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+func GetOCP4Ingressgateway(namespace, kubeconfig string) (string, error) {
+	ingress, err := util.Shell("kubectl -n %s get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' --kubeconfig=%s",
+								namespace, kubeconfig)
+	if err != nil {
+		ingress, err = util.Shell("kubectl -n %s get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}' --kubeconfig=%s",
+								namespace, kubeconfig)
+	}
+	return ingress, nil
+}
+
 // GetSecureIngressPort returns the https ingressgateway port
 // "$(${OC_COMMAND} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}')"
 func GetSecureIngressPort(namespace, serviceName, kubeconfig string) (string, error) {

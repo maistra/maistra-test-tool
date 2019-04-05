@@ -17,7 +17,6 @@ package maistra
 import (
 
 	"time"
-
 	"istio.io/istio/pkg/log"
 	"istio.io/istio/tests/util"
 )

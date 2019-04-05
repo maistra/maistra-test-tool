@@ -47,8 +47,8 @@ func cleanup14(kubeconfig string) {
 	util.ShellSilent("kubectl delete gateway httpbin-gateway -n foo")
 	util.ShellSilent("kubectl delete virtualservice httpbin -n foo")
 	util.DeleteNamespace("foo bar legacy", kubeconfig)
-	log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
-	time.Sleep(time.Duration(20) * time.Second)
+	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
+	time.Sleep(time.Duration(10) * time.Second)
 }
 
 func cleanupPart1() {
@@ -78,31 +78,16 @@ func cleanupPart3() {
 	util.ShellMuteOutput("kubectl delete destinationrule httpbin -n foo")
 	util.ShellMuteOutput("kubectl delete gateway httpbin-gateway -n foo")
 	util.ShellMuteOutput("kubectl delete virtualservice httpbin -n foo")
-	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
 }
 
 func setup14(kubeconfig string) error {
-	if err := util.KubeApply("foo", httpbinYaml, kubeconfig); err != nil {
-		return err
-	}
-	if err := util.KubeApply("foo", sleepYaml, kubeconfig); err != nil {
-		return err
-	}
-	if err := util.KubeApply("bar", httpbinYaml, kubeconfig); err != nil {
-		return err
-	}
-	if err := util.KubeApply("bar", sleepYaml, kubeconfig); err != nil {
-		return err
-	}
-	if err := util.KubeApply("legacy", httpbinLegacyYaml, kubeconfig); err != nil {
-		return err
-	}
-	if err := util.KubeApply("legacy", sleepLegacyYaml, kubeconfig); err != nil {
-		return err
-	}
-	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	util.KubeApply("foo", httpbinYaml, kubeconfig)
+	util.KubeApply("foo", sleepYaml, kubeconfig)
+	util.KubeApply("bar", httpbinYaml, kubeconfig)
+	util.KubeApply("bar", sleepYaml, kubeconfig)
+	util.KubeApply("legacy", httpbinLegacyYaml, kubeconfig)
+	util.KubeApply("legacy", sleepLegacyYaml, kubeconfig)
+	
 	if err := util.CheckPodRunning("foo", "app=httpbin", kubeconfigFile); err != nil {
 		return err
 	}
@@ -163,7 +148,7 @@ func Test14(t *testing.T) {
 	defer func() {
 		// recover from panic if one occured. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
-			log.Infof("Test panic: %v", err)
+			t.Errorf("Test panic: %v", err)
 		}
 	}()
 
@@ -200,14 +185,14 @@ func Test14(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
 		log.Info("Globally enabling Istio mutual TLS")
 		Inspect(util.KubeApplyContents("", meshPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
-		log.Info("Waiting for rules to propagate. Sleep 60 seconds...")
-		time.Sleep(time.Duration(60) * time.Second)
+		log.Info("Waiting for rules to propagate. Sleep 50 seconds...")
+		time.Sleep(time.Duration(50) * time.Second)
 
 		ns := []string{"foo", "bar"}
 		for _, from := range ns {
@@ -226,6 +211,7 @@ func Test14(t *testing.T) {
 				}
 			}
 		}
+		time.Sleep(time.Duration(5) * time.Second)
 
 		Inspect(util.KubeApplyContents("", clientRule, kubeconfigFile), "failed to apply clientRule", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 30 seconds...")
@@ -246,13 +232,14 @@ func Test14(t *testing.T) {
 				}
 			}
 		}
+		time.Sleep(time.Duration(5) * time.Second)
 	})
 
 	t.Run("non_istio_to_istio", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
@@ -283,15 +270,14 @@ func Test14(t *testing.T) {
 				}
 			}	
 		}
-		log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-		time.Sleep(time.Duration(10) * time.Second)
+		time.Sleep(time.Duration(5) * time.Second)
 	})
 
 	t.Run("istio_to_non_istio", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
@@ -312,8 +298,10 @@ func Test14(t *testing.T) {
 				log.Infof("Response 503 as expected : %s", msg)
 			}
 		}
+		time.Sleep(time.Duration(5) * time.Second)
 
 		Inspect(util.KubeApplyContents("", legacyRule, kubeconfigFile), "failed to apply legacyRule", "", t)
+		time.Sleep(time.Duration(10) * time.Second)
 		for _, from := range ns {
 			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
 			Inspect(err, "failed to get sleep pod name", "", t)
@@ -328,13 +316,14 @@ func Test14(t *testing.T) {
 				log.Infof("Success. Get expected response: %s", msg)
 			}
 		}
+		time.Sleep(time.Duration(5) * time.Second)
 	})
 
 	t.Run("istio_to_k8s_api", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
@@ -372,7 +361,7 @@ func Test14(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
@@ -414,7 +403,7 @@ func Test14(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
@@ -466,7 +455,7 @@ func Test14(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
@@ -508,7 +497,7 @@ func Test14(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
@@ -552,8 +541,8 @@ func Test14(t *testing.T) {
 
 		Inspect(util.KubeApplyContents("", fooGateway, kubeconfigFile), "failed to apply foo gateway", "", t)
 		Inspect(util.KubeApplyContents("", fooVS, kubeconfigFile), "failed to apply foo virtualservice", "", t)
-		log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-		time.Sleep(time.Duration(10) * time.Second)
+		log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
+		time.Sleep(time.Duration(20) * time.Second)
 		
 		resp, _, err := GetHTTPResponse(url, nil)
 		Inspect(err, "failed to get httpbin header response", "", t)
@@ -568,8 +557,8 @@ func Test14(t *testing.T) {
 		util.Shell("kubectl get policies.authentication.istio.io -n foo")
 
 		Inspect(util.KubeApplyContents("foo", fooJWTPolicy, kubeconfigFile), "failed to apply foo JWT Policy", "", t)
-		log.Info("Waiting for rules to propagate. Sleep 45 seconds...")
-		time.Sleep(time.Duration(45) * time.Second)
+		log.Info("Waiting for rules to propagate. Sleep 50 seconds...")
+		time.Sleep(time.Duration(50) * time.Second)
 
 		resp, _, err = GetHTTPResponse(url, nil)
 		CloseResponseBody(resp)
@@ -634,7 +623,7 @@ func Test14(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 		
