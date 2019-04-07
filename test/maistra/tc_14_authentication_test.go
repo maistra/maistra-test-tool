@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"istio.io/istio/pkg/log"
-	"istio.io/istio/tests/util"
+	"maistra/util"
 )
 
 
@@ -157,21 +157,21 @@ func Test14(t *testing.T) {
 
 	// Create namespaces
 	for _, ns := range namespaces {
-		Inspect(util.CreateNamespace(ns, kubeconfigFile), "failed to create namespace", "", t)
-		OcGrantPermission("default", ns, kubeconfigFile)
+		util.Inspect(util.CreateNamespace(ns, kubeconfigFile), "failed to create namespace", "", t)
+		util.OcGrantPermission("default", ns, kubeconfigFile)
 	}
 
-	Inspect(setup14(kubeconfigFile), "failed to apply deployments", "", t)
+	util.Inspect(setup14(kubeconfigFile), "failed to apply deployments", "", t)
 	log.Info("Verify setup")
 	
 	for _, from := range namespaces {
 		for _, to := range namespaces {
 			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
-			Inspect(err, "failed to get sleep pod name", "", t)
+			util.Inspect(err, "failed to get sleep pod name", "", t)
 			cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
 								to, from, to)
 			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
-			Inspect(err, "failed to get response", "", t)
+			util.Inspect(err, "failed to get response", "", t)
 			if !strings.Contains(msg, "200") {
 				t.Errorf("Verify setup -- Unexpected response code: %s", msg)
 				log.Errorf("Verify setup -- Unexpected response code: %s", msg)
@@ -190,7 +190,7 @@ func Test14(t *testing.T) {
 		}()
 
 		log.Info("Globally enabling Istio mutual TLS")
-		Inspect(util.KubeApplyContents("", meshPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
+		util.Inspect(util.KubeApplyContents("", meshPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)
 
@@ -198,11 +198,11 @@ func Test14(t *testing.T) {
 		for _, from := range ns {
 			for _, to := range ns {
 				sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
-				Inspect(err, "failed to get sleep pod name", "", t)
+				util.Inspect(err, "failed to get sleep pod name", "", t)
 				cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
 								to, from, to)
 				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
-				Inspect(err, "failed to get response", "", t)
+				util.Inspect(err, "failed to get response", "", t)
 				if !strings.Contains(msg, "503") {
 					t.Errorf("global mTLS expected: 503; Got response code: %s", msg)
 					log.Errorf("global mTLS expected: 503; Got response code: %s", msg)
@@ -213,17 +213,17 @@ func Test14(t *testing.T) {
 		}
 		time.Sleep(time.Duration(5) * time.Second)
 
-		Inspect(util.KubeApplyContents("", clientRule, kubeconfigFile), "failed to apply clientRule", "", t)
+		util.Inspect(util.KubeApplyContents("", clientRule, kubeconfigFile), "failed to apply clientRule", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 30 seconds...")
 		time.Sleep(time.Duration(30) * time.Second)
 		for _, from := range ns {
 			for _, to := range ns {
 				sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
-				Inspect(err, "failed to get sleep pod name", "", t)
+				util.Inspect(err, "failed to get sleep pod name", "", t)
 				cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
 								to, from, to)
 				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
-				Inspect(err, "failed to get response", "", t)
+				util.Inspect(err, "failed to get response", "", t)
 				if !strings.Contains(msg, "200") {
 					t.Errorf("global mTLS expected: 200; Got response code: %s", msg)
 					log.Errorf("global mTLS expected: 200; Got response code: %s", msg)
@@ -249,7 +249,7 @@ func Test14(t *testing.T) {
 		from := "legacy"
 		for _, to := range ns {
 			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
-			Inspect(err, "failed to get sleep pod name", "", t)
+			util.Inspect(err, "failed to get sleep pod name", "", t)
 			cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
 								to, from, to)
 			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
@@ -286,11 +286,11 @@ func Test14(t *testing.T) {
 		to := "legacy"
 		for _, from := range ns {
 			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
-			Inspect(err, "failed to get sleep pod name", "", t)
+			util.Inspect(err, "failed to get sleep pod name", "", t)
 			cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
 								to, from, to)
 			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
-			Inspect(err, "failed to get response", "", t)
+			util.Inspect(err, "failed to get response", "", t)
 			if !strings.Contains(msg, "503") {
 				t.Errorf("istio to non istio response expected: 503; Got unexpected response code: %s", msg)
 				log.Errorf("istio to non istio response expected: 503; Got unexpected response code: %s", msg)
@@ -300,15 +300,15 @@ func Test14(t *testing.T) {
 		}
 		time.Sleep(time.Duration(5) * time.Second)
 
-		Inspect(util.KubeApplyContents("", legacyRule, kubeconfigFile), "failed to apply legacyRule", "", t)
+		util.Inspect(util.KubeApplyContents("", legacyRule, kubeconfigFile), "failed to apply legacyRule", "", t)
 		time.Sleep(time.Duration(10) * time.Second)
 		for _, from := range ns {
 			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
-			Inspect(err, "failed to get sleep pod name", "", t)
+			util.Inspect(err, "failed to get sleep pod name", "", t)
 			cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
 								to, from, to)
 			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
-			Inspect(err, "failed to get response", "", t)
+			util.Inspect(err, "failed to get response", "", t)
 			if !strings.Contains(msg, "200") {
 				t.Errorf("istio to non istio expected: 200; Got unexpected response code: %s", msg)
 				log.Errorf("istio to non istio expected: 200; Got unexpected response code: %s", msg)
@@ -329,9 +329,9 @@ func Test14(t *testing.T) {
 
 		log.Info("Request from Istio services to Kubernetes API server")
 		token, err := getSecretToken()
-		Inspect(err, "failed to get secret token", "", t)
+		util.Inspect(err, "failed to get secret token", "", t)
 		sleepPod, err := util.GetPodName("foo", "app=sleep", kubeconfigFile)
-		Inspect(err, "failed to get sleep pod name", "", t)
+		util.Inspect(err, "failed to get sleep pod name", "", t)
 		cmd := fmt.Sprintf("curl https://kubernetes.default/api --header \"Authorization: Bearer %s\" --insecure -s -o /dev/null -w \"%%{http_code}\"", token)
 		msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfigFile)
 		if err != nil {
@@ -341,12 +341,12 @@ func Test14(t *testing.T) {
 			log.Errorf("istio to Kubernetes API server expected: failed; Got unexpected response: %s", msg)
 		}
 
-		Inspect(util.KubeApplyContents("", apiServerRule, kubeconfigFile), "failed to apply api-server rule", "", t)
+		util.Inspect(util.KubeApplyContents("", apiServerRule, kubeconfigFile), "failed to apply api-server rule", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
 		time.Sleep(time.Duration(20) * time.Second)
 
 		msg, err = util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfigFile)
-		Inspect(err, "failed to get response", "", t)
+		util.Inspect(err, "failed to get response", "", t)
 		if !strings.Contains(msg, "200") {
 			t.Errorf("istio to Kubernetes API server expected: 200; Got unexpected response code: %s", msg)
 			log.Errorf("istio to Kubernetes API server expected: 200; Got unexpected response code: %s", msg)
@@ -366,14 +366,14 @@ func Test14(t *testing.T) {
 		}()
 
 		log.Info("Enable mutual TLS per namespace")
-		Inspect(util.KubeApplyContents("", fooPolicy, kubeconfigFile), "failed to apply foo Policy", "", t)
-		Inspect(util.KubeApplyContents("", fooRule, kubeconfigFile), "failed to apply foo rule", "", t)
+		util.Inspect(util.KubeApplyContents("", fooPolicy, kubeconfigFile), "failed to apply foo Policy", "", t)
+		util.Inspect(util.KubeApplyContents("", fooRule, kubeconfigFile), "failed to apply foo rule", "", t)
 
 		namespaces := []string{"foo", "bar", "legacy"}
 		for _, from := range namespaces {
 			for _, to := range namespaces {
 				sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
-				Inspect(err, "failed to get sleep pod name", "", t)
+				util.Inspect(err, "failed to get sleep pod name", "", t)
 				cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
 									to, from, to)
 				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
@@ -388,7 +388,7 @@ func Test14(t *testing.T) {
 					continue
 				}
 
-				Inspect(err, "failed to get response", "", t)
+				util.Inspect(err, "failed to get response", "", t)
 				if !strings.Contains(msg, "200") {
 					t.Errorf("namespace mTLS expected: 200; Got unexpected response code: %s", msg)
 					log.Errorf("namespace mTLS expected: 200; Got unexpected response code: %s", msg)
@@ -408,14 +408,14 @@ func Test14(t *testing.T) {
 		}()
 
 		log.Info("Enable mutual TLS per service")
-		Inspect(util.KubeApplyContents("", barPolicy, kubeconfigFile), "failed to apply bar Policy", "", t)
-		Inspect(util.KubeApplyContents("", barRule, kubeconfigFile), "failed to apply bar rule", "", t)
+		util.Inspect(util.KubeApplyContents("", barPolicy, kubeconfigFile), "failed to apply bar Policy", "", t)
+		util.Inspect(util.KubeApplyContents("", barRule, kubeconfigFile), "failed to apply bar rule", "", t)
 
 		namespaces := []string{"foo", "bar", "legacy"}
 		for _, from := range namespaces {
 			for _, to := range namespaces {
 				sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
-				Inspect(err, "failed to get sleep pod name", "", t)
+				util.Inspect(err, "failed to get sleep pod name", "", t)
 				cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
 									to, from, to)
 				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
@@ -440,7 +440,7 @@ func Test14(t *testing.T) {
 					continue
 				}
 
-				Inspect(err, "failed to get response", "", t)
+				util.Inspect(err, "failed to get response", "", t)
 				if !strings.Contains(msg, "200") {
 					t.Errorf("mTLS per service expected: 200; Got unexpected response code: %s", msg)
 					log.Errorf("mTLS per service expected: 200; Got unexpected response code: %s", msg)
@@ -460,14 +460,14 @@ func Test14(t *testing.T) {
 		}()
 
 		log.Info("Edit mutual TLS only on httpbin bar port 1234")
-		Inspect(util.KubeApplyContents("", barPolicy2, kubeconfigFile), "failed to apply bar Policy 2", "", t)
-		Inspect(util.KubeApplyContents("", barRule2, kubeconfigFile), "failed to apply bar Rule 2", "", t)
+		util.Inspect(util.KubeApplyContents("", barPolicy2, kubeconfigFile), "failed to apply bar Policy 2", "", t)
+		util.Inspect(util.KubeApplyContents("", barRule2, kubeconfigFile), "failed to apply bar Rule 2", "", t)
 
 		namespaces := []string{"foo", "bar", "legacy"}
 		for _, from := range namespaces {
 			for _, to := range namespaces {
 				sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
-				Inspect(err, "failed to get sleep pod name", "", t)
+				util.Inspect(err, "failed to get sleep pod name", "", t)
 				cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
 									to, from, to)
 				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
@@ -482,7 +482,7 @@ func Test14(t *testing.T) {
 					continue
 				}
 
-				Inspect(err, "failed to get response", "", t)
+				util.Inspect(err, "failed to get response", "", t)
 				if !strings.Contains(msg, "200") {
 					t.Errorf("port mTLS expected: 200; Got unexpected response code: %s", msg)
 					log.Errorf("port mTLS expected: 200; Got unexpected response code: %s", msg)
@@ -502,18 +502,18 @@ func Test14(t *testing.T) {
 		}()
 
 		log.Info("Overwrite foo namespace policy by service policy")
-		Inspect(util.KubeApplyContents("", fooPolicy2, kubeconfigFile), "failed to apply foo Policy 2", "", t)
-		Inspect(util.KubeApplyContents("", fooRule2, kubeconfigFile), "failed to apply foo Rule 2", "", t)
+		util.Inspect(util.KubeApplyContents("", fooPolicy2, kubeconfigFile), "failed to apply foo Policy 2", "", t)
+		util.Inspect(util.KubeApplyContents("", fooRule2, kubeconfigFile), "failed to apply foo Rule 2", "", t)
 
 		namespaces := []string{"foo", "bar", "legacy"}
 		for _, from := range namespaces {
 			for _, to := range namespaces {
 				sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
-				Inspect(err, "failed to get sleep pod name", "", t)
+				util.Inspect(err, "failed to get sleep pod name", "", t)
 				cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
 									to, from, to)
 				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
-				Inspect(err, "failed to get response", "", t)
+				util.Inspect(err, "failed to get response", "", t)
 				if !strings.Contains(msg, "200") {
 					t.Errorf("Expected: 200; Got unexpected response code: %s", msg)
 					log.Errorf("Expected: 200; Got unexpected response code: %s", msg)
@@ -535,68 +535,68 @@ func Test14(t *testing.T) {
 		}()
 
 		log.Info("End-user authentication")
-		ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
-		Inspect(err, "failed to get ingressgateway URL", "", t)
+		ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+		util.Inspect(err, "failed to get ingressgateway URL", "", t)
 		url := fmt.Sprintf("http://%s/headers", ingress)
 
-		Inspect(util.KubeApplyContents("", fooGateway, kubeconfigFile), "failed to apply foo gateway", "", t)
-		Inspect(util.KubeApplyContents("", fooVS, kubeconfigFile), "failed to apply foo virtualservice", "", t)
+		util.Inspect(util.KubeApplyContents("", fooGateway, kubeconfigFile), "failed to apply foo gateway", "", t)
+		util.Inspect(util.KubeApplyContents("", fooVS, kubeconfigFile), "failed to apply foo virtualservice", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
 		time.Sleep(time.Duration(20) * time.Second)
 		
-		resp, _, err := GetHTTPResponse(url, nil)
-		Inspect(err, "failed to get httpbin header response", "", t)
+		resp, _, err := util.GetHTTPResponse(url, nil)
+		util.Inspect(err, "failed to get httpbin header response", "", t)
 		if resp.StatusCode != 200 {
 			t.Errorf("Expected: 200; Got unexpected response code: %d", resp.StatusCode)
 			log.Errorf("Expected: 200; Got unexpected response code: %d", resp.StatusCode)
 		} else {
 			log.Infof("Success. Get response: %d", resp.StatusCode)
 		}
-		CloseResponseBody(resp)
+		util.CloseResponseBody(resp)
 
 		util.Shell("kubectl get policies.authentication.istio.io -n foo")
 
-		Inspect(util.KubeApplyContents("foo", fooJWTPolicy, kubeconfigFile), "failed to apply foo JWT Policy", "", t)
+		util.Inspect(util.KubeApplyContents("foo", fooJWTPolicy, kubeconfigFile), "failed to apply foo JWT Policy", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)
 
-		resp, _, err = GetHTTPResponse(url, nil)
-		CloseResponseBody(resp)
-		resp, _, err = GetHTTPResponse(url, nil)
-		CloseResponseBody(resp)
-		resp, _, err = GetHTTPResponse(url, nil)
-		Inspect(err, "failed to get httpbin header response", "", t)
+		resp, _, err = util.GetHTTPResponse(url, nil)
+		util.CloseResponseBody(resp)
+		resp, _, err = util.GetHTTPResponse(url, nil)
+		util.CloseResponseBody(resp)
+		resp, _, err = util.GetHTTPResponse(url, nil)
+		util.Inspect(err, "failed to get httpbin header response", "", t)
 		if resp.StatusCode != 401 {
 			t.Errorf("Expected: 401; Got unexpected response code: %d %s", resp.StatusCode, resp.Status)
 			log.Errorf("Expected: 401; Got unexpected response code: %d %s", resp.StatusCode, resp.Status)
 		} else {
 			log.Infof("Success. Get expected response 401: %d", resp.StatusCode)
 		}
-		CloseResponseBody(resp)
+		util.CloseResponseBody(resp)
 
 		log.Info("Attaching the valid token")
 		token, err := util.ShellSilent("curl %s -s", jwtURL)
 		token = strings.Trim(token, "\n")
-		Inspect(err, "failed to get JWT token", "", t)
-		resp, err = GetWithJWT(url, token, "")
-		Inspect(err, "failed to get httpbin header response", "", t)
+		util.Inspect(err, "failed to get JWT token", "", t)
+		resp, err = util.GetWithJWT(url, token, "")
+		util.Inspect(err, "failed to get httpbin header response", "", t)
 		if resp.StatusCode != 200 {
 			t.Errorf("Expected: 200; Got unexpected response code: %d", resp.StatusCode)
 			log.Errorf("Expected: 200; Got unexpected response code: %d", resp.StatusCode)
 		} else {
 			log.Infof("Success. Get response: %d", resp.StatusCode)
 		}
-		CloseResponseBody(resp)
+		util.CloseResponseBody(resp)
 		
 		log.Info("Test JWT expires in 5 seconds")
 		jwcryptoInstall()
 		log.Info("Check curls return five or six 200 and then five or four 401")
 		token, err = util.ShellSilent("%s %s --expire 5", jwtGen, jwtKey)
 		token = strings.Trim(token, "\n")
-		Inspect(err, "failed to get JWT token", "", t)
+		util.Inspect(err, "failed to get JWT token", "", t)
 		for i := 0; i < 10; i++ {
-			resp, err = GetWithJWT(url, token, "")
-			Inspect(err, "failed to get httpbin header response", "", t)
+			resp, err = util.GetWithJWT(url, token, "")
+			util.Inspect(err, "failed to get httpbin header response", "", t)
 			if i == 0 {
 				if resp.StatusCode != 200 {
 					t.Errorf("Expected: 200; Got unexpected response code: %d", resp.StatusCode)
@@ -613,7 +613,7 @@ func Test14(t *testing.T) {
 					log.Infof("Success. Get expected response 401: %d", resp.StatusCode)
 				}
 			}
-			CloseResponseBody(resp)
+			util.CloseResponseBody(resp)
 			time.Sleep(time.Duration(1) * time.Second)
 		}
 		jwcryptoCleanup()
@@ -628,18 +628,18 @@ func Test14(t *testing.T) {
 		}()
 		
 		log.Info("End-user authentication with mutual TLS")
-		Inspect(util.KubeApplyContents("", fooJWTPolicy2, kubeconfigFile), "failed to apply foo JWT Policy 2", "", t)		
-		Inspect(util.KubeApplyContents("", fooRule3, kubeconfigFile), "failed to apply foo rule 3", "", t)
+		util.Inspect(util.KubeApplyContents("", fooJWTPolicy2, kubeconfigFile), "failed to apply foo JWT Policy 2", "", t)		
+		util.Inspect(util.KubeApplyContents("", fooRule3, kubeconfigFile), "failed to apply foo rule 3", "", t)
 		
 		log.Info("Check request from istio services")
 		token, err := util.ShellSilent("curl %s -s", jwtURL)
 		token = strings.Trim(token, "\n")
-		Inspect(err, "failed to get JWT token", "", t)
+		util.Inspect(err, "failed to get JWT token", "", t)
 		sleepPod, err := util.GetPodName("foo", "app=sleep", kubeconfigFile)
-		Inspect(err, "failed to get sleep pod name", "", t)
+		util.Inspect(err, "failed to get sleep pod name", "", t)
 		cmd := fmt.Sprintf("curl http://httpbin.foo:8000/ip -s -o /dev/null -w \"%%{http_code}\" --header \"Authorization: Bearer %s\"", token)
 		msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfigFile)
-		Inspect(err, "failed to get response", "", t)
+		util.Inspect(err, "failed to get response", "", t)
 		if !strings.Contains(msg, "200") {
 			t.Errorf("Expected: 200; Got unexpected response code: %s", msg)
 			log.Errorf("Expected: 200; Got unexpected response code: %s", msg)
@@ -649,7 +649,7 @@ func Test14(t *testing.T) {
 
 		log.Info("Check request from non-istio services")
 		sleepPod, err = util.GetPodName("legacy", "app=sleep", kubeconfigFile)
-		Inspect(err, "failed to get sleep pod name", "", t)
+		util.Inspect(err, "failed to get sleep pod name", "", t)
 		msg, err = util.PodExec("legacy", sleepPod, "sleep", cmd, true, kubeconfigFile)
 		if err != nil {
 			log.Infof("Expected failed request from non-istio services: %v", err)

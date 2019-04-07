@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"istio.io/istio/pkg/log"
-	"istio.io/istio/tests/util"
+	"maistra/util"
 )
 
 func cleanup11(namespace, kubeconfig string) {
@@ -29,9 +29,9 @@ func cleanup11(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, bookinfoRatingMySQLYaml, kubeconfig)
 	util.KubeDelete(namespace, bookinfoRatingMySQLv2Yaml, kubeconfig)
 	util.KubeDelete(namespace, bookinfoRatingMySQLServiceEntryYaml, kubeconfig)
+	cleanBookinfo(namespace, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
-	cleanBookinfo(namespace, kubeconfig)
 }
 
 func configTCPRatings(namespace, kubeconfig string) error {
@@ -69,30 +69,30 @@ func Test11(t *testing.T) {
 	panic("TBD update the external TCP DB location")
 
 	log.Info("# TC_11 Control Egress TCP Traffic")
-	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 	
-	ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
-	Inspect(err, "failed to get ingressgateway URL", "", t)
+	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	util.Inspect(err, "failed to get ingressgateway URL", "", t)
 	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
 
-	Inspect(configTCPRatings(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+	util.Inspect(configTCPRatings(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 	
-	resp, _, err := GetHTTPResponse(productpageURL, nil)
-	Inspect(err, "failed to get productpage", "", t)
-	CloseResponseBody(resp)
+	resp, _, err := util.GetHTTPResponse(productpageURL, nil)
+	util.Inspect(err, "failed to get productpage", "", t)
+	util.CloseResponseBody(resp)
 
 	log.Info("# Define a TCP mesh-external service entry")
-	Inspect(configEgressTCP(testNamespace, kubeconfigFile), "failed to apply service entry", "", t)
+	util.Inspect(configEgressTCP(testNamespace, kubeconfigFile), "failed to apply service entry", "", t)
 
-	resp, _, err = GetHTTPResponse(productpageURL, nil)
-	Inspect(err, "failed to get productpage", "", t)
+	resp, _, err = util.GetHTTPResponse(productpageURL, nil)
+	util.Inspect(err, "failed to get productpage", "", t)
 	body, err := ioutil.ReadAll(resp.Body)
-	Inspect(err, "failed to read response body", "", t)
-	Inspect(
-		CompareHTTPResponse(body, "productpage-normal-user-rating-one-star.html"),
+	util.Inspect(err, "failed to read response body", "", t)
+	util.Inspect(
+		util.CompareHTTPResponse(body, "productpage-normal-user-rating-one-star.html"),
 		"Didn't get expected response",
 		"Success. Response matches expected one star Ratings",
 		t)
-	CloseResponseBody(resp)
+	util.CloseResponseBody(resp)
 
 }

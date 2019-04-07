@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"istio.io/istio/pkg/log"
-	"istio.io/istio/tests/util"
+	"maistra/util"
 )
 
 func cleanup15(kubeconfig string) {
@@ -92,21 +92,21 @@ func Test15(t *testing.T) {
 
 	// Create namespaces
 	for _, ns := range namespaces {
-		Inspect(util.CreateNamespace(ns, kubeconfigFile), "failed to create namespace", "", t)
-		OcGrantPermission("default", ns, kubeconfigFile)
+		util.Inspect(util.CreateNamespace(ns, kubeconfigFile), "failed to create namespace", "", t)
+		util.OcGrantPermission("default", ns, kubeconfigFile)
 	}
 	time.Sleep(time.Duration(5) * time.Second)
-	Inspect(setup15(kubeconfigFile), "failed to apply deployments", "", t)
+	util.Inspect(setup15(kubeconfigFile), "failed to apply deployments", "", t)
 	
 	t.Run("verify_setup", func(t *testing.T) {
 		log.Info("Verify setup")
 
 		for _, from := range namespaces {
 			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
-			Inspect(err, "failed to get sleep pod name", "", t)
+			util.Inspect(err, "failed to get sleep pod name", "", t)
 			cmd := fmt.Sprintf("curl http://httpbin.foo:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.foo: %%{http_code}\"", from)
 			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
-			Inspect(err, "failed to get response", "", t)
+			util.Inspect(err, "failed to get response", "", t)
 			if !strings.Contains(msg, "200") {
 				t.Errorf("Verify setup expected 200; Got unexpected response code: %s", msg)
 				log.Errorf("Verify setup expected 200; Got unexpected response code: %s", msg)
@@ -127,15 +127,15 @@ func Test15(t *testing.T) {
 		}()
 
 		log.Info("Configure the server to accept both mutual TLS and plain text traffic")
-		Inspect(util.KubeApplyContents("foo", tlsPermissivePolicy, kubeconfigFile), "failed to apply foo permissive policy", "", t)
+		util.Inspect(util.KubeApplyContents("foo", tlsPermissivePolicy, kubeconfigFile), "failed to apply foo permissive policy", "", t)
 		time.Sleep(time.Duration(5) * time.Second)
 
 		for _, from := range namespaces {
 			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
-			Inspect(err, "failed to get sleep pod name", "", t)
+			util.Inspect(err, "failed to get sleep pod name", "", t)
 			cmd := fmt.Sprintf("curl http://httpbin.foo:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.foo: %%{http_code}\"", from)
 			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
-			Inspect(err, "failed to get response", "", t)
+			util.Inspect(err, "failed to get response", "", t)
 			if !strings.Contains(msg, "200") {
 				t.Errorf("mTLS and plain text expected 200; Got unexpected response code: %s", msg)
 				log.Errorf("mTLS and plain text expected 200; Got unexpected response code: %s", msg)
@@ -154,15 +154,15 @@ func Test15(t *testing.T) {
 		}()
 
 		log.Info("Configure clients to send mutual TLS traffic")
-		Inspect(util.KubeApplyContents("foo", tlsRule, kubeconfigFile), "failed to apply foo tls rule", "", t)
+		util.Inspect(util.KubeApplyContents("foo", tlsRule, kubeconfigFile), "failed to apply foo tls rule", "", t)
 		time.Sleep(time.Duration(5) * time.Second)
 
 		for _, from := range namespaces {
 			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
-			Inspect(err, "failed to get sleep pod name", "", t)
+			util.Inspect(err, "failed to get sleep pod name", "", t)
 			cmd := fmt.Sprintf("curl http://httpbin.foo:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.foo: %%{http_code}\"", from)
 			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
-			Inspect(err, "failed to get response", "", t)
+			util.Inspect(err, "failed to get response", "", t)
 			if !strings.Contains(msg, "200") {
 				t.Errorf("mTLS traffic expected 200; Got unexpected response code: %s", msg)
 				log.Errorf("mTLS traffic expected 200; Got unexpected response code: %s", msg)
@@ -181,12 +181,12 @@ func Test15(t *testing.T) {
 		}()
 		
 		log.Info("Lock down to mutual TLS")
-		Inspect(util.KubeApplyContents("foo", tlsStrictPolicy, kubeconfigFile), "failed to apply foo tls strict policy", "", t)
+		util.Inspect(util.KubeApplyContents("foo", tlsStrictPolicy, kubeconfigFile), "failed to apply foo tls strict policy", "", t)
 		time.Sleep(time.Duration(5) * time.Second)
 
 		for _, from := range namespaces {
 			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
-			Inspect(err, "failed to get sleep pod name", "", t)
+			util.Inspect(err, "failed to get sleep pod name", "", t)
 			cmd := fmt.Sprintf("curl http://httpbin.foo:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.foo: %%{http_code}\"", from)
 			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
 
@@ -200,7 +200,7 @@ func Test15(t *testing.T) {
 				continue
 			}
 
-			Inspect(err, "failed to get response", "", t)
+			util.Inspect(err, "failed to get response", "", t)
 			if !strings.Contains(msg, "200") {
 				t.Errorf("mTLS traffic expected 200; Got unexpected response code: %s", msg)
 				log.Errorf("mTLS traffic expected 200; Got unexpected response code: %s", msg)

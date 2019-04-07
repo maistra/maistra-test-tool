@@ -22,15 +22,15 @@ import (
 	"time"
 
 	"istio.io/istio/pkg/log"
-	"istio.io/istio/tests/util"
+	"maistra/util"
 )
 
 func cleanup05(namespace, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
+	cleanBookinfo(namespace, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
-	cleanBookinfo(namespace, kubeconfig)
 }
 
 func setup05(namespace, kubeconfig string) error {
@@ -78,12 +78,12 @@ func Test05(t *testing.T) {
 	}()
 	
 	log.Infof("# TC_05 Traffic Shifting")
-	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
-	ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
-	Inspect(err, "failed to get ingressgateway URL", "", t)
+	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	util.Inspect(err, "failed to get ingressgateway URL", "", t)
 	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
 
-	Inspect(setup05(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+	util.Inspect(setup05(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 
 	t.Run("50%_v3_shift", func(t *testing.T) {
 		defer func() {
@@ -93,7 +93,7 @@ func Test05(t *testing.T) {
 			}
 		}()
 
-		Inspect(trafficShift50v3(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+		util.Inspect(trafficShift50v3(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		time.Sleep(time.Duration(5) * time.Second)
 		
 		tolerance := 0.10
@@ -101,21 +101,21 @@ func Test05(t *testing.T) {
 		once := sync.Once{}
 		c1, cVersionToMigrate := 0, 0
 		for i := 0; i < totalShot; i++ {
-			resp, _, err := GetHTTPResponse(productpageURL, nil)
-			Inspect(err, "failed to get response", "", t)
-			if err := CheckHTTPResponse200(resp); err != nil {
+			resp, _, err := util.GetHTTPResponse(productpageURL, nil)
+			util.Inspect(err, "failed to get response", "", t)
+			if err := util.CheckHTTPResponse200(resp); err != nil {
 				log.Errorf("unexpected response status %d", resp.StatusCode)
 				continue
 			}
 			
 			body, err := ioutil.ReadAll(resp.Body)
-			Inspect(err, "failed to read response body", "", t)
+			util.Inspect(err, "failed to read response body", "", t)
 
 			var c1CompareError, cVersionToMigrateError error
 			
-			if c1CompareError = CompareHTTPResponse(body, "productpage-normal-user-v1.html"); c1CompareError == nil {
+			if c1CompareError = util.CompareHTTPResponse(body, "productpage-normal-user-v1.html"); c1CompareError == nil {
 				c1++
-			} else if cVersionToMigrateError = CompareHTTPResponse(body, "productpage-normal-user-v3.html"); cVersionToMigrateError == nil {
+			} else if cVersionToMigrateError = util.CompareHTTPResponse(body, "productpage-normal-user-v3.html"); cVersionToMigrateError == nil {
 				cVersionToMigrate++
 			} else {
 				log.Errorf("received unexpected version")
@@ -124,7 +124,7 @@ func Test05(t *testing.T) {
 					log.Infof("comparing to the version to migrate to: %v", cVersionToMigrateError)
 				})
 			}
-			CloseResponseBody(resp)
+			util.CloseResponseBody(resp)
 		}
 		
 		if isWithinPercentage(c1, totalShot, 0.5, tolerance) && isWithinPercentage(cVersionToMigrate, totalShot, 0.5, tolerance) {
@@ -146,7 +146,7 @@ func Test05(t *testing.T) {
 			}
 		}()
 		
-		Inspect(trafficShiftAllv3(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+		util.Inspect(trafficShiftAllv3(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		time.Sleep(time.Duration(5) * time.Second)
 
 		tolerance := 0.0
@@ -156,19 +156,19 @@ func Test05(t *testing.T) {
 
 		for i := 0; i < totalShot; i++ {
 			time.Sleep(time.Duration(1) * time.Second)
-			resp, _, err := GetHTTPResponse(productpageURL, nil)
-			Inspect(err, "failed to get response", "", t)
-			if err := CheckHTTPResponse200(resp); err != nil {
+			resp, _, err := util.GetHTTPResponse(productpageURL, nil)
+			util.Inspect(err, "failed to get response", "", t)
+			if err := util.CheckHTTPResponse200(resp); err != nil {
 				log.Errorf("unexpected response status %d", resp.StatusCode)
 				continue
 			}
 			
 			body, err := ioutil.ReadAll(resp.Body)
-			Inspect(err, "failed to read response body", "", t)
+			util.Inspect(err, "failed to read response body", "", t)
 
 			var cVersionToMigrateError error
 			
-			if cVersionToMigrateError = CompareHTTPResponse(body, "productpage-normal-user-v3.html"); cVersionToMigrateError == nil {
+			if cVersionToMigrateError = util.CompareHTTPResponse(body, "productpage-normal-user-v3.html"); cVersionToMigrateError == nil {
 				cVersionToMigrate++
 			} else {
 				log.Errorf("received unexpected version")
@@ -176,7 +176,7 @@ func Test05(t *testing.T) {
 					log.Infof("comparing to the version to migrate to: %v", cVersionToMigrateError)
 				})
 			}
-			CloseResponseBody(resp)
+			util.CloseResponseBody(resp)
 		}
 		
 		if isWithinPercentage(cVersionToMigrate, totalShot, 1, tolerance) {

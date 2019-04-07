@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"istio.io/istio/pkg/log"
-	"istio.io/istio/tests/util"
+	"maistra/util"
 )
 
 
@@ -29,9 +29,9 @@ func cleanup06(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, echo20v2Yaml, kubeconfig)
 	util.KubeDelete(namespace, echoAllv1Yaml, kubeconfig)
 	util.KubeDelete(namespace, echoYaml, kubeconfig)
+	cleanBookinfo(namespace, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
-	cleanBookinfo(namespace, kubeconfig)
 }
 
 func routeTrafficAllv1(namespace, kubeconfig string) error {
@@ -74,15 +74,15 @@ func Test06(t *testing.T) {
 	}()
 	
 	log.Infof("# TC_06 TCP Traffic Shifting")
-	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 	
-	ingress, err := GetOCP4Ingressgateway("istio-system", kubeconfigFile)
-	Inspect(err, "cannot get ingress host ip", "", t)
+	ingress, err := util.GetOCP4Ingressgateway("istio-system", kubeconfigFile)
+	util.Inspect(err, "cannot get ingress host ip", "", t)
 	
-	ingressTCPPort, err := GetTCPIngressPort("istio-system", "istio-ingressgateway", kubeconfigFile)
-	Inspect(err, "cannot get ingress TCP port", "", t)
+	ingressTCPPort, err := util.GetTCPIngressPort("istio-system", "istio-ingressgateway", kubeconfigFile)
+	util.Inspect(err, "cannot get ingress TCP port", "", t)
 
-	Inspect(deployEcho(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+	util.Inspect(deployEcho(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 
 	t.Run("100%_v1_shift", func(t *testing.T) {
 		defer func() {
@@ -93,7 +93,7 @@ func Test06(t *testing.T) {
 		}()
 
 		log.Info("# Shifting all TCP traffic to v1")
-		Inspect(routeTrafficAllv1(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+		util.Inspect(routeTrafficAllv1(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		time.Sleep(time.Duration(5) * time.Second)
 
 		tolerance := 0.0
@@ -105,7 +105,7 @@ func Test06(t *testing.T) {
 		for i := 0; i < totalShot; i++ {
 			time.Sleep(time.Duration(1) * time.Second)
 			msg, err := checkEcho(ingress, ingressTCPPort)
-			Inspect(err, "faild to get date", "", t)
+			util.Inspect(err, "faild to get date", "", t)
 			if strings.Contains(msg, "one") {
 				versionCount++
 			} else {
@@ -131,7 +131,7 @@ func Test06(t *testing.T) {
 		}()
 		
 		log.Info("# Shifting 20% TCP traffic to v2 tolerance 10% ")
-		Inspect(routeTraffic20v2(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+		util.Inspect(routeTraffic20v2(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		time.Sleep(time.Duration(5) * time.Second)
 		
 		tolerance := 0.10
@@ -143,7 +143,7 @@ func Test06(t *testing.T) {
 		for i := 0; i < totalShot; i++ {
 			time.Sleep(time.Duration(1) * time.Second)
 			msg, err := checkEcho(ingress, ingressTCPPort)
-			Inspect(err, "failed to get date", "", t)
+			util.Inspect(err, "failed to get date", "", t)
 			if strings.Contains(msg, "one") {
 				c1++
 			} else if strings.Contains(msg, "two") {

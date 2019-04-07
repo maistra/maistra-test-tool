@@ -87,6 +87,8 @@ Testing Prerequisite
 * Istio system has been installed on an OpenShift cluster
 
 * A test namespace/project `bookinfo` need to be created and OCP cluster priviledge has been granted to the `bookinfo` namespace/project. 
+  * `$ oc adm policy add-scc-to-user privileged -z default -n bookinfo`
+  * `$ oc adm policy add-scc-to-user anyuid -z default -n bookinfo`
   * Priviledge permission is a temporary requirement for any OCP namespace/project to work with sidecar deployments. We don't need to deploy the sample application `bookinfo` before running tests
 
 

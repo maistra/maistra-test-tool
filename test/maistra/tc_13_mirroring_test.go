@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"istio.io/istio/pkg/log"
-	"istio.io/istio/tests/util"
+	"maistra/util"
 )
 
 
@@ -79,7 +79,7 @@ func Test13(t *testing.T) {
 	}()
 
 	log.Info("# TC_13 Mirroring")
-	Inspect(setup13(testNamespace, kubeconfigFile), "failed to deploy samples", "", t)
+	util.Inspect(setup13(testNamespace, kubeconfigFile), "failed to deploy samples", "", t)
 
 	t.Run("no_mirror", func(t *testing.T) {
 		defer func() {
@@ -89,25 +89,25 @@ func Test13(t *testing.T) {
 			}
 		}()
 
-		Inspect(util.KubeApply(testNamespace, httpbinAllv1Yaml, kubeconfigFile), "failed to apply rule", "", t)
+		util.Inspect(util.KubeApply(testNamespace, httpbinAllv1Yaml, kubeconfigFile), "failed to apply rule", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 		time.Sleep(time.Duration(10) * time.Second)
 
 		sleepPod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfigFile)
-		Inspect(err, "failed to get sleep pod name", "", t)
+		util.Inspect(err, "failed to get sleep pod name", "", t)
 		_, err = util.PodExec(testNamespace, sleepPod, "sleep", "sh -c 'curl  http://httpbin:8080/headers' | python -m json.tool", true, kubeconfigFile)
-		Inspect(err, "failed to get response", "", t)
+		util.Inspect(err, "failed to get response", "", t)
 
 		// check httpbin v1 logs
 		v1Pod, err := util.GetPodName(testNamespace, "app=httpbin,version=v1", kubeconfigFile)
-		Inspect(err, "failed to get httpbin v1 pod name", "", t)
+		util.Inspect(err, "failed to get httpbin v1 pod name", "", t)
 		v1msg, err := util.Shell("kubectl logs -n %s --follow=false %s -c %s", testNamespace, v1Pod, "httpbin")
-		Inspect(err, "failed to get httpbin v1 log", "", t)
+		util.Inspect(err, "failed to get httpbin v1 log", "", t)
 		// check httpbin v2 logs
 		v2Pod, err := util.GetPodName(testNamespace, "app=httpbin,version=v2", kubeconfigFile)
-		Inspect(err, "failed to get httpbin v2 pod name", "", t)
+		util.Inspect(err, "failed to get httpbin v2 pod name", "", t)
 		v2msg, err := util.Shell("kubectl logs -n %s --follow=false %s -c %s", testNamespace, v2Pod, "httpbin")
-		Inspect(err, "failed to get httpbin v2 log", "", t)
+		util.Inspect(err, "failed to get httpbin v2 log", "", t)
 		if strings.Contains(v1msg, "\"GET /headers HTTP/1.1\" 200") && !strings.Contains(v2msg, "\"GET /headers HTTP/1.1\" 200") {
 			log.Info("Success. v1 an v2 logs are expected")
 		} else {
@@ -123,25 +123,25 @@ func Test13(t *testing.T) {
 			}
 		}()
 		
-		Inspect(util.KubeApply(testNamespace, httpbinMirrorv2Yaml, kubeconfigFile), "failed to apply rule", "", t)
+		util.Inspect(util.KubeApply(testNamespace, httpbinMirrorv2Yaml, kubeconfigFile), "failed to apply rule", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 		time.Sleep(time.Duration(10) * time.Second)
 
 		sleepPod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfigFile)
-		Inspect(err, "failed to get sleep pod name", "", t)
+		util.Inspect(err, "failed to get sleep pod name", "", t)
 		_, err = util.PodExec(testNamespace, sleepPod, "sleep", "sh -c 'curl  http://httpbin:8080/headers' | python -m json.tool", true, kubeconfigFile)
-		Inspect(err, "failed to get response", "", t)
+		util.Inspect(err, "failed to get response", "", t)
 
 		// check httpbin v1 logs
 		v1Pod, err := util.GetPodName(testNamespace, "app=httpbin,version=v1", kubeconfigFile)
-		Inspect(err, "failed to get httpbin v1 pod name", "", t)
+		util.Inspect(err, "failed to get httpbin v1 pod name", "", t)
 		v1msg, err := util.Shell("kubectl logs -n %s --follow=false %s -c %s", testNamespace, v1Pod, "httpbin")
-		Inspect(err, "failed to get httpbin v1 log", "", t)
+		util.Inspect(err, "failed to get httpbin v1 log", "", t)
 		// check httpbin v2 logs
 		v2Pod, err := util.GetPodName(testNamespace, "app=httpbin,version=v2", kubeconfigFile)
-		Inspect(err, "failed to get httpbin v2 pod name", "", t)
+		util.Inspect(err, "failed to get httpbin v2 pod name", "", t)
 		v2msg, err := util.Shell("kubectl logs -n %s --follow=false %s -c %s", testNamespace, v2Pod, "httpbin")
-		Inspect(err, "failed to get httpbin v2 log", "", t)
+		util.Inspect(err, "failed to get httpbin v2 log", "", t)
 		if strings.Contains(v1msg, "\"GET /headers HTTP/1.1\" 200") && strings.Contains(v2msg, "\"GET /headers HTTP/1.1\" 200") {
 			log.Info("Success. v1 an v2 logs are expected")
 		} else {

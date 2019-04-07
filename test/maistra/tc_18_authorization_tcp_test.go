@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"istio.io/istio/pkg/log"
-	"istio.io/istio/tests/util"
+	"maistra/util"
 )
 
 func cleanup18(namespace, kubeconfig string) {
@@ -48,7 +48,7 @@ func cleanup18(namespace, kubeconfig string) {
 }
 
 func setup18(namespace, kubeconfig string) error {
-	OcGrantPermission("bookinfo-ratings-v2", namespace, kubeconfig)
+	util.OcGrantPermission("bookinfo-ratings-v2", namespace, kubeconfig)
 	if err := util.KubeApply(namespace, bookinfoRatingv2ServiceAccount, kubeconfig); err != nil {
 		return err
 	}
@@ -69,32 +69,32 @@ func Test18(t *testing.T) {
 			t.Errorf("Test panic: %v", err)
 		}
 	}()
-	panic("TBD fix sample html error")
+	//panic("TBD fix sample html error")
 
 	log.Infof("# TC_18 Authorization for TCP Services")
-	Inspect(updateYaml(testNamespace), "failed to update yaml", "", t)
+	updateYaml(testNamespace)
 	log.Info("Clean existing mesh policy")
 	util.ShellSilent("kubectl delete meshpolicy default")
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)	
 
 	log.Info("Enable mutual TLS")
-	Inspect(util.KubeApplyContents(testNamespace, mtlsPolicy, kubeconfigFile), "failed to apply policy", "", t)
+	util.Inspect(util.KubeApplyContents(testNamespace, mtlsPolicy, kubeconfigFile), "failed to apply policy", "", t)
 	mtlsRule := strings.Replace(mtlsRuleTemplate, "@token@", testNamespace, -1)
-	Inspect(util.KubeApplyContents(testNamespace, mtlsRule, kubeconfigFile), "failed to apply rule", "", t)
+	util.Inspect(util.KubeApplyContents(testNamespace, mtlsRule, kubeconfigFile), "failed to apply rule", "", t)
 	log.Info("Waiting... Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)	
 
 	log.Info("Deploy bookinfo")
-	Inspect(deployBookinfo(testNamespace, kubeconfigFile, true), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
-	ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
-	Inspect(err, "failed to get ingressgateway URL", "", t)
+	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, true), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	util.Inspect(err, "failed to get ingressgateway URL", "", t)
 	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
 
 	log.Info("Create Service Accounts")
-	Inspect(setup18(testNamespace, kubeconfigFile), "failed to create service account", "", t)
-	Inspect(util.KubeApply(testNamespace, bookinfoRuleAllTLSYaml, kubeconfigFile), "failed to apply rule", "", t)
-	Inspect(util.KubeApply(testNamespace, bookinfoRatingDBYaml, kubeconfigFile), "failed to apply rule", "", t)
+	util.Inspect(setup18(testNamespace, kubeconfigFile), "failed to create service account", "", t)
+	util.Inspect(util.KubeApply(testNamespace, bookinfoRuleAllTLSYaml, kubeconfigFile), "failed to apply rule", "", t)
+	util.Inspect(util.KubeApply(testNamespace, bookinfoRatingDBYaml, kubeconfigFile), "failed to apply rule", "", t)
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)	
 
@@ -106,31 +106,31 @@ func Test18(t *testing.T) {
 			}
 		}()
 
-		resp, _, err := GetHTTPResponse(productpageURL, nil)
-		Inspect(err, "failed to get HTTP Response", "", t)
-		defer CloseResponseBody(resp)
+		resp, _, err := util.GetHTTPResponse(productpageURL, nil)
+		util.Inspect(err, "failed to get HTTP Response", "", t)
+		defer util.CloseResponseBody(resp)
 		body, err := ioutil.ReadAll(resp.Body)
-		Inspect(err, "failed to read response body", "", t)
-		Inspect(
-			CompareHTTPResponse(body, "productpage-rbac-rating-error.html"), 
+		util.Inspect(err, "failed to read response body", "", t)
+		util.Inspect(
+			util.CompareHTTPResponse(body, "productpage-rbac-rating-error.html"), 
 			"Didn't get expected response.", 
 			"Success. Response matches with expected.", 
 			t)	
 
-		Inspect(deployMongoDB(testNamespace, kubeconfigFile), "failed to deploy mongoDB", "", t)
+		util.Inspect(deployMongoDB(testNamespace, kubeconfigFile), "failed to deploy mongoDB", "", t)
 		log.Info("Waiting... Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)	
-		resp, _, err = GetHTTPResponse(productpageURL, nil)
-		CloseResponseBody(resp)
-		resp, _, err = GetHTTPResponse(productpageURL, nil)
-		CloseResponseBody(resp)
-		resp, _, err = GetHTTPResponse(productpageURL, nil)
-		Inspect(err, "failed to get HTTP Response", "", t)
-		defer CloseResponseBody(resp)
+		resp, _, err = util.GetHTTPResponse(productpageURL, nil)
+		util.CloseResponseBody(resp)
+		resp, _, err = util.GetHTTPResponse(productpageURL, nil)
+		util.CloseResponseBody(resp)
+		resp, _, err = util.GetHTTPResponse(productpageURL, nil)
+		util.Inspect(err, "failed to get HTTP Response", "", t)
+		defer util.CloseResponseBody(resp)
 		body, err = ioutil.ReadAll(resp.Body)
-		Inspect(err, "failed to read response body", "", t)
-		Inspect(
-			CompareHTTPResponse(body, "productpage-normal-user-v3.html"), 
+		util.Inspect(err, "failed to read response body", "", t)
+		util.Inspect(
+			util.CompareHTTPResponse(body, "productpage-normal-user-v3.html"), 
 			"Didn't get expected response.", 
 			"Success. Response matches with expected.", 
 			t)
@@ -145,16 +145,16 @@ func Test18(t *testing.T) {
 		}()
 
 		log.Info("Enable Istio Authorization")
-		Inspect(util.KubeApplyContents(testNamespace, bookinfoRBAConDB, kubeconfigFile), "failed to apply policy", "", t)
+		util.Inspect(util.KubeApplyContents(testNamespace, bookinfoRBAConDB, kubeconfigFile), "failed to apply policy", "", t)
 		log.Info("Waiting... Sleep 20 seconds...")
 		time.Sleep(time.Duration(20) * time.Second)	
-		resp, _, err := GetHTTPResponse(productpageURL, nil)
-		Inspect(err, "failed to get HTTP Response", "", t)
-		defer CloseResponseBody(resp)
+		resp, _, err := util.GetHTTPResponse(productpageURL, nil)
+		util.Inspect(err, "failed to get HTTP Response", "", t)
+		defer util.CloseResponseBody(resp)
 		body, err := ioutil.ReadAll(resp.Body)
-		Inspect(err, "failed to read response body", "", t)
-		Inspect(
-			CompareHTTPResponse(body, "productpage-rbac-rating-error.html"), 
+		util.Inspect(err, "failed to read response body", "", t)
+		util.Inspect(
+			util.CompareHTTPResponse(body, "productpage-rbac-rating-error.html"), 
 			"Didn't get expected response.", 
 			"Success. Response matches with expected.", 
 			t)	
@@ -169,16 +169,16 @@ func Test18(t *testing.T) {
 		}()
 
 		log.Info("Enforcing Service-level access control")
-		Inspect(util.KubeApplyContents(testNamespace, bookinfoMongodbPolicy, kubeconfigFile), "failed to apply policy", "", t)
+		util.Inspect(util.KubeApplyContents(testNamespace, bookinfoMongodbPolicy, kubeconfigFile), "failed to apply policy", "", t)
 		log.Info("Waiting... Sleep 20 seconds...")
 		time.Sleep(time.Duration(20) * time.Second)
-		resp, _, err := GetHTTPResponse(productpageURL, nil)
-		Inspect(err, "failed to get HTTP Response", "", t)
-		defer CloseResponseBody(resp)
+		resp, _, err := util.GetHTTPResponse(productpageURL, nil)
+		util.Inspect(err, "failed to get HTTP Response", "", t)
+		defer util.CloseResponseBody(resp)
 		body, err := ioutil.ReadAll(resp.Body)
-		Inspect(err, "failed to read response body", "", t)
-		Inspect(
-			CompareHTTPResponse(body, "productpage-normal-user-v3.html"), 
+		util.Inspect(err, "failed to read response body", "", t)
+		util.Inspect(
+			util.CompareHTTPResponse(body, "productpage-normal-user-v3.html"), 
 			"Didn't get expected response.", 
 			"Success. Response matches with expected.", 
 			t)
@@ -193,16 +193,16 @@ func Test18(t *testing.T) {
 		}()
 		
 		util.KubeDelete(testNamespace, bookinfoRatingv2ServiceAccount, kubeconfigFile)
-		Inspect(util.KubeApply(testNamespace, bookinfoRatingv2Yaml, kubeconfigFile), "failed to apply rule", "", t)
+		util.Inspect(util.KubeApply(testNamespace, bookinfoRatingv2Yaml, kubeconfigFile), "failed to apply rule", "", t)
 		log.Info("Waiting... Sleep 10 seconds...")
 		time.Sleep(time.Duration(10) * time.Second)
-		resp, _, err := GetHTTPResponse(productpageURL, nil)
-		Inspect(err, "failed to get HTTP Response", "", t)
-		defer CloseResponseBody(resp)
+		resp, _, err := util.GetHTTPResponse(productpageURL, nil)
+		util.Inspect(err, "failed to get HTTP Response", "", t)
+		defer util.CloseResponseBody(resp)
 		body, err := ioutil.ReadAll(resp.Body)
-		Inspect(err, "failed to read response body", "", t)
-		Inspect(
-			CompareHTTPResponse(body, "productpage-rbac-rating-error.html"), 
+		util.Inspect(err, "failed to read response body", "", t)
+		util.Inspect(
+			util.CompareHTTPResponse(body, "productpage-rbac-rating-error.html"), 
 			"Didn't get expected response.", 
 			"Success. Response matches with expected.", 
 			t)	

@@ -27,16 +27,16 @@ import (
 	"time"
 
 	"istio.io/istio/pkg/log"
-	"istio.io/istio/tests/util"
+	"maistra/util"
 )
 
 func cleanup09(namespace, kubeconfig string) {
 	
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDelete("istio-system", jwtAuthYaml, kubeconfig)
-	OcDelete("", httpbinOCPRouteYaml, kubeconfig)
+	util.OcDelete("", httpbinOCPRouteYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinGatewayHTTPSMutualYaml, kubeconfig)
-	OcDelete("", httpbinOCPRouteHTTPSYaml, kubeconfig)
+	util.OcDelete("", httpbinOCPRouteHTTPSYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinRouteHTTPSYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinGatewayHTTPSYaml, kubeconfig)
 	
@@ -51,10 +51,9 @@ func cleanup09(namespace, kubeconfig string) {
 	time.Sleep(time.Duration(10) * time.Second)
 	
 	util.KubeDelete(namespace, httpbinYaml, kubeconfig)
-	
+	cleanBookinfo(namespace, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
-	cleanBookinfo(namespace, kubeconfig)
 }
 
 
@@ -83,7 +82,7 @@ func configHttpbinHTTPS(namespace, kubeconfig string) error {
 	if err := util.KubeApply(namespace, httpbinRouteHTTPSYaml, kubeconfig); err != nil {
 		return err
 	}
-	if err := OcApply("", httpbinOCPRouteHTTPSYaml, kubeconfig); err != nil {
+	if err := util.OcApply("", httpbinOCPRouteHTTPSYaml, kubeconfig); err != nil {
 		return err
 	}
 	log.Info("Waiting for rules to propagate. Sleep 30 seconds...")
@@ -121,7 +120,7 @@ func updateHttpbinHTTPS(namespace, kubeconfig string) error{
 
 func configJWT(kubeconfig string) error {
 	// config jwt auth
-	if err := OcApply("", httpbinOCPRouteYaml, kubeconfig); err != nil {
+	if err := util.OcApply("", httpbinOCPRouteYaml, kubeconfig); err != nil {
 		return err
 	}
 	if err := util.KubeApply("istio-system", jwtAuthYaml, kubeconfig); err != nil {
@@ -242,18 +241,18 @@ func Test09 (t *testing.T) {
 	log.Info("Waiting for previous run to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 
-	ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
-	Inspect(err, "failed to get ingressgateway URL", "", t)
+	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	util.Inspect(err, "failed to get ingressgateway URL", "", t)
 	
-	ingressHostIP, err := GetOCP4Ingressgateway("istio-system", kubeconfigFile)
-	Inspect(err, "cannot get ingress host ip", "", t)
+	ingressHostIP, err := util.GetOCP4Ingressgateway("istio-system", kubeconfigFile)
+	util.Inspect(err, "cannot get ingress host ip", "", t)
 	
-	secureIngressPort, err := GetSecureIngressPort("istio-system", "istio-ingressgateway", kubeconfigFile)
-	Inspect(err, "cannot get ingress secure port", "", t)
-	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+	secureIngressPort, err := util.GetSecureIngressPort("istio-system", "istio-ingressgateway", kubeconfigFile)
+	util.Inspect(err, "cannot get ingress secure port", "", t)
+	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 	
-	Inspect(deployHttpbin(testNamespace, kubeconfigFile), "failed to deploy httpbin", "", t)
-	Inspect(configHttpbinHTTPS(testNamespace, kubeconfigFile), "failed to config httpbin with tls certs", "", t)
+	util.Inspect(deployHttpbin(testNamespace, kubeconfigFile), "failed to deploy httpbin", "", t)
+	util.Inspect(configHttpbinHTTPS(testNamespace, kubeconfigFile), "failed to config httpbin with tls certs", "", t)
 
 	t.Run("general_tls", func(t *testing.T) {
 		defer func() {
@@ -266,11 +265,11 @@ func Test09 (t *testing.T) {
 		// check teapot
 		url := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
 		resp, err := checkTeapot(url, ingressHostIP, secureIngressPort, "httpbin.example.com", httpbinSampleCACert)
-		defer CloseResponseBody(resp)
-		Inspect(err, "failed to get response", "", t)
+		defer util.CloseResponseBody(resp)
+		util.Inspect(err, "failed to get response", "", t)
 		
 		bodyByte, err := ioutil.ReadAll(resp.Body)
-		Inspect(err, "failed to read response body", "", t)
+		util.Inspect(err, "failed to read response body", "", t)
 		
 		if strings.Contains(string(bodyByte), "-=[ teapot ]=-") {
 			log.Info(string(bodyByte))
@@ -288,7 +287,7 @@ func Test09 (t *testing.T) {
 		}()
 
 		log.Info("Configure Mutual TLS Gateway")
-		Inspect(updateHttpbinHTTPS(testNamespace, kubeconfigFile), "failed to configure mutual tls gateway", "", t)
+		util.Inspect(updateHttpbinHTTPS(testNamespace, kubeconfigFile), "failed to configure mutual tls gateway", "", t)
 		
 		log.Info("Check SSL handshake failure as expected")
 		url := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
@@ -298,20 +297,20 @@ func Test09 (t *testing.T) {
 			// Don't need to close resp because resp is nil when err is not nil
 		} else {
 			bodyByte, err := ioutil.ReadAll(resp.Body)
-			Inspect(err, "failed to read response body", "", t)
+			util.Inspect(err, "failed to read response body", "", t)
 			
 			t.Errorf("Unexpected response: %s", string(bodyByte))
-			CloseResponseBody(resp)
+			util.CloseResponseBody(resp)
 		}
 		
 		log.Info("Check SSL return a teapot again")
 		resp, err = checkTeapot2(url, ingressHostIP, secureIngressPort, "httpbin.example.com", 
 									httpbinSampleCACert, httpbinSampleClientCert, httpbinSampleClientCertKey)
-		defer CloseResponseBody(resp)
-		Inspect(err, "failed to get response", "", t)
+		defer util.CloseResponseBody(resp)
+		util.Inspect(err, "failed to get response", "", t)
 		
 		bodyByte, err := ioutil.ReadAll(resp.Body)
-		Inspect(err, "failed to read response body", "", t)
+		util.Inspect(err, "failed to read response body", "", t)
 		
 		if strings.Contains(string(bodyByte), "-=[ teapot ]=-") {
 			log.Info(string(bodyByte))
@@ -329,31 +328,31 @@ func Test09 (t *testing.T) {
 		}()
 		
 		log.Info("Configure JWT Authentication")
-		Inspect(configJWT(kubeconfigFile), "failed to configure JWT authentication", "", t)
+		util.Inspect(configJWT(kubeconfigFile), "failed to configure JWT authentication", "", t)
 		// check 401
-		resp, err := GetWithHost(fmt.Sprintf("http://%s/status/200", ingress), "httpbin.example.com")
-		Inspect(err, "failed to get response", "", t)
+		resp, err := util.GetWithHost(fmt.Sprintf("http://%s/status/200", ingress), "httpbin.example.com")
+		util.Inspect(err, "failed to get response", "", t)
 		if resp.StatusCode != 401 {
 			t.Errorf("Unexpected response code: %v", resp.StatusCode)
 		} else {
 			log.Info("Get expected response code: 401")
 		}
-		CloseResponseBody(resp)
+		util.CloseResponseBody(resp)
 
 		// check 200
 		resp, err = http.Get(jwtURL)
-		Inspect(err, "failed to get JWT response", "", t)
+		util.Inspect(err, "failed to get JWT response", "", t)
 		
 		tokenByte, err := ioutil.ReadAll(resp.Body)
-		Inspect(err, "failed to read JWT response body", "", t)
+		util.Inspect(err, "failed to read JWT response body", "", t)
 		
 		token := strings.Trim(string(tokenByte),"\n")
-		CloseResponseBody(resp)
+		util.CloseResponseBody(resp)
 
-		resp, err = GetWithJWT(fmt.Sprintf("http://%s/status/200", ingress), token, "httpbin.example.com")
-		Inspect(err, "failed to get response", "", t)
-		Inspect(CheckHTTPResponse200(resp), "failed to get HTTP 200", "Get expected response code: 200", t)
-		CloseResponseBody(resp)
+		resp, err = util.GetWithJWT(fmt.Sprintf("http://%s/status/200", ingress), token, "httpbin.example.com")
+		util.Inspect(err, "failed to get response", "", t)
+		util.Inspect(util.CheckHTTPResponse200(resp), "failed to get HTTP 200", "Get expected response code: 200", t)
+		util.CloseResponseBody(resp)
 	})
 	
 }

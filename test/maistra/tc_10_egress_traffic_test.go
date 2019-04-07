@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"istio.io/istio/pkg/log"
-	"istio.io/istio/tests/util"
+	"maistra/util"
 )
 
 
@@ -83,10 +83,10 @@ func Test10(t *testing.T) {
 	}()
 
 	log.Infof("# TC_10 Control Egress Traffic")
-	Inspect(deploySleep(testNamespace, kubeconfigFile), "failed to deploy sleep", "", t)
-	Inspect(configEgress(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+	util.Inspect(deploySleep(testNamespace, kubeconfigFile), "failed to deploy sleep", "", t)
+	util.Inspect(configEgress(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 	pod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfigFile)
-	Inspect(err, "failed to get sleep pod", "", t)
+	util.Inspect(err, "failed to get sleep pod", "", t)
 
 	t.Run("external_httpbin", func(t *testing.T) {
 		defer func() {
@@ -99,7 +99,7 @@ func Test10(t *testing.T) {
 		log.Info("# Make requests to external httpbin service")
 		command := "curl http://httpbin.org/headers"
 		msg, err := util.PodExec(testNamespace, pod, "sleep", command, false, kubeconfigFile)
-		Inspect(err, "failed to get response", "", t)
+		util.Inspect(err, "failed to get response", "", t)
 		if strings.Contains(msg, "X-Envoy-Decorator-Operation") {
 			log.Infof("Success. Get response header: %s", msg)
 
@@ -140,7 +140,7 @@ func Test10(t *testing.T) {
 		log.Info("# Make requets to external google service")
 		command := "curl -s https://www.google.com | grep -o \"<title>.*</title>\""
 		msg, err := util.PodExec(testNamespace, pod, "sleep", command, false, kubeconfigFile)
-		Inspect(err, "failed to get response", "", t)
+		util.Inspect(err, "failed to get response", "", t)
 		if strings.Contains(msg, "<title>Google</title>") {
 			log.Infof("Success. Get response: %s", msg)
 		} else {
@@ -178,10 +178,10 @@ func Test10(t *testing.T) {
 		}()
 
 		log.Info("Set route rules on external services")
-		Inspect(blockExternal(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+		util.Inspect(blockExternal(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		command := "sh -c \"curl -o /dev/null -s -w '%{http_code}' http://httpbin.org/delay/5\""
 		msg, err := util.PodExec(testNamespace, pod, "sleep", command, false, kubeconfigFile)
-		Inspect(err, "failed to get response", "", t)
+		util.Inspect(err, "failed to get response", "", t)
 		if msg == "504" {
 			log.Infof("Get expected response failure: %s", msg)
 		} else {
@@ -200,10 +200,10 @@ func Test10(t *testing.T) {
 		cleanup10(testNamespace, kubeconfigFile)
 
 		log.Info("# Redeploy sleep app with IP range exclusive and calling external services directly")
-		Inspect(deploySleepIPRange(testNamespace, kubeconfigFile), "failed to deploy sleep with IP range", "", t)
-		Inspect(configEgress(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+		util.Inspect(deploySleepIPRange(testNamespace, kubeconfigFile), "failed to deploy sleep with IP range", "", t)
+		util.Inspect(configEgress(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		pod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfigFile)
-		Inspect(err, "failed to get sleep pod", "", t)
+		util.Inspect(err, "failed to get sleep pod", "", t)
 		
 		t.Run("external_httpbin", func(t *testing.T) {
 			log.Info("# Make requests to external httpbin service")
@@ -212,7 +212,7 @@ func Test10(t *testing.T) {
 			
 			command := "curl http://httpbin.org/headers"
 			msg, err := util.PodExec(testNamespace, pod, "sleep", command, false, kubeconfigFile)
-			Inspect(err, "failed to get response", "", t)
+			util.Inspect(err, "failed to get response", "", t)
 			if strings.Contains(msg, "X-Envoy-Decorator-Operation") {
 				log.Errorf("Unexpected response header: %s", msg)
 			} else {
@@ -231,7 +231,7 @@ func Test10(t *testing.T) {
 			log.Info("# Make requets to external google service")
 			command := "curl -s https://www.google.com | grep -o \"<title>.*</title>\""
 			msg, err := util.PodExec(testNamespace, pod, "sleep", command, false, kubeconfigFile)
-			Inspect(err, "failed to get response", "", t)
+			util.Inspect(err, "failed to get response", "", t)
 			if strings.Contains(msg, "<title>Google</title>") {
 				log.Infof("Success. Get response: %s", msg)
 			} else {

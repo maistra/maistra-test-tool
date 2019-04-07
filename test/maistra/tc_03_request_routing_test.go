@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"istio.io/istio/pkg/log"
-	"istio.io/istio/tests/util"
+	"maistra/util"
 )
 
 
@@ -29,9 +29,9 @@ func cleanup03(namespace string, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
 	util.KubeDelete(namespace, bookinfoReviewTestv2Yaml, kubeconfig)
-	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
 	cleanBookinfo(namespace, kubeconfig)
+	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
+	time.Sleep(time.Duration(10) * time.Second)	
 }
 
 func routeTraffic(namespace string, kubeconfig string) error {
@@ -64,12 +64,12 @@ func Test03(t *testing.T) {
 	}()
 	
 	log.Infof("# TC_03 Traffic Routing")
-	Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
-	ingress, err := GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
-	Inspect(err, "failed to get ingressgateway URL", "", t)
+	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	util.Inspect(err, "failed to get ingressgateway URL", "", t)
 	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
 
-	testUserJar	:= GetCookieJar(testUsername, "", "http://" + ingress)
+	testUserJar	:= util.GetCookieJar(testUsername, "", "http://" + ingress)
 
 	t.Run("general_route", func(t *testing.T) {
 		defer func() {
@@ -79,16 +79,16 @@ func Test03(t *testing.T) {
 			}
 		}()
 
-		Inspect(routeTraffic(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+		util.Inspect(routeTraffic(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		for i := 0; i <= testRetryTimes; i++ {
-			resp, duration, err := GetHTTPResponse(productpageURL, nil)
-			Inspect(err, "failed to get HTTP Response", "", t)
+			resp, duration, err := util.GetHTTPResponse(productpageURL, nil)
+			util.Inspect(err, "failed to get HTTP Response", "", t)
 			log.Infof("bookinfo productpage returned in %d ms", duration)
-			defer CloseResponseBody(resp)
+			defer util.CloseResponseBody(resp)
 			body, err := ioutil.ReadAll(resp.Body)
-			Inspect(err, "failed to read response body", "", t)
-			Inspect(
-				CompareHTTPResponse(body, "productpage-normal-user-v1.html"), 
+			util.Inspect(err, "failed to read response body", "", t)
+			util.Inspect(
+				util.CompareHTTPResponse(body, "productpage-normal-user-v1.html"), 
 				"Didn't get expected response.", 
 				"Success. Response matches with expected.", 
 				t)	
@@ -102,16 +102,16 @@ func Test03(t *testing.T) {
 			}
 		}()
 		
-		Inspect(routeTrafficUser(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+		util.Inspect(routeTrafficUser(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		for i := 0; i <= testRetryTimes; i++ {
-			resp, duration, err := GetHTTPResponse(productpageURL, testUserJar)
-			Inspect(err, "failed to get HTTP Response", "", t)
+			resp, duration, err := util.GetHTTPResponse(productpageURL, testUserJar)
+			util.Inspect(err, "failed to get HTTP Response", "", t)
 			log.Infof("bookinfo productpage returned in %d ms", duration)
-			defer CloseResponseBody(resp)
+			defer util.CloseResponseBody(resp)
 			body, err := ioutil.ReadAll(resp.Body)
-			Inspect(err, "failed to read response body", "", t)
-			Inspect(
-				CompareHTTPResponse(body, "productpage-test-user-v2.html"), 
+			util.Inspect(err, "failed to read response body", "", t)
+			util.Inspect(
+				util.CompareHTTPResponse(body, "productpage-test-user-v2.html"), 
 				"Didn't get expected response.", 
 				"Success. Respones matches with expected.",
 				t)
