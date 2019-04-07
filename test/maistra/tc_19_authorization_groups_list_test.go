@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"istio.io/istio/pkg/log"
-	"istio.io/istio/tests/util"
+	"maistra/util"
 )
 
 func cleanup19(kubeconfig string) {
@@ -52,30 +52,30 @@ func Test19(t *testing.T) {
 	}()
 
 	log.Infof("# TC_19 Authorization for groups and list claims")
-	Inspect(util.CreateNamespace("foo", kubeconfigFile), "failed to create namespace", "", t)
-	OcGrantPermission("default", "foo", kubeconfigFile)
+	util.Inspect(util.CreateNamespace("foo", kubeconfigFile), "failed to create namespace", "", t)
+	util.OcGrantPermission("default", "foo", kubeconfigFile)
 
 	log.Info("Enable mTLS")	
-	Inspect(util.KubeApplyContents("foo", mtlsPolicy, kubeconfigFile), "failed to apply policy", "", t)
+	util.Inspect(util.KubeApplyContents("foo", mtlsPolicy, kubeconfigFile), "failed to apply policy", "", t)
 	mtlsRule := strings.Replace(mtlsRuleTemplate, "@token@", "foo", -1)
-	Inspect(util.KubeApplyContents("foo", mtlsRule, kubeconfigFile), "failed to apply rule", "", t)
+	util.Inspect(util.KubeApplyContents("foo", mtlsRule, kubeconfigFile), "failed to apply rule", "", t)
 	log.Info("Waiting... Sleep 5 seconds...")
 	time.Sleep(time.Duration(5) * time.Second)
 
-	Inspect(deployHttpbin("foo", kubeconfigFile), "failed to deploy httpbin", "", t)
-	Inspect(deploySleep("foo", kubeconfigFile), "failed to deploy sleep", "", t)
+	util.Inspect(deployHttpbin("foo", kubeconfigFile), "failed to deploy httpbin", "", t)
+	util.Inspect(deploySleep("foo", kubeconfigFile), "failed to deploy sleep", "", t)
 
 	token, err := util.ShellSilent("curl %s -s", jwtURLGroup)
 	token = strings.Trim(token, "\n")
-	Inspect(err, "failed to get JWT token", "", t)
+	util.Inspect(err, "failed to get JWT token", "", t)
 	sleepPod, err := util.GetPodName("foo", "app=sleep", kubeconfigFile)
-	Inspect(err, "failed to get sleep pod name", "", t)
+	util.Inspect(err, "failed to get sleep pod name", "", t)
 	
 	t.Run("verify_setup", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
@@ -83,7 +83,7 @@ func Test19(t *testing.T) {
 		cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"%%{http_code}\"", "foo")
 		msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, false, kubeconfigFile)
 		msg, err = util.PodExec("foo", sleepPod, "sleep", cmd, false, kubeconfigFile)
-		Inspect(err, "failed to get response", "", t)
+		util.Inspect(err, "failed to get response", "", t)
 		if !strings.Contains(msg, "200") {
 			t.Errorf("Verify setup -- Unexpected response code: %s", msg)
 			log.Errorf("Verify setup -- Unexpected response code: %s", msg)
@@ -96,18 +96,18 @@ func Test19(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
 		log.Info("Configure JWT authentication with mutual TLS")
-		Inspect(util.KubeApplyContents("foo", fooJWTPolicy2, kubeconfigFile), "failed to apply policy", "", t)
+		util.Inspect(util.KubeApplyContents("foo", fooJWTPolicy2, kubeconfigFile), "failed to apply policy", "", t)
 		log.Info("Waiting... Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)
 
 		cmd := fmt.Sprintf("curl http://httpbin.foo:8000/ip -s -o /dev/null -w \"%%{http_code}\" --header \"Authorization: Bearer %s\"", token)
 		msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfigFile)
-		Inspect(err, "failed to get response", "", t)
+		util.Inspect(err, "failed to get response", "", t)
 		if !strings.Contains(msg, "200") {
 			t.Errorf("Expected: 200; Got unexpected response code: %s", msg)
 			log.Errorf("Expected: 200; Got unexpected response code: %s", msg)
@@ -118,8 +118,8 @@ func Test19(t *testing.T) {
 		cmd = fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"%%{http_code}\"", "foo")
 		msg, err = util.PodExec("foo", sleepPod, "sleep", cmd, false, kubeconfigFile)
 		msg, err = util.PodExec("foo", sleepPod, "sleep", cmd, false, kubeconfigFile)
-		Inspect(err, "failed to get response", "", t)
-		Inspect(err, "failed to get response", "", t)
+		util.Inspect(err, "failed to get response", "", t)
+		util.Inspect(err, "failed to get response", "", t)
 		if !strings.Contains(msg, "401") {
 			t.Errorf("Expected: 401 -- Unexpected response code: %s", msg)
 			log.Errorf("Expected: 401 -- Unexpected response code: %s", msg)
@@ -132,19 +132,19 @@ func Test19(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
 		log.Info("Configure groups-based authorization")
-		Inspect(util.KubeApplyContents("foo", fooRBAC, kubeconfigFile), "failed to apply clusterrbacconfig", "", t)
+		util.Inspect(util.KubeApplyContents("foo", fooRBAC, kubeconfigFile), "failed to apply clusterrbacconfig", "", t)
 		log.Info("Waiting... Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)
 
 		cmd := fmt.Sprintf("curl http://httpbin.foo:8000/ip -s -o /dev/null -w \"%%{http_code}\" --header \"Authorization: Bearer %s\"", token)
 		msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfigFile)
 		msg, err = util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfigFile)
-		Inspect(err, "failed to get response", "", t)
+		util.Inspect(err, "failed to get response", "", t)
 		if !strings.Contains(msg, "403") {
 			t.Errorf("Expected: 403; Got unexpected response code: %s", msg)
 			log.Errorf("Expected: 403; Got unexpected response code: %s", msg)
@@ -152,15 +152,15 @@ func Test19(t *testing.T) {
 			log.Infof("Success. Get expected response: %s", msg)
 		}
 
-		Inspect(util.KubeApplyContents("foo", fooRBACRole, kubeconfigFile), "failed to apply servicerole", "", t)
-		Inspect(util.KubeApplyContentSilent("foo", fooRBACRoleBinding, kubeconfigFile), "failed to apply servicerolebinding", "", t)
+		util.Inspect(util.KubeApplyContents("foo", fooRBACRole, kubeconfigFile), "failed to apply servicerole", "", t)
+		util.Inspect(util.KubeApplyContentSilent("foo", fooRBACRoleBinding, kubeconfigFile), "failed to apply servicerolebinding", "", t)
 		log.Info("Waiting... Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)
 
 		cmd = fmt.Sprintf("curl http://httpbin.foo:8000/ip -s -o /dev/null -w \"%%{http_code}\" --header \"Authorization: Bearer %s\"", token)
 		msg, err = util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfigFile)
 		msg, err = util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfigFile)
-		Inspect(err, "failed to get response", "", t)
+		util.Inspect(err, "failed to get response", "", t)
 		if !strings.Contains(msg, "200") {
 			t.Errorf("Expected: 200; Got unexpected response code: %s", msg)
 			log.Errorf("Expected: 200; Got unexpected response code: %s", msg)
@@ -169,13 +169,13 @@ func Test19(t *testing.T) {
 		}
 
 		util.ShellMuteOutput("kubectl delete -n foo servicerolebinding bind-httpbin-viewer")
-		Inspect(util.KubeApplyContentSilent("foo", fooRBACRoleBinding2, kubeconfigFile), "failed to apply servicerolebinding", "", t)
+		util.Inspect(util.KubeApplyContentSilent("foo", fooRBACRoleBinding2, kubeconfigFile), "failed to apply servicerolebinding", "", t)
 		log.Info("Waiting... Sleep 30 seconds...")
 		time.Sleep(time.Duration(30) * time.Second)
 
 		cmd = fmt.Sprintf("curl http://httpbin.foo:8000/ip -s -o /dev/null -w \"%%{http_code}\" --header \"Authorization: Bearer %s\"", token)
 		msg, err = util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfigFile)
-		Inspect(err, "failed to get response", "", t)
+		util.Inspect(err, "failed to get response", "", t)
 		if !strings.Contains(msg, "200") {
 			t.Errorf("Expected: 200; Got unexpected response code: %s", msg)
 			log.Errorf("Expected: 200; Got unexpected response code: %s", msg)
@@ -188,18 +188,18 @@ func Test19(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
 		log.Info("Configure the authorization of list-typed claims")
-		Inspect(util.KubeApplyContents("foo", fooRBACRoleBinding3, kubeconfigFile), "failed to apply servicerolebinding", "", t)
+		util.Inspect(util.KubeApplyContents("foo", fooRBACRoleBinding3, kubeconfigFile), "failed to apply servicerolebinding", "", t)
 		log.Info("Waiting... Sleep 30 seconds...")
 		time.Sleep(time.Duration(30) * time.Second)
 
 		cmd := fmt.Sprintf("curl http://httpbin.foo:8000/ip -s -o /dev/null -w \"%%{http_code}\" --header \"Authorization: Bearer %s\"", token)
 		msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfigFile)
-		Inspect(err, "failed to get response", "", t)
+		util.Inspect(err, "failed to get response", "", t)
 		if !strings.Contains(msg, "200") {
 			t.Errorf("Expected: 200; Got unexpected response code: %s", msg)
 			log.Errorf("Expected: 200; Got unexpected response code: %s", msg)

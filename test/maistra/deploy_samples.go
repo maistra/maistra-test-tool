@@ -15,11 +15,9 @@
 package maistra
 
 import (
-
 	"time"
-
 	"istio.io/istio/pkg/log"
-	"istio.io/istio/tests/util"
+	"maistra/util"
 )
 
 
@@ -30,24 +28,12 @@ func deployBookinfo(namespace, kubeconfig string, mtls bool) error {
 	}
 	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
-	if err := util.CheckPodRunning(namespace, "app=details", kubeconfig); err != nil {
-		return err
-	}
-	if err := util.CheckPodRunning(namespace, "app=ratings", kubeconfig); err != nil {
-		return err
-	}
-	if err := util.CheckPodRunning(namespace, "app=reviews,version=v1", kubeconfig); err != nil {
-		return err
-	}
-	if err := util.CheckPodRunning(namespace, "app=reviews,version=v2", kubeconfig); err != nil {
-		return err
-	}
-	if err := util.CheckPodRunning(namespace, "app=reviews,version=v3", kubeconfig); err != nil {
-		return err
-	}
-	if err := util.CheckPodRunning(namespace, "app=productpage", kubeconfig); err != nil {
-		return err
-	}
+	util.CheckPodRunning(namespace, "app=details", kubeconfig)
+	util.CheckPodRunning(namespace, "app=ratings", kubeconfig)
+	util.CheckPodRunning(namespace, "app=reviews,version=v1", kubeconfig)
+	util.CheckPodRunning(namespace, "app=reviews,version=v2", kubeconfig)
+	util.CheckPodRunning(namespace, "app=reviews,version=v3", kubeconfig)
+	util.CheckPodRunning(namespace, "app=productpage", kubeconfig)
 
 	// create gateway
 	if err := util.KubeApply(namespace, bookinfoGateway, kubeconfig); err != nil {
@@ -73,8 +59,8 @@ func cleanBookinfo(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, bookinfoRuleAllYaml, kubeconfig)
 	util.KubeDelete(namespace, bookinfoGateway, kubeconfig)
 	util.KubeDelete(namespace, bookinfoYaml, kubeconfig)
-	log.Info("Waiting for rules to propagate. Sleep 30 seconds...")
-	time.Sleep(time.Duration(30) * time.Second)
+	log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 } 
 
 func deployHttpbin(namespace, kubeconfig string) error {

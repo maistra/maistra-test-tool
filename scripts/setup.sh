@@ -19,12 +19,6 @@ sudo dnf install -y awscli
 sudo dnf install -y python37
 sudo dnf install -y golang
 
-# install Go packages
-go get "istio.io/istio/tests/util"
-go get "istio.io/istio/pkg/log"
-go get "golang.org/x/net/publicsuffix"
-go get "github.com/knrc/registry-puller"
-
 # install pipenv
 sudo pip3 install pipenv
 

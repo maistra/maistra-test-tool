@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"istio.io/istio/pkg/log"
-	"istio.io/istio/tests/util"
+	"maistra/util"
 )
 
 func cleanup20(kubeconfig string) {
@@ -46,15 +46,15 @@ func Test20(t *testing.T) {
 	
 	log.Infof("# TC_20 Mutual TLS Deep-Dive")
 	log.Info("Enable mTLS")
-	Inspect(util.KubeApplyContents("", meshPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
+	util.Inspect(util.KubeApplyContents("", meshPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
 	log.Info("Waiting... Sleep 5 seconds...")
 	time.Sleep(time.Duration(5) * time.Second)	
 
-	Inspect(util.CreateNamespace("foo", kubeconfigFile), "failed to create namespace", "", t)
-	OcGrantPermission("default", "foo", kubeconfigFile)
+	util.Inspect(util.CreateNamespace("foo", kubeconfigFile), "failed to create namespace", "", t)
+	util.OcGrantPermission("default", "foo", kubeconfigFile)
 
-	Inspect(deployHttpbin("foo", kubeconfigFile), "failed to deploy httpbin", "", t)
-	Inspect(deploySleep("foo", kubeconfigFile), "failed to deploy sleep", "", t)
+	util.Inspect(deployHttpbin("foo", kubeconfigFile), "failed to deploy httpbin", "", t)
+	util.Inspect(deploySleep("foo", kubeconfigFile), "failed to deploy sleep", "", t)
 
 	t.Run("verify_citadel", func(t *testing.T) {
 		defer func() {
@@ -72,16 +72,16 @@ func Test20(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
 		log.Info("Verify keys and certs. cert-chain.pem, key.pem and root-cert.pem should be listed below")
 		httpbinPod, err := util.GetPodName("foo", "app=httpbin", kubeconfigFile)
-		Inspect(err, "failed to get httpbin pod name", "", t)
+		util.Inspect(err, "failed to get httpbin pod name", "", t)
 		cmd := fmt.Sprintf("ls /etc/certs")
 		msg, err := util.PodExec("foo", httpbinPod, "istio-proxy", cmd, false, kubeconfigFile)
-		Inspect(err, "failed to get certs", "", t)
+		util.Inspect(err, "failed to get certs", "", t)
 		if strings.Contains(msg, "cert-chain.pem") && strings.Contains(msg, "key.pem") && strings.Contains(msg, "root-cert.pem") {
 			log.Info("Success. All key and certs exist")
 		} else {
@@ -94,7 +94,7 @@ func Test20(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
@@ -105,7 +105,7 @@ func Test20(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
@@ -115,7 +115,7 @@ func Test20(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
@@ -125,7 +125,7 @@ func Test20(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
@@ -135,7 +135,7 @@ func Test20(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
@@ -145,7 +145,7 @@ func Test20(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
-				log.Infof("Test panic: %v", err)
+				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
