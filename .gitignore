@@ -30,3 +30,6 @@ __pycache__
 
 # istio-operator
 **/istio-operator
+
+# pylarion
+**/pylarion
