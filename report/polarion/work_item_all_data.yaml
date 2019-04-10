@@ -1,0 +1,896 @@
+---
+name: Deploy an OpenShift 4.0 Cluster on AWS
+description: >
+  This test case verifies the following steps.
+  Downloads openshift-install installer, 
+  Deploy an OpenShift 4.0 Cluster on AWS,
+  Downloads oc client, 
+  Create a soft link 'kubectl' points to oc client
+importance: medium
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/install/main.py"
+caselevel: integration
+testtype: nonfunctional
+subtype1: installability
+
+
+---
+name: Destroy an OpenShift 4.0 Cluster on AWS
+description: >
+  This test case verifies destroy an OpenShift 4.0 Cluster on AWS and cleanup all Cluster resources on AWS.
+importance: medium
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/install/main.py"
+caselevel: integration
+testtype: nonfunctional
+subtype1: installability
+
+
+---
+name: Login the OCP4 Cluster
+description: >
+  This test case verifies OCP Cluster login from oc client. User should be able to login a remote OCP4 Cluster after export an kubeconfig file.
+importance: low
+severity: should_have  
+automation: notautomated
+automation_script: ""
+caselevel: integration
+testtype: nonfunctional
+subtype1: installability
+
+---
+name: Deploy new Maistra Istio Operator
+description: >
+  This test case verifies new Maistra Istio Operator https://github.com/Maistra/istio-operator functionalities. 
+  All resources definitions should be installed after applying the deploy directory in istio-operator namespace.
+importance: critical
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/install/main.py"
+caselevel: integration
+testtype: nonfunctional
+subtype1: installability
+
+
+---
+name: Install istio-system using new Maistra Istio Operator
+description: >
+  This test case verifies new Maistra Istio Operator is able to create and watch for ControlPlane or Installation resources in the istio-system namespace.
+  istio-system should be able to be installed after applying a cr yaml file.
+  All istio-system pods should be in Running status after istio cr installation.
+importance: critical
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/install/main.py"
+caselevel: integration
+testtype: nonfunctional
+subtype1: installability
+
+
+---
+name: Uninstall istio-system using new Maistra Istio Operator
+description: >
+  This test case verifies new Maistra Istio Operator is able to clean an existing istio-system.
+  The ControlPlane and all istio-system pods should be removed after a cr file deletion operation. 
+importance: high
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/install/main.py"
+caselevel: integration
+testtype: nonfunctional
+subtype1: installability
+
+
+---
+name: Customizing the istio-system installation using new Maistra Istio Operator
+description: >
+  This test case verifies customizing an Istio Installation with a custom cr file.
+  It includes custom images and tags. It also tests component enablement.
+importance: medium
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/install/main.py"
+caselevel: integration
+testtype: nonfunctional
+subtype1: installability
+
+
+---
+name: Deploy sameple application bookinfo
+description: >
+  This test case verifies a sample application bookinfo deployment with istio-system.
+  All pods of the bookinfo app should have two replicas ready and Running after deployment.
+  User can view the bookinfo app UI page from [Ingress_Gateway_URL]/productpage after deployment.
+importance: high
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/tree/master/test/maistra"
+caselevel: integration
+testtype: nonfunctional
+subtype1: "usability"
+
+
+---
+name: Configure general traffic routing
+description: >
+  This task verifies how to route requests dynamically to multiple versions of a microservice.
+  The initial goal of this task is to apply a rule that routes all traffic to v1 (version 1) of the ratings service. 
+  Later, this task applys a rule to route traffic based on the value of an HTTP request header.
+importance: critical
+severity: must_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_03_request_routing_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+---
+name: Configure user identity based traffic routing
+description: >
+  This task verifies how to route requests dynamically to multiple versions of a microservice.
+  This task changes the route configuration so that all traffic from a specific user is routed to a specific service version. 
+  In this case, all traffic from a user named Jason will be routed to the service reviews:v2.
+importance: critical
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_03_request_routing_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Configure HTTP delay fault injection
+description: >
+  This task verifies how to inject faults to test the resiliency of your application.
+  To test the Bookinfo application microservices for resiliency, inject a 7s delay between the reviews:v2 and ratings microservices for user jason. 
+  This test uncovers a bug that was intentionally introduced into the Bookinfo app.
+importance: high
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_04_fault_injection_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Configure HTTP abort fault injection
+description: >
+  This task verifies how to inject faults to test the resiliency of your application.
+  This task introduces an HTTP abort to the ratings microservices for the test user jason.
+  In this case, you expect the page to load immediately and display the product ratings not available message.
+importance: high
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_04_fault_injection_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Configure HTTP 50% traffic shifting
+description: >
+  This task verifies how to gradually migrate traffic from one version of a microservice to another.
+  A common use case is to migrate traffic gradually from one version of a microservice to another.
+  This task sends %50 of traffic to reviews:v1 and %50 to reviews:v3.
+importance: critical
+severity: must_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_05_traffic_shifting_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Configure HTTP 100% traffic shifting
+description: >
+  This task verifies how to gradually migrate traffic from one version of a microservice to another.
+  This task completes the migration by sending %100 of traffic to reviews:v3.
+importance: critical
+severity: must_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_05_traffic_shifting_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Configure TCP 100% traffic shifting
+description: >
+  This task verifies how to gradually migrate TCP traffic from one version of a microservice to another.
+  A common use case is to migrate TCP traffic gradually from one version of a microservice to another.
+  This task sends 100% of the TCP traffic to tcp-echo:v1.
+importance: critical
+severity: must_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_06_tcp_traffic_shifting_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Configure TCP 20% traffic shifting
+description: >
+  This task verifies how to gradually migrate TCP traffic from one version of a microservice to another.
+  This task routes 20% of the TCP traffic to tcp-echo:v2 using Istio’s weighted routing feature.
+importance: critical
+severity: must_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_06_tcp_traffic_shifting_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Configure setting request timeouts
+description: >
+  This task verifies how to setup request timeouts in Envoy using Istio.
+  A timeout for http requests can be specified using the timeout field of the route rule. 
+  By default, the timeout is 15 seconds, but this task overrides the reviews service timeout to 1 second. 
+  To see its effect, however, it introduces an artificial 2 second delay in calls to the ratings service.
+importance: high
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_07_request_timeouts_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Control Ingress traffic and check response 200 status
+description: >
+  This task verifies how to configure Istio to expose a service outside of the service mesh using an Istio Gateway.
+  This task checks the httpbin status 200 endpoint with envoy log messages.
+importance: critical
+severity: must_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_08_control_ingress_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Control Ingress traffic and check request headers
+description: >
+  This task verifies how to configure Istio to expose a service outside of the service mesh using an Istio Gateway.
+  This task checks the httpbin headers endpoint.
+importance: critical
+severity: must_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_08_control_ingress_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Configure a TLS ingress gateway
+description: >
+  This task verifies an ingress gateway with port 443 to handle HTTPS traffic.
+  This tasks firtst create a secret with a certificate and a private key.
+  The secret is mounted to a file on the /etc/istio/ingressgateway-certs path. 
+  Then this task creates a gateway definition that configures a server on port 443.
+importance: critical
+severity: must_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_09_gateways_https_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Configure a mutual TLS ingress gateway
+description: >
+  This task extend ingress gateway’s definition to support mutual TLS between external clients and the gateway.
+importance: critical
+severity: must_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_09_gateways_https_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Configure JWT Authentication
+description: >
+  This task extend ingress gateway’s definition to support JWT based authentication.
+importance: medium
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_09_gateways_https_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Control Egress traffic and access an external HTTP service
+description: >
+  This task verifies how to configure Istio to expose external services to Istio-enabled clients.
+  This task tests how to enable access to external HTTP services by defining ServiceEntry configurations.
+importance: critical
+severity: must_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_10_egress_traffic_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Control Egress traffic and access an external HTTPS service
+description: >
+  This task verifies how to configure Istio to expose external services to Istio-enabled clients.
+  This task tests how to enable access to external HTTPS services by defining ServiceEntry configurations.
+importance: critical
+severity: must_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_10_egress_traffic_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Control Egress traffic and bypass the Istio proxy for a specific range of IPs
+description: >
+  This task verifies how to configure Istio to expose external services to Istio-enabled clients.
+  This task tests how to enable access to external HTTPS services by bypassing the Istio proxy for a specific range of IPs.
+importance: low
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_10_egress_traffic_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Configure Circuit Breaking
+description: >
+  This task verifies how to configure circuit breaking for connections, requests, and outlier detection.
+  Circuit breaking is an important pattern for creating resilient microservice applications. 
+  Circuit breaking allows you to write applications that limit the impact of failures, latency spikes, and other undesirable effects of network peculiarities.
+  This task configures circuit breaking rules and then test the configuration by intentionally “tripping” the circuit breaker.
+importance: high
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_12_circuit_breaking_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Configure Mirroring
+description: >
+  This task verifies the traffic mirroring capabilities of Istio.
+  Traffic mirroring, also called shadowing, is a powerful concept that allows feature teams to bring changes to production with as little risk as possible. 
+  Mirroring sends a copy of live traffic to a mirrored service. 
+  The mirrored traffic happens out of band of the critical request path for the primary service.
+  This task first forces all traffic to v1 of a test service. 
+  Then, it applys a rule to mirror a portion of traffic to v2.
+importance: high
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_13_mirroring_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Authentication Policy and globally enabling Istio mutual TLS
+description: >
+  This task covers the primary activities you might need to perform when enabling, configuring, and using Istio authentication policies.
+  This task sets a mesh-wide authentication policy that enables mutual TLS.
+importance: critical
+severity: must_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_14_authentication_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Authentication Policy and request from non-Istio services to Istio services
+description: >
+  This task covers the primary activities you might need to perform when enabling, configuring, and using Istio authentication policies.
+  This task tests request from non-Istio services to Istio services.
+importance: high
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_14_authentication_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Authentication Policy and request from Istio services to non-Istio services
+description: >
+  This task covers the primary activities you might need to perform when enabling, configuring, and using Istio authentication policies.
+  This task tests request from Istio services to non-Istio services. 
+importance: high
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_14_authentication_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Authentication Policy and request from Istio services to Kubernetes API server
+description: >
+  This task covers the primary activities you might need to perform when enabling, configuring, and using Istio authentication policies.
+  This task tests request from Istio services to Kubernetes API server.
+importance: medium
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_14_authentication_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Authentication Policy and enable mutual TLS per namespace
+description: >
+  This task specifies policies for particular namespaces. 
+  A namespace-wide policy takes precedence over the mesh-wide policy, while a service-specific policy has higher precedence still.
+  This task enables mutual TLS for all services in namespace foo.
+importance: critical
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_14_authentication_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Authentication Policy and enable mutual TLS per service
+description: >
+  This task specifies policies for particular service.
+  This task sets authentication policy and destination rule for a specific service.
+importance: critical
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_14_authentication_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Authentication Policy and enable mutual TLS on a port
+description: >
+  This task specifies policies for particular service.
+  This task sets authentication policy and destination rule for a specific service port.
+importance: medium
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_14_authentication_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Authentication Policy and overwrite policy
+description: >
+  This task overwrites foo namespace policy by service policy,
+importance: medium
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_14_authentication_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Authentication Policy and end-user authentication
+description: >
+  This task adds a policy that requires end-user JWT for httpbin.foo.
+  This task attaches a valid token and tests JWT authentication.
+importance: high
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_14_authentication_test.go"
+caselevel: component
+testtype: nonfunctional
+subtype1: "security"
+
+
+---
+name: Authentication Policy and end-user authentication with mutual TLS
+description: >
+  This task adds a policy that requires end-user JWT with mutual TLS together.
+  In this task, traffic from Istio services, including ingress gateway, to httpbin.foo will use mutual TLS. 
+  The test command above will still work. 
+  Requests from Istio services directly to httpbin.foo also work, given the correct token.
+  However, requests from non-Istio services, which use plain-text will fail.
+importance: high
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_14_authentication_test.go"
+caselevel: component
+testtype: nonfunctional
+subtype1: "security"
+
+
+---
+name: Configure mutual TLS migration
+description: >
+  This task verifies how to migrate your existing Istio services’ traffic from plain text to mutual TLS without breaking live traffic.
+  This task configures Istio services to send mutual TLS traffic to that service while connections from legacy services will not lose communication. 
+  This task configures the server to accept both mutual TLS and plain text traffic.
+  Then, this task configures clients to send mutual TLS traffic.
+importance: critical
+severity: must_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_15_mtls_migration_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Configure mutual TLS migration and lock down to mutual TLS
+description: >
+  After migrating all clients to Istio services, injecting Envoy sidecar, 
+  this task verifies lock down the httpbin.foo to only accept mutual TLS traffic
+importance: low
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_15_mtls_migration_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Configure mutual TLS over HTTPS and deploy an HTTPS service without Istio sidecar
+description: > 
+  This task verifies how mutual TLS works with HTTPS services.
+  This task deploys an HTTPS service without Istio sidecar
+importance: medium
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_16_mtls_https_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Configure mutual TLS over HTTPS and deploy an HTTPS service with Istio with mutual TLS disabled
+description: >
+  This task verifies how mutual TLS works with HTTPS services.
+  This task deploys an HTTPS service with Istio with mutual TLS disabled.
+importance: high
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_16_mtls_https_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Configure mutual TLS over HTTPS and deploy an HTTPS service with mutual TLS enabled
+description: >
+  This task verifies how mutual TLS works with HTTPS services.
+  This task deploys an HTTPS service with mutual TLS enabled.
+importance: high
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_16_mtls_https_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Authorization for HTTP services and globally enable Istio authorization
+description: >
+  This task covers the activities you might need to perform to set up Istio authorization, 
+  also known as Istio Role Based Access Control (RBAC).
+  This task enables global Istio authorization.
+importance: critical
+severity: must_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_17_authorization_http_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Authorization for HTTP services and namespace-level access control
+description: >
+  This task covers the activities you might need to perform to set up Istio authorization, 
+  also known as Istio Role Based Access Control (RBAC).
+  This task setup namespace-level access control by specifying all (or a collection of) services in a namespace are accessible by services from another namespace.
+importance: critical
+severity: must_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_17_authorization_http_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Authorization for HTTP services and service-level access control
+description: >
+  This task covers the activities you might need to perform to set up Istio authorization, 
+  also known as Istio Role Based Access Control (RBAC).
+  This task set up service-level access control using Istio authorization.
+importance: critical
+severity: must_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_17_authorization_http_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Authorization for TCP services and enable Istio authorization
+description: >
+  This task covers the activities you might need to perform to set up Istio authorization, 
+  also known as Istio Role Based Access Control (RBAC), for TCP services in an Istio mesh.
+  This task enables Istio authorization for the MongoDB service.
+importance: high
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_18_authorization_tcp_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Authorization for TCP services and enforcing service-level access control
+description: >
+  This task covers the activities you might need to perform to set up Istio authorization, 
+  also known as Istio Role Based Access Control (RBAC), for TCP services in an Istio mesh.
+  This task sets up service-level access control using Istio authorization to allow v2 of ratings to access the MongoDB service.
+importance: high
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_18_authorization_tcp_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Authorization for groups
+description: >
+  This task covers the activities you might need to perform to set up Istio authorization, 
+  also known as Istio Role Based Access Control (RBAC), for TCP services in an Istio mesh.
+  This task configures the groups-base authorization.
+importance: medium
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_19_authorization_groups_list_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Authorization for list claims
+description: >
+  This task covers the activities you might need to perform to set up Istio authorization, 
+  also known as Istio Role Based Access Control (RBAC), for TCP services in an Istio mesh.
+  This task configures the list-typed claims authorization.
+importance: medium
+severity: should_have
+automation: automated
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_19_authorization_groups_list_test.go"
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Mutual TLS Deep-Dive
+description: >
+  This task verifies the following steps.
+  Verify Citadel runs properly.
+  Verify keys and certificates installation.
+  Verify mutual TLS configuration.
+  Verify requests.
+importance: medium
+severity: should_have
+automation: notautomated
+automation_script: ""
+caselevel: component
+testtype: nonfunctional
+subtype1: "usability"
+
+
+---
+name: Plugging in external CA key and certificate
+description: >
+  This task verifies how operators can configure Citadel with existing root certificate, signing certificate and key.
+  By default, Citadel generates self-signed root certificate and key, and uses them to sign the workload certificates. 
+  Citadel can also use the operator-specified certificate and key to sign workload certificates, 
+  with operator-specified root certificate. 
+  This task demonstrates an example to plug certificates and key into Citadel.  
+importance: high
+severity: should_have
+automation: notautomated
+automation_script: ""
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+---
+name: Citadel Health Checking
+description: >
+  This task enables Citadel’s health checking feature to detect the failures of the Citadel CSR (Certificate Signing Request) service. 
+  Citadel periodically sends CSRs to its CSR service and verifies the response.
+importance: low
+severity: should_have
+automation: notautomated
+automation_script: ""
+caselevel: component
+testtype: nonfunctional
+subtype1: "reliability"
+
+
+---
+name: Enabling Policy enforcement
+description: >
+  This task tests how to enable Istio policy enforcement.
+importance: low
+severity: should_have
+automation: notautomated
+automation_script: ""
+caselevel: component
+testtype: nonfunctional
+subtype1: "usability"
+
+
+---
+name: Enabling Rate Limits
+description: >
+  This task verifies how to use Istio to dynamically limit the traffic to a service.
+  This task configures Istio to rate limit traffic to productpage based on the IP address of the originating client. 
+  It uses X-Forwarded-For request header as the client IP address. 
+  It also uses a conditional rate limit that exempts logged in users.
+importance: high
+severity: should_have
+automation: notautomated
+automation_script: ""
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Configure Denials and White/Black listing
+description: >
+  This task verifies how to control access to a service using simple denials or white/black listing.
+  Using Istio you can control access to a service based on any attributes that are available within Mixer. 
+  This simple form of access control is based on conditionally denying requests using Mixer selectors.
+  Consider the Bookinfo sample application where the ratings service is accessed by multiple versions of the reviews service. 
+  We would like to cut off access to version v3 of the reviews service.
+  Istio also supports attribute-based whitelists and blacklists. 
+importance: high
+severity: should_have
+automation: notautomated
+automation_script: ""
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Distributed Tracing
+description: >
+  This task verifies how Istio-enabled applications can be configured to collect trace spans. 
+  This task tests Istio system integration with Jaeger distributed tracing client and dashboard.
+  It generates traces using the bookinfo sample application and visulizes the traces in Jaeger dashboard.
+importance: high
+severity: should_have
+automation: notautomated
+automation_script: ""
+caselevel: integration
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Collecting Metrics and logs
+description: >
+  This task verifies how to configure Istio to automatically gather telemetry for services in a mesh. 
+  A new metric will be enabled for calls to services within your mesh.
+  This task tests collecting metrics and logs in Prometheus Dashboard.
+importance: high
+severity: should_have
+automation: notautomated
+automation_script: ""
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Collecting Metrics for TCP services
+description: >
+  This task verifies how to configure Istio to automatically gather telemetry for TCP services in a mesh. 
+  A new metric will be enabled for calls to services within your mesh.
+  This task tests collecting metrics and logs in Prometheus Dashboard. 
+importance: high
+severity: should_have
+automation: notautomated
+automation_script: ""
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Querying Metrics from Prometheus
+description: >
+  This task verifies how to query for Istio Metrics using Prometheus. 
+  This task uses the web-based interface for querying metric values.
+importance: high
+severity: should_have
+automation: notautomated
+automation_script: ""
+caselevel: component
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Visualizing Metrics with Grafana
+description: >
+  This task verifies how to setup and use the Istio Dashboard to monitor mesh traffic. 
+  This task uses the Grafana Istio add-on and the web-based interface for viewing service mesh traffic data.
+importance: high
+severity: should_have
+automation: notautomated
+automation_script: ""
+caselevel: integration
+testtype: functional
+subtype1: "-"
+
+
+---
+name: Logging with Fluentd
+description: >
+  This task verifies how to configure Istio to create custom log entries and send them to a Fluentd daemon. 
+  Fluentd is an open source log collector that supports many data outputs and has a pluggable architecture. 
+  One popular logging backend is Elasticsearch, and Kibana as a viewer. 
+  In this task, a new log stream will be enabled sending logs to an example Fluentd / Elasticsearch / Kibana stack.
+importance: high
+severity: should_have
+automation: notautomated
+automation_script: ""
+caselevel: integration
+testtype: functional
+subtype1: "-"
+
+
