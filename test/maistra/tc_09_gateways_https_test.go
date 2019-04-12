@@ -131,7 +131,7 @@ func configJWT(kubeconfig string) error {
 	return nil
 }
 
-func checkTeapot(url, ingressHostIP, secureIngressPort, host, cacertFile string) (*http.Response, error) {
+func checkTeapot(url, ingressHost, secureIngressPort, host, cacertFile string) (*http.Response, error) {
 	// Load CA cert
 	caCert, err := ioutil.ReadFile(cacertFile)
 	if err != nil {
@@ -156,7 +156,7 @@ func checkTeapot(url, ingressHostIP, secureIngressPort, host, cacertFile string)
 
 	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
 		if addr == host + ":" + secureIngressPort {
-			addr = ingressHostIP + ":" + secureIngressPort
+			addr = ingressHost + ":" + secureIngressPort
 		}
 		return dialer.DialContext(ctx, network, addr)
 	}
@@ -176,7 +176,7 @@ func checkTeapot(url, ingressHostIP, secureIngressPort, host, cacertFile string)
 	return client.Do(req)
 }
 
-func checkTeapot2(url, ingressHostIP, secureIngressPort, host, cacertFile, certFile, keyFile string) (*http.Response, error) {
+func checkTeapot2(url, ingressHost, secureIngressPort, host, cacertFile, certFile, keyFile string) (*http.Response, error) {
 	// Load client cert
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
@@ -208,7 +208,7 @@ func checkTeapot2(url, ingressHostIP, secureIngressPort, host, cacertFile, certF
 
 	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
 		if addr == host + ":" + secureIngressPort {
-			addr = ingressHostIP + ":" + secureIngressPort
+			addr = ingressHost + ":" + secureIngressPort
 		}
 		return dialer.DialContext(ctx, network, addr)
 	}
@@ -241,11 +241,8 @@ func Test09 (t *testing.T) {
 	log.Info("Waiting for previous run to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 
-	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	ingressHost, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
 	util.Inspect(err, "failed to get ingressgateway URL", "", t)
-	
-	ingressHostIP, err := util.GetOCP4Ingressgateway("istio-system", kubeconfigFile)
-	util.Inspect(err, "cannot get ingress host ip", "", t)
 	
 	secureIngressPort, err := util.GetSecureIngressPort("istio-system", "istio-ingressgateway", kubeconfigFile)
 	util.Inspect(err, "cannot get ingress secure port", "", t)
@@ -264,7 +261,7 @@ func Test09 (t *testing.T) {
 
 		// check teapot
 		url := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
-		resp, err := checkTeapot(url, ingressHostIP, secureIngressPort, "httpbin.example.com", httpbinSampleCACert)
+		resp, err := checkTeapot(url, ingressHost, secureIngressPort, "httpbin.example.com", httpbinSampleCACert)
 		defer util.CloseResponseBody(resp)
 		util.Inspect(err, "failed to get response", "", t)
 		
@@ -291,7 +288,7 @@ func Test09 (t *testing.T) {
 		
 		log.Info("Check SSL handshake failure as expected")
 		url := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
-		resp, err := checkTeapot(url, ingressHostIP, secureIngressPort, "httpbin.example.com", httpbinSampleCACert)
+		resp, err := checkTeapot(url, ingressHost, secureIngressPort, "httpbin.example.com", httpbinSampleCACert)
 		if err != nil {
 			log.Infof("Expected failure: %v", err)
 			// Don't need to close resp because resp is nil when err is not nil
@@ -304,7 +301,7 @@ func Test09 (t *testing.T) {
 		}
 		
 		log.Info("Check SSL return a teapot again")
-		resp, err = checkTeapot2(url, ingressHostIP, secureIngressPort, "httpbin.example.com", 
+		resp, err = checkTeapot2(url, ingressHost, secureIngressPort, "httpbin.example.com", 
 									httpbinSampleCACert, httpbinSampleClientCert, httpbinSampleClientCertKey)
 		defer util.CloseResponseBody(resp)
 		util.Inspect(err, "failed to get response", "", t)
@@ -315,6 +312,7 @@ func Test09 (t *testing.T) {
 		if strings.Contains(string(bodyByte), "-=[ teapot ]=-") {
 			log.Info(string(bodyByte))
 		} else {
+			log.Info(string(bodyByte))
 			t.Errorf("failed to get teapot: %v", string(bodyByte))
 		}
 	})
@@ -330,7 +328,7 @@ func Test09 (t *testing.T) {
 		log.Info("Configure JWT Authentication")
 		util.Inspect(configJWT(kubeconfigFile), "failed to configure JWT authentication", "", t)
 		// check 401
-		resp, err := util.GetWithHost(fmt.Sprintf("http://%s/status/200", ingress), "httpbin.example.com")
+		resp, err := util.GetWithHost(fmt.Sprintf("http://%s/status/200", ingressHost), "httpbin.example.com")
 		util.Inspect(err, "failed to get response", "", t)
 		if resp.StatusCode != 401 {
 			t.Errorf("Unexpected response code: %v", resp.StatusCode)
@@ -349,7 +347,7 @@ func Test09 (t *testing.T) {
 		token := strings.Trim(string(tokenByte),"\n")
 		util.CloseResponseBody(resp)
 
-		resp, err = util.GetWithJWT(fmt.Sprintf("http://%s/status/200", ingress), token, "httpbin.example.com")
+		resp, err = util.GetWithJWT(fmt.Sprintf("http://%s/status/200", ingressHost), token, "httpbin.example.com")
 		util.Inspect(err, "failed to get response", "", t)
 		util.Inspect(util.CheckHTTPResponse200(resp), "failed to get HTTP 200", "Get expected response code: 200", t)
 		util.CloseResponseBody(resp)
