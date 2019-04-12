@@ -1,0 +1,6 @@
+apiVersion: config.istio.io/v1alpha2
+kind: listentry
+metadata:
+  name: sourceip
+spec:
+  value: source.ip | ip("0.0.0.0")

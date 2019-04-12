@@ -171,8 +171,8 @@ func Test17(t *testing.T) {
 
 		log.Info("Namespace-level access control")
 		util.Inspect(util.KubeApplyContents(testNamespace, bookinfoNamespacePolicy, kubeconfigFile), "failed to apply policy", "", t)
-		log.Info("Waiting... Sleep 50 seconds...")
-		time.Sleep(time.Duration(50) * time.Second)	
+		log.Info("Waiting... Sleep 60 seconds...")
+		time.Sleep(time.Duration(60) * time.Second)	
 
 		for i := 0; i <= Retry; i++ {
 			time.Sleep(time.Duration(1) * time.Second)
