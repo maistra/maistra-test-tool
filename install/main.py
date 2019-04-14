@@ -28,6 +28,8 @@ class Moitt(object):
     def __init__(self):
         self.profile = None
         self.pullsec = None
+        self.ocp_installer_version = '0.15.0'
+        self.oc_version = '0.10.0'
         self.operatorfile = None
         self.crfile = None
         self.install = False
@@ -43,6 +45,10 @@ class Moitt(object):
             self.operatorfile = os.environ['OPERATOR_FILE']
         if 'CR_FILE' in os.environ:
             self.crfile = os.environ['CR_FILE']
+        if 'OCP_INSTALLER_VERSION' in os.environ:
+            self.ocp_installer_version = os.environ['OCP_INSTALLER_VERSION']
+        if 'OC_VERSION' in os.environ:
+            self.oc_version = os.environ['OC_VERSION']
     
     def argParse(self):
         parser = argparse.ArgumentParser(description='Select an operation and component(s)')
@@ -67,7 +73,7 @@ def main():
         raise KeyError("Missing PULL_SEC environment variable")
     
     if moitt.component == 'ocp':
-        ocp = OCP(profile=moitt.profile)
+        ocp = OCP(profile=moitt.profile, installer_version=moitt.ocp_installer_version , oc_version=moitt.oc_version)
         if moitt.install:
             ocp.install()
         elif moitt.uninstall:
@@ -85,7 +91,7 @@ def main():
             operator.deploy(operator_file=moitt.operatorfile)
             operator.install(cr_file=moitt.crfile)
         elif moitt.uninstall:
-            operator.uninstall(cr_file=moitt.crfile)
+            operator.uninstall(operator_file=moitt.operatorfile, cr_file=moitt.crfile)
 
 
    

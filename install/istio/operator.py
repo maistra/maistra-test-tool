@@ -29,23 +29,8 @@ class Operator(object):
     """
 
     def __init__(self):
-
-        self.repo = 'git@github.com:Maistra/istio-operator.git'
-        self.savedPath = os.getcwd()
-        try:
-            os.chdir('istio-operator')
-            sp.run(['git', 'pull'])
-        except OSError:
-            os.chdir(self.savedPath)
-            sp.run(['git', 'clone', self.repo])
-            os.chdir('istio-operator')
-        except WindowsError:
-            os.chdir(self.savedPath)
-            sp.run(['git', 'clone', self.repo])
-            os.chdir('istio-operator')
-        os.chdir(self.savedPath)
-
-
+        pass
+        
     def deploy(self, operator_file=None):
         # check environment variable KUBECONFIG
         try:
@@ -60,18 +45,18 @@ class Operator(object):
         proc = sp.run(['oc', 'status'])
         if proc.returncode != 0:
             raise RuntimeError('Login not completed')
-        if operator_file is not None:
-            shutil.copy2(operator_file, 'istio-operator/deploy/operator.yaml')
+        if operator_file is None:
+            raise RuntimeError('Missing operator.yaml file')
         
         sp.run(['oc', 'new-project', 'istio-operator'], stderr=sp.PIPE)
         sp.run(['oc', 'new-project', 'istio-system'], stderr=sp.PIPE)
 
-        sp.run(['oc', 'apply', '-n', 'istio-operator', '-f', 'istio-operator/deploy/'])
+        sp.run(['oc', 'apply', '-n', 'istio-operator', '-f', operator_file])
 
 
     def install(self, cr_file=None):
         if cr_file is None:
-            cr_file = 'istio-operator/deploy/examples/istio_v1alpha3_controlplane_cr_basic.yaml'
+            raise RuntimeError('Missing cr yaml file')
         
         sp.run(['oc', 'apply', '-n', 'istio-system', '-f', cr_file])
 
@@ -92,12 +77,17 @@ class Operator(object):
         
 
         
-    def uninstall(self, cr_file=None):
+    def uninstall(self, operator_file=None, cr_file=None):
+        if operator_file is None:
+            raise RuntimeError('Missing operator.yaml file')
         if cr_file is None:
-            cr_file = 'istio-operator/deploy/examples/istio_v1alpha3_controlplane_cr_basic.yaml'
+            raise RuntimeError('Missing cr yaml file')
 
         sp.run(['oc', 'delete', '-n', 'istio-system', '-f', cr_file])
         sp.run(['sleep', '10'])
+        sp.run(['oc', 'delete', '-n', 'istio-operator', '-f', operator_file])
+        
+        
         
 
     

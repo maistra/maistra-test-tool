@@ -32,15 +32,15 @@ class OCP(object):
         - `oc_version`: OpenShift oc client version
     """
 
-    def __init__(self, profile='', assets='assets', installer_version='v0.14.0', oc_version='maistra-0.9.0'):
+    def __init__(self, profile='', assets='assets', installer_version='', oc_version=''):
         """ Initialize configuration parameters
         """
         self.profile = profile
         self.assets = assets
         self.installer_version = installer_version
-        self.installer_url = 'https://github.com/openshift/installer/releases/download/' + installer_version + '/openshift-install-linux-amd64'
+        self.installer_url = 'https://github.com/openshift/installer/releases/download/v' + installer_version + '/openshift-install-linux-amd64'
         self.oc_version = oc_version
-        self.oc_url = 'https://github.com/Maistra/origin/releases/download/v3.11.0+' + oc_version + '/istiooc_linux'
+        self.oc_url = 'https://github.com/Maistra/origin/releases/download/v3.11.0+maistra-' + oc_version + '/istiooc_linux'
         #self.oc_url = 'https://mirror.openshift.com/pub/openshift-v3/clients/' + oc_version + '/linux/oc.tar.gz'
 
 
