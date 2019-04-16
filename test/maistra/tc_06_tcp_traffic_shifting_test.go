@@ -134,8 +134,8 @@ func Test06(t *testing.T) {
 		util.Inspect(routeTraffic20v2(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		time.Sleep(time.Duration(5) * time.Second)
 		
-		tolerance := 0.10
-		totalShot := 40
+		tolerance := 0.15
+		totalShot := 60
 		c1, c2 := 0, 0
 
 		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot * 1)

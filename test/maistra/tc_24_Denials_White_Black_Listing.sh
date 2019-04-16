@@ -145,7 +145,7 @@ function main() {
 
 	banner "IP-based whitelists/blacklists"
 	apply_ip_whitelist
-	sleep 20
+	sleep 30
 	echo "Check productpage. Get expected error: PERMISSION_DENIED:staticversion.istio-system:<your mesh source ip> is not whitelisted"
 	check_point
 	

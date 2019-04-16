@@ -34,9 +34,9 @@ func cleanup14(kubeconfig string) {
 	util.KubeDelete("legacy", httpbinLegacyYaml, kubeconfig)
 	util.KubeDelete("legacy", sleepLegacyYaml, kubeconfig)
 	util.ShellSilent("kubectl delete meshpolicy default")
-	util.ShellSilent("kubectl delete destinationrules httpbin-legacy")
+	util.ShellSilent("kubectl delete destinationrules -n legacy httpbin-legacy")
 	util.ShellSilent("kubectl delete destinationrules -n default api-server")
-	util.ShellSilent("kubectl delete destinationrule default -n default")
+	util.ShellSilent("kubectl delete destinationrules -n istio-system default")
 	util.ShellSilent("kubectl delete policy default overwrite-example -n foo")
 	util.ShellSilent("kubectl delete policy httpbin -n bar")
 	util.ShellSilent("kubectl delete destinationrules default overwrite-example -n foo")
@@ -54,11 +54,11 @@ func cleanup14(kubeconfig string) {
 func cleanupPart1() {
 	log.Infof("# Cleanup part 1. Following error can be ignored...")
 	util.ShellMuteOutput("kubectl delete meshpolicy default")
-	util.ShellMuteOutput("kubectl delete destinationrules httpbin-legacy")
+	util.ShellMuteOutput("kubectl delete destinationrules -n legacy httpbin-legacy ")
 	util.ShellMuteOutput("kubectl delete destinationrules -n default api-server")
-	util.ShellMuteOutput("kubectl delete destinationrule default -n default")
-	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	util.ShellMuteOutput("kubectl delete destinationrules -n istio-system default")
+	log.Info("Waiting for rules to be cleaned up. Sleep 30 seconds...")
+	time.Sleep(time.Duration(30) * time.Second)
 }
 
 func cleanupPart2() {
@@ -618,6 +618,10 @@ func Test14(t *testing.T) {
 		}
 		jwcryptoCleanup()
 	})
+
+	// end user authentication with per-path requirements
+	// disable end-user authentication for specific paths
+	// enable end-user authentication for specific paths
 
 	t.Run("end_user_auth_mTLS", func(t *testing.T) {
 		defer func() {

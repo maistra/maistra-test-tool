@@ -18,7 +18,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -40,6 +39,8 @@ func cleanup09(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, httpbinRouteHTTPSYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinGatewayHTTPSYaml, kubeconfig)
 	
+	util.ShellMuteOutput("kubectl delete secret %s -n %s --kubeconfig=%s",
+		"istio-ingressgateway-bookinfo-certs", "istio-system", kubeconfig)
 	util.ShellMuteOutput("kubectl delete secret %s -n %s --kubeconfig=%s", 
 		"istio-ingressgateway-certs", "istio-system", kubeconfig)
 	util.ShellMuteOutput("kubectl delete secret %s -n %s --kubeconfig=%s",
@@ -118,16 +119,13 @@ func updateHttpbinHTTPS(namespace, kubeconfig string) error{
 	return nil
 }
 
-func configJWT(kubeconfig string) error {
-	// config jwt auth
-	if err := util.OcApply("", httpbinOCPRouteYaml, kubeconfig); err != nil {
+func configHTTPSBookinfo(namespace, kubeconfig string) error {
+	// create tls certs
+	if _, err := util.CreateTLSSecret("istio-ingressgateway-bookinfo-certs", "istio-system", bookinfoSampleServerCertKey, bookinfoSampleServerCert, kubeconfig); err != nil {
+		log.Infof("Failed to create secret %s\n", "istio-ingressgateway-certs")
 		return err
 	}
-	if err := util.KubeApply("istio-system", jwtAuthYaml, kubeconfig); err != nil {
-		return err
-	}
-	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+
 	return nil
 }
 
@@ -317,40 +315,7 @@ func Test09 (t *testing.T) {
 		}
 	})
 
-	t.Run("jwt", func(t *testing.T) {
-		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
-			if err := recover(); err != nil {
-				t.Errorf("Test panic: %v", err)
-			}
-		}()
-		
-		log.Info("Configure JWT Authentication")
-		util.Inspect(configJWT(kubeconfigFile), "failed to configure JWT authentication", "", t)
-		// check 401
-		resp, err := util.GetWithHost(fmt.Sprintf("http://%s/status/200", ingressHost), "httpbin.example.com")
-		util.Inspect(err, "failed to get response", "", t)
-		if resp.StatusCode != 401 {
-			t.Errorf("Unexpected response code: %v", resp.StatusCode)
-		} else {
-			log.Info("Get expected response code: 401")
-		}
-		util.CloseResponseBody(resp)
+	// configure TLS ingress gateway for multiple hosts
+	// bookinfo TLS
 
-		// check 200
-		resp, err = http.Get(jwtURL)
-		util.Inspect(err, "failed to get JWT response", "", t)
-		
-		tokenByte, err := ioutil.ReadAll(resp.Body)
-		util.Inspect(err, "failed to read JWT response body", "", t)
-		
-		token := strings.Trim(string(tokenByte),"\n")
-		util.CloseResponseBody(resp)
-
-		resp, err = util.GetWithJWT(fmt.Sprintf("http://%s/status/200", ingressHost), token, "httpbin.example.com")
-		util.Inspect(err, "failed to get response", "", t)
-		util.Inspect(util.CheckHTTPResponse200(resp), "failed to get HTTP 200", "Get expected response code: 200", t)
-		util.CloseResponseBody(resp)
-	})
-	
 }

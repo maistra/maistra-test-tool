@@ -46,6 +46,8 @@ const (
 	bookinfoMongodbPolicyTemplate 	= "testdata/bookinfo/platform/kube/rbac/mongodb-policy.yaml"
 	bookinfoRatingv2Yaml 		= "testdata/bookinfo/platform/kube/bookinfo-ratings-v2.yaml"
 
+	bookinfoSampleServerCertKey = "testdata/certs/bookinfo.com/3_application/private/bookinfo.com.key.pem"
+	bookinfoSampleServerCert 	= "testdata/certs/bookinfo.com/3_application/certs/bookinfo.com.cert.pem"
 	
 	httpbinYaml					= "testdata/httpbin/httpbin.yaml"
 	httpbinv1Yaml				= "testdata/httpbin/httpbin-v1.yaml"
