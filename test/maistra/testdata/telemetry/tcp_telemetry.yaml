@@ -4,7 +4,7 @@ apiVersion: "config.istio.io/v1alpha2"
 kind: metric
 metadata:
   name: mongosentbytes
-  namespace: default
+  namespace: bookinfo
 spec:
   value: connection.sent.bytes | 0 # uses a TCP-specific attribute
   dimensions:
@@ -19,7 +19,7 @@ apiVersion: "config.istio.io/v1alpha2"
 kind: metric
 metadata:
   name: mongoreceivedbytes
-  namespace: default
+  namespace: bookinfo
 spec:
   value: connection.received.bytes | 0 # uses a TCP-specific attribute
   dimensions:
@@ -33,18 +33,18 @@ apiVersion: "config.istio.io/v1alpha2"
 kind: prometheus
 metadata:
   name: mongohandler
-  namespace: default
+  namespace: bookinfo
 spec:
   metrics:
   - name: mongo_sent_bytes # Prometheus metric name
-    instance_name: mongosentbytes.metric.default # Mixer instance name (fully-qualified)
+    instance_name: mongosentbytes.metric.bookinfo # Mixer instance name (fully-qualified)
     kind: COUNTER
     label_names:
     - source_service
     - source_version
     - destination_version
   - name: mongo_received_bytes # Prometheus metric name
-    instance_name: mongoreceivedbytes.metric.default # Mixer instance name (fully-qualified)
+    instance_name: mongoreceivedbytes.metric.bookinfo # Mixer instance name (fully-qualified)
     kind: COUNTER
     label_names:
     - source_service
@@ -56,10 +56,10 @@ apiVersion: "config.istio.io/v1alpha2"
 kind: rule
 metadata:
   name: mongoprom
-  namespace: default
+  namespace: bookinfo
 spec:
   match: context.protocol == "tcp"
-         && destination.service == "mongodb.default.svc.cluster.local"
+         && destination.service == "mongodb.bookinfo.svc.cluster.local"
   actions:
   - handler: mongohandler.prometheus
     instances:

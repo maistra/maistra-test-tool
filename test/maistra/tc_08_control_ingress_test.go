@@ -25,7 +25,7 @@ import (
 
 func cleanup08(namespace, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
-	util.OcDelete("", httpbinOCPRouteYaml, kubeconfig)
+	util.OcDelete("", httpbinOCPRouteYaml, kubeconfig)   // comment this OcDelete when IOR is enabled
 	util.KubeDelete(namespace, httpbinGatewayYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinRouteYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinYaml, kubeconfig)
@@ -40,6 +40,7 @@ func configHttpbin(namespace, kubeconfig string) error {
 	if err := util.KubeApply(namespace, httpbinRouteYaml, kubeconfig); err != nil {
 		return err
 	}
+	// comment this OcApply when IOR is enabled
 	if err := util.OcApply("", httpbinOCPRouteYaml, kubeconfig); err != nil {
 		return err
 	}
