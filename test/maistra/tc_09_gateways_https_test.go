@@ -32,10 +32,9 @@ import (
 func cleanup09(namespace, kubeconfig string) {
 	
 	log.Infof("# Cleanup. Following error can be ignored...")
-	util.KubeDelete("istio-system", jwtAuthYaml, kubeconfig)
-	util.OcDelete("", httpbinOCPRouteYaml, kubeconfig)
+	util.OcDelete("", httpbinOCPRouteYaml, kubeconfig)     // comment this OcDelete when IOR is enabled
 	util.KubeDelete(namespace, httpbinGatewayHTTPSMutualYaml, kubeconfig)
-	util.OcDelete("", httpbinOCPRouteHTTPSYaml, kubeconfig)
+	util.OcDelete("", httpbinOCPRouteHTTPSYaml, kubeconfig) // comment this OcDelete when IOR is enabled
 	util.KubeDelete(namespace, httpbinRouteHTTPSYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinGatewayHTTPSYaml, kubeconfig)
 	
@@ -83,6 +82,7 @@ func configHttpbinHTTPS(namespace, kubeconfig string) error {
 	if err := util.KubeApply(namespace, httpbinRouteHTTPSYaml, kubeconfig); err != nil {
 		return err
 	}
+	// comment his OcApply when IOR is enabled
 	if err := util.OcApply("", httpbinOCPRouteHTTPSYaml, kubeconfig); err != nil {
 		return err
 	}

@@ -69,7 +69,6 @@ func Test18(t *testing.T) {
 			t.Errorf("Test panic: %v", err)
 		}
 	}()
-	//panic("TBD fix sample html error")
 
 	log.Infof("# TC_18 Authorization for TCP Services")
 	updateYaml(testNamespace)
@@ -86,7 +85,7 @@ func Test18(t *testing.T) {
 	time.Sleep(time.Duration(10) * time.Second)	
 
 	log.Info("Deploy bookinfo")
-	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, true), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
 	util.Inspect(err, "failed to get ingressgateway URL", "", t)
 	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
@@ -94,9 +93,20 @@ func Test18(t *testing.T) {
 	log.Info("Create Service Accounts")
 	util.Inspect(setup18(testNamespace, kubeconfigFile), "failed to create service account", "", t)
 	util.Inspect(util.KubeApply(testNamespace, bookinfoRuleAllTLSYaml, kubeconfigFile), "failed to apply rule", "", t)
+
+	log.Info("Deploy MongoDB")
 	util.Inspect(util.KubeApply(testNamespace, bookinfoRatingDBYaml, kubeconfigFile), "failed to apply rule", "", t)
-	log.Info("Waiting... Sleep 20 seconds...")
-	time.Sleep(time.Duration(20) * time.Second)	
+
+	util.Inspect(deployMongoDB(testNamespace, kubeconfigFile), "failed to deploy mongoDB", "", t)
+
+	log.Info("Redeploy bookinfo ratings v2")
+	util.KubeDelete(testNamespace, bookinfoRatingv2ServiceAccount, kubeconfigFile)
+	log.Info("Waiting... Sleep 10 seconds...")
+	time.Sleep(time.Duration(10) * time.Second)	
+	util.Inspect(setup18(testNamespace, kubeconfigFile), "failed to create service account", "", t)
+
+	log.Info("Waiting... Sleep 40 seconds...")
+	time.Sleep(time.Duration(40) * time.Second)	
 
 	t.Run("verify_setup", func(t *testing.T) {
 		defer func() {
@@ -105,32 +115,14 @@ func Test18(t *testing.T) {
 				t.Errorf("Test panic: %v", err)
 			}
 		}()
-
+		
 		resp, _, err := util.GetHTTPResponse(productpageURL, nil)
 		util.Inspect(err, "failed to get HTTP Response", "", t)
 		defer util.CloseResponseBody(resp)
 		body, err := ioutil.ReadAll(resp.Body)
 		util.Inspect(err, "failed to read response body", "", t)
 		util.Inspect(
-			util.CompareHTTPResponse(body, "productpage-rbac-rating-error.html"), 
-			"Didn't get expected response.", 
-			"Success. Response matches with expected.", 
-			t)	
-
-		util.Inspect(deployMongoDB(testNamespace, kubeconfigFile), "failed to deploy mongoDB", "", t)
-		log.Info("Waiting... Sleep 50 seconds...")
-		time.Sleep(time.Duration(50) * time.Second)	
-		resp, _, err = util.GetHTTPResponse(productpageURL, nil)
-		util.CloseResponseBody(resp)
-		resp, _, err = util.GetHTTPResponse(productpageURL, nil)
-		util.CloseResponseBody(resp)
-		resp, _, err = util.GetHTTPResponse(productpageURL, nil)
-		util.Inspect(err, "failed to get HTTP Response", "", t)
-		defer util.CloseResponseBody(resp)
-		body, err = ioutil.ReadAll(resp.Body)
-		util.Inspect(err, "failed to read response body", "", t)
-		util.Inspect(
-			util.CompareHTTPResponse(body, "productpage-normal-user-v3.html"), 
+			util.CompareHTTPResponse(body, "productpage-normal-user-mongo.html"), 
 			"Didn't get expected response.", 
 			"Success. Response matches with expected.", 
 			t)
@@ -178,7 +170,7 @@ func Test18(t *testing.T) {
 		body, err := ioutil.ReadAll(resp.Body)
 		util.Inspect(err, "failed to read response body", "", t)
 		util.Inspect(
-			util.CompareHTTPResponse(body, "productpage-normal-user-v3.html"), 
+			util.CompareHTTPResponse(body, "productpage-normal-user-mongo.html"), 
 			"Didn't get expected response.", 
 			"Success. Response matches with expected.", 
 			t)
