@@ -112,7 +112,7 @@ func Test03(t *testing.T) {
 			util.Inspect(
 				util.CompareHTTPResponse(body, "productpage-test-user-v2.html"),
 				"Didn't get expected response.",
-				"Success. Respones matches with expected.",
+				"Success. Response matches with expected.",
 				t)
 		}
 	})

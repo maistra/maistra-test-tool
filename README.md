@@ -4,7 +4,7 @@
 [![](https://img.shields.io/github/stars/yxun/moitt.svg?style=flat)](https://github.com/yxun/moitt/stargazers)
 [![](https://img.shields.io/github/forks/yxun/moitt.svg?style=flat)](https://github.com/yxun/moitt/network/members)
 [![](https://img.shields.io/github/issues-pr-closed-raw/yxun/moitt.svg?style=flat)](https://github.com/yxun/moitt/issues)
-[![](https://goreportcard.com/badge/github.com/yxun/moitt)](https://goreportcard.com/report/github.com/yxun/moitt)
+[![Go Report Card](https://goreportcard.com/badge/github.com/yxun/moitt)](https://goreportcard.com/report/github.com/yxun/moitt)
 [![](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat)](https://github.com/yxun/moitt/blob/master/LICENSE)
 ![](https://img.shields.io/github/repo-size/yxun/moitt.svg?style=flat)
 
