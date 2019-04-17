@@ -17,8 +17,8 @@ package maistra
 import (
 	"fmt"
 	"regexp"
-	"strings"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -35,7 +35,6 @@ func cleanup12(namespace, kubeconfig string) {
 	time.Sleep(time.Duration(10) * time.Second)
 }
 
-
 func configHttpbinCircuitBreaker(namespace, kubeconfig string) error {
 	if err := util.KubeApply(namespace, httpbinCircuitBreakerYaml, kubeconfig); err != nil {
 		return err
@@ -45,12 +44,10 @@ func configHttpbinCircuitBreaker(namespace, kubeconfig string) error {
 	return nil
 }
 
-
-
 func Test12(t *testing.T) {
 	defer cleanup12(testNamespace, kubeconfigFile)
 	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		// recover from panic if one occurred. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
 			t.Errorf("Test panic: %v", err)
 		}
@@ -72,12 +69,12 @@ func Test12(t *testing.T) {
 	} else {
 		t.Errorf("Error response")
 	}
-	
+
 	log.Info("# Tripping the circuit breaker")
 	connection := 4
 	reqCount := 20
 	tolerance := 0.30
-	
+
 	command = fmt.Sprintf("load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount)
 	msg, err = util.PodExec(testNamespace, pod, "fortio /usr/bin/fortio", command, false, kubeconfigFile)
 	util.Inspect(err, "failed to get response", "", t)
@@ -95,15 +92,15 @@ func Test12(t *testing.T) {
 	word = re.FindStringSubmatch(line)[0]
 	c503, err := strconv.Atoi(strings.TrimLeft(word, ": "))
 	util.Inspect(err, "failed to parse code 503 count", "", t)
-	
+
 	if isWithinPercentage(c200, reqCount, 0.5, tolerance) && isWithinPercentage(c503, reqCount, 0.5, tolerance) {
 		log.Infof(
-			"Success. Circuit breaking acts as expected. " +
-			"Code 200 hit %d, Code 503 hit %d", c200, c503)
+			"Success. Circuit breaking acts as expected. "+
+				"Code 200 hit %d, Code 503 hit %d", c200, c503)
 	} else {
 		t.Errorf(
-			"Failed Circuit breaking. " +
-			"Code 200 hit %d, Code 503 hit %d", c200, c503)
+			"Failed Circuit breaking. "+
+				"Code 200 hit %d, Code 503 hit %d", c200, c503)
 	}
 
 }

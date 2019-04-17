@@ -15,14 +15,17 @@
 package maistra
 
 import (
-	"time"
 	"istio.io/istio/pkg/log"
 	"maistra/util"
+	"time"
 )
-
 
 func deployBookinfo(namespace, kubeconfig string, mtls bool) error {
 	log.Info("# Deploy Bookinfo")
+
+	util.CreateNamespace(testNamespace, kubeconfig)
+	util.OcGrantPermission("default", testNamespace, kubeconfig)
+
 	if err := util.KubeApply(namespace, bookinfoYaml, kubeconfig); err != nil {
 		return err
 	}
@@ -61,7 +64,7 @@ func cleanBookinfo(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, bookinfoYaml, kubeconfig)
 	log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
-} 
+}
 
 func deployHttpbin(namespace, kubeconfig string) error {
 	log.Info("# Deploy Httpbin")
@@ -154,8 +157,6 @@ func deployMongoDB(namespace, kubeconfig string) error {
 	}
 	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
-	if err := util.CheckPodRunning(namespace, "app=mongodb", kubeconfig); err != nil {
-		return err
-	}
-	return nil
+	err := util.CheckPodRunning(namespace, "app=mongodb", kubeconfig)
+	return err
 }

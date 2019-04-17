@@ -37,15 +37,14 @@ func cleanup19(kubeconfig string) {
 	util.ShellMuteOutput("kubectl delete policy -n %s default", "foo")
 	util.ShellMuteOutput("kubectl delete destinationrule -n %s default", "foo")
 	log.Info("Waiting... Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)	
+	time.Sleep(time.Duration(10) * time.Second)
 	util.DeleteNamespace("foo", kubeconfig)
 }
-
 
 func Test19(t *testing.T) {
 	defer cleanup19(kubeconfigFile)
 	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		// recover from panic if one occurred. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
 			t.Errorf("Test panic: %v", err)
 		}
@@ -55,7 +54,7 @@ func Test19(t *testing.T) {
 	util.Inspect(util.CreateNamespace("foo", kubeconfigFile), "failed to create namespace", "", t)
 	util.OcGrantPermission("default", "foo", kubeconfigFile)
 
-	log.Info("Enable mTLS")	
+	log.Info("Enable mTLS")
 	util.Inspect(util.KubeApplyContents("foo", mtlsPolicy, kubeconfigFile), "failed to apply policy", "", t)
 	mtlsRule := strings.Replace(mtlsRuleTemplate, "@token@", "foo", -1)
 	util.Inspect(util.KubeApplyContents("foo", mtlsRule, kubeconfigFile), "failed to apply rule", "", t)
@@ -70,10 +69,10 @@ func Test19(t *testing.T) {
 	util.Inspect(err, "failed to get JWT token", "", t)
 	sleepPod, err := util.GetPodName("foo", "app=sleep", kubeconfigFile)
 	util.Inspect(err, "failed to get sleep pod name", "", t)
-	
+
 	t.Run("verify_setup", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -94,7 +93,7 @@ func Test19(t *testing.T) {
 
 	t.Run("config_jwt_mtls", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -130,7 +129,7 @@ func Test19(t *testing.T) {
 
 	t.Run("group_rbac", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -186,7 +185,7 @@ func Test19(t *testing.T) {
 
 	t.Run("list_claims_rbac", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}

@@ -15,7 +15,6 @@
 package maistra
 
 import (
-
 	"strings"
 	"testing"
 	"time"
@@ -24,13 +23,11 @@ import (
 	"maistra/util"
 )
 
-
-
 func cleanup10(namespace, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDelete(namespace, httpbinTimeoutYaml, kubeconfig)
 	util.KubeDelete(namespace, egressGoogleYaml, kubeconfig)
-	util.KubeDelete(namespace, egressHTTPBinYaml , kubeconfig)
+	util.KubeDelete(namespace, egressHTTPBinYaml, kubeconfig)
 	util.KubeDelete(namespace, sleepIPRangeYaml, kubeconfig)
 	util.KubeDelete(namespace, sleepYaml, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
@@ -38,7 +35,7 @@ func cleanup10(namespace, kubeconfig string) {
 }
 
 func configEgress(namespace, kubeconfig string) error {
-	if err := util.KubeApply(namespace, egressHTTPBinYaml , kubeconfig); err != nil {
+	if err := util.KubeApply(namespace, egressHTTPBinYaml, kubeconfig); err != nil {
 		return err
 	}
 	if err := util.KubeApply(namespace, egressGoogleYaml, kubeconfig); err != nil {
@@ -76,7 +73,7 @@ func deploySleepIPRange(namespace, kubeconfig string) error {
 func Test10(t *testing.T) {
 	defer cleanup10(testNamespace, kubeconfigFile)
 	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		// recover from panic if one occurred. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
 			t.Errorf("Test panic: %v", err)
 		}
@@ -90,7 +87,7 @@ func Test10(t *testing.T) {
 
 	t.Run("external_httpbin", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				log.Infof("Test panic: %v", err)
 			}
@@ -110,28 +107,28 @@ func Test10(t *testing.T) {
 		log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 		time.Sleep(time.Duration(10) * time.Second)
 		/*
-		logMsg := util.GetPodLogs(testNamespace, pod, "istio-proxy", true, false, kubeconfigFile)
-		
-		if strings.Contains(logMsg, "httpbin.org") {
-			log.Infof("Get correct sidecar proxy log for httpbin.org")
-		} else {
-			t.Errorf("Error wrong sidecar proxy log for httpbin.org: %s", logMsg)
-			log.Errorf("sidecar proxy log for httpbin.org: %s", logMsg)
-		}
+			logMsg := util.GetPodLogs(testNamespace, pod, "istio-proxy", true, false, kubeconfigFile)
 
-		logMsg = util.GetPodLogsForLabel("istio-system", "istio-mixer-type=telemetry", "mixer", false, false, kubeconfigFile)
-		if strings.Contains(logMsg, "\"destinationServiceHost\":\"httpbin.org\"") {
-			log.Infof("Get correct mixer log for httpbin.org")
-		} else {
-			t.Errorf("Error wrong mixer log for httpbin.org: %s", logMsg)
-			log.Errorf("mixer log for httpbin.org: %s", logMsg)
-		}
+			if strings.Contains(logMsg, "httpbin.org") {
+				log.Infof("Get correct sidecar proxy log for httpbin.org")
+			} else {
+				t.Errorf("Error wrong sidecar proxy log for httpbin.org: %s", logMsg)
+				log.Errorf("sidecar proxy log for httpbin.org: %s", logMsg)
+			}
+
+			logMsg = util.GetPodLogsForLabel("istio-system", "istio-mixer-type=telemetry", "mixer", false, false, kubeconfigFile)
+			if strings.Contains(logMsg, "\"destinationServiceHost\":\"httpbin.org\"") {
+				log.Infof("Get correct mixer log for httpbin.org")
+			} else {
+				t.Errorf("Error wrong mixer log for httpbin.org: %s", logMsg)
+				log.Errorf("mixer log for httpbin.org: %s", logMsg)
+			}
 		*/
 	})
-	
+
 	t.Run("external_google", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -148,30 +145,30 @@ func Test10(t *testing.T) {
 		}
 
 		/*
-		logMsg := util.GetPodLogs(testNamespace, pod, "istio-proxy", true, false, kubeconfigFile)
-		
-		if strings.Contains(logMsg, "www.google.com") {
-			log.Infof("Get correct sidecar proxy log for www.google.com")
-		} else {
-			
-			log.Infof("sidecar proxy log for www.google.com: %s", logMsg)
-		}
+			logMsg := util.GetPodLogs(testNamespace, pod, "istio-proxy", true, false, kubeconfigFile)
 
-		log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-		time.Sleep(time.Duration(10) * time.Second)
-		logMsg = util.GetPodLogsForLabel("istio-system", "istio-mixer-type=telemetry", "mixer", true, false, kubeconfigFile)
-		if strings.Contains(logMsg, "\"requestedServerName\":\"www.google.com\"") {
-			log.Infof("Get correct mixer log for www.google.com")
-		} else {
-			t.Errorf("Error wrong mixer log for www.google.com: %s", logMsg)
-			log.Errorf("mixer log for www.google.com: %s", logMsg)
-		}
+			if strings.Contains(logMsg, "www.google.com") {
+				log.Infof("Get correct sidecar proxy log for www.google.com")
+			} else {
+
+				log.Infof("sidecar proxy log for www.google.com: %s", logMsg)
+			}
+
+			log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
+			time.Sleep(time.Duration(10) * time.Second)
+			logMsg = util.GetPodLogsForLabel("istio-system", "istio-mixer-type=telemetry", "mixer", true, false, kubeconfigFile)
+			if strings.Contains(logMsg, "\"requestedServerName\":\"www.google.com\"") {
+				log.Infof("Get correct mixer log for www.google.com")
+			} else {
+				t.Errorf("Error wrong mixer log for www.google.com: %s", logMsg)
+				log.Errorf("mixer log for www.google.com: %s", logMsg)
+			}
 		*/
 	})
 
 	t.Run("block_external", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -191,7 +188,7 @@ func Test10(t *testing.T) {
 
 	t.Run("bypass_ip_range", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -204,12 +201,12 @@ func Test10(t *testing.T) {
 		util.Inspect(configEgress(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		pod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfigFile)
 		util.Inspect(err, "failed to get sleep pod", "", t)
-		
+
 		t.Run("external_httpbin", func(t *testing.T) {
 			log.Info("# Make requests to external httpbin service")
 			log.Info("Waiting for rules to propagate. Sleep 50 seconds...")
 			time.Sleep(time.Duration(50) * time.Second)
-			
+
 			command := "curl http://httpbin.org/headers"
 			msg, err := util.PodExec(testNamespace, pod, "sleep", command, false, kubeconfigFile)
 			util.Inspect(err, "failed to get response", "", t)
@@ -219,10 +216,10 @@ func Test10(t *testing.T) {
 				log.Infof("Success. Get response header without Istio sidecar: %s", msg)
 			}
 		})
-		
+
 		t.Run("external_google", func(t *testing.T) {
 			defer func() {
-				// recover from panic if one occured. This allows cleanup to be executed after panic.
+				// recover from panic if one occurred. This allows cleanup to be executed after panic.
 				if err := recover(); err != nil {
 					t.Errorf("Test panic: %v", err)
 				}
@@ -239,5 +236,5 @@ func Test10(t *testing.T) {
 			}
 		})
 	})
-	
+
 }

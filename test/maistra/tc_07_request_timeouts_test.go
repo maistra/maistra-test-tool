@@ -57,7 +57,7 @@ func setTimeout(namespace, kubeconfig string) error {
 func Test07(t *testing.T) {
 	defer cleanup07(testNamespace, kubeconfigFile)
 	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		// recover from panic if one occurred. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
 			t.Errorf("Test panic: %v", err)
 		}
@@ -72,12 +72,12 @@ func Test07(t *testing.T) {
 	util.Inspect(setup07(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 	t.Run("timout", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
 		}()
-		
+
 		util.Inspect(setTimeout(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 
 		resp, duration, err := util.GetHTTPResponse(productpageURL, nil)
@@ -92,6 +92,5 @@ func Test07(t *testing.T) {
 			"Success. Response timeout matches with expected.",
 			t)
 	})
-	
-}
 
+}

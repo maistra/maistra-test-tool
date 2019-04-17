@@ -36,11 +36,10 @@ func cleanup16(namespace, kubeconfig string) {
 	time.Sleep(time.Duration(15) * time.Second)
 }
 
-
 func Test16(t *testing.T) {
 	defer cleanup16(testNamespace, kubeconfigFile)
 	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		// recover from panic if one occurred. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
 			t.Errorf("Test panic: %v", err)
 		}
@@ -48,14 +47,14 @@ func Test16(t *testing.T) {
 
 	log.Infof("# TC_16 Mutual TLS over HTTPS Services")
 	// generate secrets
-	// TBD 
+	// TBD
 	util.ShellSilent("openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /tmp/nginx.key -out /tmp/nginx.crt -subj \"/CN=my-nginx/O=my-nginx\"")
 	util.CreateTLSSecret("nginxsecret", testNamespace, "/tmp/nginx.key", "/tmp/nginx.crt", kubeconfigFile)
-	util.ShellSilent("kubectl create configmap -n %s nginxconfigmap --from-file=%s", testNamespace,	nginxConf)
-	
+	util.ShellSilent("kubectl create configmap -n %s nginxconfigmap --from-file=%s", testNamespace, nginxConf)
+
 	t.Run("nginx_without_sidecar", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				log.Infof("Test panic: %v", err)
 			}
@@ -84,7 +83,7 @@ func Test16(t *testing.T) {
 
 	t.Run("nginx_with_sidecar", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -114,12 +113,12 @@ func Test16(t *testing.T) {
 
 	t.Run("nginx_with_sidecar_mtls", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
 		}()
-		
+
 		log.Info("Enable mutual TLS")
 		util.Inspect(util.KubeApplyContents(testNamespace, mtlsPolicy, kubeconfigFile), "failed to apply policy", "", t)
 		mtlsRule := strings.Replace(mtlsRuleTemplate, "@token@", testNamespace, -1)
@@ -140,7 +139,7 @@ func Test16(t *testing.T) {
 		} else {
 			log.Infof("Success. Get expected response: %s", msg)
 		}
-		
+
 		msg, err = util.PodExec(testNamespace, sleepPod, "istio-proxy", cmd, true, kubeconfigFile)
 		if err != nil {
 			log.Infof("Expected fail from container istio-proxy: %v", err)

@@ -24,7 +24,6 @@ import (
 	"maistra/util"
 )
 
-
 func cleanup04(namespace string, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
@@ -75,40 +74,39 @@ func abortInject(namespace, kubeconfig string) error {
 	return nil
 }
 
-
 func Test04(t *testing.T) {
 	defer cleanup04(testNamespace, kubeconfigFile)
 	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		// recover from panic if one occurred. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
 			t.Errorf("Test panic: %v", err)
 		}
 	}()
-	
+
 	log.Infof("# TC_04 Fault injection")
 	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
 	util.Inspect(err, "failed to get ingressgateway URL", "", t)
 	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
-	
+
 	util.Inspect(setup04(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 
-	testUserJar	:= util.GetCookieJar(testUsername, "", "http://" + ingress)
+	testUserJar := util.GetCookieJar(testUsername, "", "http://"+ingress)
 
 	t.Run("delay_fault", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
 		}()
 
 		util.Inspect(faultInject(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
-		
+
 		minDuration := 5000
 		maxDuration := 8000
 		standby := 10
-		
+
 		for i := 0; i < testRetryTimes; i++ {
 			resp, duration, err := util.GetHTTPResponse(productpageURL, testUserJar)
 			defer util.CloseResponseBody(resp)
@@ -117,17 +115,17 @@ func Test04(t *testing.T) {
 			util.Inspect(err, "failed to read response body", "", t)
 			util.Inspect(
 				util.CompareHTTPResponse(body, "productpage-test-user-v2-review-timeout.html"),
-				"Didn't get expected response.", 
+				"Didn't get expected response.",
 				"Success. Response matches with expected.",
 				t)
-		
+
 			if err == nil && duration >= minDuration && duration <= maxDuration {
 				log.Info("Success. Fault delay as expected")
 				break
 			}
-			if i == testRetryTimes - 1 {
+			if i == testRetryTimes-1 {
 				t.Errorf("Fault delay failed. Delay in %d ms while expected between %d ms and %d ms, %s",
-				duration, minDuration, maxDuration, err)
+					duration, minDuration, maxDuration, err)
 				break
 			}
 			time.Sleep(time.Duration(standby) * time.Second)
@@ -136,7 +134,7 @@ func Test04(t *testing.T) {
 
 	t.Run("fix_fault", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -151,19 +149,19 @@ func Test04(t *testing.T) {
 		util.Inspect(err, "failed to read response body", "", t)
 		util.Inspect(
 			util.CompareHTTPResponse(body, "productpage-test-user-v2.html"),
-			"Didn't get expected response.", 
+			"Didn't get expected response.",
 			"Success. Response matches with expected.",
 			t)
 	})
 
 	t.Run("abort_fault", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
 		}()
-		
+
 		util.Inspect(abortInject(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		resp, duration, err := util.GetHTTPResponse(productpageURL, testUserJar)
 		defer util.CloseResponseBody(resp)

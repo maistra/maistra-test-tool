@@ -71,12 +71,12 @@ func isWithinPercentage(count int, total int, rate float64, tolerance float64) b
 func Test05(t *testing.T) {
 	defer cleanup05(testNamespace, kubeconfigFile)
 	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		// recover from panic if one occurred. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
 			t.Errorf("Test panic: %v", err)
 		}
 	}()
-	
+
 	log.Infof("# TC_05 Traffic Shifting")
 	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
@@ -87,7 +87,7 @@ func Test05(t *testing.T) {
 
 	t.Run("50%_v3_shift", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -95,7 +95,7 @@ func Test05(t *testing.T) {
 
 		util.Inspect(trafficShift50v3(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		time.Sleep(time.Duration(5) * time.Second)
-		
+
 		tolerance := 0.10
 		totalShot := 40
 		once := sync.Once{}
@@ -107,12 +107,12 @@ func Test05(t *testing.T) {
 				log.Errorf("unexpected response status %d", resp.StatusCode)
 				continue
 			}
-			
+
 			body, err := ioutil.ReadAll(resp.Body)
 			util.Inspect(err, "failed to read response body", "", t)
 
 			var c1CompareError, cVersionToMigrateError error
-			
+
 			if c1CompareError = util.CompareHTTPResponse(body, "productpage-normal-user-v1.html"); c1CompareError == nil {
 				c1++
 			} else if cVersionToMigrateError = util.CompareHTTPResponse(body, "productpage-normal-user-v3.html"); cVersionToMigrateError == nil {
@@ -126,26 +126,26 @@ func Test05(t *testing.T) {
 			}
 			util.CloseResponseBody(resp)
 		}
-		
+
 		if isWithinPercentage(c1, totalShot, 0.5, tolerance) && isWithinPercentage(cVersionToMigrate, totalShot, 0.5, tolerance) {
 			log.Infof(
-				"Success. Traffic shifting acts as expected for 50 percent. " +
-				"old version hit %d, new version hit %d", c1, cVersionToMigrate)
+				"Success. Traffic shifting acts as expected for 50 percent. "+
+					"old version hit %d, new version hit %d", c1, cVersionToMigrate)
 		} else {
 			t.Errorf(
-				"Failed traffic shifting test for 50 percent. " +
-				"old version hit %d, new version hit %d", c1, cVersionToMigrate)
+				"Failed traffic shifting test for 50 percent. "+
+					"old version hit %d, new version hit %d", c1, cVersionToMigrate)
 		}
 	})
 
 	t.Run("100%_v3_shift", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
 		}()
-		
+
 		util.Inspect(trafficShiftAllv3(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		time.Sleep(time.Duration(5) * time.Second)
 
@@ -162,12 +162,12 @@ func Test05(t *testing.T) {
 				log.Errorf("unexpected response status %d", resp.StatusCode)
 				continue
 			}
-			
+
 			body, err := ioutil.ReadAll(resp.Body)
 			util.Inspect(err, "failed to read response body", "", t)
 
 			var cVersionToMigrateError error
-			
+
 			if cVersionToMigrateError = util.CompareHTTPResponse(body, "productpage-normal-user-v3.html"); cVersionToMigrateError == nil {
 				cVersionToMigrate++
 			} else {
@@ -178,16 +178,16 @@ func Test05(t *testing.T) {
 			}
 			util.CloseResponseBody(resp)
 		}
-		
+
 		if isWithinPercentage(cVersionToMigrate, totalShot, 1, tolerance) {
 			log.Infof(
-				"Success. Traffic shifting acts as expected for 100 percent. " +
-				"new version hit %d", cVersionToMigrate)
+				"Success. Traffic shifting acts as expected for 100 percent. "+
+					"new version hit %d", cVersionToMigrate)
 		} else {
 			t.Errorf(
-				"Failed traffic shifting test for 100 percent. " +
-				"new version hit %d", cVersionToMigrate)
-		}	
+				"Failed traffic shifting test for 100 percent. "+
+					"new version hit %d", cVersionToMigrate)
+		}
 	})
 
 }

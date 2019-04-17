@@ -25,7 +25,7 @@ import (
 
 func cleanup08(namespace, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
-	util.OcDelete("", httpbinOCPRouteYaml, kubeconfig)   // comment this OcDelete when IOR is enabled
+	util.OcDelete("", httpbinOCPRouteYaml, kubeconfig) // comment this OcDelete when IOR is enabled
 	util.KubeDelete(namespace, httpbinGatewayYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinRouteYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinYaml, kubeconfig)
@@ -62,10 +62,10 @@ func updateHttpbin(namespace, kubeconfig string) error {
 	return nil
 }
 
-func Test08 (t *testing.T) {
+func Test08(t *testing.T) {
 	defer cleanup08(testNamespace, kubeconfigFile)
 	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		// recover from panic if one occurred. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
 			t.Errorf("Test panic: %v", err)
 		}
@@ -82,7 +82,7 @@ func Test08 (t *testing.T) {
 
 	t.Run("status_200", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				log.Infof("Test panic: %v", err)
 			}
@@ -93,15 +93,15 @@ func Test08 (t *testing.T) {
 		util.Inspect(err, "failed to get response", "", t)
 		util.Inspect(util.CheckHTTPResponse200(resp), "failed to get HTTP 200", resp.Status, t)
 	})
-	
+
 	t.Run("headers", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
 		}()
-		
+
 		util.Inspect(updateHttpbin(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		resp, duration, err := util.GetHTTPResponse(fmt.Sprintf("http://%s/headers", ingress), nil)
 		defer util.CloseResponseBody(resp)
@@ -109,5 +109,5 @@ func Test08 (t *testing.T) {
 		log.Infof("httpbin headers page returned in %d ms", duration)
 		util.Inspect(util.CheckHTTPResponse200(resp), "failed to get HTTP 200", resp.Status, t)
 	})
-	
+
 }

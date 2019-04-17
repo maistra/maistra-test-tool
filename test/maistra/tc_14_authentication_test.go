@@ -24,7 +24,6 @@ import (
 	"maistra/util"
 )
 
-
 func cleanup14(kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDelete("foo", httpbinYaml, kubeconfig)
@@ -87,7 +86,7 @@ func setup14(kubeconfig string) error {
 	util.KubeApply("bar", sleepYaml, kubeconfig)
 	util.KubeApply("legacy", httpbinLegacyYaml, kubeconfig)
 	util.KubeApply("legacy", sleepLegacyYaml, kubeconfig)
-	
+
 	if err := util.CheckPodRunning("foo", "app=httpbin", kubeconfigFile); err != nil {
 		return err
 	}
@@ -142,11 +141,10 @@ func jwcryptoCleanup() {
 
 }
 
-
 func Test14(t *testing.T) {
 	defer cleanup14(kubeconfigFile)
 	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		// recover from panic if one occurred. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
 			t.Errorf("Test panic: %v", err)
 		}
@@ -163,13 +161,13 @@ func Test14(t *testing.T) {
 
 	util.Inspect(setup14(kubeconfigFile), "failed to apply deployments", "", t)
 	log.Info("Verify setup")
-	
+
 	for _, from := range namespaces {
 		for _, to := range namespaces {
 			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
 			util.Inspect(err, "failed to get sleep pod name", "", t)
 			cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
-								to, from, to)
+				to, from, to)
 			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
 			util.Inspect(err, "failed to get response", "", t)
 			if !strings.Contains(msg, "200") {
@@ -183,7 +181,7 @@ func Test14(t *testing.T) {
 
 	t.Run("global_mTLS", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -200,7 +198,7 @@ func Test14(t *testing.T) {
 				sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
 				util.Inspect(err, "failed to get sleep pod name", "", t)
 				cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
-								to, from, to)
+					to, from, to)
 				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
 				util.Inspect(err, "failed to get response", "", t)
 				if !strings.Contains(msg, "503") {
@@ -221,7 +219,7 @@ func Test14(t *testing.T) {
 				sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
 				util.Inspect(err, "failed to get sleep pod name", "", t)
 				cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
-								to, from, to)
+					to, from, to)
 				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
 				util.Inspect(err, "failed to get response", "", t)
 				if !strings.Contains(msg, "200") {
@@ -237,7 +235,7 @@ func Test14(t *testing.T) {
 
 	t.Run("non_istio_to_istio", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -251,7 +249,7 @@ func Test14(t *testing.T) {
 			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
 			util.Inspect(err, "failed to get sleep pod name", "", t)
 			cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
-								to, from, to)
+				to, from, to)
 			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
 			if to != "legacy" && err != nil {
 				continue
@@ -268,14 +266,14 @@ func Test14(t *testing.T) {
 				} else {
 					log.Infof("Success. Get expected response: %s", msg)
 				}
-			}	
+			}
 		}
 		time.Sleep(time.Duration(5) * time.Second)
 	})
 
 	t.Run("istio_to_non_istio", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -288,7 +286,7 @@ func Test14(t *testing.T) {
 			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
 			util.Inspect(err, "failed to get sleep pod name", "", t)
 			cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
-								to, from, to)
+				to, from, to)
 			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
 			util.Inspect(err, "failed to get response", "", t)
 			if !strings.Contains(msg, "503") {
@@ -306,7 +304,7 @@ func Test14(t *testing.T) {
 			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
 			util.Inspect(err, "failed to get sleep pod name", "", t)
 			cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
-								to, from, to)
+				to, from, to)
 			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
 			util.Inspect(err, "failed to get response", "", t)
 			if !strings.Contains(msg, "200") {
@@ -321,7 +319,7 @@ func Test14(t *testing.T) {
 
 	t.Run("istio_to_k8s_api", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -359,7 +357,7 @@ func Test14(t *testing.T) {
 
 	t.Run("namespace_mTLS", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -375,9 +373,9 @@ func Test14(t *testing.T) {
 				sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
 				util.Inspect(err, "failed to get sleep pod name", "", t)
 				cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
-									to, from, to)
+					to, from, to)
 				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
-				
+
 				if from == "legacy" && to == "foo" {
 					if err != nil {
 						log.Infof("Expected fail from sleep.legacy to httpbin.foo: %v", err)
@@ -401,7 +399,7 @@ func Test14(t *testing.T) {
 
 	t.Run("service_mTLS", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -417,7 +415,7 @@ func Test14(t *testing.T) {
 				sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
 				util.Inspect(err, "failed to get sleep pod name", "", t)
 				cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
-									to, from, to)
+					to, from, to)
 				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
 
 				if from == "legacy" && to == "foo" {
@@ -453,7 +451,7 @@ func Test14(t *testing.T) {
 
 	t.Run("port_mTLS", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -469,9 +467,9 @@ func Test14(t *testing.T) {
 				sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
 				util.Inspect(err, "failed to get sleep pod name", "", t)
 				cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
-									to, from, to)
+					to, from, to)
 				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
-				
+
 				if from == "legacy" && to == "foo" {
 					if err != nil {
 						log.Infof("Expected fail from sleep.legacy to httpbin.foo: %v", err)
@@ -495,7 +493,7 @@ func Test14(t *testing.T) {
 
 	t.Run("overwrite_policy", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -511,7 +509,7 @@ func Test14(t *testing.T) {
 				sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
 				util.Inspect(err, "failed to get sleep pod name", "", t)
 				cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
-									to, from, to)
+					to, from, to)
 				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfigFile)
 				util.Inspect(err, "failed to get response", "", t)
 				if !strings.Contains(msg, "200") {
@@ -528,7 +526,7 @@ func Test14(t *testing.T) {
 
 	t.Run("end_user_auth", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -543,7 +541,7 @@ func Test14(t *testing.T) {
 		util.Inspect(util.KubeApplyContents("", fooVS, kubeconfigFile), "failed to apply foo virtualservice", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
 		time.Sleep(time.Duration(20) * time.Second)
-		
+
 		resp, _, err := util.GetHTTPResponse(url, nil)
 		util.Inspect(err, "failed to get httpbin header response", "", t)
 		if resp.StatusCode != 200 {
@@ -587,7 +585,7 @@ func Test14(t *testing.T) {
 			log.Infof("Success. Get response: %d", resp.StatusCode)
 		}
 		util.CloseResponseBody(resp)
-		
+
 		log.Info("Test JWT expires in 5 seconds")
 		jwcryptoInstall()
 		log.Info("Check curls return five or six 200 and then five or four 401")
@@ -604,7 +602,7 @@ func Test14(t *testing.T) {
 				} else {
 					log.Infof("Success. Get response: %d", resp.StatusCode)
 				}
-			} 
+			}
 			if i > 5 {
 				if resp.StatusCode != 401 {
 					t.Errorf("Expected: 401; Got unexpected response code: %d", resp.StatusCode)
@@ -625,16 +623,16 @@ func Test14(t *testing.T) {
 
 	t.Run("end_user_auth_mTLS", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
 		}()
-		
+
 		log.Info("End-user authentication with mutual TLS")
-		util.Inspect(util.KubeApplyContents("", fooJWTPolicy2, kubeconfigFile), "failed to apply foo JWT Policy 2", "", t)		
+		util.Inspect(util.KubeApplyContents("", fooJWTPolicy2, kubeconfigFile), "failed to apply foo JWT Policy 2", "", t)
 		util.Inspect(util.KubeApplyContents("", fooRule3, kubeconfigFile), "failed to apply foo rule 3", "", t)
-		
+
 		log.Info("Check request from istio services")
 		token, err := util.ShellSilent("curl %s -s", jwtURL)
 		token = strings.Trim(token, "\n")
@@ -662,7 +660,7 @@ func Test14(t *testing.T) {
 			log.Errorf("Expecte failed request; Got unexpected response: %s", msg)
 		}
 	})
-	
+
 	cleanupPart3()
 
 }

@@ -23,7 +23,6 @@ import (
 	"maistra/util"
 )
 
-
 func cleanup06(namespace, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDelete(namespace, echo20v2Yaml, kubeconfig)
@@ -56,29 +55,28 @@ func routeTraffic20v2(namespace, kubeconfig string) error {
 
 func checkEcho(ingressHost, ingressTCPPort string) (string, error) {
 	msg, err := util.ShellSilent("docker run -e INGRESS_HOST=%s -e INGRESS_PORT=%s --rm busybox sh -c \"(date; sleep 1) | nc %s %s\"",
-				ingressHost, ingressTCPPort, ingressHost, ingressTCPPort)
+		ingressHost, ingressTCPPort, ingressHost, ingressTCPPort)
 	if err != nil {
 		return "", err
 	}
 	return msg, nil
 }
 
-
 func Test06(t *testing.T) {
 	defer cleanup06(testNamespace, kubeconfigFile)
 	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		// recover from panic if one occurred. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
 			t.Errorf("Test panic: %v", err)
 		}
 	}()
-	
+
 	log.Infof("# TC_06 TCP Traffic Shifting")
 	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
-	
+
 	ingress, err := util.GetOCP4Ingressgateway("istio-system", kubeconfigFile)
 	util.Inspect(err, "cannot get ingress host ip", "", t)
-	
+
 	ingressTCPPort, err := util.GetTCPIngressPort("istio-system", "istio-ingressgateway", kubeconfigFile)
 	util.Inspect(err, "cannot get ingress TCP port", "", t)
 
@@ -86,7 +84,7 @@ func Test06(t *testing.T) {
 
 	t.Run("100%_v1_shift", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -99,9 +97,9 @@ func Test06(t *testing.T) {
 		tolerance := 0.0
 		totalShot := 10
 		versionCount := 0
-		
-		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot * 1)
-		
+
+		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot*1)
+
 		for i := 0; i < totalShot; i++ {
 			time.Sleep(time.Duration(1) * time.Second)
 			msg, err := checkEcho(ingress, ingressTCPPort)
@@ -117,28 +115,28 @@ func Test06(t *testing.T) {
 			log.Info("Success. TCP Traffic shifting acts as expected for 100 percent.")
 		} else {
 			t.Errorf(
-				"Failed traffic shifting test for 100 percent. " +
-				"Expected version hit %d", versionCount)
+				"Failed traffic shifting test for 100 percent. "+
+					"Expected version hit %d", versionCount)
 		}
 	})
 
 	t.Run("20%_v2_shift", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
 		}()
-		
+
 		log.Info("# Shifting 20% TCP traffic to v2 tolerance 10% ")
 		util.Inspect(routeTraffic20v2(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		time.Sleep(time.Duration(5) * time.Second)
-		
+
 		tolerance := 0.15
 		totalShot := 60
 		c1, c2 := 0, 0
 
-		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot * 1)
+		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot*1)
 
 		for i := 0; i < totalShot; i++ {
 			time.Sleep(time.Duration(1) * time.Second)
@@ -154,11 +152,11 @@ func Test06(t *testing.T) {
 		}
 
 		if isWithinPercentage(c1, totalShot, 0.8, tolerance) && isWithinPercentage(c2, totalShot, 0.2, tolerance) {
-			log.Infof("Success. Traffic shifting acts as expected. " +
-			"v1 version hit %d, v2 version hit %d", c1, c2)
+			log.Infof("Success. Traffic shifting acts as expected. "+
+				"v1 version hit %d, v2 version hit %d", c1, c2)
 		} else {
-			t.Errorf("Failed traffic shifting test for 20 percent. " +
-			"v1 version hit %d, v2 version hit %d", c1, c2)
+			t.Errorf("Failed traffic shifting test for 20 percent. "+
+				"v1 version hit %d, v2 version hit %d", c1, c2)
 		}
 	})
 

@@ -81,7 +81,7 @@ func setup15(kubeconfig string) error {
 func Test15(t *testing.T) {
 	defer cleanup15(kubeconfigFile)
 	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		// recover from panic if one occurred. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
 			t.Errorf("Test panic: %v", err)
 		}
@@ -97,7 +97,7 @@ func Test15(t *testing.T) {
 	}
 	time.Sleep(time.Duration(5) * time.Second)
 	util.Inspect(setup15(kubeconfigFile), "failed to apply deployments", "", t)
-	
+
 	t.Run("verify_setup", func(t *testing.T) {
 		log.Info("Verify setup")
 
@@ -116,11 +116,9 @@ func Test15(t *testing.T) {
 		}
 	})
 
-	
-
 	t.Run("mTLS_and_plain_text", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -147,7 +145,7 @@ func Test15(t *testing.T) {
 
 	t.Run("mTLS", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -169,17 +167,17 @@ func Test15(t *testing.T) {
 			} else {
 				log.Infof("Success. Get expected response: %s", msg)
 			}
-		}		
+		}
 	})
 
 	t.Run("lock_down_mTLS", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
 		}()
-		
+
 		log.Info("Lock down to mutual TLS")
 		util.Inspect(util.KubeApplyContents("foo", tlsStrictPolicy, kubeconfigFile), "failed to apply foo tls strict policy", "", t)
 		time.Sleep(time.Duration(5) * time.Second)
@@ -207,7 +205,7 @@ func Test15(t *testing.T) {
 			} else {
 				log.Infof("Success. Get expected response: %s", msg)
 			}
-		}		
+		}
 	})
 
 }
