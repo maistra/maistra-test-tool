@@ -722,7 +722,7 @@ description: >
 importance: medium
 severity: should_have
 automation: notautomated
-automation_script: ""
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_20_Mutual_TLS_Deep_Dive.sh"
 caselevel: component
 testtype: nonfunctional
 subtype1: "usability"
@@ -739,7 +739,7 @@ description: >
 importance: high
 severity: should_have
 automation: notautomated
-automation_script: ""
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_21_Plugging_Certs.sh"
 caselevel: component
 testtype: functional
 subtype1: "-"
@@ -752,7 +752,7 @@ description: >
 importance: low
 severity: should_have
 automation: notautomated
-automation_script: ""
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_22_Enabling_Citadel_Health_Check.sh"
 caselevel: component
 testtype: nonfunctional
 subtype1: "reliability"
@@ -765,7 +765,7 @@ description: >
 importance: low
 severity: should_have
 automation: notautomated
-automation_script: ""
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_23_Rate_Limiting.sh"
 caselevel: component
 testtype: nonfunctional
 subtype1: "usability"
@@ -781,7 +781,7 @@ description: >
 importance: high
 severity: should_have
 automation: notautomated
-automation_script: ""
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_23_Rate_Limiting.sh"
 caselevel: component
 testtype: functional
 subtype1: "-"
@@ -799,7 +799,7 @@ description: >
 importance: high
 severity: should_have
 automation: notautomated
-automation_script: ""
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_24_Denials_White_Black_Listing.sh"
 caselevel: component
 testtype: functional
 subtype1: "-"
@@ -814,7 +814,7 @@ description: >
 importance: high
 severity: should_have
 automation: notautomated
-automation_script: ""
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_25_Distributed_Tracing.sh"
 caselevel: integration
 testtype: functional
 subtype1: "-"
@@ -829,7 +829,7 @@ description: >
 importance: high
 severity: should_have
 automation: notautomated
-automation_script: ""
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_26_Collecting_Metrics_Logs.sh"
 caselevel: component
 testtype: functional
 subtype1: "-"
@@ -844,7 +844,7 @@ description: >
 importance: high
 severity: should_have
 automation: notautomated
-automation_script: ""
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_27_Collecting_Metrics_TCP.sh"
 caselevel: component
 testtype: functional
 subtype1: "-"
@@ -858,7 +858,7 @@ description: >
 importance: high
 severity: should_have
 automation: notautomated
-automation_script: ""
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_28_Querying_Metrics_Prometheus.sh"
 caselevel: component
 testtype: functional
 subtype1: "-"
@@ -872,7 +872,7 @@ description: >
 importance: high
 severity: should_have
 automation: notautomated
-automation_script: ""
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_29_Visualizing_Metrics_Grafana.sh"
 caselevel: integration
 testtype: functional
 subtype1: "-"
@@ -888,7 +888,7 @@ description: >
 importance: high
 severity: should_have
 automation: notautomated
-automation_script: ""
+automation_script: "https://github.com/yxun/moitt/blob/master/test/maistra/tc_30_Logging_Fluentd.sh"
 caselevel: integration
 testtype: functional
 subtype1: "-"

@@ -29,6 +29,13 @@ from pylarion.test_step import TestStep
 
 
 def main():
+    """ This script will create and import all test data from work_item_all_data.yaml
+        to Polarion new workitems (Requirements and test cases)
+        This scripts was executed and we don't need to run this again. 
+        To update or add new test case, you should run an update work item script.
+
+        argument sys.argv[1]: work item data yaml file ,e.g. work_item_all_data.yaml
+    """
     
     PROJECT = "MaistraIstio"
     SETUP = "Istio system is up and running on an OCP cluster. User has completed the oc login. A test namespace 'bookinfo' has been created."
