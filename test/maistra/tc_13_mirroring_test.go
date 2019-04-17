@@ -23,7 +23,6 @@ import (
 	"maistra/util"
 )
 
-
 func cleanup13(namespace, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDelete(namespace, httpbinAllv1Yaml, kubeconfig)
@@ -53,7 +52,7 @@ func setup13(namespace, kubeconfig string) error {
 		return err
 	}
 	if err := util.KubeApply(namespace, httpbinServiceYaml, kubeconfig); err != nil {
-		return err 
+		return err
 	}
 	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
@@ -62,17 +61,15 @@ func setup13(namespace, kubeconfig string) error {
 	}
 	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
-	if err := util.CheckPodRunning(namespace, "app=sleep", kubeconfig); err != nil {
-		return err
-	}
-	return nil
-}
 
+	err := util.CheckPodRunning(namespace, "app=sleep", kubeconfig)
+	return err
+}
 
 func Test13(t *testing.T) {
 	defer cleanup13(testNamespace, kubeconfigFile)
 	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		// recover from panic if one occurred. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
 			t.Errorf("Test panic: %v", err)
 		}
@@ -83,7 +80,7 @@ func Test13(t *testing.T) {
 
 	t.Run("no_mirror", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -117,12 +114,12 @@ func Test13(t *testing.T) {
 
 	t.Run("mirror_v2", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
 		}()
-		
+
 		util.Inspect(util.KubeApply(testNamespace, httpbinMirrorv2Yaml, kubeconfigFile), "failed to apply rule", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 		time.Sleep(time.Duration(10) * time.Second)

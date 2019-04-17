@@ -24,14 +24,13 @@ import (
 	"maistra/util"
 )
 
-
 func cleanup03(namespace string, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
 	util.KubeDelete(namespace, bookinfoReviewTestv2Yaml, kubeconfig)
 	cleanBookinfo(namespace, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)	
+	time.Sleep(time.Duration(10) * time.Second)
 }
 
 func routeTraffic(namespace string, kubeconfig string) error {
@@ -57,23 +56,23 @@ func routeTrafficUser(namespace string, kubeconfig string) error {
 func Test03(t *testing.T) {
 	defer cleanup03(testNamespace, kubeconfigFile)
 	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		// recover from panic if one occurred. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
 			t.Errorf("Test panic: %v", err)
 		}
 	}()
-	
+
 	log.Infof("# TC_03 Traffic Routing")
 	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
 	util.Inspect(err, "failed to get ingressgateway URL", "", t)
 	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
 
-	testUserJar	:= util.GetCookieJar(testUsername, "", "http://" + ingress)
+	testUserJar := util.GetCookieJar(testUsername, "", "http://"+ingress)
 
 	t.Run("general_route", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -88,20 +87,20 @@ func Test03(t *testing.T) {
 			body, err := ioutil.ReadAll(resp.Body)
 			util.Inspect(err, "failed to read response body", "", t)
 			util.Inspect(
-				util.CompareHTTPResponse(body, "productpage-normal-user-v1.html"), 
-				"Didn't get expected response.", 
-				"Success. Response matches with expected.", 
-				t)	
+				util.CompareHTTPResponse(body, "productpage-normal-user-v1.html"),
+				"Didn't get expected response.",
+				"Success. Response matches with expected.",
+				t)
 		}
 	})
 	t.Run("user_route", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
 		}()
-		
+
 		util.Inspect(routeTrafficUser(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		for i := 0; i <= testRetryTimes; i++ {
 			resp, duration, err := util.GetHTTPResponse(productpageURL, testUserJar)
@@ -111,11 +110,11 @@ func Test03(t *testing.T) {
 			body, err := ioutil.ReadAll(resp.Body)
 			util.Inspect(err, "failed to read response body", "", t)
 			util.Inspect(
-				util.CompareHTTPResponse(body, "productpage-test-user-v2.html"), 
-				"Didn't get expected response.", 
+				util.CompareHTTPResponse(body, "productpage-test-user-v2.html"),
+				"Didn't get expected response.",
 				"Success. Respones matches with expected.",
 				t)
 		}
 	})
-	
+
 }

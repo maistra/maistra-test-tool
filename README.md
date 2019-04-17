@@ -4,6 +4,7 @@
 [![](https://img.shields.io/github/stars/yxun/moitt.svg?style=flat)](https://github.com/yxun/moitt/stargazers)
 [![](https://img.shields.io/github/forks/yxun/moitt.svg?style=flat)](https://github.com/yxun/moitt/network/members)
 [![](https://img.shields.io/github/issues-pr-closed-raw/yxun/moitt.svg?style=flat)](https://github.com/yxun/moitt/issues)
+[![](https://goreportcard.com/badge/github.com/yxun/moitt)](https://goreportcard.com/report/github.com/yxun/moitt)
 [![](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat)](https://github.com/yxun/moitt/blob/master/LICENSE)
 ![](https://img.shields.io/github/repo-size/yxun/moitt.svg?style=flat)
 
@@ -95,11 +96,6 @@ Python Version: Python 3.7 or above
 * Istio system has been installed on an OpenShift cluster
 
 * Login the OCP cluster 
-
-* A test namespace/project `bookinfo` need to be created and OCP cluster priviledge has been granted to the `bookinfo` namespace/project. 
-  * `$ oc adm policy add-scc-to-user privileged -z default -n bookinfo`
-  * `$ oc adm policy add-scc-to-user anyuid -z default -n bookinfo`
-  * Priviledge permission is a temporary requirement for any OCP namespace/project to work with sidecar deployments. We don't need to deploy the sample application `bookinfo` before running tests
 
 
 ## Testing

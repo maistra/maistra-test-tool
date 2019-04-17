@@ -20,21 +20,21 @@ import (
 )
 
 var (
-	bookinfoRBACOn string
-	bookinfoRBAConDB string
-	bookinfoNamespacePolicy string
+	bookinfoRBACOn            string
+	bookinfoRBAConDB          string
+	bookinfoNamespacePolicy   string
 	bookinfoProductpagePolicy string
-	bookinfoReviewPolicy string
-	bookinfoRatingPolicy string
-	bookinfoMongodbPolicy string
+	bookinfoReviewPolicy      string
+	bookinfoRatingPolicy      string
+	bookinfoMongodbPolicy     string
 )
 
 func updateYaml(namespace string) {
 	data, _ := ioutil.ReadFile(bookinfoRBACOnTemplate)
-	bookinfoRBACOn = strings.Replace(string(data), "\"default\"", "\"" + namespace + "\"", -1)
+	bookinfoRBACOn = strings.Replace(string(data), "\"default\"", "\""+namespace+"\"", -1)
 
 	data, _ = ioutil.ReadFile(bookinfoRBACOnDBTemplate)
-	bookinfoRBAConDB = strings.Replace(string(data), "mongodb.default", "mongodb." + namespace, -1)
+	bookinfoRBAConDB = strings.Replace(string(data), "mongodb.default", "mongodb."+namespace, -1)
 
 	data, _ = ioutil.ReadFile(bookinfoNamespacePolicyTemplate)
 	bookinfoNamespacePolicy = strings.Replace(string(data), "default", namespace, -1)

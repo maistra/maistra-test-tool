@@ -15,8 +15,7 @@
 package maistra
 
 const (
-
-meshPolicy = `
+	meshPolicy = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "MeshPolicy"
 metadata:
@@ -26,7 +25,7 @@ spec:
   - mtls: {}	
 `
 
-clientRule = `
+	clientRule = `
 apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
 metadata:
@@ -39,7 +38,7 @@ spec:
       mode: ISTIO_MUTUAL
 `
 
-legacyRule = `
+	legacyRule = `
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
@@ -52,7 +51,7 @@ spec:
      mode: DISABLE
 `
 
-apiServerRule = `
+	apiServerRule = `
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
@@ -65,7 +64,7 @@ spec:
      mode: DISABLE
 `
 
-fooPolicy = `
+	fooPolicy = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"
 metadata:
@@ -76,7 +75,7 @@ spec:
   - mtls: {}
 `
 
-fooRule = `
+	fooRule = `
 apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
 metadata:
@@ -89,7 +88,7 @@ spec:
       mode: ISTIO_MUTUAL
 `
 
-fooPolicy2 = `
+	fooPolicy2 = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"
 metadata:
@@ -100,7 +99,7 @@ spec:
   - name: httpbin
 `
 
-fooRule2 = `
+	fooRule2 = `
 apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
 metadata:
@@ -113,7 +112,7 @@ spec:
       mode: DISABLE
 `
 
-fooGateway = `
+	fooGateway = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -131,7 +130,7 @@ spec:
     - "*"
 `
 
-fooVS = `
+	fooVS = `
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
@@ -150,7 +149,7 @@ spec:
         host: httpbin.foo.svc.cluster.local
 `
 
-fooJWTPolicy = `
+	fooJWTPolicy = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"
 metadata:
@@ -166,7 +165,7 @@ spec:
   principalBinding: USE_ORIGIN
 `
 
-fooJWTPolicy2 = `
+	fooJWTPolicy2 = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"
 metadata:
@@ -184,7 +183,7 @@ spec:
   principalBinding: USE_ORIGIN
 `
 
-fooRule3 = `
+	fooRule3 = `
 apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
 metadata:
@@ -197,7 +196,7 @@ spec:
       mode: ISTIO_MUTUAL
 `
 
-fooRBAC = `
+	fooRBAC = `
 apiVersion: "rbac.istio.io/v1alpha1"
 kind: ClusterRbacConfig
 metadata:
@@ -208,7 +207,7 @@ spec:
     namespaces: ["foo"]
 `
 
-fooRBACRole = `
+	fooRBACRole = `
 apiVersion: "rbac.istio.io/v1alpha1"
 kind: ServiceRole
 metadata:
@@ -220,7 +219,7 @@ spec:
     methods: ["GET"]
 `
 
-fooRBACRoleBinding = `
+	fooRBACRoleBinding = `
 apiVersion: "rbac.istio.io/v1alpha1"
 kind: ServiceRoleBinding
 metadata:
@@ -235,7 +234,7 @@ spec:
     name: "httpbin-viewer"
 `
 
-fooRBACRoleBinding2 = `
+	fooRBACRoleBinding2 = `
 apiVersion: "rbac.istio.io/v1alpha1"
 kind: ServiceRoleBinding
 metadata:
@@ -249,7 +248,7 @@ spec:
     name: "httpbin-viewer"
 `
 
-fooRBACRoleBinding3 = `
+	fooRBACRoleBinding3 = `
 apiVersion: "rbac.istio.io/v1alpha1"
 kind: ServiceRoleBinding
 metadata:
@@ -264,7 +263,7 @@ spec:
     name: "httpbin-viewer"
 `
 
-barPolicy = `
+	barPolicy = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"
 metadata:
@@ -277,7 +276,7 @@ spec:
   - mtls: {}
 `
 
-barRule = `
+	barRule = `
 apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
 metadata:
@@ -290,7 +289,7 @@ spec:
       mode: ISTIO_MUTUAL
 `
 
-barPolicy2 = `
+	barPolicy2 = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"
 metadata:
@@ -305,7 +304,7 @@ spec:
   - mtls: {}
 `
 
-barRule2 = `
+	barRule2 = `
 apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
 metadata:
@@ -323,7 +322,7 @@ spec:
         mode: ISTIO_MUTUAL
 `
 
-tlsPermissivePolicy = `
+	tlsPermissivePolicy = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"
 metadata:
@@ -337,7 +336,7 @@ spec:
       mode: PERMISSIVE
 `
 
-tlsRule = `
+	tlsRule = `
 apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
 metadata:
@@ -350,7 +349,7 @@ spec:
       mode: ISTIO_MUTUAL
 `
 
-tlsStrictPolicy = `
+	tlsStrictPolicy = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"
 metadata:
@@ -364,7 +363,7 @@ spec:
       mode: STRICT
 `
 
-mtlsPolicy = `
+	mtlsPolicy = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"
 metadata:
@@ -374,7 +373,7 @@ spec:
   - mtls: {}
 `
 
-mtlsRuleTemplate = `
+	mtlsRuleTemplate = `
 apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
 metadata:
@@ -386,5 +385,4 @@ spec:
     tls:
       mode: ISTIO_MUTUAL
 `
-
 )

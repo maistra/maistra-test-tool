@@ -30,32 +30,31 @@ import (
 )
 
 func cleanup09(namespace, kubeconfig string) {
-	
+
 	log.Infof("# Cleanup. Following error can be ignored...")
-	util.OcDelete("", httpbinOCPRouteYaml, kubeconfig)     // comment this OcDelete when IOR is enabled
+	util.OcDelete("", httpbinOCPRouteYaml, kubeconfig) // comment this OcDelete when IOR is enabled
 	util.KubeDelete(namespace, httpbinGatewayHTTPSMutualYaml, kubeconfig)
 	util.OcDelete("", httpbinOCPRouteHTTPSYaml, kubeconfig) // comment this OcDelete when IOR is enabled
 	util.KubeDelete(namespace, httpbinRouteHTTPSYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinGatewayHTTPSYaml, kubeconfig)
-	
+
 	util.ShellMuteOutput("kubectl delete secret %s -n %s --kubeconfig=%s",
 		"istio-ingressgateway-bookinfo-certs", "istio-system", kubeconfig)
-	util.ShellMuteOutput("kubectl delete secret %s -n %s --kubeconfig=%s", 
+	util.ShellMuteOutput("kubectl delete secret %s -n %s --kubeconfig=%s",
 		"istio-ingressgateway-certs", "istio-system", kubeconfig)
 	util.ShellMuteOutput("kubectl delete secret %s -n %s --kubeconfig=%s",
 		"istio-ingressgateway-ca-certs", "istio-system", kubeconfig)
 	util.ShellMuteOutput("kubectl delete secret %s -n %s --kubeconfig=%s",
 		"istio.istio-ingressgateway-service-account", "istio-system", kubeconfig)
-	
+
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
-	
+
 	util.KubeDelete(namespace, httpbinYaml, kubeconfig)
 	cleanBookinfo(namespace, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 }
-
 
 // configHttpbinHTTPS configures https certs
 func configHttpbinHTTPS(namespace, kubeconfig string) error {
@@ -67,10 +66,10 @@ func configHttpbinHTTPS(namespace, kubeconfig string) error {
 	// check cert
 	pod, err := util.GetPodName("istio-system", "istio=ingressgateway", kubeconfig)
 	msg, err := util.ShellSilent("kubectl exec --kubeconfig=%s -it -n %s %s -- %s ",
-							kubeconfig, "istio-system", pod, "ls -al /etc/istio/ingressgateway-certs | grep tls.crt")
+		kubeconfig, "istio-system", pod, "ls -al /etc/istio/ingressgateway-certs | grep tls.crt")
 	for err != nil {
 		msg, err = util.ShellSilent("kubectl exec --kubeconfig=%s -it -n %s %s -- %s ",
-							kubeconfig, "istio-system", pod, "ls -al /etc/istio/ingressgateway-certs | grep tls.crt")
+			kubeconfig, "istio-system", pod, "ls -al /etc/istio/ingressgateway-certs | grep tls.crt")
 		time.Sleep(time.Duration(10) * time.Second)
 	}
 	log.Infof("Secret %s created: %s\n", "istio-ingressgateway-certs", msg)
@@ -91,10 +90,10 @@ func configHttpbinHTTPS(namespace, kubeconfig string) error {
 	return nil
 }
 
-func updateHttpbinHTTPS(namespace, kubeconfig string) error{
+func updateHttpbinHTTPS(namespace, kubeconfig string) error {
 	// create secret ca
-	_, err := util.ShellMuteOutput("kubectl create secret generic %s --from-file %s -n %s --kubeconfig=%s", 
-									"istio-ingressgateway-ca-certs", httpbinSampleCACert , "istio-system", kubeconfig)
+	_, err := util.ShellMuteOutput("kubectl create secret generic %s --from-file %s -n %s --kubeconfig=%s",
+		"istio-ingressgateway-ca-certs", httpbinSampleCACert, "istio-system", kubeconfig)
 	if err != nil {
 		log.Infof("Failed to create secret %s\n", "istio-ingressgateway-ca-certs")
 		return err
@@ -102,14 +101,14 @@ func updateHttpbinHTTPS(namespace, kubeconfig string) error{
 	// check ca chain
 	pod, err := util.GetPodName("istio-system", "istio=ingressgateway", kubeconfig)
 	msg, err := util.ShellSilent("kubectl exec --kubeconfig=%s -it -n %s %s -- %s ",
-							kubeconfig, "istio-system", pod, "ls -al /etc/istio/ingressgateway-ca-certs | grep ca-chain")
+		kubeconfig, "istio-system", pod, "ls -al /etc/istio/ingressgateway-ca-certs | grep ca-chain")
 	for err != nil {
 		msg, err = util.ShellSilent("kubectl exec --kubeconfig=%s -it -n %s %s -- %s ",
-							kubeconfig, "istio-system", pod, "ls -al /etc/istio/ingressgateway-ca-certs | grep ca-chain")
+			kubeconfig, "istio-system", pod, "ls -al /etc/istio/ingressgateway-ca-certs | grep ca-chain")
 		time.Sleep(time.Duration(10) * time.Second)
 	}
 	log.Infof("Secret %s created: %s\n", "istio-ingressgateway-ca-certs", msg)
-	
+
 	// config mutual tls
 	if err := util.KubeApply(namespace, httpbinGatewayHTTPSMutualYaml, kubeconfig); err != nil {
 		return err
@@ -140,20 +139,20 @@ func checkTeapot(url, ingressHost, secureIngressPort, host, cacertFile string) (
 
 	// Setup HTTPS transport
 	tlsConfig := &tls.Config{
-		RootCAs:	caCertPool,
+		RootCAs: caCertPool,
 	}
 	tlsConfig.BuildNameToCertificate()
 	transport := &http.Transport{TLSClientConfig: tlsConfig}
 
 	// Custom DialContext
 	dialer := &net.Dialer{
-		Timeout:		30 * time.Second,
-		KeepAlive:		30 * time.Second,
-		DualStack:		true,
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+		DualStack: true,
 	}
 
 	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
-		if addr == host + ":" + secureIngressPort {
+		if addr == host+":"+secureIngressPort {
 			addr = ingressHost + ":" + secureIngressPort
 		}
 		return dialer.DialContext(ctx, network, addr)
@@ -191,21 +190,21 @@ func checkTeapot2(url, ingressHost, secureIngressPort, host, cacertFile, certFil
 
 	// Setup HTTPS transport
 	tlsConfig := &tls.Config{
-		Certificates:		[]tls.Certificate{cert},
-		RootCAs:			caCertPool,
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      caCertPool,
 	}
 	tlsConfig.BuildNameToCertificate()
 	transport := &http.Transport{TLSClientConfig: tlsConfig}
 
 	// Custom DialContext
 	dialer := &net.Dialer{
-		Timeout:		30 * time.Second,
-		KeepAlive:		30 * time.Second,
-		DualStack:		true,
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+		DualStack: true,
 	}
 
 	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
-		if addr == host + ":" + secureIngressPort {
+		if addr == host+":"+secureIngressPort {
 			addr = ingressHost + ":" + secureIngressPort
 		}
 		return dialer.DialContext(ctx, network, addr)
@@ -226,32 +225,32 @@ func checkTeapot2(url, ingressHost, secureIngressPort, host, cacertFile, certFil
 	return client.Do(req)
 }
 
-func Test09 (t *testing.T) {
+func Test09(t *testing.T) {
 	defer cleanup09(testNamespace, kubeconfigFile)
 	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		// recover from panic if one occurred. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
 			t.Errorf("Test panic: %v", err)
 		}
 	}()
-	
+
 	log.Infof("# TC_09 Securing Gateways with HTTPS")
 	log.Info("Waiting for previous run to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 
 	ingressHost, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
 	util.Inspect(err, "failed to get ingressgateway URL", "", t)
-	
+
 	secureIngressPort, err := util.GetSecureIngressPort("istio-system", "istio-ingressgateway", kubeconfigFile)
 	util.Inspect(err, "cannot get ingress secure port", "", t)
 	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
-	
+
 	util.Inspect(deployHttpbin(testNamespace, kubeconfigFile), "failed to deploy httpbin", "", t)
 	util.Inspect(configHttpbinHTTPS(testNamespace, kubeconfigFile), "failed to config httpbin with tls certs", "", t)
 
 	t.Run("general_tls", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -262,10 +261,10 @@ func Test09 (t *testing.T) {
 		resp, err := checkTeapot(url, ingressHost, secureIngressPort, "httpbin.example.com", httpbinSampleCACert)
 		defer util.CloseResponseBody(resp)
 		util.Inspect(err, "failed to get response", "", t)
-		
+
 		bodyByte, err := ioutil.ReadAll(resp.Body)
 		util.Inspect(err, "failed to read response body", "", t)
-		
+
 		if strings.Contains(string(bodyByte), "-=[ teapot ]=-") {
 			log.Info(string(bodyByte))
 		} else {
@@ -275,7 +274,7 @@ func Test09 (t *testing.T) {
 
 	t.Run("mutual_tls", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -283,7 +282,7 @@ func Test09 (t *testing.T) {
 
 		log.Info("Configure Mutual TLS Gateway")
 		util.Inspect(updateHttpbinHTTPS(testNamespace, kubeconfigFile), "failed to configure mutual tls gateway", "", t)
-		
+
 		log.Info("Check SSL handshake failure as expected")
 		url := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
 		resp, err := checkTeapot(url, ingressHost, secureIngressPort, "httpbin.example.com", httpbinSampleCACert)
@@ -293,20 +292,20 @@ func Test09 (t *testing.T) {
 		} else {
 			bodyByte, err := ioutil.ReadAll(resp.Body)
 			util.Inspect(err, "failed to read response body", "", t)
-			
+
 			t.Errorf("Unexpected response: %s", string(bodyByte))
 			util.CloseResponseBody(resp)
 		}
-		
+
 		log.Info("Check SSL return a teapot again")
-		resp, err = checkTeapot2(url, ingressHost, secureIngressPort, "httpbin.example.com", 
-									httpbinSampleCACert, httpbinSampleClientCert, httpbinSampleClientCertKey)
+		resp, err = checkTeapot2(url, ingressHost, secureIngressPort, "httpbin.example.com",
+			httpbinSampleCACert, httpbinSampleClientCert, httpbinSampleClientCertKey)
 		defer util.CloseResponseBody(resp)
 		util.Inspect(err, "failed to get response", "", t)
-		
+
 		bodyByte, err := ioutil.ReadAll(resp.Body)
 		util.Inspect(err, "failed to read response body", "", t)
-		
+
 		if strings.Contains(string(bodyByte), "-=[ teapot ]=-") {
 			log.Info(string(bodyByte))
 		} else {

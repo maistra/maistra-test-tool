@@ -15,8 +15,8 @@
 package maistra
 
 import (
-	"io/ioutil"
 	"fmt"
+	"io/ioutil"
 	"strings"
 	"testing"
 	"time"
@@ -30,7 +30,7 @@ func cleanup18(namespace, kubeconfig string) {
 	util.KubeDeleteContents(namespace, bookinfoMongodbPolicy, kubeconfig)
 	util.KubeDeleteContents(namespace, bookinfoRBAConDB, kubeconfig)
 	log.Info("Waiting... Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)	
+	time.Sleep(time.Duration(10) * time.Second)
 
 	util.KubeDelete(namespace, bookinfoRatingv2Yaml, kubeconfig)
 	util.KubeDelete(namespace, bookinfoDBYaml, kubeconfig)
@@ -44,7 +44,7 @@ func cleanup18(namespace, kubeconfig string) {
 	util.ShellMuteOutput("kubectl delete policy -n %s default", namespace)
 	util.ShellMuteOutput("kubectl delete destinationrule -n %s default", namespace)
 	log.Info("Waiting... Sleep 20 seconds...")
-	time.Sleep(time.Duration(20) * time.Second)	
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func setup18(namespace, kubeconfig string) error {
@@ -52,19 +52,17 @@ func setup18(namespace, kubeconfig string) error {
 	if err := util.KubeApply(namespace, bookinfoRatingv2ServiceAccount, kubeconfig); err != nil {
 		return err
 	}
-	
+
 	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
-	if err := util.CheckPodRunning(namespace, "app=ratings,version=v2", kubeconfig); err != nil {
-		return err
-	}
-	return nil
+	err := util.CheckPodRunning(namespace, "app=ratings,version=v2", kubeconfig)
+	return err
 }
 
 func Test18(t *testing.T) {
 	defer cleanup18(testNamespace, kubeconfigFile)
 	defer func() {
-		// recover from panic if one occured. This allows cleanup to be executed after panic.
+		// recover from panic if one occurred. This allows cleanup to be executed after panic.
 		if err := recover(); err != nil {
 			t.Errorf("Test panic: %v", err)
 		}
@@ -75,14 +73,14 @@ func Test18(t *testing.T) {
 	log.Info("Clean existing mesh policy")
 	util.ShellSilent("kubectl delete meshpolicy default")
 	log.Info("Waiting... Sleep 20 seconds...")
-	time.Sleep(time.Duration(20) * time.Second)	
+	time.Sleep(time.Duration(20) * time.Second)
 
 	log.Info("Enable mutual TLS")
 	util.Inspect(util.KubeApplyContents(testNamespace, mtlsPolicy, kubeconfigFile), "failed to apply policy", "", t)
 	mtlsRule := strings.Replace(mtlsRuleTemplate, "@token@", testNamespace, -1)
 	util.Inspect(util.KubeApplyContents(testNamespace, mtlsRule, kubeconfigFile), "failed to apply rule", "", t)
 	log.Info("Waiting... Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)	
+	time.Sleep(time.Duration(10) * time.Second)
 
 	log.Info("Deploy bookinfo")
 	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
@@ -102,35 +100,35 @@ func Test18(t *testing.T) {
 	log.Info("Redeploy bookinfo ratings v2")
 	util.KubeDelete(testNamespace, bookinfoRatingv2ServiceAccount, kubeconfigFile)
 	log.Info("Waiting... Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)	
+	time.Sleep(time.Duration(10) * time.Second)
 	util.Inspect(setup18(testNamespace, kubeconfigFile), "failed to create service account", "", t)
 
 	log.Info("Waiting... Sleep 40 seconds...")
-	time.Sleep(time.Duration(40) * time.Second)	
+	time.Sleep(time.Duration(40) * time.Second)
 
 	t.Run("verify_setup", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
 		}()
-		
+
 		resp, _, err := util.GetHTTPResponse(productpageURL, nil)
 		util.Inspect(err, "failed to get HTTP Response", "", t)
 		defer util.CloseResponseBody(resp)
 		body, err := ioutil.ReadAll(resp.Body)
 		util.Inspect(err, "failed to read response body", "", t)
 		util.Inspect(
-			util.CompareHTTPResponse(body, "productpage-normal-user-mongo.html"), 
-			"Didn't get expected response.", 
-			"Success. Response matches with expected.", 
+			util.CompareHTTPResponse(body, "productpage-normal-user-mongo.html"),
+			"Didn't get expected response.",
+			"Success. Response matches with expected.",
 			t)
 	})
 
 	t.Run("enable_rbac", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -139,22 +137,22 @@ func Test18(t *testing.T) {
 		log.Info("Enable Istio Authorization")
 		util.Inspect(util.KubeApplyContents(testNamespace, bookinfoRBAConDB, kubeconfigFile), "failed to apply policy", "", t)
 		log.Info("Waiting... Sleep 20 seconds...")
-		time.Sleep(time.Duration(20) * time.Second)	
+		time.Sleep(time.Duration(20) * time.Second)
 		resp, _, err := util.GetHTTPResponse(productpageURL, nil)
 		util.Inspect(err, "failed to get HTTP Response", "", t)
 		defer util.CloseResponseBody(resp)
 		body, err := ioutil.ReadAll(resp.Body)
 		util.Inspect(err, "failed to read response body", "", t)
 		util.Inspect(
-			util.CompareHTTPResponse(body, "productpage-rbac-rating-error.html"), 
-			"Didn't get expected response.", 
-			"Success. Response matches with expected.", 
-			t)	
+			util.CompareHTTPResponse(body, "productpage-rbac-rating-error.html"),
+			"Didn't get expected response.",
+			"Success. Response matches with expected.",
+			t)
 	})
 
 	t.Run("service_rbac_pass", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
@@ -170,20 +168,20 @@ func Test18(t *testing.T) {
 		body, err := ioutil.ReadAll(resp.Body)
 		util.Inspect(err, "failed to read response body", "", t)
 		util.Inspect(
-			util.CompareHTTPResponse(body, "productpage-normal-user-mongo.html"), 
-			"Didn't get expected response.", 
-			"Success. Response matches with expected.", 
+			util.CompareHTTPResponse(body, "productpage-normal-user-mongo.html"),
+			"Didn't get expected response.",
+			"Success. Response matches with expected.",
 			t)
 	})
 
 	t.Run("service_rbac_fail", func(t *testing.T) {
 		defer func() {
-			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
 				t.Errorf("Test panic: %v", err)
 			}
 		}()
-		
+
 		util.KubeDelete(testNamespace, bookinfoRatingv2ServiceAccount, kubeconfigFile)
 		util.Inspect(util.KubeApply(testNamespace, bookinfoRatingv2Yaml, kubeconfigFile), "failed to apply rule", "", t)
 		log.Info("Waiting... Sleep 10 seconds...")
@@ -194,10 +192,10 @@ func Test18(t *testing.T) {
 		body, err := ioutil.ReadAll(resp.Body)
 		util.Inspect(err, "failed to read response body", "", t)
 		util.Inspect(
-			util.CompareHTTPResponse(body, "productpage-rbac-rating-error.html"), 
-			"Didn't get expected response.", 
-			"Success. Response matches with expected.", 
-			t)	
+			util.CompareHTTPResponse(body, "productpage-rbac-rating-error.html"),
+			"Didn't get expected response.",
+			"Success. Response matches with expected.",
+			t)
 	})
 
 }
