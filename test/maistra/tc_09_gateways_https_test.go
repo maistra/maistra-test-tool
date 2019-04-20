@@ -32,9 +32,9 @@ import (
 func cleanup09(namespace, kubeconfig string) {
 
 	log.Infof("# Cleanup. Following error can be ignored...")
-	util.OcDelete("", httpbinOCPRouteYaml, kubeconfig) // comment this OcDelete when IOR is enabled
+	//util.OcDelete("", httpbinOCPRouteYaml, kubeconfig) // uncomment this OcDelete when IOR is not enabled
 	util.KubeDelete(namespace, httpbinGatewayHTTPSMutualYaml, kubeconfig)
-	util.OcDelete("", httpbinOCPRouteHTTPSYaml, kubeconfig) // comment this OcDelete when IOR is enabled
+	//util.OcDelete("", httpbinOCPRouteHTTPSYaml, kubeconfig) // uncomment this OcDelete when IOR is not enabled
 	util.KubeDelete(namespace, httpbinRouteHTTPSYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinGatewayHTTPSYaml, kubeconfig)
 
@@ -81,10 +81,9 @@ func configHttpbinHTTPS(namespace, kubeconfig string) error {
 	if err := util.KubeApply(namespace, httpbinRouteHTTPSYaml, kubeconfig); err != nil {
 		return err
 	}
-	// comment his OcApply when IOR is enabled
-	if err := util.OcApply("", httpbinOCPRouteHTTPSYaml, kubeconfig); err != nil {
-		return err
-	}
+	
+	//util.OcApply("", httpbinOCPRouteHTTPSYaml, kubeconfig)   // uncomment this OcApply when IOR is not enabled
+
 	log.Info("Waiting for rules to propagate. Sleep 30 seconds...")
 	time.Sleep(time.Duration(30) * time.Second)
 	return nil
