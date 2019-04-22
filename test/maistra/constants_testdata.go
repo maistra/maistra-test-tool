@@ -112,6 +112,11 @@ const (
 	httpbinSampleClientCert    = "testdata/certs/httpbin.example.com/4_client/certs/httpbin.example.com.cert.pem"
 	httpbinSampleCACert        = "testdata/certs/httpbin.example.com/2_intermediate/certs/ca-chain.cert.pem"
 
+	caCert 				= "testdata/certs/ca-cert.pem"
+	caCertKey 			= "testdata/certs/ca-key.pem"
+	caRootCert			= "testdata/certs/root-cert.pem"
+	caCertChain 		= "testdata/certs/cert-chain.pem"
+
 	testNamespace  = "bookinfo"
 	testUsername   = "jason"
 	kubeconfigFile = ""

@@ -23,7 +23,6 @@ function cleanup() {
     # Roll back Citadel deployment
     ${OC_COMMAND} rollout undo deployment -n istio-system istio-citadel
     rm -f /tmp/istio-citadel-new.yaml
-    rm -f /tmp/istio-citadel-bak.yaml
     echo "bookinfo" | ./bookinfo_uninstall.sh
     ${OC_COMMAND} delete meshpolicy default
 }
@@ -73,7 +72,7 @@ function apply_certs() {
 
     # delete existing secret
     set +e
-    ${OC_COMMAND} delete secret istio.default
+    ${OC_COMMAND} delete -n bookinfo secret istio.default
     set -e
 }
 
