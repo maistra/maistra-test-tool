@@ -26,7 +26,10 @@ The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/).
 
 OS Version: Fedora 28 or above
 
-Go Version: go 1.10.7 or above
+Go Version: go 1.11 or above
+
+**Note**: If you clone this project inside of the `$GOPATH/src` tree, invoke the `go` command with `GO111MODULE=on` environment variable set.  https://github.com/golang/go/wiki/Modules#how-to-use-modules
+
 
 Python Version: Python 3.7 or above
 
