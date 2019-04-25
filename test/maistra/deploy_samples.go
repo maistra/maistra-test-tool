@@ -15,9 +15,10 @@
 package maistra
 
 import (
+	"time"
+
 	"istio.io/istio/pkg/log"
 	"maistra/util"
-	"time"
 )
 
 func deployBookinfo(namespace, kubeconfig string, mtls bool) error {
