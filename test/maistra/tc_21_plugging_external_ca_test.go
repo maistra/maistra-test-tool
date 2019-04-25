@@ -15,11 +15,14 @@
 package maistra
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"istio.io/istio/pkg/log"
-	"gopkg.in/yaml.v2"
 	"maistra/util"
 )
 
@@ -35,10 +38,37 @@ func cleanup21(namespace string, kubeconfig string) {
 }
 
 
-func updateCitadelDeployment() {
-	var b  yaml.TypeError	
-	log.Infof("%v", b)
+func verifyCerts() error {
+	pod, err := util.GetPodName(testNamespace, "app=ratings", kubeconfigFile)
+	if err != nil {
+		return err
+	}
+	util.ShellMuteOutput("kubectl exec -it %s -c istio-proxy -- /bin/cat /etc/certs/root-cert.pem > /tmp/pod-root-cert.pem", pod)
+	util.ShellMuteOutput("kubectl exec -it %s -c istio-proxy -- /bin/cat /etc/certs/cert-chain.pem > /tmp/pod-cert-chain.pem", pod)
 
+	util.ShellMuteOutput("openssl x509 -in %s -text -noout > /tmp/root-cert.crt.txt", caRootCert)
+	util.ShellMuteOutput("openssl x509 -in %s -text -noout > /tmp/pod-root-cert.crt.txt", "/tmp/pod-root-cert.pem")
+	err = util.CompareFiles("/tmp/root-cert.crt.txt", "/tmp/pod-root-cert.crt.txt")
+	if err != nil {
+		return err
+	}
+
+	util.ShellMuteOutput("tail -n 22 /tmp/pod-cert-chain.pem > /tmp/pod-cert-chain-ca.pem")
+	util.ShellMuteOutput("openssl x509 -in %s -text -noout > /tmp/ca-cert.crt.txt", caCert)
+	util.ShellMuteOutput("openssl x509 -in /tmp/pod-cert-chain-ca.pem -text -noout > /tmp/pod-cert-chain-ca.crt.txt")
+	err = util.CompareFiles("/tmp/ca-cert.crt.txt", "/tmp/pod-cert-chain-ca.crt.txt")
+	if err != nil {
+		return err
+	}
+
+	util.ShellMuteOutput("head -n 21 /tmp/pod-cert-chain.pem > /tmp/pod-cert-chain-workload.pem")
+	util.ShellMuteOutput("cat %s %s > /tmp/ca-cert-file.crt.txt", caCert, caRootCert)
+	msg, err := util.Shell("openssl verify -CAfile /tmp/ca-cert-file.crt.txt /tmp/pod-cert-chain-workload.pem")
+	if err != nil || !strings.Contains(msg, "OK") {
+		return fmt.Errorf("Error certs: %s", msg)
+	}
+
+	return nil
 }
 
 
@@ -74,5 +104,42 @@ func Test21(t *testing.T) {
 	log.Infof("Secret %s created\n", "cacerts")
 	time.Sleep(time.Duration(5) * time.Second)
 
+	log.Info("Redeploy Citadel")
+	backupFile := "/tmp/istio-citadel-bak.yaml"
+	newFile := "/tmp/istio-citadel-new.yaml"
+
+	util.ShellMuteOutput("kubectl get deployment -n %s %s -o yaml --kubeconfig=%s > %s",
+						"istio-system",
+						"istio-citadel",
+						kubeconfigFile,
+						backupFile)
+	
+	data, err := ioutil.ReadFile(backupFile)
+	if err != nil {
+		log.Infof("Unable to read citadel deployment yaml: %v", err)
+		t.Errorf("Unable to read citadel deployment yaml: %v", err)
+	}
+	w, _ := os.Create(newFile)
+	defer w.Close()
+	err = util.ConfigCitadelDeployment(data, w)
+	if err != nil {
+		log.Infof("Update citadel deployment error: %v", err)
+		t.Errorf("Update citadel deployment error: %v", err)
+	}
+	util.Shell("kubectl apply -n %s -f %s", "istio-system", newFile)
+	time.Sleep(time.Duration(10) * time.Second)
+	
+	log.Info("Delete existing istio.default secret")
+	util.Shell("kubectl delete -n %s secret istio.default", testNamespace)
+
+	log.Info("Deploy bookinfo")
+	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, true), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+
+	log.Info("Verify certs")
+	err = verifyCerts()
+	if err != nil {
+		log.Infof("%v", err)
+		t.Errorf("%v", err)
+	}
 
 } 
