@@ -121,7 +121,7 @@ func Test21(t *testing.T) {
 	}
 	w, _ := os.Create(newFile)
 	defer w.Close()
-	err = util.ConfigCitadelDeployment(data, w)
+	err = util.ConfigCitadelCerts(data, w)
 	if err != nil {
 		log.Infof("Update citadel deployment error: %v", err)
 		t.Errorf("Update citadel deployment error: %v", err)
