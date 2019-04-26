@@ -43,8 +43,22 @@ func verifyCerts() error {
 	if err != nil {
 		return err
 	}
-	util.ShellMuteOutput("kubectl exec -it %s -c istio-proxy -- /bin/cat /etc/certs/root-cert.pem > /tmp/pod-root-cert.pem", pod)
-	util.ShellMuteOutput("kubectl exec -it %s -c istio-proxy -- /bin/cat /etc/certs/cert-chain.pem > /tmp/pod-cert-chain.pem", pod)
+
+	cmd := fmt.Sprintf("/bin/cat /etc/certs/root-cert.pem")
+	podRootCert, err := util.PodExec(testNamespace, pod, "istio-proxy", cmd, true, kubeconfigFile)
+	if err != nil {
+		return err
+	}
+	ioutil.WriteFile("/tmp/pod-root-cert.pem", []byte(podRootCert), 0644)
+	//util.ShellMuteOutput("kubectl exec -n %s -it %s -c istio-proxy -- /bin/cat /etc/certs/root-cert.pem > /tmp/pod-root-cert.pem", testNamespace, pod)
+	
+	cmd = fmt.Sprintf("/bin/cat /etc/certs/cert-chain.pem")
+	podCertChain, err := util.PodExec(testNamespace, pod, "istio-proxy", cmd, true, kubeconfigFile)
+	if err != nil {
+		return err
+	}
+	ioutil.WriteFile("/tmp/pod-cert-chain.pem", []byte(podCertChain), 0644)
+	//util.ShellMuteOutput("kubectl exec -n %s -it %s -c istio-proxy -- /bin/cat /etc/certs/cert-chain.pem > /tmp/pod-cert-chain.pem", testNamespace, pod)
 
 	util.ShellMuteOutput("openssl x509 -in %s -text -noout > /tmp/root-cert.crt.txt", caRootCert)
 	util.ShellMuteOutput("openssl x509 -in %s -text -noout > /tmp/pod-root-cert.crt.txt", "/tmp/pod-root-cert.pem")
@@ -53,7 +67,7 @@ func verifyCerts() error {
 		return err
 	}
 
-	util.ShellMuteOutput("tail -n 22 /tmp/pod-cert-chain.pem > /tmp/pod-cert-chain-ca.pem")
+	util.ShellMuteOutput("tail -n 22 %s > /tmp/pod-cert-chain-ca.pem", "/tmp/pod-cert-chain.pem")
 	util.ShellMuteOutput("openssl x509 -in %s -text -noout > /tmp/ca-cert.crt.txt", caCert)
 	util.ShellMuteOutput("openssl x509 -in /tmp/pod-cert-chain-ca.pem -text -noout > /tmp/pod-cert-chain-ca.crt.txt")
 	err = util.CompareFiles("/tmp/ca-cert.crt.txt", "/tmp/pod-cert-chain-ca.crt.txt")
@@ -61,7 +75,7 @@ func verifyCerts() error {
 		return err
 	}
 
-	util.ShellMuteOutput("head -n 21 /tmp/pod-cert-chain.pem > /tmp/pod-cert-chain-workload.pem")
+	util.ShellMuteOutput("head -n 21 %s > /tmp/pod-cert-chain-workload.pem", "/tmp/pod-cert-chain.pem")
 	util.ShellMuteOutput("cat %s %s > /tmp/ca-cert-file.crt.txt", caCert, caRootCert)
 	msg, err := util.Shell("openssl verify -CAfile /tmp/ca-cert-file.crt.txt /tmp/pod-cert-chain-workload.pem")
 	if err != nil || !strings.Contains(msg, "OK") {
