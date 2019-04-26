@@ -24,8 +24,8 @@ import (
 	
 )
 
-// ConfigCitadelDeployment configuration for Plugging in External Certs test
-func ConfigCitadelDeployment(data []byte, w io.Writer) error {
+// ConfigCitadelCerts configuration for Plugging in External Certs test
+func ConfigCitadelCerts(data []byte, w io.Writer) error {
 
 	s := json.NewYAMLSerializer(json.DefaultMetaFactory, scheme.Scheme, scheme.Scheme)
 	obj, _, err := s.Decode(data, nil, nil)
@@ -72,3 +72,38 @@ func ConfigCitadelDeployment(data []byte, w io.Writer) error {
 	return nil
 }
 
+// ConfigCitadelHealthCheck configuration for Citadel Health Check Test
+func ConfigCitadelHealthCheck(data []byte, w io.Writer) error {
+	s := json.NewYAMLSerializer(json.DefaultMetaFactory, scheme.Scheme, scheme.Scheme)
+	obj, _, err := s.Decode(data, nil, nil)
+	if err != nil {
+		return err
+	}
+	deployment := obj.(*v1beta1.Deployment)
+	args := &(deployment.Spec.Template.Spec.Containers[0].Args)
+	newCertList := []string{
+		"--liveness-probe-path=/tmp/ca.liveness",
+		"--liveness-probe-interval=10s",
+		"--probe-check-interval=10s",
+	}
+	*args = append(*args, newCertList...)	
+
+	container := &(deployment.Spec.Template.Spec.Containers[0])
+	commands := &v1.ExecAction{
+		Command: []string{
+			"/usr/local/bin/istio_ca", 
+			"probe", 
+			"--probe-path=/tmp/ca.liveness", 
+			"--interval=125s",
+		},
+	}
+	probe := &v1.Probe{
+		Handler: v1.Handler{Exec:commands},
+		InitialDelaySeconds: 10,
+		PeriodSeconds: 10,
+	}
+	container.LivenessProbe = probe
+
+	s.Encode(deployment, w)
+	return nil
+}
