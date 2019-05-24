@@ -51,7 +51,6 @@ Python Version: Python 3.7 or above
 | ----------- | ----------- |
 | AWS_PROFILE | AWS profile name |
 | PULL_SEC    | Istio private registry pull secret.yaml file path |
-| OCP_INSTALLER_VERSION | OpenShift installer version (e.g. 0.15.0) |
 | OC_VERSION | Maistra origin istiooc_linux version (e.g. 0.10.0) |
 | OPERATOR_FILE | Maistra Istio operator.yaml file path |
 | CR_FILE     | Istio ControlPlane CR file path  |
