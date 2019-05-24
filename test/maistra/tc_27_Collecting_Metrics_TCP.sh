@@ -7,7 +7,7 @@ BASE_DIR="${DIR}/../"
 OC_COMMAND="oc"
 TCP_TELEMETRY="testdata/telemetry/tcp_telemetry.yaml"
 BOOKINFO_RATE_V2="testdata/bookinfo/networking/bookinfo-ratings-v2.yaml"
-BOOKINFO_DB="testdata/bookinfo/networking/bookinfo-db.yaml"
+BOOKINFO_DB="testdata/bookinfo/platform/kube/bookinfo-db.yaml"
 BOOKINFO_RULE="testdata/bookinfo/networking/destination-rule-all.yaml"
 VS_RATE_DB="testdata/bookinfo/networking/virtual-service-ratings-db.yaml"
 
