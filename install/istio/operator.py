@@ -65,11 +65,11 @@ class Operator(object):
         template = r"""'{{range .status.conditions}}{{printf "%s=%s, reason=%s, message=%s\n\n" .type .status .reason .message}}{{end}}'"""
         while time.time() < timeout:
             sp.run(['oc', 'get', 'pod', '-n', 'istio-system'])
-            proc = sp.run(['oc', 'get', 'controlplane/basic-install', '-n', 'istio-system', '--template=' + template], stdout=sp.PIPE, universal_newlines=True)
+            proc = sp.run(['oc', 'get', 'ServiceMeshControlPlane/basic-install', '-n', 'istio-system', '--template=' + template], stdout=sp.PIPE, universal_newlines=True)
             if 'Installed=True' in proc.stdout:
                 break
         
-        proc = sp.run(['oc', 'get', 'controlplane/basic-install', '-n', 'istio-system', '--template=' + template], stdout=sp.PIPE, universal_newlines=True)    
+        proc = sp.run(['oc', 'get', 'ServiceMeshControlPlane/basic-install', '-n', 'istio-system', '--template=' + template], stdout=sp.PIPE, universal_newlines=True)    
         if 'Installed=True' in proc.stdout and 'reason=InstallSuccessful' in proc.stdout:
             print(proc.stdout)
         else:

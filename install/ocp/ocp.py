@@ -32,13 +32,12 @@ class OCP(object):
         - `oc_version`: OpenShift oc client version
     """
 
-    def __init__(self, profile='', assets='assets', installer_version='', oc_version=''):
+    def __init__(self, profile='', assets='assets', oc_version=''):
         """ Initialize configuration parameters
         """
         self.profile = profile
         self.assets = assets
-        self.installer_version = installer_version
-        self.installer_url = 'https://github.com/openshift/installer/releases/download/v' + installer_version + '/openshift-install-linux-amd64'
+        self.installer_url = 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux-4.1.0-rc.5.tar.gz'
         self.oc_version = oc_version
         self.oc_url = 'https://github.com/Maistra/origin/releases/download/v3.11.0+maistra-' + oc_version + '/istiooc_linux'
         #self.oc_url = 'https://mirror.openshift.com/pub/openshift-v3/clients/' + oc_version + '/linux/oc.tar.gz'
@@ -63,13 +62,15 @@ class OCP(object):
         chunkSize = 1024
         fileSize = int(r.headers['Content-length'])
         wrote = 0
-        with open('openshift-install', 'wb') as f:
+        with open('openshift-install.tar.gz', 'wb') as f:
             for chunk in tqdm(r.iter_content(chunkSize), total=int(fileSize / chunkSize), unit='KB', unit_scale=True):
                 wrote = wrote + len(chunk)
                 f.write(chunk)
         if fileSize != 0 and wrote != fileSize:
             print('Error. Download installer not complete.')
             raise RuntimeError
+        shutil.unpack_archive('openshift-install.tar.gz')
+        os.remove('openshift-install.tar.gz')
 
         os.chmod('openshift-install', 0o775)
 
@@ -125,7 +126,7 @@ class OCP(object):
             print('Uninstall completed')
             shutil.rmtree(self.assets)
             os.remove('openshift-install')
-            sp.run(['sudo', 'rm', '-f', '/usr/bin/kubectl'])
-            sp.run(['sudo', 'rm', '-f', '/usr/bin/oc'])
+            #sp.run(['sudo', 'rm', '-f', '/usr/bin/kubectl'])
+            #sp.run(['sudo', 'rm', '-f', '/usr/bin/oc'])
 
 
