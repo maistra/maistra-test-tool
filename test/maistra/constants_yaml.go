@@ -25,6 +25,17 @@ spec:
   - mtls: {}	
 `
 
+  meshPolicyStrict = `
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "MeshPolicy"
+metadata:
+  name: "default"
+spec:
+  peers:
+  - mtls:
+      mode: STRICT	
+`
+
 	clientRule = `
 apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
@@ -385,4 +396,28 @@ spec:
     tls:
       mode: ISTIO_MUTUAL
 `
+
+  citadelServiceAccount = `
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: istio-citadel-service-account
+  namespace: istio-system
+`
+
+  citadelService = `
+apiVersion: v1
+kind: Service
+metadata:
+  name: istio-citadel
+  namespace: istio-system
+  labels:
+    istio: citadel
+spec:
+  ports:
+    - port: 8060
+  selector:
+    istio: citadel  
+`
+
 )
