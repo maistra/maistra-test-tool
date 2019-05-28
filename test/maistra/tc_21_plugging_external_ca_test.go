@@ -98,7 +98,7 @@ func Test21(t *testing.T) {
 
 	log.Infof("# TC_21 Plugging in External CA Key and Certificate")
 	log.Info("Enable mTLS")
-	util.Inspect(util.KubeApplyContents("", meshPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
+	util.Inspect(util.KubeApplyContents("", meshPolicyStrict, kubeconfigFile), "failed to apply MeshPolicy", "", t)
 	log.Info("Waiting... Sleep 5 seconds...")
 	time.Sleep(time.Duration(5) * time.Second)	
 

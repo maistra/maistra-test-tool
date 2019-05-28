@@ -30,6 +30,8 @@ func cleanup22(kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.Shell("kubectl rollout undo deployment -n istio-system istio-citadel")
 	//util.ShellMuteOutput("rm -f /tmp/istio-citadel-new.yaml")
+	util.ShellMuteOutput("kubectl delete service istio-citadel -n istio-system")
+	util.ShellMuteOutput("kubectl delete serviceaccount istio-citadel-service-account -n istio-system")
 	util.ShellMuteOutput("kubectl delete meshpolicy default")
 	log.Info("Waiting... Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
@@ -69,6 +71,9 @@ func Test22(t *testing.T) {
 	w, _ := os.Create(newFile)
 	defer w.Close()
 
+	util.Inspect(util.KubeApplyContents("", citadelServiceAccount, kubeconfigFile), "failed to apply citadel service account", "", t)
+	util.Inspect(util.KubeApplyContents("", citadelService, kubeconfigFile), "failed to apply citadel service account", "", t)
+	
 	err = util.ConfigCitadelHealthCheck(data, w)
 	if err != nil {
 		log.Infof("Update citadel deployment error: %v", err)
