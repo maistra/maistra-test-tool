@@ -25,11 +25,12 @@ spec:
   - mtls: {}	
 `
 
-  meshPolicyStrict = `
+  bookinfoPolicy = `
 apiVersion: "authentication.istio.io/v1alpha1"
-kind: "MeshPolicy"
+kind: "Policy"
 metadata:
   name: "default"
+  namespace: "bookinfo"
 spec:
   peers:
   - mtls:
