@@ -36,7 +36,7 @@ def main():
     
     PROJECT = "MaistraIstio"
     # Creating a Test Run:  
-    tr = TestRun.create(project_id=PROJECT, test_run_id=sys.argv[1], template="Build Acceptance type", title="Istio-Tech-Preview-" + sys.argv[1])
+    tr = TestRun.create(project_id=PROJECT, test_run_id=sys.argv[1], template="MAISTRA_ACC_TCS", title=sys.argv[2])
 
     # changing status  
     tr.status = "inprogress"

@@ -32,7 +32,7 @@ func cleanup21(namespace string, kubeconfig string) {
 	util.Shell("kubectl rollout undo deployment -n istio-system istio-citadel")
 	util.ShellMuteOutput("rm -f /tmp/istio-citadel-new.yaml")
 	cleanBookinfo(namespace, kubeconfig)
-	util.ShellMuteOutput("kubectl delete meshpolicy default")
+	util.ShellMuteOutput("kubectl delete policy default -n bookinfo")
 	log.Info("Waiting... Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 }
@@ -98,7 +98,7 @@ func Test21(t *testing.T) {
 
 	log.Infof("# TC_21 Plugging in External CA Key and Certificate")
 	log.Info("Enable mTLS")
-	util.Inspect(util.KubeApplyContents("", meshPolicyStrict, kubeconfigFile), "failed to apply MeshPolicy", "", t)
+	util.Inspect(util.KubeApplyContents("bookinfo", bookinfoPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
 	log.Info("Waiting... Sleep 5 seconds...")
 	time.Sleep(time.Duration(5) * time.Second)	
 
