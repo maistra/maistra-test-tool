@@ -6,7 +6,7 @@ BASE_DIR="${DIR}/../"
 
 OC_COMMAND="oc"
 TCP_TELEMETRY="testdata/telemetry/tcp_telemetry.yaml"
-BOOKINFO_RATE_V2="testdata/bookinfo/networking/bookinfo-ratings-v2.yaml"
+BOOKINFO_RATE_V2="testdata/bookinfo/platform/kube/bookinfo-ratings-v2.yaml"
 BOOKINFO_DB="testdata/bookinfo/platform/kube/bookinfo-db.yaml"
 BOOKINFO_RULE="testdata/bookinfo/networking/destination-rule-all.yaml"
 VS_RATE_DB="testdata/bookinfo/networking/virtual-service-ratings-db.yaml"
@@ -54,8 +54,9 @@ function check_tcp_metrics() {
     ${OC_COMMAND} apply -f ${BOOKINFO_DB} -n bookinfo
     ${OC_COMMAND} apply -f ${BOOKINFO_RULE} -n bookinfo
     ${OC_COMMAND} apply -f ${VS_RATE_DB} -n bookinfo
-    sleep 5
+    sleep 60
 
+    curl -o /dev/null -s -w "%{http_code}\n" http://$GATEWAY_URL/productpage
     curl -o /dev/null -s -w "%{http_code}\n" http://$GATEWAY_URL/productpage
     curl -o /dev/null -s -w "%{http_code}\n" http://$GATEWAY_URL/productpage
     curl -o /dev/null -s -w "%{http_code}\n" http://$GATEWAY_URL/productpage
