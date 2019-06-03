@@ -41,7 +41,7 @@ func cleanup18(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, bookinfoGateway, kubeconfig)
 	util.KubeDelete(namespace, bookinfoYaml, kubeconfig)
 
-	util.ShellMuteOutput("kubectl delete policy -n %s default", namespace)
+	util.ShellMuteOutput("kubectl delete policy default -n bookinfo")
 	util.ShellMuteOutput("kubectl delete destinationrule -n %s default", namespace)
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
@@ -76,7 +76,7 @@ func Test18(t *testing.T) {
 	time.Sleep(time.Duration(20) * time.Second)
 
 	log.Info("Enable mutual TLS")
-	util.Inspect(util.KubeApplyContents(testNamespace, mtlsPolicy, kubeconfigFile), "failed to apply policy", "", t)
+	util.Inspect(util.KubeApplyContents("bookinfo", bookinfoPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
 	mtlsRule := strings.Replace(mtlsRuleTemplate, "@token@", testNamespace, -1)
 	util.Inspect(util.KubeApplyContents(testNamespace, mtlsRule, kubeconfigFile), "failed to apply rule", "", t)
 	log.Info("Waiting... Sleep 10 seconds...")

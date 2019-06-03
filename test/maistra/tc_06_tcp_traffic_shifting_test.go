@@ -103,6 +103,10 @@ func Test06(t *testing.T) {
 		for i := 0; i < totalShot; i++ {
 			time.Sleep(time.Duration(1) * time.Second)
 			msg, err := checkEcho(ingress, ingressTCPPort)
+			if err != nil {
+				ingress, err = util.GetOCPIngressgateway("istio=ingressgateway","istio-system", kubeconfigFile)
+				msg, err = checkEcho(ingress, ingressTCPPort)
+			}
 			util.Inspect(err, "faild to get date", "", t)
 			if strings.Contains(msg, "one") {
 				versionCount++
@@ -131,6 +135,8 @@ func Test06(t *testing.T) {
 		log.Info("# Shifting 20% TCP traffic to v2 tolerance 10% ")
 		util.Inspect(routeTraffic20v2(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		time.Sleep(time.Duration(5) * time.Second)
+		ingress, err := util.GetOCP4Ingressgateway("istio-system", kubeconfigFile)
+		util.Inspect(err, "cannot get ingress host ip", "", t)
 
 		tolerance := 0.15
 		totalShot := 60
@@ -141,6 +147,10 @@ func Test06(t *testing.T) {
 		for i := 0; i < totalShot; i++ {
 			time.Sleep(time.Duration(1) * time.Second)
 			msg, err := checkEcho(ingress, ingressTCPPort)
+			if err != nil {
+				ingress, err = util.GetOCPIngressgateway("istio=ingressgateway","istio-system", kubeconfigFile)
+				msg, err = checkEcho(ingress, ingressTCPPort)
+			}
 			util.Inspect(err, "failed to get date", "", t)
 			if strings.Contains(msg, "one") {
 				c1++
