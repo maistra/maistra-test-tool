@@ -37,7 +37,7 @@ class OCP(object):
         """
         self.profile = profile
         self.assets = assets
-        self.installer_url = 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux-4.1.0-rc.5.tar.gz'
+        self.installer_url = 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux-4.1.0.tar.gz'
         self.oc_version = oc_version
         self.oc_url = 'https://github.com/Maistra/origin/releases/download/v3.11.0+maistra-' + oc_version + '/istiooc_linux'
         #self.oc_url = 'https://mirror.openshift.com/pub/openshift-v3/clients/' + oc_version + '/linux/oc.tar.gz'
@@ -77,7 +77,7 @@ class OCP(object):
         # deploy the cluster
         print('Deploying the cluster...')
         os.makedirs(self.assets, mode=0o775, exist_ok=True)
-        proc = sp.run(['./openshift-install', '--dir=' + self.assets, 'create', 'cluster', '--log-level=debug'], check=False)
+        proc = sp.run(['./openshift-install', '--dir=' + self.assets, 'create', 'cluster'], check=False)
 
         print('Cluster deployment completed.')
         os.environ['KUBECONFIG'] = self.assets + '/auth/kubeconfig'
@@ -109,8 +109,9 @@ class OCP(object):
         """
 
         os.chmod('oc', 0o755)
-        sp.run(['sudo', 'mv', 'oc', '/usr/bin/oc'])
-        sp.run(['sudo', 'ln', '-s', 'oc', '/usr/bin/kubectl'])
+        os.symlink('oc', 'kubectl')
+        shutil.move('oc', os.getenv('HOME') + '/bin/oc')
+        shutil.move('kubectl', os.getenv('HOME') + '/bin/kubectl')
         
         print('Check cluster info')
         sp.run(['kubectl', 'cluster-info'])
