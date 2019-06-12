@@ -39,7 +39,7 @@ Python Version: Python 3.7 or above
 ### 1. Prepare 
 
 * Prepare aws configuration files or configure them from `awscli`
-* Install language runtime and tools. Run `scripts/setup.sh`
+* Install language runtime and tools. Run `scripts/setup_install.sh`
 * Save OpenShift Pull Secret content and we need to paste all the content in one line later
 * Download your Istio private registry pull secret and create a file called "`secret.yaml`"
 * Confirm a shell has been started by pipenv. Otherwise, go to "`install`" directory and run "`pipenv install; pipenv shell`"
