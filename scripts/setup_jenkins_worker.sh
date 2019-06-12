@@ -42,25 +42,25 @@ cat $HOME/.ssh/jenkins_id.rsa.pub >> $HOME/.ssh/authorized_keys
 
 mkdir -p $HOME/bin
 
-git clone https://github.com/pyenv/pyenv.git $HOME/.pyenv
-
 wget https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz
 tar -C $HOME/bin -xzf go1.12.5.linux-amd64.tar.gz
 rm go1.12.5.linux-amd64.tar.gz
 
 echo 'export PATH="$PATH:$HOME/.local/bin:$HOME/bin"' >> $HOME/.bashrc
+echo 'export GOPATH=$HOME/go' >> $HOME/.bashrc
+echo 'export PATH="$PATH:$HOME/bin/go/bin:$GOPATH/bin"' >> $HOME/.bashrc
+exec "$SHELL"
+
+go version
+
+git clone https://github.com/pyenv/pyenv.git $HOME/.pyenv
+
 echo 'export PYENV_ROOT="$HOME/.pyenv"' >> $HOME/.bashrc
 echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> $HOME/.bashrc
 echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> $HOME/.bashrc
-echo 'export GOPATH=$HOME/go' >> $HOME/.bashrc
-echo 'export PATH="$PATH:$HOME/bin/go/bin:$GOPATH/bin"' >> $HOME/.bashrc
 exec "$SHELL"
 
 pyenv install 3.7.3
 pyenv local 3.7.3
 pyenv version
-go version
 
-exit
-
-sudo ln -fs /home/jenkins/.pyenv/shims/python /usr/bin/python

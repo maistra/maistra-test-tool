@@ -148,7 +148,8 @@ func Test21(t *testing.T) {
 
 	log.Info("Deploy bookinfo")
 	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, true), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
-
+	time.Sleep(time.Duration(10) * time.Second)
+	
 	log.Info("Verify certs")
 	err = verifyCerts()
 	if err != nil {
