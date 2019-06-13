@@ -589,10 +589,10 @@ func Test14(t *testing.T) {
 		log.Info("Test JWT expires in 5 seconds")
 		jwcryptoInstall()
 		log.Info("Check curls return five or six 200 and then five or four 401")
-		token, err = util.ShellSilent("%s %s --expire 10", jwtGen, jwtKey)
+		token, err = util.ShellSilent("%s %s --expire 30", jwtGen, jwtKey)
 		token = strings.Trim(token, "\n")
 		util.Inspect(err, "failed to get JWT token", "", t)
-		for i := 0; i < 15; i++ {
+		for i := 0; i < 35; i++ {
 			resp, err = util.GetWithJWT(url, token, "")
 			util.Inspect(err, "failed to get httpbin header response", "", t)
 			if i == 0 {
@@ -603,7 +603,7 @@ func Test14(t *testing.T) {
 					log.Infof("Success. Get response: %d", resp.StatusCode)
 				}
 			}
-			if i > 10 {
+			if i > 30 {
 				if resp.StatusCode != 401 {
 					t.Errorf("Expected: 401; Got unexpected response code: %d", resp.StatusCode)
 					log.Errorf("Expected: 401; Got unexpected response code: %d", resp.StatusCode)
