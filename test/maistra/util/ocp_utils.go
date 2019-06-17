@@ -85,6 +85,25 @@ func GetOCP4Ingressgateway(namespace, kubeconfig string) (string, error) {
 	return ingress, nil
 }
 
+// GetIngressPort returns the http ingressgateway port
+// "$(${OC_COMMAND} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')"
+func GetIngressPort(namespace, serviceName, kubeconfig string) (string, error) {
+	port, err := Shell(
+		"kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"http2\")].port}' --kubeconfig=%s",
+		namespace, serviceName, kubeconfig)
+	if err != nil {
+		return "", err
+	}
+	port = strings.Trim(port, "'")
+	rp := regexp.MustCompile(`^[0-9]{1,5}$`)
+	if rp.FindString(port) == "" {
+		err = fmt.Errorf("unable to find the port of %s", serviceName)
+		log.Warna(err)
+		return "", err
+	}
+	return port, nil
+}
+
 // GetSecureIngressPort returns the https ingressgateway port
 // "$(${OC_COMMAND} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}')"
 func GetSecureIngressPort(namespace, serviceName, kubeconfig string) (string, error) {

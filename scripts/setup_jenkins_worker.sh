@@ -25,19 +25,24 @@ sudo usermod -aG wheel jenkins
 sudo groupadd docker
 sudo usermod -aG docker jenkins
 
+sudo systemctl start docker
+sudo systemctl enable docker
+
 DOCKER_SOCKET=/var/run/docker.sock
 DOCKER_GROUP=docker
 DOCKER_GID=$(stat -c '%g' ${DOCKER_SOCKET})
 sudo groupadd -for -g ${DOCKER_GID} ${DOCKER_GROUP}
 
-sudo systemctl start docker
-sudo systemctl enable docker
-
 sudo chmod 666 /var/run/docker.sock
 
 sudo su - jenkins
+mkdir /home/jenkins/.ssh
+
 ssh-keygen -b 2048 -t rsa -f $HOME/.ssh/jenkins_id.rsa -q -N "" -C "yuanlin.xu@redhat.com"
 cat $HOME/.ssh/jenkins_id.rsa.pub >> $HOME/.ssh/authorized_keys
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/authorized_keys
+
 # sudo vi /etc/pki/tls/cert.pem
 
 mkdir -p $HOME/bin
@@ -63,4 +68,7 @@ exec "$SHELL"
 pyenv install 3.7.3
 pyenv local 3.7.3
 pyenv version
+
+pip install pipenv
+
 

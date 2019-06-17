@@ -67,6 +67,9 @@ const (
 	httpbinServiceYaml            = "testdata/httpbin/networking/httpbin-service.yaml"
 	httpbinAllv1Yaml              = "testdata/httpbin/networking/virtual-service-httpbin-all-v1.yaml"
 	httpbinMirrorv2Yaml           = "testdata/httpbin/networking/virtual-service-httpbin-mirror-v2.yaml"
+	httpbinPolicyAllYaml		  = "testdata/httpbin/httpbin-all.yaml"
+	httpbinKeyvalTemplateYaml     = "testdata/httpbin/policy/keyval-template.yaml"
+	httpbinKeyvalYaml             = "testdata/httpbin/policy/keyval.yaml"	
 
 	sleepYaml         = "testdata/sleep/sleep.yaml"
 	sleepv2Yaml       = "testdata/sleep/sleep-v2.yaml"
