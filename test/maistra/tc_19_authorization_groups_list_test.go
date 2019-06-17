@@ -70,7 +70,7 @@ func Test19(t *testing.T) {
 	sleepPod, err := util.GetPodName("foo", "app=sleep", kubeconfigFile)
 	util.Inspect(err, "failed to get sleep pod name", "", t)
 
-	t.Run("verify_setup", func(t *testing.T) {
+	t.Run("verify_setup_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -91,7 +91,7 @@ func Test19(t *testing.T) {
 		}
 	})
 
-	t.Run("config_jwt_mtls", func(t *testing.T) {
+	t.Run("config_jwt_mtls_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -127,7 +127,7 @@ func Test19(t *testing.T) {
 		}
 	})
 
-	t.Run("group_rbac", func(t *testing.T) {
+	t.Run("group_rbac_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -183,7 +183,7 @@ func Test19(t *testing.T) {
 		}
 	})
 
-	t.Run("list_claims_rbac", func(t *testing.T) {
+	t.Run("list_claims_rbac_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {

@@ -67,7 +67,7 @@ func Test20(t *testing.T) {
 		util.Shell("kubectl get deploy -l istio=citadel -n istio-system")
 	})
 
-	t.Run("verify_certs", func(t *testing.T) {
+	t.Run("verify_certs_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -97,7 +97,7 @@ func Test20(t *testing.T) {
 		util.Inspect(err, "Error in grep certificate Validity", "", t)
 	})
 
-	t.Run("request_plain_text", func(t *testing.T) {
+	t.Run("request_plain_text_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -118,7 +118,7 @@ func Test20(t *testing.T) {
 		}
 	})
 
-	t.Run("request_without_cert", func(t *testing.T) {
+	t.Run("request_without_cert_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -139,7 +139,7 @@ func Test20(t *testing.T) {
 		}
 	})
 
-	t.Run("request_with_cert", func(t *testing.T) {
+	t.Run("request_with_cert_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {

@@ -247,7 +247,7 @@ func Test09(t *testing.T) {
 	util.Inspect(deployHttpbin(testNamespace, kubeconfigFile), "failed to deploy httpbin", "", t)
 	util.Inspect(configHttpbinHTTPS(testNamespace, kubeconfigFile), "failed to config httpbin with tls certs", "", t)
 
-	t.Run("general_tls", func(t *testing.T) {
+	t.Run("general_tls_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -271,7 +271,7 @@ func Test09(t *testing.T) {
 		}
 	})
 
-	t.Run("mutual_tls", func(t *testing.T) {
+	t.Run("mutual_tls_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
