@@ -107,7 +107,7 @@ func Test17(t *testing.T) {
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
 
-	t.Run("verify_setup", func(t *testing.T) {
+	t.Run("verify_setup_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -130,7 +130,7 @@ func Test17(t *testing.T) {
 		}
 	})
 
-	t.Run("global_rbac", func(t *testing.T) {
+	t.Run("global_rbac_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -158,7 +158,7 @@ func Test17(t *testing.T) {
 		}
 	})
 
-	t.Run("namespace_rbac", func(t *testing.T) {
+	t.Run("namespace_rbac_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -189,7 +189,7 @@ func Test17(t *testing.T) {
 		time.Sleep(time.Duration(5) * time.Second)
 	})
 
-	t.Run("service_rbac", func(t *testing.T) {
+	t.Run("service_rbac_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {

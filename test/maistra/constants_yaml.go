@@ -396,30 +396,7 @@ spec:
   trafficPolicy:
     tls:
       mode: ISTIO_MUTUAL
-`
-
-  citadelServiceAccount = `
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: istio-citadel-service-account
-  namespace: istio-system
-`
-
-  citadelService = `
-apiVersion: v1
-kind: Service
-metadata:
-  name: istio-citadel
-  namespace: istio-system
-  labels:
-    istio: citadel
-spec:
-  ports:
-    - port: 8060
-  selector:
-    istio: citadel  
-`
+`  
 
   demoAdapter = `
 apiVersion: config.istio.io/v1alpha2

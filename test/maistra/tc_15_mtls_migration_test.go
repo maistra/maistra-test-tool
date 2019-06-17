@@ -98,7 +98,7 @@ func Test15(t *testing.T) {
 	time.Sleep(time.Duration(5) * time.Second)
 	util.Inspect(setup15(kubeconfigFile), "failed to apply deployments", "", t)
 
-	t.Run("verify_setup", func(t *testing.T) {
+	t.Run("verify_setup_test", func(t *testing.T) {
 		log.Info("Verify setup")
 
 		for _, from := range namespaces {
@@ -116,7 +116,7 @@ func Test15(t *testing.T) {
 		}
 	})
 
-	t.Run("mTLS_and_plain_text", func(t *testing.T) {
+	t.Run("mTLS_and_plain_text_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -143,7 +143,7 @@ func Test15(t *testing.T) {
 		}
 	})
 
-	t.Run("mTLS", func(t *testing.T) {
+	t.Run("mTLS_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -170,7 +170,7 @@ func Test15(t *testing.T) {
 		}
 	})
 
-	t.Run("lock_down_mTLS", func(t *testing.T) {
+	t.Run("lock_down_mTLS_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {

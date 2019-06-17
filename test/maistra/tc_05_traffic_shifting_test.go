@@ -85,7 +85,7 @@ func Test05(t *testing.T) {
 
 	util.Inspect(setup05(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 
-	t.Run("50%_v3_shift", func(t *testing.T) {
+	t.Run("50_percent_v3_shift_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -138,7 +138,7 @@ func Test05(t *testing.T) {
 		}
 	})
 
-	t.Run("100%_v3_shift", func(t *testing.T) {
+	t.Run("100_percent_v3_shift_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {

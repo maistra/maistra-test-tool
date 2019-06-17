@@ -95,10 +95,13 @@ const (
 	tlsRuleYaml              = "testdata/policy/mutual_tls_destinationrule.yaml"
 	mixerDenyPolicyYaml      = "testdata/policy/mixer-rule-deny-label.yaml"
 	policyCheckVersionYaml   = "testdata/policy/checkversion-rule.yaml"
+	policyCheckIPYaml        = "testdata/policy/checkip-rule.yaml"
 	policyAppversionYaml     = "testdata/policy/appversion-instance.yaml"
 	whitelistHandlerYaml     = "testdata/policy/whitelist-handler.yaml"
+	whiltelistIPHandlerYaml  = "testdata/policy/whitelistip-handler.yaml"
 	rateLimitYaml            = "testdata/policy/mixer-rule-productpage-ratelimit.yaml"
 	rateLimitConditionalYaml = "testdata/policy/mixer-rule-conditional.yaml"
+	sourceIPYaml             = "testdata/policy/sourceip-instance.yaml"
 
 	telemetryYaml    = "testdata/telemetry/new_telemetry.yaml"
 	telemetryTCPYaml = "testdata/telemetry/tcp_telemetry.yaml"

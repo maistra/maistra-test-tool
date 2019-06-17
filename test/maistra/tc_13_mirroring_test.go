@@ -78,7 +78,7 @@ func Test13(t *testing.T) {
 	log.Info("# TC_13 Mirroring")
 	util.Inspect(setup13(testNamespace, kubeconfigFile), "failed to deploy samples", "", t)
 
-	t.Run("no_mirror", func(t *testing.T) {
+	t.Run("no_mirror_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -112,7 +112,7 @@ func Test13(t *testing.T) {
 		}
 	})
 
-	t.Run("mirror_v2", func(t *testing.T) {
+	t.Run("mirror_v2_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {

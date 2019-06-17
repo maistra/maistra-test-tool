@@ -85,7 +85,7 @@ func Test10(t *testing.T) {
 	pod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfigFile)
 	util.Inspect(err, "failed to get sleep pod", "", t)
 
-	t.Run("external_httpbin", func(t *testing.T) {
+	t.Run("external_httpbin_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -126,7 +126,7 @@ func Test10(t *testing.T) {
 		*/
 	})
 
-	t.Run("external_google", func(t *testing.T) {
+	t.Run("external_google_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -166,7 +166,7 @@ func Test10(t *testing.T) {
 		*/
 	})
 
-	t.Run("block_external", func(t *testing.T) {
+	t.Run("block_external_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -186,7 +186,7 @@ func Test10(t *testing.T) {
 		}
 	})
 
-	t.Run("bypass_ip_range", func(t *testing.T) {
+	t.Run("bypass_ip_range_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -217,7 +217,7 @@ func Test10(t *testing.T) {
 			}
 		})
 
-		t.Run("external_google", func(t *testing.T) {
+		t.Run("external_google_2_test", func(t *testing.T) {
 			defer func() {
 				// recover from panic if one occurred. This allows cleanup to be executed after panic.
 				if err := recover(); err != nil {

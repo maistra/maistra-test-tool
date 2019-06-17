@@ -96,14 +96,26 @@ func Test21(t *testing.T) {
 		}
 	}()
 
-	log.Infof("# TC_21 Plugging in External CA Key and Certificate")
-	log.Info("Enable mTLS")
-	util.Inspect(util.KubeApplyContents("bookinfo", bookinfoPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
-	log.Info("Waiting... Sleep 5 seconds...")
-	time.Sleep(time.Duration(5) * time.Second)	
+	t.Run("plugging_external_certs_test", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occured. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				t.Errorf("Test panic: %v", err)
+			}
+		}()
 
-	log.Info("Create secret")
-	_, err := util.ShellMuteOutput("kubectl create secret generic %s -n %s --from-file %s --from-file %s --from-file %s --from-file %s --kubeconfig=%s", 
+		log.Infof("# TC_21 Plugging in External CA Key and Certificate")
+
+		util.CreateNamespace(testNamespace, kubeconfigFile)
+		util.OcGrantPermission("default", testNamespace, kubeconfigFile)
+
+		log.Info("Enable mTLS")
+		util.Inspect(util.KubeApplyContents(testNamespace, bookinfoPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
+		log.Info("Waiting... Sleep 5 seconds...")
+		time.Sleep(time.Duration(5) * time.Second)	
+
+		log.Info("Create secret")
+		_, err := util.ShellMuteOutput("kubectl create secret generic %s -n %s --from-file %s --from-file %s --from-file %s --from-file %s --kubeconfig=%s", 
 								"cacerts",
 								"istio-system",
 								caCert,
@@ -111,50 +123,51 @@ func Test21(t *testing.T) {
 								caRootCert,
 								caCertChain,
 								kubeconfigFile)
-	if err != nil {
-		log.Infof("Failed to create secret %s\n", "cacerts")
-		t.Errorf("Failed to create secret %s\n", "cacerts")
-	}
-	log.Infof("Secret %s created\n", "cacerts")
-	time.Sleep(time.Duration(5) * time.Second)
+		if err != nil {
+			log.Infof("Failed to create secret %s\n", "cacerts")
+			t.Errorf("Failed to create secret %s\n", "cacerts")
+		}
+		log.Infof("Secret %s created\n", "cacerts")
+		time.Sleep(time.Duration(5) * time.Second)
 
-	log.Info("Redeploy Citadel")
-	backupFile := "/tmp/istio-citadel-bak.yaml"
-	newFile := "/tmp/istio-citadel-new.yaml"
+		log.Info("Redeploy Citadel")
+		backupFile := "/tmp/istio-citadel-bak.yaml"
+		newFile := "/tmp/istio-citadel-new.yaml"
 
-	util.ShellMuteOutput("kubectl get deployment -n %s %s -o yaml --kubeconfig=%s > %s",
+		util.ShellMuteOutput("kubectl get deployment -n %s %s -o yaml --kubeconfig=%s > %s",
 						"istio-system",
 						"istio-citadel",
 						kubeconfigFile,
 						backupFile)
 	
-	data, err := ioutil.ReadFile(backupFile)
-	if err != nil {
-		log.Infof("Unable to read citadel deployment yaml: %v", err)
-		t.Errorf("Unable to read citadel deployment yaml: %v", err)
-	}
-	w, _ := os.Create(newFile)
-	defer w.Close()
-	err = util.ConfigCitadelCerts(data, w)
-	if err != nil {
-		log.Infof("Update citadel deployment error: %v", err)
-		t.Errorf("Update citadel deployment error: %v", err)
-	}
-	util.Shell("kubectl apply -n %s -f %s", "istio-system", newFile)
-	time.Sleep(time.Duration(10) * time.Second)
-	
-	log.Info("Delete existing istio.default secret")
-	util.Shell("kubectl delete -n %s secret istio.default", testNamespace)
+		data, err := ioutil.ReadFile(backupFile)
+		if err != nil {
+			log.Infof("Unable to read citadel deployment yaml: %v", err)
+			t.Errorf("Unable to read citadel deployment yaml: %v", err)
+		}
+		w, _ := os.Create(newFile)
+		defer w.Close()
+		err = util.ConfigCitadelCerts(data, w)
+		if err != nil {
+			log.Infof("Update citadel deployment error: %v", err)
+			t.Errorf("Update citadel deployment error: %v", err)
+		}
+		util.Shell("kubectl apply -n %s -f %s", "istio-system", newFile)
+		time.Sleep(time.Duration(10) * time.Second)
+		
+		log.Info("Delete existing istio.default secret")
+		util.Shell("kubectl delete -n %s secret istio.default", testNamespace)
 
-	log.Info("Deploy bookinfo")
-	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, true), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
-	time.Sleep(time.Duration(10) * time.Second)
-	
-	log.Info("Verify certs")
-	err = verifyCerts()
-	if err != nil {
-		log.Infof("%v", err)
-		t.Errorf("%v", err)
-	}
+		log.Info("Deploy bookinfo")
+		util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, true), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+		time.Sleep(time.Duration(10) * time.Second)
+		
+		log.Info("Verify certs")
+		err = verifyCerts()
+		if err != nil {
+			log.Infof("%v", err)
+			t.Errorf("%v", err)
+		}
+	})
 
 } 

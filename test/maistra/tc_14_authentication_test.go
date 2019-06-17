@@ -179,7 +179,7 @@ func Test14(t *testing.T) {
 		}
 	}
 
-	t.Run("global_mTLS", func(t *testing.T) {
+	t.Run("global_mTLS_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -233,7 +233,7 @@ func Test14(t *testing.T) {
 		time.Sleep(time.Duration(5) * time.Second)
 	})
 
-	t.Run("non_istio_to_istio", func(t *testing.T) {
+	t.Run("non_istio_to_istio_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -271,7 +271,7 @@ func Test14(t *testing.T) {
 		time.Sleep(time.Duration(5) * time.Second)
 	})
 
-	t.Run("istio_to_non_istio", func(t *testing.T) {
+	t.Run("istio_to_non_istio_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -317,7 +317,7 @@ func Test14(t *testing.T) {
 		time.Sleep(time.Duration(5) * time.Second)
 	})
 
-	t.Run("istio_to_k8s_api", func(t *testing.T) {
+	t.Run("istio_to_k8s_api_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -355,7 +355,7 @@ func Test14(t *testing.T) {
 
 	cleanupPart1()
 
-	t.Run("namespace_mTLS", func(t *testing.T) {
+	t.Run("namespace_mTLS_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -397,7 +397,7 @@ func Test14(t *testing.T) {
 		}
 	})
 
-	t.Run("service_mTLS", func(t *testing.T) {
+	t.Run("service_mTLS_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -449,7 +449,7 @@ func Test14(t *testing.T) {
 		}
 	})
 
-	t.Run("port_mTLS", func(t *testing.T) {
+	t.Run("port_mTLS_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -491,7 +491,7 @@ func Test14(t *testing.T) {
 		}
 	})
 
-	t.Run("overwrite_policy", func(t *testing.T) {
+	t.Run("overwrite_policy_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -524,7 +524,7 @@ func Test14(t *testing.T) {
 
 	cleanupPart2()
 
-	t.Run("end_user_auth", func(t *testing.T) {
+	t.Run("end_user_auth_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -621,7 +621,7 @@ func Test14(t *testing.T) {
 	// disable end-user authentication for specific paths
 	// enable end-user authentication for specific paths
 
-	t.Run("end_user_auth_mTLS", func(t *testing.T) {
+	t.Run("end_user_auth_mTLS_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -632,6 +632,7 @@ func Test14(t *testing.T) {
 		log.Info("End-user authentication with mutual TLS")
 		util.Inspect(util.KubeApplyContents("", fooJWTPolicy2, kubeconfigFile), "failed to apply foo JWT Policy 2", "", t)
 		util.Inspect(util.KubeApplyContents("", fooRule3, kubeconfigFile), "failed to apply foo rule 3", "", t)
+		time.Sleep(time.Duration(5) * time.Second)
 
 		log.Info("Check request from istio services")
 		token, err := util.ShellSilent("curl %s -s", jwtURL)

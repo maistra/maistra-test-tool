@@ -70,7 +70,7 @@ func Test03(t *testing.T) {
 
 	testUserJar := util.GetCookieJar(testUsername, "", "http://"+ingress)
 
-	t.Run("general_route", func(t *testing.T) {
+	t.Run("general_route_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -93,7 +93,7 @@ func Test03(t *testing.T) {
 				t)
 		}
 	})
-	t.Run("user_route", func(t *testing.T) {
+	t.Run("user_route_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {

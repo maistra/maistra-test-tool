@@ -58,49 +58,58 @@ func Test12(t *testing.T) {
 	util.Inspect(configHttpbinCircuitBreaker(testNamespace, kubeconfigFile), "failed to apply rule", "", t)
 	util.Inspect(deployFortio(testNamespace, kubeconfigFile), "failed to deploy fortio", "", t)
 
-	// trip breaker
-	pod, err := util.GetPodName(testNamespace, "app=fortio", kubeconfigFile)
-	util.Inspect(err, "failed to get fortio pod", "", t)
-	command := "load -curl  http://httpbin:8000/get"
-	msg, err := util.PodExec(testNamespace, pod, "fortio /usr/bin/fortio", command, false, kubeconfigFile)
-	util.Inspect(err, "failed to get response", "", t)
-	if strings.Contains(msg, "200 OK") {
-		log.Infof("Success. Get correct response")
-	} else {
-		t.Errorf("Error response")
-	}
+	t.Run("circuit_breaking_test", func(t *testing.T) {
+		defer func() {
+			// recover from panic if one occurred. This allows cleanup to be executed after panic.
+			if err := recover(); err != nil {
+				t.Errorf("Test panic: %v", err)
+			}
+		}()
+		
+		// trip breaker
+		pod, err := util.GetPodName(testNamespace, "app=fortio", kubeconfigFile)
+		util.Inspect(err, "failed to get fortio pod", "", t)
+		command := "load -curl  http://httpbin:8000/get"
+		msg, err := util.PodExec(testNamespace, pod, "fortio /usr/bin/fortio", command, false, kubeconfigFile)
+		util.Inspect(err, "failed to get response", "", t)
+		if strings.Contains(msg, "200 OK") {
+			log.Infof("Success. Get correct response")
+		} else {
+			t.Errorf("Error response")
+		}
 
-	log.Info("# Tripping the circuit breaker")
-	connection := 4
-	reqCount := 20
-	tolerance := 0.30
+		log.Info("# Tripping the circuit breaker")
+		connection := 4
+		reqCount := 20
+		tolerance := 0.30
 
-	command = fmt.Sprintf("load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount)
-	msg, err = util.PodExec(testNamespace, pod, "fortio /usr/bin/fortio", command, false, kubeconfigFile)
-	util.Inspect(err, "failed to get response", "", t)
+		command = fmt.Sprintf("load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount)
+		msg, err = util.PodExec(testNamespace, pod, "fortio /usr/bin/fortio", command, false, kubeconfigFile)
+		util.Inspect(err, "failed to get response", "", t)
 
-	re := regexp.MustCompile(`Code 200.*`)
-	line := re.FindStringSubmatch(msg)[0]
-	re = regexp.MustCompile(`: [\d]+`)
-	word := re.FindStringSubmatch(line)[0]
-	c200, err := strconv.Atoi(strings.TrimLeft(word, ": "))
-	util.Inspect(err, "failed to parse code 200 count", "", t)
+		re := regexp.MustCompile(`Code 200.*`)
+		line := re.FindStringSubmatch(msg)[0]
+		re = regexp.MustCompile(`: [\d]+`)
+		word := re.FindStringSubmatch(line)[0]
+		c200, err := strconv.Atoi(strings.TrimLeft(word, ": "))
+		util.Inspect(err, "failed to parse code 200 count", "", t)
 
-	re = regexp.MustCompile(`Code 503.*`)
-	line = re.FindStringSubmatch(msg)[0]
-	re = regexp.MustCompile(`: [\d]+`)
-	word = re.FindStringSubmatch(line)[0]
-	c503, err := strconv.Atoi(strings.TrimLeft(word, ": "))
-	util.Inspect(err, "failed to parse code 503 count", "", t)
+		re = regexp.MustCompile(`Code 503.*`)
+		line = re.FindStringSubmatch(msg)[0]
+		re = regexp.MustCompile(`: [\d]+`)
+		word = re.FindStringSubmatch(line)[0]
+		c503, err := strconv.Atoi(strings.TrimLeft(word, ": "))
+		util.Inspect(err, "failed to parse code 503 count", "", t)
 
-	if isWithinPercentage(c200, reqCount, 0.5, tolerance) && isWithinPercentage(c503, reqCount, 0.5, tolerance) {
-		log.Infof(
-			"Success. Circuit breaking acts as expected. "+
-				"Code 200 hit %d, Code 503 hit %d", c200, c503)
-	} else {
-		t.Errorf(
-			"Failed Circuit breaking. "+
-				"Code 200 hit %d, Code 503 hit %d", c200, c503)
-	}
+		if isWithinPercentage(c200, reqCount, 0.5, tolerance) && isWithinPercentage(c503, reqCount, 0.5, tolerance) {
+			log.Infof(
+				"Success. Circuit breaking acts as expected. "+
+					"Code 200 hit %d, Code 503 hit %d", c200, c503)
+		} else {
+			t.Errorf(
+				"Failed Circuit breaking. "+
+					"Code 200 hit %d, Code 503 hit %d", c200, c503)
+		}
+	})
 
 }

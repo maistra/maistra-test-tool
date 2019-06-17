@@ -75,8 +75,11 @@ func Test18(t *testing.T) {
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
 
+	util.CreateNamespace(testNamespace, kubeconfigFile)
+	util.OcGrantPermission("default", testNamespace, kubeconfigFile)
+
 	log.Info("Enable mutual TLS")
-	util.Inspect(util.KubeApplyContents("bookinfo", bookinfoPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
+	util.Inspect(util.KubeApplyContents(testNamespace, bookinfoPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
 	mtlsRule := strings.Replace(mtlsRuleTemplate, "@token@", testNamespace, -1)
 	util.Inspect(util.KubeApplyContents(testNamespace, mtlsRule, kubeconfigFile), "failed to apply rule", "", t)
 	log.Info("Waiting... Sleep 10 seconds...")
@@ -106,7 +109,7 @@ func Test18(t *testing.T) {
 	log.Info("Waiting... Sleep 40 seconds...")
 	time.Sleep(time.Duration(40) * time.Second)
 
-	t.Run("verify_setup", func(t *testing.T) {
+	t.Run("verify_setup_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -126,7 +129,7 @@ func Test18(t *testing.T) {
 			t)
 	})
 
-	t.Run("enable_rbac", func(t *testing.T) {
+	t.Run("enable_rbac_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -150,7 +153,7 @@ func Test18(t *testing.T) {
 			t)
 	})
 
-	t.Run("service_rbac_pass", func(t *testing.T) {
+	t.Run("service_rbac_pass_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -174,7 +177,7 @@ func Test18(t *testing.T) {
 			t)
 	})
 
-	t.Run("service_rbac_fail", func(t *testing.T) {
+	t.Run("service_rbac_fail_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {

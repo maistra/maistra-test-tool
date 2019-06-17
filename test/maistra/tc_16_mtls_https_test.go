@@ -52,7 +52,7 @@ func Test16(t *testing.T) {
 	util.CreateTLSSecret("nginxsecret", testNamespace, "/tmp/nginx.key", "/tmp/nginx.crt", kubeconfigFile)
 	util.ShellSilent("kubectl create configmap -n %s nginxconfigmap --from-file=%s", testNamespace, nginxConf)
 
-	t.Run("nginx_without_sidecar", func(t *testing.T) {
+	t.Run("nginx_without_sidecar_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -111,7 +111,7 @@ func Test16(t *testing.T) {
 	log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
 
-	t.Run("nginx_with_sidecar_mtls", func(t *testing.T) {
+	t.Run("nginx_with_sidecar_mtls_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {

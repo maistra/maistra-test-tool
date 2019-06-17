@@ -79,7 +79,7 @@ func Test08(t *testing.T) {
 	log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
 
-	t.Run("status_200", func(t *testing.T) {
+	t.Run("status_200_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
@@ -93,7 +93,7 @@ func Test08(t *testing.T) {
 		util.Inspect(util.CheckHTTPResponse200(resp), "failed to get HTTP 200", resp.Status, t)
 	})
 
-	t.Run("headers", func(t *testing.T) {
+	t.Run("headers_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {

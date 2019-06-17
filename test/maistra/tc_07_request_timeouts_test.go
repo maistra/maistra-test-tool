@@ -70,7 +70,7 @@ func Test07(t *testing.T) {
 	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
 
 	util.Inspect(setup07(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
-	t.Run("timout", func(t *testing.T) {
+	t.Run("timout_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
 			if err := recover(); err != nil {
