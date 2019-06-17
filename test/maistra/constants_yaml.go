@@ -421,4 +421,63 @@ spec:
     istio: citadel  
 `
 
+  demoAdapter = `
+apiVersion: config.istio.io/v1alpha2
+kind: handler
+metadata:
+  name: keyval
+  namespace: istio-system
+spec:
+  adapter: keyval
+  connection:
+    address: keyval:9070
+  params:
+    table:
+      jason: admin
+`
+
+  keyvalInstance = `
+apiVersion: config.istio.io/v1alpha2
+kind: instance
+metadata:
+  name: keyval
+  namespace: istio-system
+spec:
+  template: keyval
+  params:
+    key: request.headers["user"] | ""
+`
+
+  demoAdapterRule = `
+apiVersion: config.istio.io/v1alpha2
+kind: rule
+metadata:
+  name: keyval
+  namespace: istio-system
+spec:
+  actions:
+  - handler: keyval.istio-system
+    instances: [ keyval ]
+    name: x
+  requestHeaderOperations:
+  - name: user-group
+    values: [ x.output.value ]
+`
+
+  demoAdapterRule2 = `
+apiVersion: config.istio.io/v1alpha2
+kind: rule
+metadata:
+  name: keyval
+  namespace: istio-system
+spec:
+  match: source.labels["istio"] == "ingressgateway"
+  actions:
+  - handler: keyval.istio-system
+    instances: [ keyval ]
+  requestHeaderOperations:
+  - name: :path
+    values: [ '"/status/418"' ]
+`
+
 )

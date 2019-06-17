@@ -35,12 +35,12 @@ function banner() {
 function cleanup() {
 	set +e
 	banner "Cleanup"
-	${OC_COMMAND} delete rule/keyval handler/keyval instance/keyval adapter/keyval template/keyval -n istio-system
-    ${OC_COMMAND} delete service keyval -n istio-system
-    ${OC_COMMAND} delete deploymentconfig keyval -n istio-system
+	${OC_COMMAND} delete rule/keyval -n istio-system
+  sleep 30
+  ${OC_COMMAND} delete handler/keyval instance/keyval adapter/keyval template/keyval -n istio-system
+  ${OC_COMMAND} delete service keyval -n istio-system
+  ${OC_COMMAND} delete deployment keyval -n istio-system
 	${OC_COMMAND} delete -f ${HTTPBIN}
-    ${OC_COMMAND} delete -f ${DENY_POLICY}
-	echo "bookinfo" | ./bookinfo_uninstall.sh
 }
 trap cleanup EXIT
 
@@ -64,11 +64,11 @@ function apply_deny_policy() {
 }
 
 function deploy_httpbin() {
-    # grant privileged permission
+  # grant privileged permission
 	${OC_COMMAND} adm policy add-scc-to-user privileged -z default -n default
 	${OC_COMMAND} adm policy add-scc-to-user anyuid -z default -n default
 
-    ${OC_COMMAND} apply -f ${HTTPBIN}
+  ${OC_COMMAND} apply -f ${HTTPBIN}
 }
 
 function set_key_val() {
@@ -144,16 +144,15 @@ EOF
 
 function main() {
 	banner "TC_31 Control Headers and Routing"
-	echo "bookinfo" | ./bookinfo_install.sh
 
 	enable_policy_check
-	apply_deny_policy
-	deploy_httpbin
-    set_key_val
 
-    echo "# Creates a rule for adapter"
-    demo_adapter_rule
-    sleep 10
+	deploy_httpbin
+  set_key_val
+
+  echo "# Creates a rule for adapter"
+  demo_adapter_rule
+  sleep 10
 
 	echo "# Ensures the httpbin service is accessible through the ingress gateway"
 	set -x
@@ -162,7 +161,7 @@ function main() {
 	read -p "Press enter to continue: "
 
     enable_user_groups
-    sleep 20
+    sleep 30
 
     echo "# Verify that user:jason has  \"User-Group\": \"admin\" header"
     set -x
@@ -173,7 +172,7 @@ function main() {
 
     echo "# Redirects to another virtual service route (status, which in this case returns 418 teapot)"
     redirect_to_teapot
-    sleep 20
+    sleep 30
     set -x
     curl -v -Huser:jason http://$INGRESS_HOST:$INGRESS_PORT/headers
     set +x
