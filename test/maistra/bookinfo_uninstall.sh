@@ -62,5 +62,5 @@ if [[ ${NAMESPACE} == "bookinfo" ]];then
   
 fi
 
-echo "Application cleanup successful"
+echo "Bookinfo Application cleanup successful"
 

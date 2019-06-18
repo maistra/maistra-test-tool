@@ -54,28 +54,71 @@ class Operator(object):
         sp.run(['oc', 'apply', '-n', 'istio-operator', '-f', operator_file])
 
 
-    def install(self, cr_file=None):
-        if cr_file is None:
-            raise RuntimeError('Missing cr yaml file')
-        
-        sp.run(['oc', 'apply', '-n', 'istio-system', '-f', cr_file])
-
+    def check(self):
         # verify installation
-        timeout = time.time() + 60 * 20
+        print("\n# istio-system namespace pods: ")
+        sp.run(['oc', 'get', 'pod', '-n', 'istio-system'])
+        print("\n# bookinfo namespace pods: ")
+        sp.run(['oc', 'get', 'pod', '-n', 'bookinfo'])
+
+        print("\n# istio-operator log installation result: ")
         template = r"""'{{range .status.conditions}}{{printf "%s=%s, reason=%s, message=%s\n\n" .type .status .reason .message}}{{end}}'"""
-        while time.time() < timeout:
-            sp.run(['oc', 'get', 'pod', '-n', 'istio-system'])
-            proc = sp.run(['oc', 'get', 'ServiceMeshControlPlane/basic-install', '-n', 'istio-system', '--template=' + template], stdout=sp.PIPE, universal_newlines=True)
-            if 'Installed=True' in proc.stdout:
-                break
-        
         proc = sp.run(['oc', 'get', 'ServiceMeshControlPlane/basic-install', '-n', 'istio-system', '--template=' + template], stdout=sp.PIPE, universal_newlines=True)    
         if 'Installed=True' in proc.stdout and 'reason=InstallSuccessful' in proc.stdout:
             print(proc.stdout)
         else:
             print('Error: ' + proc.stdout)
-        
 
+        print("\n# verify all images ID: ")
+        imageIDs = sp.run(['oc', 'get', 'pods', '-n', 'istio-operator', '-o', 'jsonpath="{..imageID}"'], stdout=sp.PIPE, universal_newlines=True)
+        for line in imageIDs.stdout.split(' '):
+            print(line)
+
+        imageIDs = sp.run(['oc', 'get', 'pods', '-n', 'istio-system', '-o', 'jsonpath="{..imageID}"'], stdout=sp.PIPE, universal_newlines=True)
+        for line in imageIDs.stdout.split(' '):
+            print(line)
+
+        imageIDs = sp.run(['oc', 'get', 'pods', '-n', 'bookinfo', '-o', 'jsonpath="{..imageID}"'], stdout=sp.PIPE, universal_newlines=True)
+        for line in imageIDs.stdout.split(' '):
+            print(line)        
+        
+        print("\n# verify all rpms names: ")
+        template = r"""'{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}'"""
+        podNames = sp.run(['oc', 'get', 'pods', '-n', 'istio-system', '-o', 'go-template', '--template=' + template], stdout=sp.PIPE, universal_newlines=True)
+        for line in podNames.stdout.split('\n'):
+            if 'istio' in line:
+                rpmNames = sp.run(['oc', 'rsh', '-n', 'istio-system', line, 'rpm', '-q', '-a'], stdout=sp.PIPE, universal_newlines=True)
+                for row in rpmNames.stdout.split('\n'):
+                    if 'servicemesh' in row:
+                        print(row)
+                
+
+    def install(self, cr_file=None):
+        if cr_file is None:
+            raise RuntimeError('Missing cr yaml file')
+        
+        sp.run(['oc', 'apply', '-n', 'istio-system', '-f', cr_file])
+        print("\n# Waiting installation complete...")
+        # verify installation
+        timeout = time.time() + 60 * 20
+        template = r"""'{{range .status.conditions}}{{printf "%s=%s, reason=%s, message=%s\n\n" .type .status .reason .message}}{{end}}'"""
+        while time.time() < timeout:
+            proc = sp.run(['oc', 'get', 'ServiceMeshControlPlane/basic-install', '-n', 'istio-system', '--template=' + template], stdout=sp.PIPE, universal_newlines=True)
+            if 'Installed=True' in proc.stdout:
+                break
+
+        # verify bookinfo deployment
+        print("\n# Installing bookinfo Application")
+        sp.run(['./bookinfo_install.sh'], input="bookinfo\n", cwd="../test/maistra", stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
+        print("\n# Waiting installation complete...")
+
+        # verify images ID and rpm names
+        self.check()
+
+        # uninstall bookinfo
+        print("\n# Uninstalling bookinfo Application")
+        sp.run(['./bookinfo_uninstall.sh'], input="bookinfo\n", cwd="../test/maistra", stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
+        
         
     def uninstall(self, operator_file=None, cr_file=None):
         if operator_file is None:
@@ -87,7 +130,3 @@ class Operator(object):
         sp.run(['sleep', '10'])
         sp.run(['oc', 'delete', '-n', 'istio-operator', '-f', operator_file])
         
-        
-        
-
-    
