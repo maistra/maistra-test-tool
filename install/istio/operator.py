@@ -69,6 +69,19 @@ class Operator(object):
         else:
             print('Error: ' + proc.stdout)
 
+        print("\n# verify all images name: ")
+        imageIDs = sp.run(['oc', 'get', 'pods', '-n', 'istio-operator', '-o', 'jsonpath="{..image}"'], stdout=sp.PIPE, universal_newlines=True)
+        for line in imageIDs.stdout.split(' '):
+            print(line)
+
+        imageIDs = sp.run(['oc', 'get', 'pods', '-n', 'istio-system', '-o', 'jsonpath="{..image}"'], stdout=sp.PIPE, universal_newlines=True)
+        for line in imageIDs.stdout.split(' '):
+            print(line)
+
+        imageIDs = sp.run(['oc', 'get', 'pods', '-n', 'bookinfo', '-o', 'jsonpath="{..image}"'], stdout=sp.PIPE, universal_newlines=True)
+        for line in imageIDs.stdout.split(' '):
+            print(line)
+
         print("\n# verify all images ID: ")
         imageIDs = sp.run(['oc', 'get', 'pods', '-n', 'istio-operator', '-o', 'jsonpath="{..imageID}"'], stdout=sp.PIPE, universal_newlines=True)
         for line in imageIDs.stdout.split(' '):
