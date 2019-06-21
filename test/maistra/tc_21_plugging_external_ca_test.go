@@ -153,14 +153,14 @@ func Test21(t *testing.T) {
 			t.Errorf("Update citadel deployment error: %v", err)
 		}
 		util.Shell("kubectl apply -n %s -f %s", "istio-system", newFile)
-		time.Sleep(time.Duration(10) * time.Second)
+		time.Sleep(time.Duration(20) * time.Second)
 		
 		log.Info("Delete existing istio.default secret")
 		util.Shell("kubectl delete -n %s secret istio.default", testNamespace)
 
 		log.Info("Deploy bookinfo")
 		util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, true), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
-		time.Sleep(time.Duration(10) * time.Second)
+		time.Sleep(time.Duration(20) * time.Second)
 		
 		log.Info("Verify certs")
 		err = verifyCerts()

@@ -37,7 +37,7 @@ class OCP(object):
         """
         self.profile = profile
         self.assets = assets
-        self.installer_url = 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux-4.1.0.tar.gz'
+        self.installer_url = 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.1.0/openshift-install-linux-4.1.0.tar.gz'
         self.oc_version = oc_version
         self.oc_url = 'https://github.com/Maistra/origin/releases/download/v3.11.0+maistra-' + oc_version + '/istiooc_linux'
         #self.oc_url = 'https://mirror.openshift.com/pub/openshift-v3/clients/' + oc_version + '/linux/oc.tar.gz'

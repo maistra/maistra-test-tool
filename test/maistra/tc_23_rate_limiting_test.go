@@ -80,7 +80,7 @@ func Test23(t *testing.T) {
 		log.Info("Verify quotaspecbinding was created")
 		util.Shell("kubectl -n istio-system get QuotaSpecBinding request-count -o yaml")
 
-		log.Info("Waiting for rules to be cleaned up. Sleep 50 seconds...")
+		log.Info("Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)
 
 		log.Info("productpage permits 2 requests every 5 seconds. Verify 'Quota is exhausted' message")
@@ -130,7 +130,7 @@ func Test23(t *testing.T) {
 		log.Info("Conditional rate limits")
 		util.KubeApply("istio-system", rateLimitConditionalYaml, kubeconfigFile)
 		
-		log.Info("Waiting for rules to be cleaned up. Sleep 50 seconds...")
+		log.Info("Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)
 
 		log.Info("productpage permits 2 requests every 5 seconds. Verify 'Quota is exhausted' message. Login user jason should not see quota message")

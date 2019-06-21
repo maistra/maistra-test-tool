@@ -63,7 +63,7 @@ func cleanBookinfo(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, bookinfoRuleAllYaml, kubeconfig)
 	util.KubeDelete(namespace, bookinfoGateway, kubeconfig)
 	util.KubeDelete(namespace, bookinfoYaml, kubeconfig)
-	log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
+	log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
 }
 
