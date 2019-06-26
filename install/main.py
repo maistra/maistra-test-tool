@@ -46,6 +46,8 @@ class Moitt(object):
             self.crfile = os.environ['CR_FILE']
         if 'OC_VERSION' in os.environ:
             self.oc_version = os.environ['OC_VERSION']
+        if 'JAEGER_OPERATOR_VERSION' in os.environ:
+            self.jaeger_version = os.environ['JAEGER_OPERATOR_VERSION']
     
     def argParse(self):
         parser = argparse.ArgumentParser(description='Select an operation and component(s)')
@@ -85,10 +87,11 @@ def main():
     if moitt.component == 'istio':
         operator = Operator()
         if moitt.install:
+            operator.deploy_jaeger(jaeger_version=moitt.jaeger_version)
             operator.deploy(operator_file=moitt.operatorfile)
             operator.install(cr_file=moitt.crfile)
         elif moitt.uninstall:
-            operator.uninstall(operator_file=moitt.operatorfile, cr_file=moitt.crfile)
+            operator.uninstall(operator_file=moitt.operatorfile, cr_file=moitt.crfile, jaeger_version=moitt.jaeger_version)
 
 
    
