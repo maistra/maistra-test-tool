@@ -54,6 +54,7 @@ Python Version: Python 3.7 or above
 | OC_VERSION | Maistra origin istiooc_linux version (e.g. 0.10.0) |
 | OPERATOR_FILE | Maistra Istio operator.yaml file path |
 | CR_FILE     | Istio ControlPlane CR file path  |
+| JAEGER_OPERATOR_VERSION | Jaeger Operator Version (e.g. v1.12.1) |
 
 * Export the environment variables (See the table above) with their values
 

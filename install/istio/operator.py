@@ -31,6 +31,18 @@ class Operator(object):
     def __init__(self):
         pass
         
+
+    def deploy_jaeger(self, jaeger_version="v1.12.1"):
+        # install the Jaeger operator as a prerequisit
+        sp.run(['oc', 'new-project', 'observability'], stderr=sp.PIPE)
+        sp.run(['oc', 'create', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/crds/jaegertracing_v1_jaeger_crd.yaml" % jaeger_version])
+        sp.run(['oc', 'create', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/service_account.yaml" % jaeger_version])
+        sp.run(['oc', 'create', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/role.yaml" % jaeger_version])
+        sp.run(['oc', 'create', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/role_binding.yaml" % jaeger_version])
+        sp.run(['oc', 'create', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/operator.yaml" % jaeger_version])
+        sp.run(['sleep', '10'])
+
+
     def deploy(self, operator_file=None):
         # check environment variable KUBECONFIG
         try:
@@ -133,7 +145,7 @@ class Operator(object):
         sp.run(['./bookinfo_uninstall.sh'], input="bookinfo\n", cwd="../test/maistra", stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
         
         
-    def uninstall(self, operator_file=None, cr_file=None):
+    def uninstall(self, operator_file=None, cr_file=None, jaeger_version="v1.12.1"):
         if operator_file is None:
             raise RuntimeError('Missing operator.yaml file')
         if cr_file is None:
@@ -142,4 +154,11 @@ class Operator(object):
         sp.run(['oc', 'delete', '-n', 'istio-system', '-f', cr_file])
         sp.run(['sleep', '10'])
         sp.run(['oc', 'delete', '-n', 'istio-operator', '-f', operator_file])
-        
+
+        # uninstall the Jaeger Operator
+        sp.run(['oc', 'delete', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/operator.yaml" % jaeger_version])
+        sp.run(['oc', 'delete', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/role_binding.yaml" % jaeger_version])
+        sp.run(['oc', 'delete', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/role.yaml" % jaeger_version])
+        sp.run(['oc', 'delete', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/service_account.yaml" % jaeger_version])
+        sp.run(['oc', 'delete', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/crds/jaegertracing_v1_jaeger_crd.yaml" % jaeger_version])
+        sp.run(['sleep', '10'])

@@ -38,7 +38,7 @@ class Puller(object):
             raise ValueError('Missing a secret file')
         
         self.secret_file = secret_file
-        self.repo = 'git@github.com:knrc/registry-puller.git'
+        self.repo = 'https://github.com/knrc/registry-puller.git'
         self.savedPath = os.getcwd()
 
     def build(self):
