@@ -180,7 +180,7 @@ func Test15(t *testing.T) {
 
 		log.Info("Lock down to mutual TLS")
 		util.Inspect(util.KubeApplyContents("foo", tlsStrictPolicy, kubeconfigFile), "failed to apply foo tls strict policy", "", t)
-		time.Sleep(time.Duration(10) * time.Second)
+		time.Sleep(time.Duration(30) * time.Second)
 
 		for _, from := range namespaces {
 			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
