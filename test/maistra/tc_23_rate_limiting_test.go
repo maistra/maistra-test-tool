@@ -98,7 +98,7 @@ func Test23(t *testing.T) {
 					t)
 
 			} else if i < 9 {
-				err = util.CompareToFile(body, "productpage-quota-exhausted.html")
+				err = util.CompareHTTPResponse(body, "productpage-quota-exhausted.html")
 				if err != nil {
 					continue
 				}
@@ -159,7 +159,7 @@ func Test23(t *testing.T) {
 			body, err := ioutil.ReadAll(resp.Body)
 			util.Inspect(err, "failed to read response body", "", t)
 			if i < 9 {
-				err = util.CompareToFile(body, "productpage-quota-exhausted.html")
+				err = util.CompareHTTPResponse(body, "productpage-quota-exhausted.html")
 				if err != nil {
 					continue
 				}

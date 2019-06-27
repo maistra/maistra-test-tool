@@ -366,6 +366,7 @@ func Test14(t *testing.T) {
 		log.Info("Enable mutual TLS per namespace")
 		util.Inspect(util.KubeApplyContents("", fooPolicy, kubeconfigFile), "failed to apply foo Policy", "", t)
 		util.Inspect(util.KubeApplyContents("", fooRule, kubeconfigFile), "failed to apply foo rule", "", t)
+		time.Sleep(time.Duration(5) * time.Second)
 
 		namespaces := []string{"foo", "bar", "legacy"}
 		for _, from := range namespaces {
@@ -502,6 +503,7 @@ func Test14(t *testing.T) {
 		log.Info("Overwrite foo namespace policy by service policy")
 		util.Inspect(util.KubeApplyContents("", fooPolicy2, kubeconfigFile), "failed to apply foo Policy 2", "", t)
 		util.Inspect(util.KubeApplyContents("", fooRule2, kubeconfigFile), "failed to apply foo Rule 2", "", t)
+		time.Sleep(time.Duration(5) * time.Second)
 
 		namespaces := []string{"foo", "bar", "legacy"}
 		for _, from := range namespaces {

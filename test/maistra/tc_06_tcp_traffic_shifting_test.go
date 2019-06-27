@@ -81,6 +81,7 @@ func Test06(t *testing.T) {
 	util.Inspect(err, "cannot get ingress TCP port", "", t)
 
 	util.Inspect(deployEcho(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
+	time.Sleep(time.Duration(20) * time.Second)
 
 	t.Run("100_percent_v1_shift_test", func(t *testing.T) {
 		defer func() {
