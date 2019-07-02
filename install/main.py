@@ -48,6 +48,9 @@ class Moitt(object):
             self.oc_version = os.environ['OC_VERSION']
         if 'JAEGER_OPERATOR_VERSION' in os.environ:
             self.jaeger_version = os.environ['JAEGER_OPERATOR_VERSION']
+        if 'KIALI_OPERATOR_VERSION' in os.environ:
+            self.kiali_version = os.environ['KIALI_OPERATOR_VERSION']
+
     
     def argParse(self):
         parser = argparse.ArgumentParser(description='Select an operation and component(s)')
@@ -88,10 +91,11 @@ def main():
         operator = Operator()
         if moitt.install:
             operator.deploy_jaeger(jaeger_version=moitt.jaeger_version)
-            operator.deploy(operator_file=moitt.operatorfile)
+            operator.deploy_kiali(kiali_version=moitt.kiali_version)
+            operator.deploy_istio(operator_file=moitt.operatorfile)
             operator.install(cr_file=moitt.crfile)
         elif moitt.uninstall:
-            operator.uninstall(operator_file=moitt.operatorfile, cr_file=moitt.crfile, jaeger_version=moitt.jaeger_version)
+            operator.uninstall(operator_file=moitt.operatorfile, cr_file=moitt.crfile, jaeger_version=moitt.jaeger_version, kiali_version=moitt.kiali_version)
 
 
    

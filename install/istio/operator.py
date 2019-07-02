@@ -43,7 +43,15 @@ class Operator(object):
         sp.run(['sleep', '10'])
 
 
-    def deploy(self, operator_file=None):
+    def deploy_kiali(self, kiali_version="v1.0.0"):
+        # install the Kiali operator as a prerequisit
+        sp.run(['curl', '-o', 'deploy-kiali-operator.sh', '-L', 'https://git.io/getLatestKialiOperator'])
+        os.chmod('deploy-kiali-operator.sh', 0o755)
+        sp.call("./deploy-kiali-operator.sh %s %s %s %s" % ("--operator-image-version", kiali_version, "--operator-watch-namespace '**'", "--accessible-namespaces '**'"), shell=True)
+        sp.run(['sleep', '10'])
+
+
+    def deploy_istio(self, operator_file=None):
         # check environment variable KUBECONFIG
         try:
             os.environ['KUBECONFIG']
@@ -145,7 +153,7 @@ class Operator(object):
         sp.run(['./bookinfo_uninstall.sh'], input="bookinfo\n", cwd="../test/maistra", stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
         
         
-    def uninstall(self, operator_file=None, cr_file=None, jaeger_version="v1.12.1"):
+    def uninstall(self, operator_file=None, cr_file=None, jaeger_version="v1.12.1", kiali_version="v1.0.0"):
         if operator_file is None:
             raise RuntimeError('Missing operator.yaml file')
         if cr_file is None:
@@ -162,3 +170,9 @@ class Operator(object):
         sp.run(['oc', 'delete', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/service_account.yaml" % jaeger_version])
         sp.run(['oc', 'delete', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/crds/jaegertracing_v1_jaeger_crd.yaml" % jaeger_version])
         sp.run(['sleep', '10'])
+
+        # uninstall the Kiali Operator
+        sp.call("./deploy-kiali-operator.sh %s" % "--uninstall-mode true --operator-watch-namespace '**'", shell=True)
+        os.remove("deploy-kiali-operator.sh")
+        sp.run(['sleep', '10'])
+
