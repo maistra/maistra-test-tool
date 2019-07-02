@@ -28,6 +28,7 @@ __pycache__
 
 # istio-operator
 **/istio-operator
+**/deploy-kiali-operator.sh
 
 # pylarion
 **/pylarion
