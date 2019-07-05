@@ -72,7 +72,7 @@ class Operator(object):
         sp.run(['oc', 'new-project', 'istio-system'], stderr=sp.PIPE)
 
         sp.run(['oc', 'apply', '-n', 'istio-operator', '-f', operator_file])
-        sp.run(['sleep', '20'])
+        sp.run(['sleep', '30'])
 
 
     def check(self):
@@ -161,7 +161,7 @@ class Operator(object):
             raise RuntimeError('Missing cr yaml file')
 
         sp.run(['oc', 'delete', '-n', 'istio-system', '-f', cr_file])
-        sp.run(['sleep', '20'])
+        sp.run(['sleep', '30'])
         sp.run(['oc', 'delete', '-n', 'istio-operator', '-f', operator_file])
 
         # uninstall the Jaeger Operator
