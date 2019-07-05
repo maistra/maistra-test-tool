@@ -89,7 +89,7 @@ Python Version: Python 3.7 or above
 
 ### 6. Maistra/Istio
 * Go to directory "`install`"
-* Run "`python main -h`" and follow arguments help message. e.g. "`python main.py -i -c istio`" will install [Maistra istio-operator](https://github.com/Maistra/istio-operator) and Istio system on OCP
+* Run "`python main -h`" and follow arguments help message. e.g. "`python main.py -i -c istio`" will follow [Maistra istio-operator](https://github.com/Maistra/istio-operator) and install the Jaeger Operator, Kiali Operator, Istio Operator and Istio system on OCP
 * Waiting for the Istio system installation completes. It usually takes 10 - 15 minutes
 
     When Istio system installation completed, you should see message "Installed=True, reason=InstallSuccessful".
