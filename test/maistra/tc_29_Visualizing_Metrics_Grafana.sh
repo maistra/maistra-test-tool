@@ -48,7 +48,7 @@ function check_grafana() {
     #${OC_COMMAND} -n istio-system port-forward $(${OC_COMMAND} -n istio-system get pod -l app=grafana -o jsonpath='{.items[0].metadata.name}') 3000:3000 &
 
     echo
-    echo "http://${GRAFANA_ROUTE}" 
+    echo "https://${GRAFANA_ROUTE}" 
     echo "# Go to Grafana dashboard"
     echo "# Check istio-mesh-dashboard"
     echo "# Check istio-service-dashboard"

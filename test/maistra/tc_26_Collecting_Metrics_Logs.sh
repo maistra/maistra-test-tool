@@ -51,7 +51,7 @@ function check_metrics() {
     curl -o /dev/null -s -w "%{http_code}\n" http://$GATEWAY_URL/productpage
 
     echo
-    echo "http://${PROMETHEUS_ROUTE}"
+    echo "https://${PROMETHEUS_ROUTE}"
     echo "# Go to Prometheus Dashboard and query Execute 'istio_double_request_count'..."
     read -p "Press enter to continue: "
     sleep 2

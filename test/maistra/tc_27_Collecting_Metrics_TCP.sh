@@ -65,7 +65,7 @@ function check_tcp_metrics() {
     #${OC_COMMAND} -n istio-system port-forward $(${OC_COMMAND} -n istio-system get pod -l app=prometheus -o jsonpath='{.items[0].metadata.name}') 9090:9090 &
 
     echo
-    echo "http://${PROMETHEUS_ROUTE}"
+    echo "https://${PROMETHEUS_ROUTE}"
     echo "# Go to Prometheus Dashboard and query Execute 'istio_mongo_received_bytes'..."
     read -p "Press enter to continue: "
 }

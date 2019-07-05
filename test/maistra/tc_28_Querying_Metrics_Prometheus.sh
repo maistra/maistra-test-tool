@@ -44,7 +44,7 @@ function query_metrics() {
     
     #oc -n istio-system port-forward $(oc -n istio-system get pod -l app=prometheus -o jsonpath='{.items[0].metadata.name}') 9090:9090 &
     echo
-    echo "http://${PROMETHEUS_ROUTE}" 
+    echo "https://${PROMETHEUS_ROUTE}" 
     echo "# Go to Prometheus dashboard"
     echo "# Query: istio_requests_total"
     echo '# Query: istio_requests_total{destination_service="productpage.bookinfo.svc.cluster.local"}'

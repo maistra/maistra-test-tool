@@ -47,7 +47,7 @@ class Operator(object):
         # install the Kiali operator as a prerequisit
         sp.run(['curl', '-o', 'deploy-kiali-operator.sh', '-L', 'https://git.io/getLatestKialiOperator'])
         os.chmod('deploy-kiali-operator.sh', 0o755)
-        sp.call("./deploy-kiali-operator.sh %s %s %s %s" % ("--operator-image-version", kiali_version, "--operator-watch-namespace '**'", "--accessible-namespaces '**'"), shell=True)
+        sp.call("./deploy-kiali-operator.sh %s %s %s %s %s" % ("--operator-image-version", kiali_version, "--kiali-image-version", kiali_version, "--operator-watch-namespace '**' --accessible-namespaces '**' --operator-install-kiali false"), shell=True)
         sp.run(['sleep', '10'])
 
 
@@ -72,6 +72,7 @@ class Operator(object):
         sp.run(['oc', 'new-project', 'istio-system'], stderr=sp.PIPE)
 
         sp.run(['oc', 'apply', '-n', 'istio-operator', '-f', operator_file])
+        sp.run(['sleep', '20'])
 
 
     def check(self):
@@ -160,7 +161,7 @@ class Operator(object):
             raise RuntimeError('Missing cr yaml file')
 
         sp.run(['oc', 'delete', '-n', 'istio-system', '-f', cr_file])
-        sp.run(['sleep', '10'])
+        sp.run(['sleep', '20'])
         sp.run(['oc', 'delete', '-n', 'istio-operator', '-f', operator_file])
 
         # uninstall the Jaeger Operator
