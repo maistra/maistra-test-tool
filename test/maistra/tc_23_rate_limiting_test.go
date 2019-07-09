@@ -31,8 +31,8 @@ func cleanup23(namespace string, kubeconfig string) {
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
 	util.ShellSilent("rm -f /tmp/mesh.yaml")
 	cleanBookinfo(namespace, kubeconfig)
-	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 

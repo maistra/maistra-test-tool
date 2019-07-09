@@ -53,8 +53,8 @@ func deployBookinfo(namespace, kubeconfig string, mtls bool) error {
 			return err
 		}
 	}
-	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 	return nil
 }
 
@@ -63,8 +63,8 @@ func cleanBookinfo(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, bookinfoRuleAllYaml, kubeconfig)
 	util.KubeDelete(namespace, bookinfoGateway, kubeconfig)
 	util.KubeDelete(namespace, bookinfoYaml, kubeconfig)
-	log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
-	time.Sleep(time.Duration(20) * time.Second)
+	log.Info("Waiting for rules to be cleaned up. Sleep 30 seconds...")
+	time.Sleep(time.Duration(30) * time.Second)
 }
 
 func deployHttpbin(namespace, kubeconfig string) error {
@@ -77,8 +77,8 @@ func deployHttpbin(namespace, kubeconfig string) error {
 	if err := util.CheckPodRunning(namespace, "app=httpbin", kubeconfig); err != nil {
 		return err
 	}
-	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 	return nil
 }
 
@@ -92,8 +92,8 @@ func deployFortio(namespace, kubeconfig string) error {
 	if err := util.CheckPodRunning(namespace, "app=fortio", kubeconfig); err != nil {
 		return err
 	}
-	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 	return nil
 }
 
@@ -110,8 +110,8 @@ func deployEcho(namespace, kubeconfig string) error {
 	if err := util.CheckPodRunning(namespace, "app=tcp-echo,version=v2", kubeconfig); err != nil {
 		return err
 	}
-	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 	return nil
 }
 
@@ -125,8 +125,8 @@ func deploySleep(namespace, kubeconfig string) error {
 	if err := util.CheckPodRunning(namespace, "app=sleep", kubeconfig); err != nil {
 		return err
 	}
-	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 	return nil
 }
 
@@ -146,8 +146,8 @@ func deployNginx(enableSidecar bool, namespace, kubeconfig string) error {
 	if err := util.CheckPodRunning(namespace, "app=nginx", kubeconfig); err != nil {
 		return err
 	}
-	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 	return nil
 }
 
@@ -156,8 +156,8 @@ func deployMongoDB(namespace, kubeconfig string) error {
 	if err := util.KubeApply(namespace, bookinfoDBYaml, kubeconfig); err != nil {
 		return err
 	}
-	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	log.Info("Waiting for rules to propagate. Sleep 30 seconds...")
+	time.Sleep(time.Duration(30) * time.Second)
 	err := util.CheckPodRunning(namespace, "app=mongodb", kubeconfig)
 	return err
 }

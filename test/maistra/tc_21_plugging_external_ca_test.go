@@ -33,8 +33,8 @@ func cleanup21(namespace string, kubeconfig string) {
 	util.ShellMuteOutput("rm -f /tmp/istio-citadel-new.yaml")
 	cleanBookinfo(namespace, kubeconfig)
 	util.ShellMuteOutput("kubectl delete policy default -n bookinfo")
-	log.Info("Waiting... Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	log.Info("Waiting... Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 

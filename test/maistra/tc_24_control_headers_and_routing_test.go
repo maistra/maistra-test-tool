@@ -37,8 +37,8 @@ func cleanup24(namespace, kubeconfig string) {
 	util.ShellSilent("rm -f /tmp/mesh.yaml")
 
 	util.KubeDelete(namespace, httpbinPolicyAllYaml, kubeconfig)
-	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 

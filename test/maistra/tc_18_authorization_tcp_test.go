@@ -53,8 +53,8 @@ func setup18(namespace, kubeconfig string) error {
 		return err
 	}
 
-	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 	err := util.CheckPodRunning(namespace, "app=ratings,version=v2", kubeconfig)
 	return err
 }
