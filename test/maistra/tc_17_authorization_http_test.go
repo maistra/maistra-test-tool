@@ -41,8 +41,8 @@ func cleanup17(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, bookinfoYaml, kubeconfig)
 
 	util.ShellMuteOutput("kubectl delete meshpolicy default")
-	log.Info("Waiting... Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	log.Info("Waiting... Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func cleanupRbac() {
@@ -73,6 +73,8 @@ func setup17(namespace, kubeconfig string) error {
 		return err
 	}
 	err := util.CheckPodRunning(namespace, "app=reviews,version=v3", kubeconfig)
+	log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 	return err
 }
 

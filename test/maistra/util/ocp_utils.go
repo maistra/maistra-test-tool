@@ -150,3 +150,11 @@ func GetIngressHostIP(kubeconfig string) (string, error) {
 	}
 	return ip, nil
 }
+
+
+// GetJaegerRoute returns the Jaeger Dashboard route
+func GetJaegerRoute(namespace, kubeconfig string) (string, error) {
+	ingress, err := Shell("kubectl get routes -n %s -l app=jaeger -o jsonpath='{.items[0].spec.host}' --kubeconfig=%s",
+								namespace, kubeconfig)
+	return ingress, err
+}

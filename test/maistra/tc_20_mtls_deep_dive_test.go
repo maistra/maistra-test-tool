@@ -29,8 +29,8 @@ func cleanup20(kubeconfig string) {
     util.KubeDelete("foo", httpbinYaml, kubeconfig)
 	util.KubeDelete("foo", sleepYaml, kubeconfig)
     util.ShellMuteOutput("kubectl delete meshpolicy default")
-	log.Info("Waiting... Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	log.Info("Waiting... Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
     util.DeleteNamespace("foo", kubeconfig)
 }
 

@@ -46,8 +46,8 @@ func cleanup14(kubeconfig string) {
 	util.ShellSilent("kubectl delete gateway httpbin-gateway -n foo")
 	util.ShellSilent("kubectl delete virtualservice httpbin -n foo")
 	util.DeleteNamespace("foo bar legacy", kubeconfig)
-	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func cleanupPart1() {
@@ -105,8 +105,8 @@ func setup14(kubeconfig string) error {
 	if err := util.CheckPodRunning("legacy", "app=sleep", kubeconfigFile); err != nil {
 		return err
 	}
-	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 	return nil
 }
 

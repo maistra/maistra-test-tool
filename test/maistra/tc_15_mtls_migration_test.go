@@ -73,8 +73,8 @@ func setup15(kubeconfig string) error {
 	if err := util.CheckPodRunning("legacy", "app=sleep", kubeconfigFile); err != nil {
 		return err
 	}
-	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
-	time.Sleep(time.Duration(15) * time.Second)
+	log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 	return nil
 }
 
