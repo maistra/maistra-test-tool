@@ -5,10 +5,10 @@ set -e
 DIR=$(cd $(dirname $0); pwd -P)
 BASE_DIR="${DIR}/../../"
 
-OC_COMMAND="oc"
 BOOKINFO_FILE="testdata/bookinfo/platform/kube/bookinfo.yaml"
 GATEWAY_FILE="testdata/bookinfo/networking/bookinfo-gateway.yaml"
 RULE_FILE="testdata/bookinfo/networking/destination-rule-all.yaml"
+MEMBER_ROLL="testdata/member-roll.yaml"
 
 function banner() {
   message="$1"
@@ -49,44 +49,49 @@ function deploy_bookinfo() {
 	echo "using NAMESPACE=${PROJECT}"
 
 	set +e
-	${OC_COMMAND} new-project ${PROJECT}
-	${OC_COMMAND} project ${PROJECT}
+	oc new-project ${PROJECT}
+	oc new-project foo
+	oc new-project bar
+	oc new-project legacy
+	oc project ${PROJECT}
+	# apply memeber roll
+	oc apply -n istio-system -f ${MEMBER_ROLL}
 	set -e
 	
 	# grant priviledged permission
-	${OC_COMMAND} adm policy add-scc-to-user privileged -z default -n ${PROJECT}
-	${OC_COMMAND} adm policy add-scc-to-user anyuid -z default -n ${PROJECT}
+	#oc adm policy add-scc-to-user privileged -z default -n ${PROJECT}
+	oc adm policy add-scc-to-user anyuid -z default -n ${PROJECT}
 
 	# enable automatic sidecar injection
-	#${OC_COMMAND} label namespace ${PROJECT} istio-injection=enabled
+	#oc label namespace ${PROJECT} istio-injection=enabled
 
 	# install bookinfo
-	${OC_COMMAND} apply -f ${BOOKINFO_FILE}
+	oc apply -f ${BOOKINFO_FILE}
 }
 
 function check_bookinfo() {
 	# verify all pods are Running
 	set +e
-	${OC_COMMAND} get pods -n ${PROJECT} | grep -viE 'Running|STATUS'
+	oc get pods -n ${PROJECT} | grep -viE 'Running|STATUS'
 	while [ $? -eq 0 ]; do
 		sleep 5;
-		${OC_COMMAND} get pods -n ${PROJECT} | grep -viE 'Running|STATUS'
+		oc get pods -n ${PROJECT} | grep -viE 'Running|STATUS'
 	done
 	set -e
 
-	${OC_COMMAND} get pods -n ${PROJECT}
+	oc get pods -n ${PROJECT}
 }
 
 function deploy_gateway() {
 	# create gateway
-	${OC_COMMAND} apply -f ${GATEWAY_FILE}
+	oc apply -f ${GATEWAY_FILE}
 	# check gateway
-	${OC_COMMAND} get gateway
+	oc get gateway
 }
 
 function deploy_rule() {
 	# apply destination rules
-	${OC_COMMAND} apply -f ${RULE_FILE}
+	oc apply -f ${RULE_FILE}
 }
 
 function deploy() {

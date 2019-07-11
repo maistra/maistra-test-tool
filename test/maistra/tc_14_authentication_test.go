@@ -45,7 +45,7 @@ func cleanup14(kubeconfig string) {
 	util.ShellSilent("kubectl delete destinationrule httpbin -n foo")
 	util.ShellSilent("kubectl delete gateway httpbin-gateway -n foo")
 	util.ShellSilent("kubectl delete virtualservice httpbin -n foo")
-	util.DeleteNamespace("foo bar legacy", kubeconfig)
+	//util.DeleteNamespace("foo bar legacy", kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
 }

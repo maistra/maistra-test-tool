@@ -97,7 +97,7 @@ func Test05(t *testing.T) {
 		time.Sleep(time.Duration(5) * time.Second)
 
 		tolerance := 0.10
-		totalShot := 40
+		totalShot := 50
 		once := sync.Once{}
 		c1, cVersionToMigrate := 0, 0
 		for i := 0; i < totalShot; i++ {

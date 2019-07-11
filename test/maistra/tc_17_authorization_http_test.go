@@ -45,17 +45,6 @@ func cleanup17(namespace, kubeconfig string) {
 	time.Sleep(time.Duration(20) * time.Second)
 }
 
-func cleanupRbac() {
-	log.Info("Cleanup old RBAC. Following error can be ignored ...")
-	util.ShellMuteOutput("kubectl delete authorization requestcontext -n istio-system")
-	util.ShellMuteOutput("kubectl delete rbac handler -n istio-system")
-	util.ShellMuteOutput("kubectl delete rule rbaccheck -n istio-system")
-
-	util.ShellMuteOutput("kubectl delete servicerole --all")
-	util.ShellMuteOutput("kubectl delete servicerolebinding --all")
-	log.Info("Waiting for rules to be cleaned up. Sleep 5 seconds...")
-	time.Sleep(time.Duration(5) * time.Second)
-}
 
 func setup17(namespace, kubeconfig string) error {
 	util.OcGrantPermission("bookinfo-productpage", namespace, kubeconfig)
@@ -91,7 +80,7 @@ func Test17(t *testing.T) {
 
 	log.Infof("# TC_17 Authorization for HTTP Services")
 	updateYaml(testNamespace)
-	cleanupRbac()
+	
 	log.Info("Enable mTLS")
 	util.Inspect(util.KubeApplyContents("", meshPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
 	log.Info("Waiting... Sleep 5 seconds...")

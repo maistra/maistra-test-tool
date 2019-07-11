@@ -80,8 +80,8 @@ func Test23(t *testing.T) {
 		log.Info("Verify quotaspecbinding was created")
 		util.Shell("kubectl -n istio-system get QuotaSpecBinding request-count -o yaml")
 
-		log.Info("Sleep 50 seconds...")
-		time.Sleep(time.Duration(50) * time.Second)
+		log.Info("Sleep 60 seconds...")
+		time.Sleep(time.Duration(60) * time.Second)
 
 		log.Info("productpage permits 2 requests every 5 seconds. Verify 'Quota is exhausted' message")
 		for i := 0; i < 10; i++ {

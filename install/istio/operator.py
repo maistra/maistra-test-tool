@@ -141,6 +141,7 @@ class Operator(object):
             if 'Installed=True' in proc.stdout:
                 break
 
+        sp.run(['sleep', '10'])
         # verify bookinfo deployment
         print("\n# Installing bookinfo Application")
         sp.run(['./bookinfo_install.sh'], input="bookinfo\n", cwd="../test/maistra", stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
@@ -154,12 +155,13 @@ class Operator(object):
         sp.run(['./bookinfo_uninstall.sh'], input="bookinfo\n", cwd="../test/maistra", stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
         
         
-    def uninstall(self, operator_file=None, cr_file=None, jaeger_version="v1.12.1", kiali_version="v1.0.0"):
+    def uninstall(self, operator_file=None, cr_file=None, jaeger_version="v1.13.1", kiali_version="v1.0.0"):
         if operator_file is None:
             raise RuntimeError('Missing operator.yaml file')
         if cr_file is None:
             raise RuntimeError('Missing cr yaml file')
 
+        sp.run(['oc', 'delete', '-n', 'istio-system', '-f', 'testdata/member-roll.yaml'], cwd="../test/maistra")
         sp.run(['oc', 'delete', '-n', 'istio-system', '-f', cr_file])
         sp.run(['sleep', '30'])
         sp.run(['oc', 'delete', '-n', 'istio-operator', '-f', operator_file])
@@ -174,6 +176,4 @@ class Operator(object):
 
         # uninstall the Kiali Operator
         sp.call("./deploy-kiali-operator.sh %s" % "--uninstall-mode true --operator-watch-namespace '**'", shell=True)
-        os.remove("deploy-kiali-operator.sh")
         sp.run(['sleep', '10'])
-

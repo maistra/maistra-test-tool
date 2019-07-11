@@ -70,6 +70,7 @@ func Test18(t *testing.T) {
 
 	log.Infof("# TC_18 Authorization for TCP Services")
 	updateYaml(testNamespace)
+	
 	log.Info("Clean existing mesh policy")
 	util.ShellSilent("kubectl delete meshpolicy default")
 	log.Info("Waiting... Sleep 20 seconds...")
@@ -106,8 +107,8 @@ func Test18(t *testing.T) {
 	time.Sleep(time.Duration(10) * time.Second)
 	util.Inspect(setup18(testNamespace, kubeconfigFile), "failed to create service account", "", t)
 
-	log.Info("Waiting... Sleep 40 seconds...")
-	time.Sleep(time.Duration(40) * time.Second)
+	log.Info("Waiting... Sleep 60 seconds...")
+	time.Sleep(time.Duration(60) * time.Second)
 
 	t.Run("verify_setup_test", func(t *testing.T) {
 		defer func() {
