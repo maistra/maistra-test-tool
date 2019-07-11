@@ -38,7 +38,7 @@ func cleanup19(kubeconfig string) {
 	util.ShellMuteOutput("kubectl delete destinationrule -n %s default", "foo")
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
-	util.DeleteNamespace("foo", kubeconfig)
+	//util.DeleteNamespace("foo", kubeconfig)
 }
 
 func Test19(t *testing.T) {

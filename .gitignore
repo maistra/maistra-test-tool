@@ -22,6 +22,7 @@ __pycache__
 **/oc
 **/oc.tar.gz
 **/istioctl
+install/README.md
 
 # registry-puller
 **/registry-puller

@@ -39,7 +39,7 @@ func ocCommand(subCommand, namespace, yamlFileName string, kubeconfig string) st
 // OcGrantPermission OCP cluster specific requirements for deploying an application with sidecar.
 // This is a temporary permission config
 func OcGrantPermission(account, namespace, kubeconfig string) {
-	Shell("oc adm policy add-scc-to-user privileged -z %s -n %s --kubeconfig=%s", account, namespace, kubeconfig)
+	//Shell("oc adm policy add-scc-to-user privileged -z %s -n %s --kubeconfig=%s", account, namespace, kubeconfig)
 	Shell("oc adm policy add-scc-to-user anyuid -z %s -n %s --kubeconfig=%s", account, namespace, kubeconfig)
 }
 
@@ -76,13 +76,10 @@ func GetOCPIngressgateway(podLabel, namespace, kubeconfig string) (string, error
 
 // GetOCP4Ingressgateway returns OCP4 ingress-ingresssgateway external IP hostname
 func GetOCP4Ingressgateway(namespace, kubeconfig string) (string, error) {
-	ingress, err := Shell("kubectl -n %s get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' --kubeconfig=%s",
+	ingress, err := Shell("kubectl -n %s get service istio-ingressgateway -o jsonpath='{.spec.clusterIP}' --kubeconfig=%s",
 								namespace, kubeconfig)
-	if err != nil {
-		ingress, err = Shell("kubectl -n %s get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}' --kubeconfig=%s",
-								namespace, kubeconfig)
-	}
-	return ingress, nil
+
+	return ingress, err
 }
 
 // GetIngressPort returns the http ingressgateway port
