@@ -57,6 +57,7 @@ function deploy_bookinfo() {
 	# apply memeber roll
 	oc apply -n istio-system -f ${MEMBER_ROLL}
 	set -e
+	sleep 10
 	
 	# grant priviledged permission
 	#oc adm policy add-scc-to-user privileged -z default -n ${PROJECT}

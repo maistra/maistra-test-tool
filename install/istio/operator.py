@@ -79,6 +79,7 @@ class Operator(object):
         # verify installation
         print("\n# istio-system namespace pods: ")
         sp.run(['oc', 'get', 'pod', '-n', 'istio-system'])
+
         print("\n# bookinfo namespace pods: ")
         sp.run(['oc', 'get', 'pod', '-n', 'bookinfo'])
 
@@ -141,13 +142,13 @@ class Operator(object):
             if 'Installed=True' in proc.stdout:
                 break
 
-        sp.run(['sleep', '20'])
+        sp.run(['sleep', '10'])
         # verify bookinfo deployment
         print("\n# Installing bookinfo Application")
         sp.run(['./bookinfo_install.sh'], input="bookinfo\n", cwd="../test/maistra", stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
         print("\n# Waiting installation complete...")
         sp.run(['sleep', '10'])
-
+        
         # verify images ID and rpm names
         self.check()
 
@@ -176,5 +177,7 @@ class Operator(object):
         sp.run(['sleep', '10'])
 
         # uninstall the Kiali Operator
+        sp.run(['curl', '-o', 'deploy-kiali-operator.sh', '-L', 'https://git.io/getLatestKialiOperator'])
+        os.chmod('deploy-kiali-operator.sh', 0o755)
         sp.call("./deploy-kiali-operator.sh %s" % "--uninstall-mode true --operator-watch-namespace '**'", shell=True)
         sp.run(['sleep', '10'])
