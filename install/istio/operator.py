@@ -141,11 +141,12 @@ class Operator(object):
             if 'Installed=True' in proc.stdout:
                 break
 
-        sp.run(['sleep', '10'])
+        sp.run(['sleep', '20'])
         # verify bookinfo deployment
         print("\n# Installing bookinfo Application")
         sp.run(['./bookinfo_install.sh'], input="bookinfo\n", cwd="../test/maistra", stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
         print("\n# Waiting installation complete...")
+        sp.run(['sleep', '10'])
 
         # verify images ID and rpm names
         self.check()
