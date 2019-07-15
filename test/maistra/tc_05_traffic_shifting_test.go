@@ -96,7 +96,7 @@ func Test05(t *testing.T) {
 		util.Inspect(trafficShift50v3(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		time.Sleep(time.Duration(5) * time.Second)
 
-		tolerance := 0.10
+		tolerance := 0.30
 		totalShot := 50
 		once := sync.Once{}
 		c1, cVersionToMigrate := 0, 0
