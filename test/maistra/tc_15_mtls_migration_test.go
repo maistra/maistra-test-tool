@@ -88,14 +88,20 @@ func Test15(t *testing.T) {
 	}()
 
 	log.Infof("# TC_15 Mutual TLS Migration")
-	namespaces := []string{"foo", "bar", "legacy"}
 
+	namespaces := []string{"foo", "bar", "legacy"}
 	// Create namespaces
 	for _, ns := range namespaces {
 		util.Inspect(util.CreateNamespace(ns, kubeconfigFile), "failed to create namespace", "", t)
 		util.OcGrantPermission("default", ns, kubeconfigFile)
 	}
 	time.Sleep(time.Duration(5) * time.Second)
+
+	log.Info("Clean existing")
+	util.ShellMuteOutput("kubectl delete policy example-httpbin-permissive -n foo")
+	util.ShellMuteOutput("kubectl delete destinationrule example-httpbin-istio-client-mtls -n foo")
+	time.Sleep(time.Duration(20) * time.Second)
+
 	util.Inspect(setup15(kubeconfigFile), "failed to apply deployments", "", t)
 
 	t.Run("verify_setup_test", func(t *testing.T) {
@@ -180,7 +186,7 @@ func Test15(t *testing.T) {
 
 		log.Info("Lock down to mutual TLS")
 		util.Inspect(util.KubeApplyContents("foo", tlsStrictPolicy, kubeconfigFile), "failed to apply foo tls strict policy", "", t)
-		time.Sleep(time.Duration(30) * time.Second)
+		time.Sleep(time.Duration(50) * time.Second)
 
 		for _, from := range namespaces {
 			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfigFile)
