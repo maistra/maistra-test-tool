@@ -37,7 +37,7 @@ class OCP(object):
         """
         self.profile = profile
         self.assets = assets
-        self.installer_url = 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.1.0/openshift-install-linux-4.1.0.tar.gz'
+        self.installer_url = 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.1.4/openshift-install-linux-4.1.4.tar.gz'
         self.oc_version = oc_version
         self.oc_url = 'https://github.com/Maistra/origin/releases/download/v3.11.0+maistra-' + oc_version + '/istiooc_linux'
         #self.oc_url = 'https://mirror.openshift.com/pub/openshift-v3/clients/' + oc_version + '/linux/oc.tar.gz'
@@ -121,6 +121,25 @@ class OCP(object):
         """ Destroy a cluster
         """
         os.environ['AWS_PROFILE'] = self.profile
+
+        # download the installer
+        print('Downloading the installer...')
+        r = requests.get(self.installer_url, stream=True)
+        chunkSize = 1024
+        fileSize = int(r.headers['Content-length'])
+        wrote = 0
+        with open('openshift-install.tar.gz', 'wb') as f:
+            for chunk in tqdm(r.iter_content(chunkSize), total=int(fileSize / chunkSize), unit='KB', unit_scale=True):
+                wrote = wrote + len(chunk)
+                f.write(chunk)
+        if fileSize != 0 and wrote != fileSize:
+            print('Error. Download installer not complete.')
+            raise RuntimeError
+        shutil.unpack_archive('openshift-install.tar.gz')
+        os.remove('openshift-install.tar.gz')
+
+        os.chmod('openshift-install', 0o775)
+
         print('Destroying a cluster...')
         proc = sp.run(['./openshift-install', '--dir=' + self.assets, 'destroy', 'cluster', '--log-level=debug'], check=True)
         if proc.returncode == 0:

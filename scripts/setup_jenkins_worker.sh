@@ -18,6 +18,7 @@ set -ex
 
 sudo dnf update -y
 sudo dnf install -y wget git java-1.8.0 docker gcc make openssl-devel libffi-devel bzip2-devel readline-devel sqlite-devel
+sudo dnf install -y awscli
 
 sudo useradd -d /home/jenkins jenkins
 sudo usermod -aG wheel jenkins
