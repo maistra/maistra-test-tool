@@ -19,6 +19,7 @@ __pycache__
 # OCP4 assets
 **/assets/*
 **/openshift-install
+**/install-config.yaml
 **/oc
 **/oc.tar.gz
 **/istioctl
