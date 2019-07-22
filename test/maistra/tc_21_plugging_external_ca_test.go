@@ -28,11 +28,11 @@ import (
 
 func cleanup21(namespace string, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
-	util.Shell("kubectl delete secret cacerts -n istio-system")
-	util.Shell("kubectl rollout undo deployment -n istio-system istio-citadel")
+	util.Shell("oc delete secret cacerts -n istio-system")
+	util.Shell("oc rollout undo deployment -n istio-system istio-citadel")
 	util.ShellMuteOutput("rm -f /tmp/istio-citadel-new.yaml")
 	cleanBookinfo(namespace, kubeconfig)
-	util.ShellMuteOutput("kubectl delete policy default -n bookinfo")
+	util.ShellMuteOutput("oc delete policy default -n bookinfo")
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
 }
@@ -50,7 +50,7 @@ func verifyCerts() error {
 		return err
 	}
 	ioutil.WriteFile("/tmp/pod-root-cert.pem", []byte(podRootCert), 0644)
-	//util.ShellMuteOutput("kubectl exec -n %s -it %s -c istio-proxy -- /bin/cat /etc/certs/root-cert.pem > /tmp/pod-root-cert.pem", testNamespace, pod)
+	//util.ShellMuteOutput("oc exec -n %s -it %s -c istio-proxy -- /bin/cat /etc/certs/root-cert.pem > /tmp/pod-root-cert.pem", testNamespace, pod)
 	
 	cmd = fmt.Sprintf("/bin/cat /etc/certs/cert-chain.pem")
 	podCertChain, err := util.PodExec(testNamespace, pod, "istio-proxy", cmd, true, kubeconfigFile)
@@ -58,7 +58,7 @@ func verifyCerts() error {
 		return err
 	}
 	ioutil.WriteFile("/tmp/pod-cert-chain.pem", []byte(podCertChain), 0644)
-	//util.ShellMuteOutput("kubectl exec -n %s -it %s -c istio-proxy -- /bin/cat /etc/certs/cert-chain.pem > /tmp/pod-cert-chain.pem", testNamespace, pod)
+	//util.ShellMuteOutput("oc exec -n %s -it %s -c istio-proxy -- /bin/cat /etc/certs/cert-chain.pem > /tmp/pod-cert-chain.pem", testNamespace, pod)
 
 	util.ShellMuteOutput("openssl x509 -in %s -text -noout > /tmp/root-cert.crt.txt", caRootCert)
 	util.ShellMuteOutput("openssl x509 -in %s -text -noout > /tmp/pod-root-cert.crt.txt", "/tmp/pod-root-cert.pem")
@@ -115,7 +115,7 @@ func Test21(t *testing.T) {
 		time.Sleep(time.Duration(5) * time.Second)	
 
 		log.Info("Create secret")
-		_, err := util.ShellMuteOutput("kubectl create secret generic %s -n %s --from-file %s --from-file %s --from-file %s --from-file %s --kubeconfig=%s", 
+		_, err := util.ShellMuteOutput("oc create secret generic %s -n %s --from-file %s --from-file %s --from-file %s --from-file %s --kubeconfig=%s", 
 								"cacerts",
 								"istio-system",
 								caCert,
@@ -134,7 +134,7 @@ func Test21(t *testing.T) {
 		backupFile := "/tmp/istio-citadel-bak.yaml"
 		newFile := "/tmp/istio-citadel-new.yaml"
 
-		util.ShellMuteOutput("kubectl get deployment -n %s %s -o yaml --kubeconfig=%s > %s",
+		util.ShellMuteOutput("oc get deployment -n %s %s -o yaml --kubeconfig=%s > %s",
 						"istio-system",
 						"istio-citadel",
 						kubeconfigFile,
@@ -152,11 +152,11 @@ func Test21(t *testing.T) {
 			log.Infof("Update citadel deployment error: %v", err)
 			t.Errorf("Update citadel deployment error: %v", err)
 		}
-		util.Shell("kubectl apply -n %s -f %s", "istio-system", newFile)
+		util.Shell("oc apply -n %s -f %s", "istio-system", newFile)
 		time.Sleep(time.Duration(20) * time.Second)
 		
 		log.Info("Delete existing istio.default secret")
-		util.Shell("kubectl delete -n %s secret istio.default", testNamespace)
+		util.Shell("oc delete -n %s secret istio.default", testNamespace)
 
 		log.Info("Deploy bookinfo")
 		util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, true), "failed to deploy bookinfo", "Bookinfo deployment completed", t)

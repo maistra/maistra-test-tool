@@ -28,7 +28,7 @@ func cleanup20(kubeconfig string) {
     log.Infof("# Cleanup. Following error can be ignored...")
     util.KubeDelete("foo", httpbinYaml, kubeconfig)
 	util.KubeDelete("foo", sleepYaml, kubeconfig)
-    util.ShellMuteOutput("kubectl delete meshpolicy default")
+    util.ShellMuteOutput("oc delete meshpolicy default")
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
     //util.DeleteNamespace("foo", kubeconfig)
@@ -64,7 +64,7 @@ func Test20(t *testing.T) {
 		}()
 
 		log.Info("Verify Citadel runs properly. Available column should be 1 below")
-		util.Shell("kubectl get deploy -l istio=citadel -n istio-system")
+		util.Shell("oc get deploy -l istio=citadel -n istio-system")
 	})
 
 	t.Run("verify_certs_test", func(t *testing.T) {

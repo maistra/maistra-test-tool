@@ -61,7 +61,7 @@ function deploy_bookinfo() {
 	
 	# grant priviledged permission
 	#oc adm policy add-scc-to-user privileged -z default -n ${PROJECT}
-	oc adm policy add-scc-to-user anyuid -z default -n ${PROJECT}
+	#oc adm policy add-scc-to-user anyuid -z default -n ${PROJECT}
 
 	# enable automatic sidecar injection
 	#oc label namespace ${PROJECT} istio-injection=enabled

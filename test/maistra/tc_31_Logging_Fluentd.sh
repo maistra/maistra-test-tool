@@ -46,7 +46,7 @@ function apply_stack() {
 	${OC_COMMAND} new-project logging
 	set -e
     # grant priviledged permission
-	${OC_COMMAND} adm policy add-scc-to-user privileged -z default -n logging
+	# ${OC_COMMAND} adm policy add-scc-to-user privileged -z default -n logging
 	${OC_COMMAND} adm policy add-scc-to-user anyuid -z default -n logging
     ${OC_COMMAND} apply -f ${LOGGING_STACK}
     sleep 10

@@ -33,14 +33,14 @@ func cleanup17(namespace, kubeconfig string) {
 	util.KubeDeleteContents(namespace, bookinfoRBACOn, kubeconfig)
 
 	util.KubeDelete(namespace, bookinfoReviewv3Yaml, kubeconfig)
-	util.ShellMuteOutput("kubectl delete serviceaccount -n %s bookinfo-productpage", namespace)
-	util.ShellMuteOutput("kubectl delete serviceaccount -n %s bookinfo-reviews", namespace)
+	util.ShellMuteOutput("oc delete serviceaccount -n %s bookinfo-productpage", namespace)
+	util.ShellMuteOutput("oc delete serviceaccount -n %s bookinfo-reviews", namespace)
 
 	util.KubeDelete(namespace, bookinfoRuleAllTLSYaml, kubeconfig)
 	util.KubeDelete(namespace, bookinfoGateway, kubeconfig)
 	util.KubeDelete(namespace, bookinfoYaml, kubeconfig)
 
-	util.ShellMuteOutput("kubectl delete meshpolicy default")
+	util.ShellMuteOutput("oc delete meshpolicy default")
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
 }

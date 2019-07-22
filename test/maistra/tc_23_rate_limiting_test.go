@@ -54,10 +54,10 @@ func Test23(t *testing.T) {
 	testUserJar := util.GetCookieJar(testUsername, "", "http://"+ingress)
 	
 	log.Info("Enable policy check")
-	util.ShellMuteOutput("kubectl -n istio-system get cm istio -o jsonpath=\"{@.data.mesh}\" | sed -e \"s@disablePolicyChecks: true@disablePolicyChecks: false@\" > /tmp/mesh.yaml")
-	util.ShellMuteOutput("kubectl -n istio-system create cm istio -o yaml --dry-run --from-file=mesh=/tmp/mesh.yaml | kubectl replace -f -")
+	util.ShellMuteOutput("oc -n istio-system get cm istio -o jsonpath=\"{@.data.mesh}\" | sed -e \"s@disablePolicyChecks: true@disablePolicyChecks: false@\" > /tmp/mesh.yaml")
+	util.ShellMuteOutput("oc -n istio-system create cm istio -o yaml --dry-run --from-file=mesh=/tmp/mesh.yaml | oc replace -f -")
 	log.Info("Verify disablePolicyChecks should be false")
-	util.Shell("kubectl -n istio-system get cm istio -o jsonpath=\"{@.data.mesh}\" | grep disablePolicyChecks")
+	util.Shell("oc -n istio-system get cm istio -o jsonpath=\"{@.data.mesh}\" | grep disablePolicyChecks")
 
 	t.Run("rate_limits_test", func(t *testing.T) {
 		defer func() {
@@ -70,15 +70,15 @@ func Test23(t *testing.T) {
 		util.KubeApply(testNamespace, bookinfoAllv1Yaml, kubeconfigFile)
 		util.KubeApply("istio-system", rateLimitYaml, kubeconfigFile)
 		log.Info("Verify memquota handler was created")
-		util.Shell("kubectl -n istio-system get memquota handler -o yaml")
+		util.Shell("oc -n istio-system get memquota handler -o yaml")
 		log.Info("Verify quota instance was created")
-		util.Shell("kubectl -n istio-system get quotas requestcount -o yaml")
+		util.Shell("oc -n istio-system get quotas requestcount -o yaml")
 		log.Info("Verify quota rule was created")
-		util.Shell("kubectl -n istio-system get rules quota -o yaml")
+		util.Shell("oc -n istio-system get rules quota -o yaml")
 		log.Info("Verify quotaspec was created")
-		util.Shell("kubectl -n istio-system get QuotaSpec request-count -o yaml")
+		util.Shell("oc -n istio-system get QuotaSpec request-count -o yaml")
 		log.Info("Verify quotaspecbinding was created")
-		util.Shell("kubectl -n istio-system get QuotaSpecBinding request-count -o yaml")
+		util.Shell("oc -n istio-system get QuotaSpecBinding request-count -o yaml")
 
 		log.Info("Sleep 60 seconds...")
 		time.Sleep(time.Duration(60) * time.Second)

@@ -49,7 +49,7 @@ func OcApply(namespace, yamlFileName string, kubeconfig string) error {
 	return err
 }
 
-// OcDelete kubectl delete from file
+// OcDelete oc delete from file
 func OcDelete(namespace, yamlFileName string, kubeconfig string) error {
 	_, err := Shell(ocCommand("delete", namespace, yamlFileName, kubeconfig))
 	return err
@@ -57,7 +57,7 @@ func OcDelete(namespace, yamlFileName string, kubeconfig string) error {
 
 // GetOCPIngressgateway returns the OCP cluster ingressgateway host URL.
 func GetOCPIngressgateway(podLabel, namespace, kubeconfig string) (string, error) {
-	ingress, err := Shell("kubectl get routes -l %s -n %s -o jsonpath='{.items[0].spec.host}' --kubeconfig=%s",
+	ingress, err := Shell("oc get routes -l %s -n %s -o jsonpath='{.items[0].spec.host}' --kubeconfig=%s",
 							podLabel, namespace, kubeconfig)
 	
 	for i := 0; i < testRetryTimes; i++ {
@@ -65,7 +65,7 @@ func GetOCPIngressgateway(podLabel, namespace, kubeconfig string) (string, error
 			break
 		}
 		time.Sleep(time.Duration(5) * time.Second)
-		ingress, err = Shell("kubectl get routes -l %s -n %s -o jsonpath='{.items[0].spec.host}' --kubeconfig=%s",
+		ingress, err = Shell("oc get routes -l %s -n %s -o jsonpath='{.items[0].spec.host}' --kubeconfig=%s",
 							podLabel, namespace, kubeconfig)
 	}
 	if err != nil {
@@ -76,7 +76,7 @@ func GetOCPIngressgateway(podLabel, namespace, kubeconfig string) (string, error
 
 // GetOCP4Ingressgateway returns OCP4 ingress-ingresssgateway external IP hostname
 func GetOCP4Ingressgateway(namespace, kubeconfig string) (string, error) {
-	ingress, err := Shell("kubectl -n %s get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' --kubeconfig=%s",
+	ingress, err := Shell("oc -n %s get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' --kubeconfig=%s",
 								namespace, kubeconfig)
 
 	return ingress, err
@@ -86,7 +86,7 @@ func GetOCP4Ingressgateway(namespace, kubeconfig string) (string, error) {
 // "$(${OC_COMMAND} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')"
 func GetIngressPort(namespace, serviceName, kubeconfig string) (string, error) {
 	port, err := Shell(
-		"kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"http2\")].port}' --kubeconfig=%s",
+		"oc -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"http2\")].port}' --kubeconfig=%s",
 		namespace, serviceName, kubeconfig)
 	if err != nil {
 		return "", err
@@ -105,7 +105,7 @@ func GetIngressPort(namespace, serviceName, kubeconfig string) (string, error) {
 // "$(${OC_COMMAND} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}')"
 func GetSecureIngressPort(namespace, serviceName, kubeconfig string) (string, error) {
 	port, err := Shell(
-		"kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"https\")].port}' --kubeconfig=%s",
+		"oc -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"https\")].port}' --kubeconfig=%s",
 		namespace, serviceName, kubeconfig)
 	if err != nil {
 		return "", err
@@ -121,10 +121,10 @@ func GetSecureIngressPort(namespace, serviceName, kubeconfig string) (string, er
 }
 
 // GetTCPIngressPort returns the tcp ingressgateway port
-// kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="tcp")].port}'
+// oc -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="tcp")].port}'
 func GetTCPIngressPort(namespace, serviceName, kubeconfig string) (string, error) {
 	port, err := Shell(
-		"kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"tcp\")].port}' --kubeconfig=%s",
+		"oc -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"tcp\")].port}' --kubeconfig=%s",
 		namespace, serviceName, kubeconfig)
 	if err != nil {
 		return "", err
@@ -141,7 +141,7 @@ func GetTCPIngressPort(namespace, serviceName, kubeconfig string) (string, error
 
 // GetIngressHostIP returns the OCP ingressgateway Host IP address from the OCP router endpoint
 func GetIngressHostIP(kubeconfig string) (string, error) {
-	ip, err := Shell("kubectl get endpoints -n default -l router -o jsonpath='{.items[0].subsets[0].addresses[0].ip}' --kubeconfig=%s", kubeconfig)
+	ip, err := Shell("oc get endpoints -n default -l router -o jsonpath='{.items[0].subsets[0].addresses[0].ip}' --kubeconfig=%s", kubeconfig)
 	if err != nil {
 		return "", err
 	}
@@ -151,7 +151,7 @@ func GetIngressHostIP(kubeconfig string) (string, error) {
 
 // GetJaegerRoute returns the Jaeger Dashboard route
 func GetJaegerRoute(namespace, kubeconfig string) (string, error) {
-	ingress, err := Shell("kubectl get routes -n %s -l app=jaeger -o jsonpath='{.items[0].spec.host}' --kubeconfig=%s",
+	ingress, err := Shell("oc get routes -n %s -l app=jaeger -o jsonpath='{.items[0].spec.host}' --kubeconfig=%s",
 								namespace, kubeconfig)
 	return ingress, err
 }

@@ -38,13 +38,13 @@ func cleanup09(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, httpbinRouteHTTPSYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinGatewayHTTPSYaml, kubeconfig)
 
-	util.ShellMuteOutput("kubectl delete secret %s -n %s --kubeconfig=%s",
+	util.ShellMuteOutput("oc delete secret %s -n %s --kubeconfig=%s",
 		"istio-ingressgateway-bookinfo-certs", "istio-system", kubeconfig)
-	util.ShellMuteOutput("kubectl delete secret %s -n %s --kubeconfig=%s",
+	util.ShellMuteOutput("oc delete secret %s -n %s --kubeconfig=%s",
 		"istio-ingressgateway-certs", "istio-system", kubeconfig)
-	util.ShellMuteOutput("kubectl delete secret %s -n %s --kubeconfig=%s",
+	util.ShellMuteOutput("oc delete secret %s -n %s --kubeconfig=%s",
 		"istio-ingressgateway-ca-certs", "istio-system", kubeconfig)
-	util.ShellMuteOutput("kubectl delete secret %s -n %s --kubeconfig=%s",
+	util.ShellMuteOutput("oc delete secret %s -n %s --kubeconfig=%s",
 		"istio.istio-ingressgateway-service-account", "istio-system", kubeconfig)
 
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
@@ -65,10 +65,10 @@ func configHttpbinHTTPS(namespace, kubeconfig string) error {
 	}
 	// check cert
 	pod, err := util.GetPodName("istio-system", "istio=ingressgateway", kubeconfig)
-	msg, err := util.ShellSilent("kubectl exec --kubeconfig=%s -it -n %s %s -- %s ",
+	msg, err := util.ShellSilent("oc exec --kubeconfig=%s -it -n %s %s -- %s ",
 		kubeconfig, "istio-system", pod, "ls -al /etc/istio/ingressgateway-certs | grep tls.crt")
 	for err != nil {
-		msg, err = util.ShellSilent("kubectl exec --kubeconfig=%s -it -n %s %s -- %s ",
+		msg, err = util.ShellSilent("oc exec --kubeconfig=%s -it -n %s %s -- %s ",
 			kubeconfig, "istio-system", pod, "ls -al /etc/istio/ingressgateway-certs | grep tls.crt")
 		time.Sleep(time.Duration(10) * time.Second)
 	}
@@ -91,7 +91,7 @@ func configHttpbinHTTPS(namespace, kubeconfig string) error {
 
 func updateHttpbinHTTPS(namespace, kubeconfig string) error {
 	// create secret ca
-	_, err := util.ShellMuteOutput("kubectl create secret generic %s --from-file %s -n %s --kubeconfig=%s",
+	_, err := util.ShellMuteOutput("oc create secret generic %s --from-file %s -n %s --kubeconfig=%s",
 		"istio-ingressgateway-ca-certs", httpbinSampleCACert, "istio-system", kubeconfig)
 	if err != nil {
 		log.Infof("Failed to create secret %s\n", "istio-ingressgateway-ca-certs")
@@ -99,10 +99,10 @@ func updateHttpbinHTTPS(namespace, kubeconfig string) error {
 	}
 	// check ca chain
 	pod, err := util.GetPodName("istio-system", "istio=ingressgateway", kubeconfig)
-	msg, err := util.ShellSilent("kubectl exec --kubeconfig=%s -it -n %s %s -- %s ",
+	msg, err := util.ShellSilent("oc exec --kubeconfig=%s -it -n %s %s -- %s ",
 		kubeconfig, "istio-system", pod, "ls -al /etc/istio/ingressgateway-ca-certs | grep ca-chain")
 	for err != nil {
-		msg, err = util.ShellSilent("kubectl exec --kubeconfig=%s -it -n %s %s -- %s ",
+		msg, err = util.ShellSilent("oc exec --kubeconfig=%s -it -n %s %s -- %s ",
 			kubeconfig, "istio-system", pod, "ls -al /etc/istio/ingressgateway-ca-certs | grep ca-chain")
 		time.Sleep(time.Duration(10) * time.Second)
 	}

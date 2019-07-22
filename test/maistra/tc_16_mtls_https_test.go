@@ -28,10 +28,10 @@ func cleanup16(namespace, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDelete(namespace, sleepYaml, kubeconfig)
 	util.KubeDelete(namespace, nginxYaml, kubeconfig)
-	util.ShellMuteOutput("kubectl delete configmap nginxconfigmap -n %s --kubeconfig=%s", namespace, kubeconfig)
-	util.ShellMuteOutput("kubectl delete secret nginxsecret -n %s --kubeconfig=%s", namespace, kubeconfig)
-	util.ShellMuteOutput("kubectl delete policy -n %s default", namespace)
-	util.ShellMuteOutput("kubectl delete destinationrule -n %s default", namespace)
+	util.ShellMuteOutput("oc delete configmap nginxconfigmap -n %s --kubeconfig=%s", namespace, kubeconfig)
+	util.ShellMuteOutput("oc delete secret nginxsecret -n %s --kubeconfig=%s", namespace, kubeconfig)
+	util.ShellMuteOutput("oc delete policy -n %s default", namespace)
+	util.ShellMuteOutput("oc delete destinationrule -n %s default", namespace)
 	log.Info("Waiting for rules to be cleaned up. Sleep 15 seconds...")
 	time.Sleep(time.Duration(15) * time.Second)
 }
@@ -46,10 +46,14 @@ func Test16(t *testing.T) {
 	}()
 
 	log.Infof("# TC_16 Mutual TLS over HTTPS Services")
+
+	// grant anyuid for default account in bookinfo namespace
+	util.OcGrantPermission("default", testNamespace, kubeconfigFile)
+
 	// generate secrets
 	util.ShellSilent("openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /tmp/nginx.key -out /tmp/nginx.crt -subj \"/CN=my-nginx/O=my-nginx\"")
 	util.CreateTLSSecret("nginxsecret", testNamespace, "/tmp/nginx.key", "/tmp/nginx.crt", kubeconfigFile)
-	util.ShellSilent("kubectl create configmap -n %s nginxconfigmap --from-file=%s", testNamespace, nginxConf)
+	util.ShellSilent("oc create configmap -n %s nginxconfigmap --from-file=%s", testNamespace, nginxConf)
 
 	t.Run("nginx_without_sidecar_test", func(t *testing.T) {
 		defer func() {
@@ -122,6 +126,8 @@ func Test16(t *testing.T) {
 		util.Inspect(util.KubeApplyContents(testNamespace, mtlsPolicy, kubeconfigFile), "failed to apply policy", "", t)
 		mtlsRule := strings.Replace(mtlsRuleTemplate, "@token@", testNamespace, -1)
 		util.Inspect(util.KubeApplyContents(testNamespace, mtlsRule, kubeconfigFile), "failed to apply rule", "", t)
+		log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
+		time.Sleep(time.Duration(20) * time.Second)
 
 		log.Info("Deploy an HTTPS service with Istio sidecar with mutual TLS enabled")
 		util.Inspect(deploySleep(testNamespace, kubeconfigFile), "failed to deploy sleep", "", t)

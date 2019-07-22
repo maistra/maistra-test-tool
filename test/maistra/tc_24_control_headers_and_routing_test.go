@@ -28,12 +28,12 @@ import (
 
 func cleanup24(namespace, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
-	util.ShellMuteOutput("kubectl delete rule/keyval -n istio-system")
+	util.ShellMuteOutput("oc delete rule/keyval -n istio-system")
 	log.Info("Waiting for rules to be cleaned up. Sleep 30 seconds...")
 	time.Sleep(time.Duration(30) * time.Second)
-	util.ShellMuteOutput("kubectl delete handler/keyval instance/keyval adapter/keyval template/keyval -n istio-system")
-	util.ShellMuteOutput("kubectl delete service keyval -n istio-system")
-	util.ShellMuteOutput("kubectl delete deployment keyval -n istio-system")
+	util.ShellMuteOutput("oc delete handler/keyval instance/keyval adapter/keyval template/keyval -n istio-system")
+	util.ShellMuteOutput("oc delete service keyval -n istio-system")
+	util.ShellMuteOutput("oc delete deployment keyval -n istio-system")
 	util.ShellSilent("rm -f /tmp/mesh.yaml")
 
 	util.KubeDelete(namespace, httpbinPolicyAllYaml, kubeconfig)
@@ -79,14 +79,14 @@ func Test24(t *testing.T) {
 	util.Inspect(err, "cannot get ingress port", "", t)
 
 	log.Info("Enable policy check")
-	util.ShellMuteOutput("kubectl -n istio-system get cm istio -o jsonpath=\"{@.data.mesh}\" | sed -e \"s@disablePolicyChecks: true@disablePolicyChecks: false@\" > /tmp/mesh.yaml")
-	util.ShellMuteOutput("kubectl -n istio-system create cm istio -o yaml --dry-run --from-file=mesh=/tmp/mesh.yaml | kubectl replace -f -")
+	util.ShellMuteOutput("oc -n istio-system get cm istio -o jsonpath=\"{@.data.mesh}\" | sed -e \"s@disablePolicyChecks: true@disablePolicyChecks: false@\" > /tmp/mesh.yaml")
+	util.ShellMuteOutput("oc -n istio-system create cm istio -o yaml --dry-run --from-file=mesh=/tmp/mesh.yaml | oc replace -f -")
 	log.Info("Verify disablePolicyChecks should be false")
-	util.Shell("kubectl -n istio-system get cm istio -o jsonpath=\"{@.data.mesh}\" | grep disablePolicyChecks")
+	util.Shell("oc -n istio-system get cm istio -o jsonpath=\"{@.data.mesh}\" | grep disablePolicyChecks")
 
 	log.Info("Output Producing Adapters")
 
-	util.Shell("kubectl run keyval --image=gcr.io/istio-testing/keyval:release-1.1 --namespace istio-system --port 9070 --expose")
+	util.Shell("oc run keyval --image=gcr.io/istio-testing/keyval:release-1.1 --namespace istio-system --port 9070 --expose")
 	util.Inspect(util.KubeApply("istio-system", httpbinKeyvalTemplateYaml, kubeconfigFile), "failed to apply keyval template", "",t)
 	util.Inspect(util.KubeApply("istio-system", httpbinKeyvalYaml, kubeconfigFile), "failed to apply keyval", "", t)
 

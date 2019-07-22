@@ -32,8 +32,8 @@ func cleanup15(kubeconfig string) {
 	util.KubeDelete("bar", sleepYaml, kubeconfig)
 	util.KubeDelete("legacy", sleepLegacyYaml, kubeconfig)
 
-	util.ShellMuteOutput("kubectl delete policy example-httpbin-permissive -n foo")
-	util.ShellMuteOutput("kubectl delete destinationrule example-httpbin-istio-client-mtls -n foo")
+	util.ShellMuteOutput("oc delete policy example-httpbin-permissive -n foo")
+	util.ShellMuteOutput("oc delete destinationrule example-httpbin-istio-client-mtls -n foo")
 
 	//util.DeleteNamespace("foo bar legacy", kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
@@ -98,8 +98,8 @@ func Test15(t *testing.T) {
 	time.Sleep(time.Duration(5) * time.Second)
 
 	log.Info("Clean existing")
-	util.ShellMuteOutput("kubectl delete policy example-httpbin-permissive -n foo")
-	util.ShellMuteOutput("kubectl delete destinationrule example-httpbin-istio-client-mtls -n foo")
+	util.ShellMuteOutput("oc delete policy example-httpbin-permissive -n foo")
+	util.ShellMuteOutput("oc delete destinationrule example-httpbin-istio-client-mtls -n foo")
 	time.Sleep(time.Duration(20) * time.Second)
 
 	util.Inspect(setup15(kubeconfigFile), "failed to apply deployments", "", t)

@@ -25,7 +25,7 @@ func deployBookinfo(namespace, kubeconfig string, mtls bool) error {
 	log.Info("# Deploy Bookinfo")
 
 	util.CreateNamespace(testNamespace, kubeconfig)
-	util.OcGrantPermission("default", testNamespace, kubeconfig)
+	//util.OcGrantPermission("default", testNamespace, kubeconfig)
 
 	if err := util.KubeApply(namespace, bookinfoYaml, kubeconfig); err != nil {
 		return err

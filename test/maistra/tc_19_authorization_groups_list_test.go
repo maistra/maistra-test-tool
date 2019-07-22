@@ -26,16 +26,16 @@ import (
 
 func cleanup19(kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
-	util.ShellMuteOutput("kubectl delete -n foo servicerolebinding bind-httpbin-viewer")
-	util.ShellMuteOutput("kubectl delete -n foo servicerole httpbin-viewer")
-	util.ShellMuteOutput("kubectl delete -n foo clusterrbacconfig default")
+	util.ShellMuteOutput("oc delete -n foo servicerolebinding bind-httpbin-viewer")
+	util.ShellMuteOutput("oc delete -n foo servicerole httpbin-viewer")
+	util.ShellMuteOutput("oc delete -n foo clusterrbacconfig default")
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
-	util.ShellMuteOutput("kubectl delete -n foo policy jwt-example")
+	util.ShellMuteOutput("oc delete -n foo policy jwt-example")
 	util.KubeDelete("foo", httpbinYaml, kubeconfig)
 	util.KubeDelete("foo", sleepYaml, kubeconfig)
-	util.ShellMuteOutput("kubectl delete policy -n %s default", "foo")
-	util.ShellMuteOutput("kubectl delete destinationrule -n %s default", "foo")
+	util.ShellMuteOutput("oc delete policy -n %s default", "foo")
+	util.ShellMuteOutput("oc delete destinationrule -n %s default", "foo")
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
 	//util.DeleteNamespace("foo", kubeconfig)
@@ -167,7 +167,7 @@ func Test19(t *testing.T) {
 			log.Infof("Success. Get expected response: %s", msg)
 		}
 
-		util.ShellMuteOutput("kubectl delete -n foo servicerolebinding bind-httpbin-viewer")
+		util.ShellMuteOutput("oc delete -n foo servicerolebinding bind-httpbin-viewer")
 		util.Inspect(util.KubeApplyContentSilent("foo", fooRBACRoleBinding2, kubeconfigFile), "failed to apply servicerolebinding", "", t)
 		log.Info("Waiting... Sleep 30 seconds...")
 		time.Sleep(time.Duration(30) * time.Second)
