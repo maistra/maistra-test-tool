@@ -76,7 +76,7 @@ func GetOCPIngressgateway(podLabel, namespace, kubeconfig string) (string, error
 
 // GetOCP4Ingressgateway returns OCP4 ingress-ingresssgateway external IP hostname
 func GetOCP4Ingressgateway(namespace, kubeconfig string) (string, error) {
-	ingress, err := Shell("kubectl -n %s get service istio-ingressgateway -o jsonpath='{.spec.clusterIP}' --kubeconfig=%s",
+	ingress, err := Shell("kubectl -n %s get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' --kubeconfig=%s",
 								namespace, kubeconfig)
 
 	return ingress, err
