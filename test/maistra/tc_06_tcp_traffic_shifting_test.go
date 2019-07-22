@@ -140,13 +140,13 @@ func Test06(t *testing.T) {
 		util.Inspect(err, "cannot get ingress host ip", "", t)
 
 		tolerance := 0.15
-		totalShot := 60
+		totalShot := 30
 		c1, c2 := 0, 0
 
-		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot*1)
+		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot*2)
 
 		for i := 0; i < totalShot; i++ {
-			time.Sleep(time.Duration(1) * time.Second)
+			time.Sleep(time.Duration(2) * time.Second)
 			msg, err := checkEcho(ingress, ingressTCPPort)
 			if err != nil {
 				ingress, err = util.GetOCPIngressgateway("istio=ingressgateway","istio-system", kubeconfigFile)
