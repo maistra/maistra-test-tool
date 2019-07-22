@@ -41,8 +41,8 @@ func cleanup18(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, bookinfoGateway, kubeconfig)
 	util.KubeDelete(namespace, bookinfoYaml, kubeconfig)
 
-	util.ShellMuteOutput("kubectl delete policy default -n %s", namespace)
-	util.ShellMuteOutput("kubectl delete destinationrule -n %s default", namespace)
+	util.ShellMuteOutput("oc delete policy default -n %s", namespace)
+	util.ShellMuteOutput("oc delete destinationrule -n %s default", namespace)
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
 }
@@ -71,8 +71,9 @@ func Test18(t *testing.T) {
 	log.Infof("# TC_18 Authorization for TCP Services")
 	updateYaml(testNamespace)
 	
-	log.Info("Clean existing bookinfo policy")
-	util.ShellMuteOutput("kubectl delete policy default -n %s", testNamespace)
+	log.Info("Clean existing policy")
+	util.ShellMuteOutput("oc delete meshpolicy default")
+	util.ShellMuteOutput("oc delete policy default -n %s", testNamespace)
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
 

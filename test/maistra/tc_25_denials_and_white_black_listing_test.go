@@ -61,10 +61,10 @@ func Test25(t *testing.T) {
 	fmt.Print(productpageURL, testUserJar)
 
 	log.Info("Enable policy check")
-	util.ShellMuteOutput("kubectl -n istio-system get cm istio -o jsonpath=\"{@.data.mesh}\" | sed -e \"s@disablePolicyChecks: true@disablePolicyChecks: false@\" > /tmp/mesh.yaml")
-	util.ShellMuteOutput("kubectl -n istio-system create cm istio -o yaml --dry-run --from-file=mesh=/tmp/mesh.yaml | kubectl replace -f -")
+	util.ShellMuteOutput("oc -n istio-system get cm istio -o jsonpath=\"{@.data.mesh}\" | sed -e \"s@disablePolicyChecks: true@disablePolicyChecks: false@\" > /tmp/mesh.yaml")
+	util.ShellMuteOutput("oc -n istio-system create cm istio -o yaml --dry-run --from-file=mesh=/tmp/mesh.yaml | oc replace -f -")
 	log.Info("Verify disablePolicyChecks should be false")
-	util.Shell("kubectl -n istio-system get cm istio -o jsonpath=\"{@.data.mesh}\" | grep disablePolicyChecks")
+	util.Shell("oc -n istio-system get cm istio -o jsonpath=\"{@.data.mesh}\" | grep disablePolicyChecks")
 
 	t.Run("simple_denials_test", func(t *testing.T) {
 		defer func() {
@@ -82,9 +82,9 @@ func Test25(t *testing.T) {
 		util.Inspect(util.KubeApply(testNamespace, mixerDenyPolicyYaml, kubeconfigFile), "failed to apply deny rule", "", t)
 		time.Sleep(time.Duration(10) * time.Second)
 
-		_, err := util.ShellSilent("kubectl get rule -n %s | grep denyreviewsv3", testNamespace)
+		_, err := util.ShellSilent("oc get rule -n %s | grep denyreviewsv3", testNamespace)
 		for err != nil {
-			_, err = util.ShellSilent("kubectl get rule -n %s | grep denyreviewsv3", testNamespace)
+			_, err = util.ShellSilent("oc get rule -n %s | grep denyreviewsv3", testNamespace)
 			time.Sleep(time.Duration(5) * time.Second)
 		}
 

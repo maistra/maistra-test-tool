@@ -32,19 +32,19 @@ func cleanup14(kubeconfig string) {
 	util.KubeDelete("bar", sleepYaml, kubeconfig)
 	util.KubeDelete("legacy", httpbinLegacyYaml, kubeconfig)
 	util.KubeDelete("legacy", sleepLegacyYaml, kubeconfig)
-	util.ShellSilent("kubectl delete meshpolicy default")
-	util.ShellSilent("kubectl delete destinationrules -n legacy httpbin-legacy")
-	util.ShellSilent("kubectl delete destinationrules -n default api-server")
-	util.ShellSilent("kubectl delete destinationrules -n istio-system default")
-	util.ShellSilent("kubectl delete policy default overwrite-example -n foo")
-	util.ShellSilent("kubectl delete policy httpbin -n bar")
-	util.ShellSilent("kubectl delete destinationrules default overwrite-example -n foo")
-	util.ShellSilent("kubectl delete destinationrules httpbin -n bar")
-	util.ShellSilent("kubectl delete policy jwt-example -n foo")
-	util.ShellSilent("kubectl delete policy httpbin -n bar")
-	util.ShellSilent("kubectl delete destinationrule httpbin -n foo")
-	util.ShellSilent("kubectl delete gateway httpbin-gateway -n foo")
-	util.ShellSilent("kubectl delete virtualservice httpbin -n foo")
+	util.ShellSilent("oc delete meshpolicy default")
+	util.ShellSilent("oc delete destinationrules -n legacy httpbin-legacy")
+	util.ShellSilent("oc delete destinationrules -n default api-server")
+	util.ShellSilent("oc delete destinationrules -n istio-system default")
+	util.ShellSilent("oc delete policy default overwrite-example -n foo")
+	util.ShellSilent("oc delete policy httpbin -n bar")
+	util.ShellSilent("oc delete destinationrules default overwrite-example -n foo")
+	util.ShellSilent("oc delete destinationrules httpbin -n bar")
+	util.ShellSilent("oc delete policy jwt-example -n foo")
+	util.ShellSilent("oc delete policy httpbin -n bar")
+	util.ShellSilent("oc delete destinationrule httpbin -n foo")
+	util.ShellSilent("oc delete gateway httpbin-gateway -n foo")
+	util.ShellSilent("oc delete virtualservice httpbin -n foo")
 	//util.DeleteNamespace("foo bar legacy", kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
@@ -52,31 +52,31 @@ func cleanup14(kubeconfig string) {
 
 func cleanupPart1() {
 	log.Infof("# Cleanup part 1. Following error can be ignored...")
-	util.ShellMuteOutput("kubectl delete meshpolicy default")
-	util.ShellMuteOutput("kubectl delete destinationrules -n legacy httpbin-legacy ")
-	util.ShellMuteOutput("kubectl delete destinationrules -n default api-server")
-	util.ShellMuteOutput("kubectl delete destinationrules -n istio-system default")
+	util.ShellMuteOutput("oc delete meshpolicy default")
+	util.ShellMuteOutput("oc delete destinationrules -n legacy httpbin-legacy ")
+	util.ShellMuteOutput("oc delete destinationrules -n default api-server")
+	util.ShellMuteOutput("oc delete destinationrules -n istio-system default")
 	log.Info("Waiting for rules to be cleaned up. Sleep 30 seconds...")
 	time.Sleep(time.Duration(30) * time.Second)
 }
 
 func cleanupPart2() {
 	log.Infof("# Cleanup part 2. Following error can be ignored...")
-	util.ShellMuteOutput("kubectl delete policy default overwrite-example -n foo")
-	util.ShellMuteOutput("kubectl delete policy httpbin -n bar")
-	util.ShellMuteOutput("kubectl delete destinationrules default overwrite-example -n foo")
-	util.ShellMuteOutput("kubectl delete destinationrules httpbin -n bar")
+	util.ShellMuteOutput("oc delete policy default overwrite-example -n foo")
+	util.ShellMuteOutput("oc delete policy httpbin -n bar")
+	util.ShellMuteOutput("oc delete destinationrules default overwrite-example -n foo")
+	util.ShellMuteOutput("oc delete destinationrules httpbin -n bar")
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 }
 
 func cleanupPart3() {
 	log.Infof("# Cleanup part 3. Following error can be ignored...")
-	util.ShellMuteOutput("kubectl delete policy jwt-example -n foo")
-	util.ShellMuteOutput("kubectl delete policy httpbin -n bar")
-	util.ShellMuteOutput("kubectl delete destinationrule httpbin -n foo")
-	util.ShellMuteOutput("kubectl delete gateway httpbin-gateway -n foo")
-	util.ShellMuteOutput("kubectl delete virtualservice httpbin -n foo")
+	util.ShellMuteOutput("oc delete policy jwt-example -n foo")
+	util.ShellMuteOutput("oc delete policy httpbin -n bar")
+	util.ShellMuteOutput("oc delete destinationrule httpbin -n foo")
+	util.ShellMuteOutput("oc delete gateway httpbin-gateway -n foo")
+	util.ShellMuteOutput("oc delete virtualservice httpbin -n foo")
 }
 
 func setup14(kubeconfig string) error {
@@ -111,14 +111,14 @@ func setup14(kubeconfig string) error {
 }
 
 func checkPolicy() {
-	util.Shell("kubectl get policies.authentication.istio.io --all-namespaces")
-	util.Shell("kubectl get meshpolicies.authentication.istio.io")
-	util.Shell("kubectl get destinationrules.networking.istio.io --all-namespaces -o yaml | grep \"host:\"")
+	util.Shell("oc get policies.authentication.istio.io --all-namespaces")
+	util.Shell("oc get meshpolicies.authentication.istio.io")
+	util.Shell("oc get destinationrules.networking.istio.io --all-namespaces -o yaml | grep \"host:\"")
 }
 
 // TBD convert pipes with Go strings methods
 func getSecretToken() (string, error) {
-	token, err := util.ShellMuteOutput("kubectl describe secret $(kubectl get secrets | grep default-token | cut -f1 -d ' ' | head -1) | grep -E '^token' | cut -f2 -d':' | tr -d '\\t'")
+	token, err := util.ShellMuteOutput("oc describe secret $(oc get secrets | grep default-token | cut -f1 -d ' ' | head -1) | grep -E '^token' | cut -f2 -d':' | tr -d '\\t'")
 	if err != nil {
 		return "", err
 	}
@@ -554,7 +554,7 @@ func Test14(t *testing.T) {
 		}
 		util.CloseResponseBody(resp)
 
-		util.Shell("kubectl get policies.authentication.istio.io -n foo")
+		util.Shell("oc get policies.authentication.istio.io -n foo")
 
 		util.Inspect(util.KubeApplyContents("foo", fooJWTPolicy, kubeconfigFile), "failed to apply foo JWT Policy", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 50 seconds...")
