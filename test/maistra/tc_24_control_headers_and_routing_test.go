@@ -34,6 +34,7 @@ func cleanup24(namespace, kubeconfig string) {
 	util.ShellMuteOutput("oc delete handler/keyval instance/keyval adapter/keyval template/keyval -n istio-system")
 	util.ShellMuteOutput("oc delete service keyval -n istio-system")
 	util.ShellMuteOutput("oc delete deployment keyval -n istio-system")
+	util.ShellMuteOutput("oc delete dc keyval -n istio-system")
 	util.ShellSilent("rm -f /tmp/mesh.yaml")
 
 	util.KubeDelete(namespace, httpbinPolicyAllYaml, kubeconfig)
