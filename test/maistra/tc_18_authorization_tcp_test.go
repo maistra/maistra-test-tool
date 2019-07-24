@@ -111,6 +111,7 @@ func Test18(t *testing.T) {
 	log.Info("Waiting... Sleep 60 seconds...")
 	time.Sleep(time.Duration(60) * time.Second)
 
+	/*
 	t.Run("verify_setup_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
@@ -130,6 +131,7 @@ func Test18(t *testing.T) {
 			"Success. Response matches with expected.",
 			t)
 	})
+	*/
 
 	t.Run("enable_rbac_test", func(t *testing.T) {
 		defer func() {
