@@ -54,7 +54,7 @@ Python Version: Python 3.7 or above
 | OC_VERSION | Maistra origin istiooc_linux version (e.g. 0.10.0) |
 | OPERATOR_FILE | Maistra Istio operator.yaml file path |
 | CR_FILE     | Istio ControlPlane CR file path  |
-| JAEGER_OPERATOR_VERSION | Jaeger Operator version (e.g. v1.12.1) |
+| JAEGER_OPERATOR_VERSION | Jaeger Operator version (e.g. v1.13.1) |
 | KIALI_OPERATOR_VERSION | Kiali Operator version (e.g. v1.0.0) |
 
 * Export the environment variables (See the table above) with their values
@@ -78,7 +78,7 @@ Python Version: Python 3.7 or above
 ### 4. Login the OCP cluster
 * After OCP cluster deployment, follow the INFO message and execute the following two commands manually:
   * Run `export KUBECONFIG=[kubeconfig file]`
-  * Run `oc login -u [login user] -p [token]`
+  * Run `oc login -u [login user] -p [token] --server=[OCP host URL]` 
 
 
 ### 5. (Optional) [registry-puller](https://github.com/knrc/registry-puller)
