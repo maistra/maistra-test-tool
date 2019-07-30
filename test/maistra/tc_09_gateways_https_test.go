@@ -51,7 +51,6 @@ func cleanup09(namespace, kubeconfig string) {
 	time.Sleep(time.Duration(10) * time.Second)
 
 	util.KubeDelete(namespace, httpbinYaml, kubeconfig)
-	cleanBookinfo(namespace, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 }
@@ -117,15 +116,6 @@ func updateHttpbinHTTPS(namespace, kubeconfig string) error {
 	return nil
 }
 
-func configHTTPSBookinfo(namespace, kubeconfig string) error {
-	// create tls certs
-	if _, err := util.CreateTLSSecret("istio-ingressgateway-bookinfo-certs", "istio-system", bookinfoSampleServerCertKey, bookinfoSampleServerCert, kubeconfig); err != nil {
-		log.Infof("Failed to create secret %s\n", "istio-ingressgateway-certs")
-		return err
-	}
-
-	return nil
-}
 
 func checkTeapot(url, ingressHost, secureIngressPort, host, cacertFile string) (*http.Response, error) {
 	// Load CA cert
@@ -242,8 +232,7 @@ func Test09(t *testing.T) {
 
 	secureIngressPort, err := util.GetSecureIngressPort("istio-system", "istio-ingressgateway", kubeconfigFile)
 	util.Inspect(err, "cannot get ingress secure port", "", t)
-	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
-
+	
 	util.Inspect(deployHttpbin(testNamespace, kubeconfigFile), "failed to deploy httpbin", "", t)
 	util.Inspect(configHttpbinHTTPS(testNamespace, kubeconfigFile), "failed to config httpbin with tls certs", "", t)
 

@@ -30,14 +30,12 @@ func cleanup22(kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.Shell("oc rollout undo deployment -n istio-system istio-citadel")
 	util.ShellMuteOutput("rm -f /tmp/istio-citadel-new.yaml")
-
-	util.ShellMuteOutput("oc delete meshpolicy default")
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
 }
 
 
-func Test22(t *testing.T) {
+func Test22mtls(t *testing.T) {
 	defer cleanup22(kubeconfigFile)
 	defer func() {
 		// recover from panic if one occured. This allows cleanup to be executed after panic.
@@ -55,10 +53,6 @@ func Test22(t *testing.T) {
 		}()
 
 		log.Info("# TC_22 Citadel Health Checking")
-		log.Info("Enable mTLS")
-		util.Inspect(util.KubeApplyContents("", meshPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
-		log.Info("Waiting... Sleep 5 seconds...")
-		time.Sleep(time.Duration(5) * time.Second)	
 		
 		log.Info("Redeploy Citadel")
 		backupFile := "/tmp/istio-citadel-bak.yaml"

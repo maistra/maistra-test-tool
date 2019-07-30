@@ -32,7 +32,6 @@ func cleanup21(namespace string, kubeconfig string) {
 	util.Shell("oc rollout undo deployment -n istio-system istio-citadel")
 	util.ShellMuteOutput("rm -f /tmp/istio-citadel-new.yaml")
 	cleanBookinfo(namespace, kubeconfig)
-	util.ShellMuteOutput("oc delete policy default -n bookinfo")
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
 }
@@ -86,7 +85,7 @@ func verifyCerts() error {
 }
 
 
-func Test21(t *testing.T) {
+func Test21mtls(t *testing.T) {
 
 	defer cleanup21(testNamespace, kubeconfigFile)
 	defer func() {
@@ -108,11 +107,6 @@ func Test21(t *testing.T) {
 
 		util.CreateNamespace(testNamespace, kubeconfigFile)
 		util.OcGrantPermission("default", testNamespace, kubeconfigFile)
-
-		log.Info("Enable mTLS")
-		util.Inspect(util.KubeApplyContents(testNamespace, bookinfoPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
-		log.Info("Waiting... Sleep 5 seconds...")
-		time.Sleep(time.Duration(5) * time.Second)	
 
 		log.Info("Create secret")
 		_, err := util.ShellMuteOutput("oc create secret generic %s -n %s --from-file %s --from-file %s --from-file %s --from-file %s --kubeconfig=%s", 

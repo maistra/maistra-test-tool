@@ -17,7 +17,6 @@ package maistra
 import (
 	"fmt"
 	"io/ioutil"
-	"strings"
 	"testing"
 	"time"
 
@@ -41,25 +40,23 @@ func cleanup18(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, bookinfoGateway, kubeconfig)
 	util.KubeDelete(namespace, bookinfoYaml, kubeconfig)
 
-	util.ShellMuteOutput("oc delete policy default -n %s", namespace)
-	util.ShellMuteOutput("oc delete destinationrule -n %s default", namespace)
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func setup18(namespace, kubeconfig string) error {
-	util.OcGrantPermission("bookinfo-ratings-v2", namespace, kubeconfig)
+	
 	if err := util.KubeApply(namespace, bookinfoRatingv2ServiceAccount, kubeconfig); err != nil {
 		return err
 	}
-
-	log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
-	time.Sleep(time.Duration(20) * time.Second)
+	util.OcGrantPermission("bookinfo-ratings-v2", namespace, kubeconfig)
+	log.Info("Waiting for rules to propagate. Sleep 30 seconds...")
+	time.Sleep(time.Duration(30) * time.Second)
 	err := util.CheckPodRunning(namespace, "app=ratings,version=v2", kubeconfig)
 	return err
 }
 
-func Test18(t *testing.T) {
+func Test18mtls(t *testing.T) {
 	defer cleanup18(testNamespace, kubeconfigFile)
 	defer func() {
 		// recover from panic if one occurred. This allows cleanup to be executed after panic.
@@ -70,22 +67,9 @@ func Test18(t *testing.T) {
 
 	log.Infof("# TC_18 Authorization for TCP Services")
 	updateYaml(testNamespace)
-	
-	log.Info("Clean existing policy")
-	util.ShellMuteOutput("oc delete meshpolicy default")
-	util.ShellMuteOutput("oc delete policy default -n %s", testNamespace)
-	log.Info("Waiting... Sleep 20 seconds...")
-	time.Sleep(time.Duration(20) * time.Second)
 
 	util.CreateNamespace(testNamespace, kubeconfigFile)
 	util.OcGrantPermission("default", testNamespace, kubeconfigFile)
-
-	log.Info("Enable mutual TLS")
-	util.Inspect(util.KubeApplyContents(testNamespace, bookinfoPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
-	mtlsRule := strings.Replace(mtlsRuleTemplate, "@token@", testNamespace, -1)
-	util.Inspect(util.KubeApplyContents(testNamespace, mtlsRule, kubeconfigFile), "failed to apply rule", "", t)
-	log.Info("Waiting... Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
 
 	log.Info("Deploy bookinfo")
 	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
@@ -102,16 +86,9 @@ func Test18(t *testing.T) {
 
 	util.Inspect(deployMongoDB(testNamespace, kubeconfigFile), "failed to deploy mongoDB", "", t)
 
-	log.Info("Redeploy bookinfo ratings v2")
-	util.KubeDelete(testNamespace, bookinfoRatingv2ServiceAccount, kubeconfigFile)
 	log.Info("Waiting... Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
-	util.Inspect(setup18(testNamespace, kubeconfigFile), "failed to create service account", "", t)
 
-	log.Info("Waiting... Sleep 60 seconds...")
-	time.Sleep(time.Duration(60) * time.Second)
-
-	/*
 	t.Run("verify_setup_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
@@ -131,7 +108,6 @@ func Test18(t *testing.T) {
 			"Success. Response matches with expected.",
 			t)
 	})
-	*/
 
 	t.Run("enable_rbac_test", func(t *testing.T) {
 		defer func() {
@@ -143,8 +119,8 @@ func Test18(t *testing.T) {
 
 		log.Info("Enable Istio Authorization")
 		util.Inspect(util.KubeApplyContents(testNamespace, bookinfoRBAConDB, kubeconfigFile), "failed to apply policy", "", t)
-		log.Info("Waiting... Sleep 20 seconds...")
-		time.Sleep(time.Duration(20) * time.Second)
+		log.Info("Waiting... Sleep 10 seconds...")
+		time.Sleep(time.Duration(10) * time.Second)
 		resp, _, err := util.GetHTTPResponse(productpageURL, nil)
 		util.Inspect(err, "failed to get HTTP Response", "", t)
 		defer util.CloseResponseBody(resp)
@@ -167,8 +143,8 @@ func Test18(t *testing.T) {
 
 		log.Info("Enforcing Service-level access control")
 		util.Inspect(util.KubeApplyContents(testNamespace, bookinfoMongodbPolicy, kubeconfigFile), "failed to apply policy", "", t)
-		log.Info("Waiting... Sleep 20 seconds...")
-		time.Sleep(time.Duration(20) * time.Second)
+		log.Info("Waiting... Sleep 10 seconds...")
+		time.Sleep(time.Duration(10) * time.Second)
 		resp, _, err := util.GetHTTPResponse(productpageURL, nil)
 		util.Inspect(err, "failed to get HTTP Response", "", t)
 		defer util.CloseResponseBody(resp)
