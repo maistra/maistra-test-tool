@@ -40,7 +40,6 @@ func cleanup17(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, bookinfoGateway, kubeconfig)
 	util.KubeDelete(namespace, bookinfoYaml, kubeconfig)
 
-	util.ShellMuteOutput("oc delete meshpolicy default")
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
 }
@@ -67,7 +66,7 @@ func setup17(namespace, kubeconfig string) error {
 	return err
 }
 
-func Test17(t *testing.T) {
+func Test17mtls(t *testing.T) {
 	defer cleanup17(testNamespace, kubeconfigFile)
 	defer func() {
 		// recover from panic if one occurred. This allows cleanup to be executed after panic.
@@ -80,11 +79,6 @@ func Test17(t *testing.T) {
 
 	log.Infof("# TC_17 Authorization for HTTP Services")
 	updateYaml(testNamespace)
-	
-	log.Info("Enable mTLS")
-	util.Inspect(util.KubeApplyContents("", meshPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
-	log.Info("Waiting... Sleep 5 seconds...")
-	time.Sleep(time.Duration(5) * time.Second)
 
 	log.Info("Deploy bookinfo")
 	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, true), "failed to deploy bookinfo", "Bookinfo deployment completed", t)

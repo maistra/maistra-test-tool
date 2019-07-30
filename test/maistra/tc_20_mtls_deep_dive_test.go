@@ -28,13 +28,11 @@ func cleanup20(kubeconfig string) {
     log.Infof("# Cleanup. Following error can be ignored...")
     util.KubeDelete("foo", httpbinYaml, kubeconfig)
 	util.KubeDelete("foo", sleepYaml, kubeconfig)
-    util.ShellMuteOutput("oc delete meshpolicy default")
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
-    //util.DeleteNamespace("foo", kubeconfig)
 }
 
-func Test20(t *testing.T) {
+func Test20mtls(t *testing.T) {
 	defer cleanup20(kubeconfigFile)
 	defer func() {
 		// recover from panic if one occured. This allows cleanup to be executed after panic.
@@ -44,10 +42,6 @@ func Test20(t *testing.T) {
 	}()
 	
 	log.Infof("# TC_20 Mutual TLS Deep-Dive")
-	log.Info("Enable mTLS")
-	util.Inspect(util.KubeApplyContents("", meshPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
-	log.Info("Waiting... Sleep 5 seconds...")
-	time.Sleep(time.Duration(5) * time.Second)	
 
 	util.Inspect(util.CreateNamespace("foo", kubeconfigFile), "failed to create namespace", "", t)
 	util.OcGrantPermission("default", "foo", kubeconfigFile)

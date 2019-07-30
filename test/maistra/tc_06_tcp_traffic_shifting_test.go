@@ -28,7 +28,6 @@ func cleanup06(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, echo20v2Yaml, kubeconfig)
 	util.KubeDelete(namespace, echoAllv1Yaml, kubeconfig)
 	util.KubeDelete(namespace, echoYaml, kubeconfig)
-	cleanBookinfo(namespace, kubeconfig)
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 }
@@ -72,10 +71,9 @@ func Test06(t *testing.T) {
 	}()
 
 	log.Infof("# TC_06 TCP Traffic Shifting")
-	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 
-	ingress, err := util.GetOCP4Ingressgateway("istio-system", kubeconfigFile)
-	util.Inspect(err, "cannot get ingress host ip", "", t)
+	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	util.Inspect(err, "failed to get ingressgateway URL", "", t)
 
 	ingressTCPPort, err := util.GetTCPIngressPort("istio-system", "istio-ingressgateway", kubeconfigFile)
 	util.Inspect(err, "cannot get ingress TCP port", "", t)
