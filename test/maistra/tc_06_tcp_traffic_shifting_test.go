@@ -72,7 +72,7 @@ func Test06(t *testing.T) {
 
 	log.Infof("# TC_06 TCP Traffic Shifting")
 
-	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	ingress, err := util.GetOCP4Ingressgateway("istio-system", kubeconfigFile)
 	util.Inspect(err, "failed to get ingressgateway URL", "", t)
 
 	ingressTCPPort, err := util.GetTCPIngressPort("istio-system", "istio-ingressgateway", kubeconfigFile)
@@ -103,7 +103,7 @@ func Test06(t *testing.T) {
 			time.Sleep(time.Duration(1) * time.Second)
 			msg, err := checkEcho(ingress, ingressTCPPort)
 			if err != nil {
-				ingress, err = util.GetOCPIngressgateway("istio=ingressgateway","istio-system", kubeconfigFile)
+				ingress, err = util.GetOCP4Ingressgateway("istio-system", kubeconfigFile)
 				msg, err = checkEcho(ingress, ingressTCPPort)
 			}
 			util.Inspect(err, "faild to get date", "", t)
@@ -147,7 +147,7 @@ func Test06(t *testing.T) {
 			time.Sleep(time.Duration(2) * time.Second)
 			msg, err := checkEcho(ingress, ingressTCPPort)
 			if err != nil {
-				ingress, err = util.GetOCPIngressgateway("istio=ingressgateway","istio-system", kubeconfigFile)
+				ingress, err = util.GetOCP4Ingressgateway("istio-system", kubeconfigFile)
 				msg, err = checkEcho(ingress, ingressTCPPort)
 			}
 			util.Inspect(err, "failed to get date", "", t)

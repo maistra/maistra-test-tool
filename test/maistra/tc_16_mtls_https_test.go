@@ -126,6 +126,7 @@ func Test16(t *testing.T) {
 		util.Inspect(util.KubeApplyContents(testNamespace, mtlsPolicy, kubeconfigFile), "failed to apply policy", "", t)
 		mtlsRule := strings.Replace(mtlsRuleTemplate, "@token@", testNamespace, -1)
 		util.Inspect(util.KubeApplyContents(testNamespace, mtlsRule, kubeconfigFile), "failed to apply rule", "", t)
+		util.OcGrantPermission("default", testNamespace, kubeconfigFile)
 		log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
 		time.Sleep(time.Duration(20) * time.Second)
 
