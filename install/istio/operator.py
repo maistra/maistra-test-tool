@@ -70,7 +70,7 @@ class Operator(object):
         
         sp.run(['oc', 'new-project', 'istio-operator'], stderr=sp.PIPE)
 
-        sp.run(['oc', 'apply', '-n', 'istio-operator', '-f', operator_file])
+        sp.run(['oc', 'create', '-n', 'istio-operator', '-f', operator_file])
         sp.run(['sleep', '30'])
 
 
@@ -196,6 +196,13 @@ class ControlPlane(object):
         print(proc.stderr)
         sp.run(['sleep', '20'])
     
+    def apply_smmr(self):
+        # apply SMMR
+        proc = sp.run(['oc', 'apply', '-n', self.namespace, '-f', self.smmr], stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
+        print(proc.stdout)
+        print(proc.stderr)
+        sp.run(['sleep', '20'])
+
 
     def smoke_check(self):
         # verify installation

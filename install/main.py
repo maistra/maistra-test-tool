@@ -131,6 +131,12 @@ def main():
             cp.check()
             ocp.logout()
 
+            with open(moitt.assets + '/auth/kubeadmin-password') as f:
+                pw = f.read()
+            ocp.login('kubeadmin', pw)
+            cp.apply_smmr()
+            ocp.logout()
+
         elif moitt.uninstall:
             # uninstall controlplane
             ocp.login('qe1', 'qe1pw')
