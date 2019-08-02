@@ -78,6 +78,8 @@ func Test18mtls(t *testing.T) {
 	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
 
 	log.Info("Create Service Accounts")
+	util.KubeDeleteContents(testNamespace, bookinfoRBAConDB, kubeconfigFile)
+	
 	util.Inspect(setup18(testNamespace, kubeconfigFile), "failed to create service account", "", t)
 	util.Inspect(util.KubeApply(testNamespace, bookinfoRuleAllTLSYaml, kubeconfigFile), "failed to apply rule", "", t)
 

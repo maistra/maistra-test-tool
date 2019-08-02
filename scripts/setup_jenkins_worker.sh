@@ -17,7 +17,7 @@ set -ex
 # limitations under the License.
 
 sudo dnf update -y
-sudo dnf install -y wget git java-1.8.0 docker gcc make openssl-devel libffi-devel bzip2-devel readline-devel sqlite-devel
+sudo dnf install -y wget git java-1.8.0 docker gcc make openssl-devel libffi-devel bzip2-devel readline-devel sqlite-devel httpd-tools
 sudo dnf install -y awscli
 
 sudo useradd -d /home/jenkins jenkins
