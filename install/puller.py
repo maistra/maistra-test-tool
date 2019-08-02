@@ -76,7 +76,9 @@ class Puller(object):
         sp.run(['oc', 'create', 'configmap', '-n', 'registry-puller', 'registry-secret', '--from-file=' + self.secret_file])
         os.chdir(self.savedPath)
         os.chdir('registry-puller')
-        sp.run(['oc', 'create', '-f', 'registry-puller-4.0.yaml'])
+        proc = sp.run(['oc', 'create', '-f', 'registry-puller-4.0.yaml'], stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
+        print(proc.stdout)
+        print(proc.stderr)
 
         timeout = time.time() + 60 * 5
         while time.time() < timeout:

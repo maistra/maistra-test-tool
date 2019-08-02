@@ -8,7 +8,6 @@ BASE_DIR="${DIR}/../../"
 BOOKINFO_FILE="testdata/bookinfo/platform/kube/bookinfo.yaml"
 GATEWAY_FILE="testdata/bookinfo/networking/bookinfo-gateway.yaml"
 RULE_FILE="testdata/bookinfo/networking/destination-rule-all.yaml"
-MEMBER_ROLL="testdata/member-roll.yaml"
 
 function banner() {
   message="$1"
@@ -48,16 +47,7 @@ function deploy_bookinfo() {
 
 	echo "using NAMESPACE=${PROJECT}"
 
-	set +e
-	oc new-project ${PROJECT}
-	oc new-project foo
-	oc new-project bar
-	oc new-project legacy
 	oc project ${PROJECT}
-	# apply memeber roll
-	oc apply -n istio-system -f ${MEMBER_ROLL}
-	set -e
-	sleep 10
 	
 	# grant priviledged permission
 	#oc adm policy add-scc-to-user privileged -z default -n ${PROJECT}
@@ -67,7 +57,7 @@ function deploy_bookinfo() {
 	#oc label namespace ${PROJECT} istio-injection=enabled
 
 	# install bookinfo
-	oc apply -f ${BOOKINFO_FILE}
+	oc apply -f ${BOOKINFO_FILE} -n ${PROJECT}
 }
 
 function check_bookinfo() {
@@ -85,14 +75,14 @@ function check_bookinfo() {
 
 function deploy_gateway() {
 	# create gateway
-	oc apply -f ${GATEWAY_FILE}
+	oc apply -f ${GATEWAY_FILE} -n ${PROJECT}
 	# check gateway
 	oc get gateway
 }
 
 function deploy_rule() {
 	# apply destination rules
-	oc apply -f ${RULE_FILE}
+	oc apply -f ${RULE_FILE} -n ${PROJECT}
 }
 
 function deploy() {

@@ -100,7 +100,7 @@ func CreateAndFill(outDir, templateFile string, values interface{}) (string, err
 
 // CreateNamespace create a kubernetes namespace
 func CreateNamespace(n string, kubeconfig string) error {
-	if _, err := ShellMuteOutput("oc create namespace %s --kubeconfig=%s", n, kubeconfig); err != nil {
+	if _, err := ShellMuteOutput("oc new-project %s", n); err != nil {
 		if !strings.Contains(err.Error(), "AlreadyExists") {
 			return err
 		}
@@ -111,7 +111,7 @@ func CreateNamespace(n string, kubeconfig string) error {
 
 // DeleteNamespace delete a kubernetes namespace
 func DeleteNamespace(n string, kubeconfig string) error {
-	if _, err := Shell("oc delete namespace %s --kubeconfig=%s", n, kubeconfig); err != nil {
+	if _, err := Shell("oc delete project %s", n); err != nil {
 		if !strings.Contains(err.Error(), "not found") {
 			return err
 		}
