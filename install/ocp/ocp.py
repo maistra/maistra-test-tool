@@ -32,7 +32,7 @@ class OCP(object):
         - `oc_version`: OpenShift oc client version
     """
 
-    def __init__(self, profile='', assets='assets', oc_version=''):
+    def __init__(self, profile='', assets='assets', oc_version='0.10.0'):
         """ Initialize configuration parameters
         """
         self.profile = profile
@@ -116,6 +116,20 @@ class OCP(object):
         print('Check cluster info')
         sp.run(['kubectl', 'cluster-info'])
 
+
+    def create_users(self):
+        print('Create test users')
+        proc = sp.run(['./user-creation.sh'], stdout=sp.PIPE, stderr=sp.PIPE, shell=True, universal_newlines=True)
+        print(proc.stdout)
+        print(proc.stderr)
+
+    def login(self, user, pw):
+        proc = sp.run(['oc', 'login', '-u', user, '-p', pw], stdout=sp.PIPE, universal_newlines=True)
+        print(proc.stdout)
+
+    def logout(self):
+        proc = sp.run(['oc', 'logout'], stdout=sp.PIPE, universal_newlines=True)
+        print(proc.stdout)
 
     def uninstall(self):
         """ Destroy a cluster

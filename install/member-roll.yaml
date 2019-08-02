@@ -2,7 +2,6 @@ apiVersion: maistra.io/v1
 kind: ServiceMeshMemberRoll
 metadata:
   name: default
-  namespace: istio-system
 spec:
   members:
   # a list of namespaces that should be joined into the service mesh
@@ -11,4 +10,3 @@ spec:
   - foo
   - bar
   - legacy
-  - default

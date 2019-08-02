@@ -20,7 +20,7 @@ import argparse
 
 from ocp.ocp import OCP
 from puller import Puller
-from istio.operator import Operator
+from istio.operator import Operator, ControlPlane
 
 
 class Moitt(object):
@@ -34,6 +34,7 @@ class Moitt(object):
         self.install = False
         self.uninstall = False
         self.component = None
+        self.assets = os.getcwd() + '/assets'
         
     def envParse(self):
         if 'AWS_PROFILE' in os.environ:
@@ -46,10 +47,6 @@ class Moitt(object):
             self.crfile = os.environ['CR_FILE']
         if 'OC_VERSION' in os.environ:
             self.oc_version = os.environ['OC_VERSION']
-        if 'JAEGER_OPERATOR_VERSION' in os.environ:
-            self.jaeger_version = os.environ['JAEGER_OPERATOR_VERSION']
-        if 'KIALI_OPERATOR_VERSION' in os.environ:
-            self.kiali_version = os.environ['KIALI_OPERATOR_VERSION']
 
     
     def argParse(self):
@@ -73,30 +70,80 @@ def main():
         raise KeyError("Missing AWS_PROFILE environment variable")
     if not moitt.pullsec:
         raise KeyError("Missing PULL_SEC environment variable")
+
+    ocp = OCP(profile=moitt.profile, oc_version=moitt.oc_version, assets=moitt.assets)
+    os.environ['KUBECONFIG'] = moitt.assets + '/auth/kubeconfig'
     
     if moitt.component == 'ocp':
-        ocp = OCP(profile=moitt.profile, oc_version=moitt.oc_version)
         if moitt.install:
+            # Install ocp cluster
             ocp.install()
+            
+            # Read kubeadmin password
+            with open(moitt.assets + '/auth/kubeadmin-password') as f:
+                pw = f.read()
+            ocp.login('kubeadmin', pw)
+            
+            # Create testing users, qe1 and qe2
+            ocp.create_users()
+            ocp.logout()
+
         elif moitt.uninstall:
             ocp.uninstall()
     
     if moitt.component == 'registry-puller':
         puller = Puller(secret_file=moitt.pullsec)
+
+        # Read kubeadmin password
+        with open(moitt.assets + '/auth/kubeadmin-password') as f:
+            pw = f.read() 
+        ocp.login('kubeadmin', pw)
         if moitt.install:
             puller.build()
             puller.execute()
+
+        ocp.logout()
     
     if moitt.component == 'istio':
         operator = Operator()
-        if moitt.install:
-            operator.deploy_jaeger(jaeger_version=moitt.jaeger_version)
-            operator.deploy_kiali(kiali_version=moitt.kiali_version)
-            operator.deploy_istio(operator_file=moitt.operatorfile)
-            operator.install(cr_file=moitt.crfile)
-        elif moitt.uninstall:
-            operator.uninstall(operator_file=moitt.operatorfile, cr_file=moitt.crfile, jaeger_version=moitt.jaeger_version, kiali_version=moitt.kiali_version)
 
+        nslist = ['bookinfo', 'foo', 'bar', 'legacy']
+        smmr = os.getcwd() + '/member-roll.yaml'
+        sample = os.getcwd() + '/bookinfo.yaml'
+        cp = ControlPlane("basic-install", "istio-system", "bookinfo", nslist, smmr, sample)
+        if moitt.install:
+            # deploy operators
+            # Read kubeadmin password
+            with open(moitt.assets + '/auth/kubeadmin-password') as f:
+                pw = f.read() 
+            ocp.login('kubeadmin', pw)
+            operator.deploy_jaeger()
+            operator.deploy_kiali()
+            operator.deploy_istio(operator_file=moitt.operatorfile)
+            operator.check()
+            ocp.logout()
+
+            # deploy controlplane
+            ocp.login('qe1', 'qe1pw')
+            cp.install(cr_file=moitt.crfile)
+            cp.create_ns(cp.nslist)
+            cp.smoke_check()
+            cp.check()
+            ocp.logout()
+
+        elif moitt.uninstall:
+            # uninstall controlplane
+            ocp.login('qe1', 'qe1pw')
+            cp.uninstall(cr_file=moitt.crfile)
+            ocp.logout()
+
+            # uninstall operators
+            # Read kubeadmin password
+            with open(moitt.assets + '/auth/kubeadmin-password') as f:
+                pw = f.read() 
+            ocp.login('kubeadmin', pw)
+            operator.uninstall(operator_file=moitt.operatorfile)
+            ocp.logout()
 
    
 if __name__ == '__main__':

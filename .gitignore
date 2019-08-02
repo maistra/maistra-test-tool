@@ -19,11 +19,12 @@ __pycache__
 # OCP4 assets
 **/assets/*
 **/openshift-install
-**/install-config.yaml
+install/env
 **/oc
 **/oc.tar.gz
 **/istioctl
 install/README.md
+**/users.htpasswd
 
 # registry-puller
 **/registry-puller
