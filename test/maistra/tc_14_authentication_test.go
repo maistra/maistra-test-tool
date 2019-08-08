@@ -188,7 +188,7 @@ func Test14(t *testing.T) {
 		}()
 
 		log.Info("Globally enabling Istio mutual TLS")
-		util.Inspect(util.KubeApplyContents("", meshPolicy, kubeconfigFile), "failed to apply MeshPolicy", "", t)
+		util.Inspect(util.KubeApplyContents("", meshPolicy, kubeconfigFile), "failed to apply ServiceMeshPolicy", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)
 

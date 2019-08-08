@@ -16,10 +16,11 @@ package maistra
 
 const (
 	meshPolicy = `
-apiVersion: "authentication.istio.io/v1alpha1"
-kind: "MeshPolicy"
+apiVersion: "authentication.maistra.io/v1"
+kind: "ServiceMeshPolicy"
 metadata:
   name: "default"
+  name: "istio-system"
 spec:
   peers:
   - mtls: {}	
@@ -209,10 +210,11 @@ spec:
 `
 
 	fooRBAC = `
-apiVersion: "rbac.istio.io/v1alpha1"
-kind: ClusterRbacConfig
+apiVersion: "rbac.maistra.io/v1"
+kind: ServiceMeshRbacConfig
 metadata:
   name: default
+  namespace: "istio-system"
 spec:
   mode: 'ON_WITH_INCLUSION'
   inclusion:
