@@ -10,4 +10,4 @@ spec:
   - foo
   - bar
   - legacy
-  - default
+  # - default
