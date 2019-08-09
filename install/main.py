@@ -124,7 +124,7 @@ def main():
             ocp.logout()
 
             # deploy controlplane
-            ocp.login('qe1', 'qe1pw')
+            ocp.login('qe1', os.getenv('QE1_PWD', 'qe1pw'))
             cp.install(cr_file=moitt.crfile)
             cp.create_ns(cp.nslist)
             cp.smoke_check()
@@ -139,7 +139,7 @@ def main():
 
         elif moitt.uninstall:
             # uninstall controlplane
-            ocp.login('qe1', 'qe1pw')
+            ocp.login('qe1', os.getenv('QE1_PWD', 'qe1pw'))
             cp.uninstall(cr_file=moitt.crfile)
             ocp.logout()
 
