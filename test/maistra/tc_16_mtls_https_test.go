@@ -93,10 +93,8 @@ func Test16(t *testing.T) {
 		}()
 
 		log.Info("Deploy an HTTPS service with the Istio sidecar and mutual TLS disabled")
-
-		util.ShellMuteOutput("oc delete policy -n %s default", testNamespace)
-
 		util.Inspect(deployNginx(true, testNamespace, kubeconfigFile), "failed to deploy nginx", "", t)
+		time.Sleep(time.Duration(5) * time.Second)
 		util.Inspect(deploySleep(testNamespace, kubeconfigFile), "failed to deploy sleep", "", t)
 
 		sleepPod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfigFile)

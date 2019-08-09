@@ -31,6 +31,16 @@ class Operator(object):
     def __init__(self):
         pass
         
+    def deploy_es(self, es_version="4.1"):
+        # install the Elasticsearch Operator
+        sp.run(['oc', 'new-project', 'openshift-logging'], stderr=sp.PIPE)
+        sp.run(['oc', 'create', '-n', 'openshift-logging', '-f', "https://raw.githubusercontent.com/openshift/elasticsearch-operator/release-%s/manifests/01-service-account.yaml" % es_version])
+        sp.run(['oc', 'create', '-f', "https://raw.githubusercontent.com/openshift/elasticsearch-operator/release-%s/manifests/02-role.yaml" % es_version])
+        sp.run(['oc', 'create', '-f', "https://raw.githubusercontent.com/openshift/elasticsearch-operator/release-%s/manifests/03-role-bindings.yaml" % es_version])
+        sp.run(['oc', 'create', '-n', 'openshift-logging', '-f', "https://raw.githubusercontent.com/openshift/elasticsearch-operator/release-%s/manifests/04-crd.yaml" % es_version])
+        # curl https://raw.githubusercontent.com/openshift/elasticsearch-operator/release-4.1/manifests/05-deployment.yaml | sed 's/latest/4.1/g' | oc create -n openshift-logging -f -
+        sp.run(['sleep', '10'])
+
 
     def deploy_jaeger(self, jaeger_version="v1.13.1"):
         # install the Jaeger operator as a prerequisit
@@ -40,6 +50,7 @@ class Operator(object):
         sp.run(['oc', 'create', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/role.yaml" % jaeger_version])
         sp.run(['oc', 'create', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/role_binding.yaml" % jaeger_version])
         sp.run(['oc', 'create', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/operator.yaml" % jaeger_version])
+        # curl https://raw.githubusercontent.com/jaegertracing/jaeger-operator/v1.13.1/deploy/operator.yaml | sed 's@jaegertracing/jaeger-operator:1.13.1@quay.io/maistra/jaeger-operator:1.13.1@g' | oc create -n observability -f -
         sp.run(['sleep', '10'])
 
 
@@ -182,7 +193,7 @@ class ControlPlane(object):
             if 'Installed=True' in proc.stdout:
                 break
 
-        sp.run(['sleep', '20'])
+        sp.run(['sleep', '40'])
 
 
     def create_ns(self, nslist: list):
@@ -201,7 +212,7 @@ class ControlPlane(object):
         proc = sp.run(['oc', 'apply', '-n', self.namespace, '-f', self.smmr], stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
         print(proc.stdout)
         print(proc.stderr)
-        sp.run(['sleep', '20'])
+        sp.run(['sleep', '40'])
 
 
     def smoke_check(self):
