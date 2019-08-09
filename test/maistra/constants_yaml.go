@@ -20,7 +20,7 @@ apiVersion: "authentication.maistra.io/v1"
 kind: "ServiceMeshPolicy"
 metadata:
   name: "default"
-  name: "istio-system"
+  namespace: "istio-system"
 spec:
   peers:
   - mtls: {}	

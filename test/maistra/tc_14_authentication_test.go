@@ -32,7 +32,7 @@ func cleanup14(kubeconfig string) {
 	util.KubeDelete("bar", sleepYaml, kubeconfig)
 	util.KubeDelete("legacy", httpbinLegacyYaml, kubeconfig)
 	util.KubeDelete("legacy", sleepLegacyYaml, kubeconfig)
-	//util.ShellSilent("oc delete meshpolicy default")
+	util.ShellSilent("oc delete ServiceMeshPolicy -n isito-system default")
 	util.ShellSilent("oc delete destinationrules -n legacy httpbin-legacy")
 	//util.ShellSilent("oc delete destinationrules -n default api-server")
 	util.ShellSilent("oc delete destinationrules -n istio-system default")
@@ -52,7 +52,7 @@ func cleanup14(kubeconfig string) {
 
 func cleanupPart1() {
 	log.Infof("# Cleanup part 1. Following error can be ignored...")
-	//util.ShellMuteOutput("oc delete meshpolicy default")
+	util.ShellSilent("oc delete ServiceMeshPolicy -n isito-system default")
 	util.ShellMuteOutput("oc delete destinationrules -n legacy httpbin-legacy ")
 	//util.ShellMuteOutput("oc delete destinationrules -n default api-server")
 	util.ShellMuteOutput("oc delete destinationrules -n istio-system default")
@@ -411,6 +411,7 @@ func Test14(t *testing.T) {
 		log.Info("Enable mutual TLS per service")
 		util.Inspect(util.KubeApplyContents("", barPolicy, kubeconfigFile), "failed to apply bar Policy", "", t)
 		util.Inspect(util.KubeApplyContents("", barRule, kubeconfigFile), "failed to apply bar rule", "", t)
+		time.Sleep(time.Duration(5) * time.Second)
 
 		namespaces := []string{"foo", "bar", "legacy"}
 		for _, from := range namespaces {
@@ -463,6 +464,7 @@ func Test14(t *testing.T) {
 		log.Info("Edit mutual TLS only on httpbin bar port 1234")
 		util.Inspect(util.KubeApplyContents("", barPolicy2, kubeconfigFile), "failed to apply bar Policy 2", "", t)
 		util.Inspect(util.KubeApplyContents("", barRule2, kubeconfigFile), "failed to apply bar Rule 2", "", t)
+		time.Sleep(time.Duration(5) * time.Second)
 
 		namespaces := []string{"foo", "bar", "legacy"}
 		for _, from := range namespaces {
