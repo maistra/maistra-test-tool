@@ -3,8 +3,11 @@
 # Instructions: https://docs.openshift.com/container-platform/4.1/authentication/identity_providers/configuring-htpasswd-identity-provider.html
 
 function create_htpasswd_file() {
-  htpasswd -c -B -b users.htpasswd qe1 qe1pw
-  htpasswd -B -b users.htpasswd qe2 qe2pw
+  htpasswd -c -B -b users.htpasswd qe1 "${QE1_PWD:-qe1pw}"
+  htpasswd -B -b users.htpasswd qe2 "${QE2_PWD:-qe2pw}"
+  htpasswd -B -b users.htpasswd ike "${IKE_PWD:-let_ike_in}"
+  htpasswd -B -b users.htpasswd aslak "${ASLAK_PWD:-let_aslak_in}"
+  htpasswd -B -b users.htpasswd bartosz "${BARTOSZ_PWD:-let_bartosz_in}"
 }
 
 function create_htpasswd_secret() {
