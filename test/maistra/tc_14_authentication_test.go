@@ -232,7 +232,6 @@ func Test14(t *testing.T) {
 		}
 		time.Sleep(time.Duration(5) * time.Second)
 	})
-	//panic("")
 
 	t.Run("non_istio_to_istio_test", func(t *testing.T) {
 		defer func() {
