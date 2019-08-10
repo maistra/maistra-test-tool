@@ -127,8 +127,8 @@ func Test24(t *testing.T) {
 		
 		log.Info("Create a demo adapter rule")
 		util.Inspect(util.KubeApplyContents("istio-system", demoAdapterRule, kubeconfigFile), "failed to apply demo adapter rule", "", t)
-		log.Info("Waiting for rules to propagate. Sleep 60 seconds...")
-		time.Sleep(time.Duration(60) * time.Second)
+		log.Info("Waiting for rules to propagate. Sleep 70 seconds...")
+		time.Sleep(time.Duration(70) * time.Second)
 
 		log.Info("Verify that user:json has \"User-Group\": \"admin\" header")
 		resp, err := checkUserGroup(fmt.Sprintf("http://%s:%s/headers", ingress, ingressPort), ingress, ingressPort, "jason")
