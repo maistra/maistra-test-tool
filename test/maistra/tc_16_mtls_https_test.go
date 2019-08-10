@@ -30,10 +30,10 @@ func cleanup16(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, nginxYaml, kubeconfig)
 	util.ShellMuteOutput("oc delete configmap nginxconfigmap -n %s --kubeconfig=%s", namespace, kubeconfig)
 	util.ShellMuteOutput("oc delete secret nginxsecret -n %s --kubeconfig=%s", namespace, kubeconfig)
-	util.ShellMuteOutput("oc delete policy -n %s default", namespace)
-	util.ShellMuteOutput("oc delete destinationrule -n %s default", namespace)
-	log.Info("Waiting for rules to be cleaned up. Sleep 15 seconds...")
-	time.Sleep(time.Duration(15) * time.Second)
+	util.ShellMuteOutput("oc delete ServiceMeshPolicy -n istio-system default")
+	util.ShellMuteOutput("oc delete destinationrules -n istio-system default")
+	log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func Test16(t *testing.T) {
@@ -46,9 +46,6 @@ func Test16(t *testing.T) {
 	}()
 
 	log.Infof("# TC_16 Mutual TLS over HTTPS Services")
-
-	// grant anyuid for default account in bookinfo namespace
-	util.OcGrantPermission("default", testNamespace, kubeconfigFile)
 
 	// generate secrets
 	util.ShellSilent("openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /tmp/nginx.key -out /tmp/nginx.crt -subj \"/CN=my-nginx/O=my-nginx\"")
@@ -94,14 +91,20 @@ func Test16(t *testing.T) {
 
 		log.Info("Deploy an HTTPS service with the Istio sidecar and mutual TLS disabled")
 		util.Inspect(deployNginx(true, testNamespace, kubeconfigFile), "failed to deploy nginx", "", t)
-		time.Sleep(time.Duration(5) * time.Second)
+		time.Sleep(time.Duration(2) * time.Second)
 		util.Inspect(deploySleep(testNamespace, kubeconfigFile), "failed to deploy sleep", "", t)
 
 		sleepPod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfigFile)
 		util.Inspect(err, "failed to get sleep pod name", "", t)
+		time.Sleep(time.Duration(5) * time.Second)
 		cmd := fmt.Sprintf("curl https://my-nginx -k | grep \"Welcome to nginx\"")
 		msg, err := util.PodExec(testNamespace, sleepPod, "istio-proxy", cmd, true, kubeconfigFile)
-		util.Inspect(err, "failed to get response", "", t)
+		if err != nil {
+			time.Sleep(time.Duration(2) * time.Second)
+			cmd = fmt.Sprintf("curl https://my-nginx -k | grep \"Welcome to nginx\"")
+			msg, err = util.PodExec(testNamespace, sleepPod, "istio-proxy", cmd, true, kubeconfigFile)
+		}
+
 		if !strings.Contains(msg, "Welcome to nginx") {
 			t.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)
 			log.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)
@@ -124,22 +127,27 @@ func Test16(t *testing.T) {
 		}()
 
 		log.Info("Enable mutual TLS")
-		util.Inspect(util.KubeApplyContents(testNamespace, mtlsPolicy, kubeconfigFile), "failed to apply policy", "", t)
-		mtlsRule := strings.Replace(mtlsRuleTemplate, "@token@", testNamespace, -1)
-		util.Inspect(util.KubeApplyContents(testNamespace, mtlsRule, kubeconfigFile), "failed to apply rule", "", t)
-		util.OcGrantPermission("default", testNamespace, kubeconfigFile)
-		log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
-		time.Sleep(time.Duration(20) * time.Second)
+		util.Inspect(util.KubeApplyContents("", meshPolicy, kubeconfigFile), "failed to apply ServiceMeshPolicy", "", t)
+		util.Inspect(util.KubeApplyContents("", clientRule, kubeconfigFile), "failed to apply clientRule", "", t)
+		log.Info("Waiting for rules to propagate. Sleep 50 seconds...")
+		time.Sleep(time.Duration(50) * time.Second)
 
 		log.Info("Deploy an HTTPS service with Istio sidecar with mutual TLS enabled")
-		util.Inspect(deploySleep(testNamespace, kubeconfigFile), "failed to deploy sleep", "", t)
 		util.Inspect(deployNginx(true, testNamespace, kubeconfigFile), "failed to deploy nginx", "", t)
-
+		time.Sleep(time.Duration(2) * time.Second)
+		util.Inspect(deploySleep(testNamespace, kubeconfigFile), "failed to deploy sleep", "", t)
+		
 		sleepPod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfigFile)
 		util.Inspect(err, "failed to get sleep pod name", "", t)
+		time.Sleep(time.Duration(5) * time.Second)
 		cmd := fmt.Sprintf("curl https://my-nginx -k | grep \"Welcome to nginx\"")
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", cmd, true, kubeconfigFile)
-		util.Inspect(err, "failed to get response", "", t)
+		if err != nil {
+			time.Sleep(time.Duration(2) * time.Second)
+			cmd = fmt.Sprintf("curl https://my-nginx -k | grep \"Welcome to nginx\"")
+			msg, err = util.PodExec(testNamespace, sleepPod, "istio-proxy", cmd, true, kubeconfigFile)
+		}
+
 		if !strings.Contains(msg, "Welcome to nginx") {
 			t.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)
 			log.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)

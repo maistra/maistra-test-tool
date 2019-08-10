@@ -92,7 +92,7 @@ func Test15(t *testing.T) {
 	// Create namespaces
 	for _, ns := range namespaces {
 		util.Inspect(util.CreateNamespace(ns, kubeconfigFile), "failed to create namespace", "", t)
-		util.OcGrantPermission("default", ns, kubeconfigFile)
+		//util.OcGrantPermission("default", ns, kubeconfigFile)
 	}
 	time.Sleep(time.Duration(5) * time.Second)
 
