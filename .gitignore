@@ -31,6 +31,7 @@ install/README.md
 
 # istio-operator
 **/istio-operator
+**/operator_quay.yaml
 **/deploy-kiali-operator.sh
 
 # pylarion

@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import os
+import re
 import time
 import subprocess as sp
 import shutil
@@ -28,9 +29,27 @@ class Operator(object):
          
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, operator_version="maistra-1.0"):
+        sp.run(['curl', '-o', 'operator_quay.yaml', '-L', "https://raw.githubusercontent.com/Maistra/istio-operator/%s/deploy/servicemesh-operator.yaml" % operator_version])
         
+        
+    def mutate(self, operator_file="operator_quay.yaml"):
+        imageP1 = re.compile('image:.*istio-operator-rhel8:.*')
+        imageP2 = re.compile('value:.*istio-cni-rhel8:.*')
+
+        with open('operator_quay.yaml', 'r') as f:
+            lines = f.readlines()
+        with open('operator_quay.yaml', 'w') as f:
+            for line in lines:
+                f.write(imageP1.sub("image: quay.io/maistra/istio-operator-rhel8:latest-qe", line))
+
+        with open('operator_quay.yaml', 'r') as f:
+            lines = f.readlines()
+        with open('operator_quay.yaml', 'w') as f:
+            for line in lines:
+                f.write(imageP2.sub("value: quay.io/maistra/istio-cni-rhel8:latest-qe", line))
+
+
     def deploy_es(self, es_version="4.1"):
         # install the Elasticsearch Operator
         sp.run(['oc', 'new-project', 'openshift-logging'], stderr=sp.PIPE)
@@ -62,7 +81,7 @@ class Operator(object):
         sp.run(['sleep', '10'])
 
 
-    def deploy_istio(self, operator_file=None):
+    def deploy_istio(self, operator_file="operator_quay.yaml"):
         # check environment variable KUBECONFIG
         try:
             os.environ['KUBECONFIG']
@@ -76,8 +95,6 @@ class Operator(object):
         proc = sp.run(['oc', 'status'])
         if proc.returncode != 0:
             raise RuntimeError('Login not completed')
-        if operator_file is None:
-            raise RuntimeError('Missing operator.yaml file')
         
         sp.run(['oc', 'new-project', 'istio-operator'], stderr=sp.PIPE)
 
@@ -85,9 +102,7 @@ class Operator(object):
         sp.run(['sleep', '30'])
 
 
-    def uninstall(self, operator_file=None, jaeger_version="v1.13.1", kiali_version="v1.0.0"):
-        if operator_file is None:
-            raise RuntimeError('Missing operator.yaml file')
+    def uninstall(self, operator_file="operator_quay.yaml", jaeger_version="v1.13.1", kiali_version="v1.0.0"):
 
         sp.run(['oc', 'delete', '-n', 'istio-operator', '-f', operator_file])
 
@@ -200,12 +215,8 @@ class ControlPlane(object):
         # create namespaces
         for ns in nslist:
             sp.run(['oc', 'new-project', ns])
-        
-        # apply SMMR
-        proc = sp.run(['oc', 'apply', '-n', self.namespace, '-f', self.smmr], stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
-        print(proc.stdout)
-        print(proc.stderr)
-        sp.run(['sleep', '20'])
+
+        sp.run(['sleep', '5'])
     
     def apply_smmr(self):
         # apply SMMR
@@ -222,6 +233,12 @@ class ControlPlane(object):
         print(proc.stdout)
 
         print("# Installation result: ")
+        proc = sp.run(['oc', 'get', 'smcp', '-n', self.namespace, '-o', 'wide'], stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
+        print(proc.stdout)
+
+        proc = sp.run(['oc', 'get', 'smcp/' + self.name, '-n', self.namespace, '-o', "jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}'"], stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
+        print(proc.stdout)
+
         template = r"""'{{range .status.conditions}}{{printf "%s=%s, reason=%s, message=%s\n\n" .type .status .reason .message}}{{end}}'"""
         proc = sp.run(['oc', 'get', 'ServiceMeshControlPlane/' + self.name, '-n', self.namespace, '--template=' + template], stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)    
         if 'Installed=True' in proc.stdout and 'reason=InstallSuccessful' in proc.stdout:
