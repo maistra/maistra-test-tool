@@ -106,7 +106,7 @@ func Test21mtls(t *testing.T) {
 		log.Infof("# TC_21 Plugging in External CA Key and Certificate")
 
 		util.CreateNamespace(testNamespace, kubeconfigFile)
-		util.OcGrantPermission("default", testNamespace, kubeconfigFile)
+		//util.OcGrantPermission("default", testNamespace, kubeconfigFile)
 
 		log.Info("Create secret")
 		_, err := util.ShellMuteOutput("oc create secret generic %s -n %s --from-file %s --from-file %s --from-file %s --from-file %s --kubeconfig=%s", 

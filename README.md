@@ -1,6 +1,7 @@
 # Maistra OpenShift Istio Test Tool
 
 [![](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat)](https://github.com/yxun/moitt/blob/master/LICENSE)
+[![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg?style=flat)](https://www.python.org/downloads/release/python-370/)
 [![](https://goreportcard.com/badge/github.com/yxun/moitt)](https://goreportcard.com/report/github.com/yxun/moitt)
 ![](https://img.shields.io/github/repo-size/yxun/moitt.svg?style=flat)
 

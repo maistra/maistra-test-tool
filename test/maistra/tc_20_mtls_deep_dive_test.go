@@ -44,7 +44,7 @@ func Test20mtls(t *testing.T) {
 	log.Infof("# TC_20 Mutual TLS Deep-Dive")
 
 	util.Inspect(util.CreateNamespace("foo", kubeconfigFile), "failed to create namespace", "", t)
-	util.OcGrantPermission("default", "foo", kubeconfigFile)
+	//util.OcGrantPermission("default", "foo", kubeconfigFile)
 
 	util.Inspect(deployHttpbin("foo", kubeconfigFile), "failed to deploy httpbin", "", t)
 	util.Inspect(deploySleep("foo", kubeconfigFile), "failed to deploy sleep", "", t)

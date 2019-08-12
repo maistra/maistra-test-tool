@@ -99,12 +99,7 @@ func Test16(t *testing.T) {
 		time.Sleep(time.Duration(5) * time.Second)
 		cmd := fmt.Sprintf("curl https://my-nginx -k | grep \"Welcome to nginx\"")
 		msg, err := util.PodExec(testNamespace, sleepPod, "istio-proxy", cmd, true, kubeconfigFile)
-		if err != nil {
-			time.Sleep(time.Duration(2) * time.Second)
-			cmd = fmt.Sprintf("curl https://my-nginx -k | grep \"Welcome to nginx\"")
-			msg, err = util.PodExec(testNamespace, sleepPod, "istio-proxy", cmd, true, kubeconfigFile)
-		}
-
+		util.Inspect(err, "failed to get response", "", t)
 		if !strings.Contains(msg, "Welcome to nginx") {
 			t.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)
 			log.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)
@@ -142,12 +137,7 @@ func Test16(t *testing.T) {
 		time.Sleep(time.Duration(5) * time.Second)
 		cmd := fmt.Sprintf("curl https://my-nginx -k | grep \"Welcome to nginx\"")
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", cmd, true, kubeconfigFile)
-		if err != nil {
-			time.Sleep(time.Duration(2) * time.Second)
-			cmd = fmt.Sprintf("curl https://my-nginx -k | grep \"Welcome to nginx\"")
-			msg, err = util.PodExec(testNamespace, sleepPod, "istio-proxy", cmd, true, kubeconfigFile)
-		}
-
+		util.Inspect(err, "failed to get response", "", t)
 		if !strings.Contains(msg, "Welcome to nginx") {
 			t.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)
 			log.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)

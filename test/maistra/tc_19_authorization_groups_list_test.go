@@ -28,7 +28,7 @@ func cleanup19(kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.ShellMuteOutput("oc delete -n foo servicerolebinding bind-httpbin-viewer")
 	util.ShellMuteOutput("oc delete -n foo servicerole httpbin-viewer")
-	util.ShellMuteOutput("oc delete -n foo ServiceMeshRbacConfig default")
+	util.ShellMuteOutput("oc delete -n istio-system ServiceMeshRbacConfig default")
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
 	util.ShellMuteOutput("oc delete -n foo policy jwt-example")
@@ -49,7 +49,6 @@ func Test19mtls(t *testing.T) {
 
 	log.Infof("# TC_19 Authorization for groups and list claims")
 	util.Inspect(util.CreateNamespace("foo", kubeconfigFile), "failed to create namespace", "", t)
-	util.OcGrantPermission("default", "foo", kubeconfigFile)
 
 	util.Inspect(deployHttpbin("foo", kubeconfigFile), "failed to deploy httpbin", "", t)
 	util.Inspect(deploySleep("foo", kubeconfigFile), "failed to deploy sleep", "", t)
@@ -126,7 +125,7 @@ func Test19mtls(t *testing.T) {
 		}()
 
 		log.Info("Configure groups-based authorization")
-		util.Inspect(util.KubeApplyContents("foo", fooRBAC, kubeconfigFile), "failed to apply ServiceMeshRbacConfig", "", t)
+		util.Inspect(util.KubeApplyContents("istio-system", fooRBAC, kubeconfigFile), "failed to apply ServiceMeshRbacConfig", "", t)
 		log.Info("Waiting... Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)
 
