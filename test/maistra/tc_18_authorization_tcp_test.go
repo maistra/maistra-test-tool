@@ -27,7 +27,7 @@ import (
 func cleanup18(namespace, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDeleteContents(namespace, bookinfoMongodbPolicy, kubeconfig)
-	util.KubeDeleteContents(namespace, bookinfoRBAConDB, kubeconfig)
+	util.KubeDeleteContents("istio-system", bookinfoRBAConDB, kubeconfig)
 	log.Info("Waiting... Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 
@@ -49,7 +49,7 @@ func setup18(namespace, kubeconfig string) error {
 	if err := util.KubeApply(namespace, bookinfoRatingv2ServiceAccount, kubeconfig); err != nil {
 		return err
 	}
-	util.OcGrantPermission("bookinfo-ratings-v2", namespace, kubeconfig)
+	//util.OcGrantPermission("bookinfo-ratings-v2", namespace, kubeconfig)
 	log.Info("Waiting for rules to propagate. Sleep 30 seconds...")
 	time.Sleep(time.Duration(30) * time.Second)
 	err := util.CheckPodRunning(namespace, "app=ratings,version=v2", kubeconfig)
@@ -69,7 +69,7 @@ func Test18mtls(t *testing.T) {
 	updateYaml(testNamespace)
 
 	util.CreateNamespace(testNamespace, kubeconfigFile)
-	util.OcGrantPermission("default", testNamespace, kubeconfigFile)
+	//util.OcGrantPermission("default", testNamespace, kubeconfigFile)
 
 	log.Info("Deploy bookinfo")
 	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
@@ -78,7 +78,7 @@ func Test18mtls(t *testing.T) {
 	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
 
 	log.Info("Create Service Accounts")
-	util.KubeDeleteContents(testNamespace, bookinfoRBAConDB, kubeconfigFile)
+	util.KubeDeleteContents("istio-system", bookinfoRBAConDB, kubeconfigFile)
 	
 	util.Inspect(setup18(testNamespace, kubeconfigFile), "failed to create service account", "", t)
 	util.Inspect(util.KubeApply(testNamespace, bookinfoRuleAllTLSYaml, kubeconfigFile), "failed to apply rule", "", t)
@@ -88,9 +88,10 @@ func Test18mtls(t *testing.T) {
 
 	util.Inspect(deployMongoDB(testNamespace, kubeconfigFile), "failed to deploy mongoDB", "", t)
 
-	log.Info("Waiting... Sleep 10 seconds...")
-	time.Sleep(time.Duration(10) * time.Second)
+	log.Info("Waiting... Sleep 20 seconds...")
+	time.Sleep(time.Duration(20) * time.Second)
 
+	/*
 	t.Run("verify_setup_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occurred. This allows cleanup to be executed after panic.
@@ -110,6 +111,7 @@ func Test18mtls(t *testing.T) {
 			"Success. Response matches with expected.",
 			t)
 	})
+	*/
 
 	t.Run("enable_rbac_test", func(t *testing.T) {
 		defer func() {
@@ -120,7 +122,7 @@ func Test18mtls(t *testing.T) {
 		}()
 
 		log.Info("Enable Istio Authorization")
-		util.Inspect(util.KubeApplyContents(testNamespace, bookinfoRBAConDB, kubeconfigFile), "failed to apply policy", "", t)
+		util.Inspect(util.KubeApplyContents("istio-system", bookinfoRBAConDB, kubeconfigFile), "failed to apply policy", "", t)
 		log.Info("Waiting... Sleep 10 seconds...")
 		time.Sleep(time.Duration(10) * time.Second)
 		resp, _, err := util.GetHTTPResponse(productpageURL, nil)

@@ -155,7 +155,12 @@ class Operator(object):
         for line in imageIDs.stdout.split(' '):
             print(line)
 
-        
+   
+    def add_anyuid(self, account, namespace):
+        proc = sp.run(['oc', 'adm', 'policy', 'add-scc-to-user', 'anyuid', '-z', account, '-n', namespace], stdout=sp.PIPE, universal_newlines=True)
+        print(proc.stdout)
+
+
 
 class ControlPlane(object):
     """Instances of istio system ControlPlane created by istio-operator"""

@@ -128,6 +128,16 @@ def main():
             cp.check()
             ocp.logout()
 
+            # add scc anyuid
+            with open(moitt.assets + '/auth/kubeadmin-password') as f:
+                pw = f.read() 
+            ocp.login('kubeadmin', pw)
+            operator.add_anyuid("bookinfo-productpage", "bookinfo")
+            operator.add_anyuid("bookinfo-reviews", "bookinfo")
+            operator.add_anyuid("bookinfo-ratings-v2", "bookinfo")
+            operator.add_anyuid("default", "bookinfo")
+            ocp.logout()
+
         elif moitt.uninstall:
             # uninstall controlplane
             ocp.login('qe1', os.getenv('QE1_PWD', 'qe1pw'))

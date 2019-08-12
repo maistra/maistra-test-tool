@@ -30,7 +30,7 @@ func cleanup17(namespace, kubeconfig string) {
 	util.KubeDeleteContents(namespace, bookinfoReviewPolicy, kubeconfig)
 	util.KubeDeleteContents(namespace, bookinfoProductpagePolicy, kubeconfig)
 	util.KubeDeleteContents(namespace, bookinfoNamespacePolicy, kubeconfig)
-	util.KubeDeleteContents(namespace, bookinfoRBACOn, kubeconfig)
+	util.KubeDeleteContents("istio-system", bookinfoRBACOn, kubeconfig)
 
 	util.KubeDelete(namespace, bookinfoReviewv3Yaml, kubeconfig)
 	util.ShellMuteOutput("oc delete serviceaccount -n %s bookinfo-productpage", namespace)
@@ -46,8 +46,8 @@ func cleanup17(namespace, kubeconfig string) {
 
 
 func setup17(namespace, kubeconfig string) error {
-	util.OcGrantPermission("bookinfo-productpage", namespace, kubeconfig)
-	util.OcGrantPermission("bookinfo-reviews", namespace, kubeconfig)
+	//util.OcGrantPermission("bookinfo-productpage", namespace, kubeconfig)
+	//util.OcGrantPermission("bookinfo-reviews", namespace, kubeconfig)
 	if err := util.KubeApply(namespace, bookinfoAddServiceAccountYaml, kubeconfig); err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func Test17mtls(t *testing.T) {
 		}()
 
 		log.Info("Enabling Istio authorization")
-		util.Inspect(util.KubeApplyContents(testNamespace, bookinfoRBACOn, kubeconfigFile), "failed to apply policy", "", t)
+		util.Inspect(util.KubeApplyContents("istio-system", bookinfoRBACOn, kubeconfigFile), "failed to apply policy", "", t)
 		log.Info("Waiting... Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)
 		for i := 0; i <= Retry; i++ {
