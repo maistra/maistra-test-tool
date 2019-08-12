@@ -41,7 +41,6 @@ The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/).
 | ----------- | ----------- |
 | AWS_PROFILE | AWS profile name |
 | PULL_SEC    | Istio private registry pull secret.yaml file path |
-| OPERATOR_FILE | Maistra Istio operator.yaml file path |
 | CR_FILE     | Istio ControlPlane CR file path  |
 
 * Export the environment variables (See the table above) with their values.

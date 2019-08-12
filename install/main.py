@@ -29,7 +29,6 @@ class Moitt(object):
         self.profile = None
         self.pullsec = None
         self.oc_version = '0.10.0'
-        self.operatorfile = None
         self.crfile = None
         self.install = False
         self.uninstall = False
@@ -41,12 +40,8 @@ class Moitt(object):
             self.profile = os.environ['AWS_PROFILE']
         if 'PULL_SEC' in os.environ:
             self.pullsec = os.environ['PULL_SEC']
-        if 'OPERATOR_FILE' in os.environ:
-            self.operatorfile = os.environ['OPERATOR_FILE']
         if 'CR_FILE' in os.environ:
             self.crfile = os.environ['CR_FILE']
-        if 'OC_VERSION' in os.environ:
-            self.oc_version = os.environ['OC_VERSION']
 
     
     def argParse(self):
@@ -105,7 +100,8 @@ def main():
         ocp.logout()
     
     if moitt.component == 'istio':
-        operator = Operator()
+        operator = Operator(operator_version="maistra-1.0")
+        operator.mutate()
 
         nslist = ['bookinfo', 'foo', 'bar', 'legacy']
         smmr = os.getcwd() + '/member-roll.yaml'
@@ -119,7 +115,7 @@ def main():
             ocp.login('kubeadmin', pw)
             operator.deploy_jaeger()
             operator.deploy_kiali()
-            operator.deploy_istio(operator_file=moitt.operatorfile)
+            operator.deploy_istio()
             operator.check()
             ocp.logout()
 
@@ -127,14 +123,9 @@ def main():
             ocp.login('qe1', os.getenv('QE1_PWD', 'qe1pw'))
             cp.install(cr_file=moitt.crfile)
             cp.create_ns(cp.nslist)
+            cp.apply_smmr()
             cp.smoke_check()
             cp.check()
-            ocp.logout()
-
-            with open(moitt.assets + '/auth/kubeadmin-password') as f:
-                pw = f.read()
-            ocp.login('kubeadmin', pw)
-            cp.apply_smmr()
             ocp.logout()
 
         elif moitt.uninstall:
@@ -148,7 +139,7 @@ def main():
             with open(moitt.assets + '/auth/kubeadmin-password') as f:
                 pw = f.read() 
             ocp.login('kubeadmin', pw)
-            operator.uninstall(operator_file=moitt.operatorfile)
+            operator.uninstall()
             ocp.logout()
 
    
