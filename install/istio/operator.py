@@ -61,7 +61,7 @@ class Operator(object):
         sp.run(['sleep', '10'])
 
 
-    def deploy_jaeger(self, jaeger_version="v1.13.1"):
+    def deploy_jaeger(self, jaeger_version="master"):
         # install the Jaeger operator as a prerequisit
         sp.run(['oc', 'new-project', 'observability'], stderr=sp.PIPE)
         sp.run(['oc', 'create', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/crds/jaegertracing_v1_jaeger_crd.yaml" % jaeger_version])
@@ -69,20 +69,17 @@ class Operator(object):
         sp.run(['oc', 'create', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/role.yaml" % jaeger_version])
         sp.run(['oc', 'create', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/role_binding.yaml" % jaeger_version])
         
+        #sp.run(['oc', 'create', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/operator.yaml" % jaeger_version])
+        # curl https://raw.githubusercontent.com/jaegertracing/jaeger-operator/v1.13.1/deploy/operator.yaml | sed 's@jaegertracing/jaeger-operator:1.13.1@quay.io/maistra/jaeger-operator:1.13.1@g' | oc create -n observability -f -
         """
-        sp.run(['curl', '-o', 'jaeger_operator.yaml', '-L', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/operator.yaml" % jaeger_version])
-        imageP1 = re.compile('image: jaegertracing/jaeger-operator:.*')
+        imageP1 = re.compile('jaegertracing')
         with open('jaeger_operator.yaml', 'r') as f:
             lines = f.readlines()
         with open('jaeger_operator.yaml', 'w') as f:
             for line in lines:
-                f.write(imageP1.sub("image: quay.io/maistra/jaeger-operator:1.13.1", line))
-
-        sp.run(['oc', 'create', '-n', 'observability', '-f', 'jaeger_operator.yaml'])
+                f.write(imageP1.sub("quay.io/maistra", line))
         """
-        
-        sp.run(['oc', 'create', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/operator.yaml" % jaeger_version])
-        # curl https://raw.githubusercontent.com/jaegertracing/jaeger-operator/v1.13.1/deploy/operator.yaml | sed 's@jaegertracing/jaeger-operator:1.13.1@quay.io/maistra/jaeger-operator:1.13.1@g' | oc create -n observability -f -
+        sp.run(['oc', 'create', '-n', 'observability', '-f', 'jaeger_operator.yaml'])
         sp.run(['sleep', '10'])
 
 
@@ -120,8 +117,8 @@ class Operator(object):
         sp.run(['oc', 'delete', '-n', 'istio-operator', '-f', operator_file])
 
         # uninstall the Jaeger Operator
-        ##sp.run(['oc', 'delete', '-n', 'observability', '-f', 'jaeger_operator.yaml'])
-        sp.run(['oc', 'delete', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/operator.yaml" % jaeger_version])
+        sp.run(['oc', 'delete', '-n', 'observability', '-f', 'jaeger_operator.yaml'])
+        #sp.run(['oc', 'delete', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/operator.yaml" % jaeger_version])
         sp.run(['oc', 'delete', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/role_binding.yaml" % jaeger_version])
         sp.run(['oc', 'delete', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/role.yaml" % jaeger_version])
         sp.run(['oc', 'delete', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/service_account.yaml" % jaeger_version])
