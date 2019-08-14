@@ -57,7 +57,7 @@ function check_grafana() {
 }
 
 function main() {
-    banner "TC_29 Visualizing Metrics Grafana"
+    banner "TC_30 Visualizing Metrics Grafana"
     echo "bookinfo" | ./bookinfo_install.sh
     sleep 10
 
@@ -68,7 +68,7 @@ function main() {
 
     check_grafana
     
-    banner "TC_29 passed"
+    banner "TC_30 passed"
 }
 
 main

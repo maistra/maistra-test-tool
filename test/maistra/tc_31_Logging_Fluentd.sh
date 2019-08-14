@@ -89,7 +89,7 @@ function check_logs() {
 }
 
 function main() {
-    banner "TC_30 Logging with Fluentd"
+    banner "TC_31 Logging with Fluentd"
     echo "bookinfo" | ./bookinfo_install.sh
     sleep 10
 
@@ -99,6 +99,6 @@ function main() {
     sleep 20
 
     check_logs
-    banner "TC_30 passed"
+    banner "TC_31 passed"
 }
 main
