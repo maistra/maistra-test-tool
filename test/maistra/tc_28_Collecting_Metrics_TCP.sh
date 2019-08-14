@@ -71,13 +71,13 @@ function check_tcp_metrics() {
 }
 
 function main() {
-    banner "TC_27 Collecting Metrics TCP"
+    banner "TC_28 Collecting Metrics TCP"
     echo "bookinfo" | ./bookinfo_install.sh
     sleep 10
 
     check_tcp_metrics
 
-    banner "TC_27 passed"
+    banner "TC_28 passed"
 }
 
 main

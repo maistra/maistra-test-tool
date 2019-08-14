@@ -66,14 +66,14 @@ function check_metrics() {
 }
 
 function main() {
-    banner "TC_26 Collecting Metrics Logs"
+    banner "TC_27 Collecting Metrics Logs"
     echo "bookinfo" | ./bookinfo_install.sh
 
     sleep 10
 
     check_metrics
 
-    banner "TC_26 passed"
+    banner "TC_27 passed"
 }
 
 main

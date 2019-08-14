@@ -46,7 +46,7 @@ function check_jaeger() {
 }
 
 function main() {
-    banner "TC_25 Distributed Tracing"
+    banner "TC_26 Distributed Tracing"
     echo "bookinfo" | ./bookinfo_install.sh
 
     sleep 10
@@ -56,7 +56,7 @@ function main() {
     curl -o /dev/null -s -w "%{http_code}\n" http://$GATEWAY_URL/productpage
     
     check_jaeger
-    banner "TC_25 passed"
+    banner "TC_26 passed"
 }
 
 main

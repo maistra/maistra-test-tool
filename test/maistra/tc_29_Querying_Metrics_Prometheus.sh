@@ -54,7 +54,7 @@ function query_metrics() {
 }
 
 function main() {
-    banner "TC_28 Querying Metrics Prometheus"
+    banner "TC_29 Querying Metrics Prometheus"
     echo "bookinfo" | ./bookinfo_install.sh
     sleep 10
 
@@ -67,7 +67,7 @@ function main() {
 
     query_metrics
 
-    banner "TC_28 passed"
+    banner "TC_29 passed"
 }
 
 main
