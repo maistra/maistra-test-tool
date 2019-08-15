@@ -34,14 +34,14 @@ class Operator(object):
         
         
     def mutate(self, operator_file="operator_quay.yaml"):
-        imageP1 = re.compile('image:.*istio-operator-rhel8:.*')
+        imageP1 = re.compile('image:.*istio-.*-operator.*')
         imageP2 = re.compile('value:.*istio-cni-rhel8:.*')
 
         with open('operator_quay.yaml', 'r') as f:
             lines = f.readlines()
         with open('operator_quay.yaml', 'w') as f:
             for line in lines:
-                f.write(imageP1.sub("image: quay.io/maistra/istio-operator-rhel8:latest-qe", line))
+                f.write(imageP1.sub("image: quay.io/maistra/istio-rhel8-operator:latest-qe", line))
 
         with open('operator_quay.yaml', 'r') as f:
             lines = f.readlines()
