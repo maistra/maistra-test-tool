@@ -5,9 +5,10 @@ DIR=$(cd $(dirname $0); pwd -P)
 BASE_DIR="${DIR}/../"
 
 OC_COMMAND="oc"
+MESH="service-mesh-1"
 
-INGRESS_HOST="$(${OC_COMMAND} get routes -n istio-system -l app=istio-ingressgateway -o jsonpath='{.items[0].spec.host}')"
-GRAFANA_ROUTE="$(${OC_COMMAND} get routes -n istio-system -l app=grafana -o jsonpath='{.items[0].spec.host}')"
+INGRESS_HOST="$(${OC_COMMAND} get routes -n ${MESH} -l app=istio-ingressgateway -o jsonpath='{.items[0].spec.host}')"
+GRAFANA_ROUTE="$(${OC_COMMAND} get routes -n ${MESH} -l app=grafana -o jsonpath='{.items[0].spec.host}')"
 
 while getopts 'h:' OPTION; do
   case "$OPTION" in
@@ -16,8 +17,8 @@ while getopts 'h:' OPTION; do
 done
 shift $((OPTIND-1))
 
-INGRESS_PORT="$(${OC_COMMAND} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')"
-SECURE_INGRESS_PORT="$(${OC_COMMAND} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}')"
+INGRESS_PORT="$(${OC_COMMAND} -n ${MESH} get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')"
+SECURE_INGRESS_PORT="$(${OC_COMMAND} -n ${MESH} get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}')"
 GATEWAY_URL="${INGRESS_HOST}:${INGRESS_PORT}"
 
 
@@ -40,12 +41,10 @@ trap cleanup EXIT
 
 function check_grafana() {
     echo "# Verify prometheus service is running"
-    ${OC_COMMAND} -n istio-system get svc prometheus
+    ${OC_COMMAND} -n ${MESH} get svc prometheus
 
     echo "# Verify Grafana service is running"
-    ${OC_COMMAND} -n istio-system get svc grafana
-
-    #${OC_COMMAND} -n istio-system port-forward $(${OC_COMMAND} -n istio-system get pod -l app=grafana -o jsonpath='{.items[0].metadata.name}') 3000:3000 &
+    ${OC_COMMAND} -n ${MESH} get svc grafana
 
     echo
     echo "https://${GRAFANA_ROUTE}" 

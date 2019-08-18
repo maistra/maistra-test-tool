@@ -106,7 +106,7 @@ def main():
         nslist = ['bookinfo', 'foo', 'bar', 'legacy']
         smmr = os.getcwd() + '/member-roll.yaml'
         sample = os.getcwd() + '/bookinfo.yaml'
-        cp = ControlPlane("basic-install", "istio-system", "bookinfo", nslist, smmr, sample)
+        cp = ControlPlane("basic-install", "service-mesh-1", "bookinfo", nslist, smmr, sample)
         if moitt.install:
             # deploy operators
             # Read kubeadmin password

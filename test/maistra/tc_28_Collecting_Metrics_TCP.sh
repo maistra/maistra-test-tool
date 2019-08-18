@@ -5,14 +5,15 @@ DIR=$(cd $(dirname $0); pwd -P)
 BASE_DIR="${DIR}/../"
 
 OC_COMMAND="oc"
+MESH="service-mesh-1"
 TCP_TELEMETRY="testdata/telemetry/tcp_telemetry.yaml"
 BOOKINFO_RATE_V2="testdata/bookinfo/platform/kube/bookinfo-ratings-v2.yaml"
 BOOKINFO_DB="testdata/bookinfo/platform/kube/bookinfo-db.yaml"
 BOOKINFO_RULE="testdata/bookinfo/networking/destination-rule-all.yaml"
 VS_RATE_DB="testdata/bookinfo/networking/virtual-service-ratings-db.yaml"
 
-INGRESS_HOST="$(${OC_COMMAND} get routes -n istio-system -l app=istio-ingressgateway -o jsonpath='{.items[0].spec.host}')"
-PROMETHEUS_ROUTE="$(${OC_COMMAND} get routes -n istio-system -l app=prometheus -o jsonpath='{.items[0].spec.host}')"
+INGRESS_HOST="$(${OC_COMMAND} get routes -n ${MESH} -l app=istio-ingressgateway -o jsonpath='{.items[0].spec.host}')"
+PROMETHEUS_ROUTE="$(${OC_COMMAND} get routes -n ${MESH} -l app=prometheus -o jsonpath='{.items[0].spec.host}')"
 
 while getopts 'h:' OPTION; do
   case "$OPTION" in
@@ -21,8 +22,8 @@ while getopts 'h:' OPTION; do
 done
 shift $((OPTIND-1))
 
-INGRESS_PORT="$(${OC_COMMAND} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')"
-SECURE_INGRESS_PORT="$(${OC_COMMAND} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}')"
+INGRESS_PORT="$(${OC_COMMAND} -n ${MESH} get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')"
+SECURE_INGRESS_PORT="$(${OC_COMMAND} -n ${MESH} get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}')"
 GATEWAY_URL="${INGRESS_HOST}:${INGRESS_PORT}"
 
 
@@ -61,8 +62,6 @@ function check_tcp_metrics() {
     curl -o /dev/null -s -w "%{http_code}\n" http://$GATEWAY_URL/productpage
     curl -o /dev/null -s -w "%{http_code}\n" http://$GATEWAY_URL/productpage
     curl -o /dev/null -s -w "%{http_code}\n" http://$GATEWAY_URL/productpage
-
-    #${OC_COMMAND} -n istio-system port-forward $(${OC_COMMAND} -n istio-system get pod -l app=prometheus -o jsonpath='{.items[0].metadata.name}') 9090:9090 &
 
     echo
     echo "https://${PROMETHEUS_ROUTE}"

@@ -28,7 +28,7 @@ import (
 
 func cleanup22(kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
-	util.Shell("oc rollout undo deployment -n istio-system istio-citadel")
+	util.Shell("oc rollout undo deployment istio-citadel -n " + meshNamespace)
 	util.ShellMuteOutput("rm -f /tmp/istio-citadel-new.yaml")
 	log.Info("Waiting... Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
@@ -59,7 +59,7 @@ func Test22mtls(t *testing.T) {
 		newFile := "/tmp/istio-citadel-new.yaml"
 		
 		util.ShellMuteOutput("oc get deployment -n %s %s -o yaml --kubeconfig=%s > %s",
-						"istio-system",
+						meshNamespace,
 						"istio-citadel",
 						kubeconfigFile,
 						backupFile)
@@ -77,13 +77,13 @@ func Test22mtls(t *testing.T) {
 			log.Infof("Update citadel deployment error: %v", err)
 			t.Errorf("Update citadel deployment error: %v", err)
 		}
-		util.Shell("oc apply -n %s -f %s", "istio-system", newFile)
+		util.Shell("oc apply -n %s -f %s", meshNamespace, newFile)
 		log.Info("Waiting... Sleep 30 seconds...")
 		time.Sleep(time.Duration(30) * time.Second)
 
-		pod, err := util.GetPodName("istio-system", "istio=citadel", kubeconfigFile)
+		pod, err := util.GetPodName(meshNamespace, "istio=citadel", kubeconfigFile)
 		util.Inspect(err, "failed to get sleep pod name", "", t)
-		msg, _ := util.ShellMuteOutput("oc logs -n %s %s", "istio-system", pod)
+		msg, _ := util.ShellMuteOutput("oc logs -n %s %s", meshNamespace, pod)
 		if !strings.Contains(msg, "CSR") {
 			log.Infof("Error no CSR is healthy log")
 			t.Errorf("Error no CSR is healthy log")

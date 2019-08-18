@@ -14,13 +14,14 @@
 
 package maistra
 
+import "strings"
+
 const (
 	meshPolicy = `
 apiVersion: "authentication.maistra.io/v1"
 kind: "ServiceMeshPolicy"
 metadata:
   name: "default"
-  namespace: "istio-system"
 spec:
   peers:
   - mtls: {}	
@@ -43,7 +44,6 @@ apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
 metadata:
   name: "default"
-  namespace: "istio-system"
 spec:
   host: "*.local"
   trafficPolicy:
@@ -404,7 +404,6 @@ apiVersion: config.istio.io/v1alpha2
 kind: handler
 metadata:
   name: keyval
-  namespace: istio-system
 spec:
   adapter: keyval
   connection:
@@ -419,22 +418,20 @@ apiVersion: config.istio.io/v1alpha2
 kind: instance
 metadata:
   name: keyval
-  namespace: istio-system
 spec:
   template: keyval
   params:
     key: request.headers["user"] | ""
 `
 
-  demoAdapterRule = `
+  demoAdapterRuleTemplate = `
 apiVersion: config.istio.io/v1alpha2
 kind: rule
 metadata:
   name: keyval
-  namespace: istio-system
 spec:
   actions:
-  - handler: keyval.istio-system
+  - handler: keyval.[mesh]
     instances: [ keyval ]
     name: x
   requestHeaderOperations:
@@ -442,20 +439,24 @@ spec:
     values: [ x.output.value ]
 `
 
-  demoAdapterRule2 = `
+  demoAdapterRule2Template = `
 apiVersion: config.istio.io/v1alpha2
 kind: rule
 metadata:
   name: keyval
-  namespace: istio-system
 spec:
   match: source.labels["istio"] == "ingressgateway"
   actions:
-  - handler: keyval.istio-system
+  - handler: keyval.[mesh]
     instances: [ keyval ]
   requestHeaderOperations:
   - name: :path
     values: [ '"/status/418"' ]
 `
 
+)
+
+var (
+  demoAdapterRule = strings.Replace(demoAdapterRuleTemplate, "[mesh]", meshNamespace, -1)
+  demoAdapterRule2 = strings.Replace(demoAdapterRule2Template, "[mesh]", meshNamespace, -1)
 )

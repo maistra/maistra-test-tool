@@ -25,7 +25,7 @@ import (
 
 func cleanup08(namespace, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
-	util.OcDelete("", httpbinOCPRouteYaml, kubeconfig) // uncomment this OcDelete when IOR is not enabled
+	util.OcDelete(meshNamespace, httpbinOCPRouteYaml, kubeconfig) // uncomment this OcDelete when IOR is not enabled
 	util.KubeDelete(namespace, httpbinGatewayYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinRouteYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinYaml, kubeconfig)
@@ -41,7 +41,7 @@ func configHttpbin(namespace, kubeconfig string) error {
 		return err
 	}
 	
-	util.OcApply("", httpbinOCPRouteYaml, kubeconfig)   // uncomment this OcApply when IOR is not enabled
+	util.OcApply(meshNamespace, httpbinOCPRouteYaml, kubeconfig)   // uncomment this OcApply when IOR is not enabled
 
 	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
@@ -71,7 +71,7 @@ func Test08(t *testing.T) {
 	}()
 
 	log.Infof("# TC_08 Control Ingress Traffic")
-	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", meshNamespace, kubeconfigFile)
 	util.Inspect(err, "failed to get ingressgateway URL", "", t)
 
 	util.Inspect(deployHttpbin(testNamespace, kubeconfigFile), "failed to deploy httpbin", "", t)

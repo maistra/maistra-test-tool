@@ -3,7 +3,6 @@ apiVersion: "config.istio.io/v1alpha2"
 kind: metric
 metadata:
   name: doublerequestcount
-  namespace: istio-system
 spec:
   value: "2" # count each request twice
   dimensions:
@@ -18,11 +17,10 @@ apiVersion: "config.istio.io/v1alpha2"
 kind: prometheus
 metadata:
   name: doublehandler
-  namespace: istio-system
 spec:
   metrics:
   - name: double_request_count # Prometheus metric name
-    instance_name: doublerequestcount.metric.istio-system # Mixer instance name (fully-qualified)
+    instance_name: doublerequestcount.metric.service-mesh-1 # Mixer instance name (fully-qualified)
     kind: COUNTER
     label_names:
     - reporter
@@ -35,7 +33,6 @@ apiVersion: "config.istio.io/v1alpha2"
 kind: rule
 metadata:
   name: doubleprom
-  namespace: istio-system
 spec:
   actions:
   - handler: doublehandler.prometheus
@@ -47,7 +44,6 @@ apiVersion: "config.istio.io/v1alpha2"
 kind: logentry
 metadata:
   name: newlog
-  namespace: istio-system
 spec:
   severity: '"warning"'
   timestamp: request.time
@@ -65,7 +61,6 @@ apiVersion: "config.istio.io/v1alpha2"
 kind: stdio
 metadata:
   name: newhandler
-  namespace: istio-system
 spec:
  severity_levels:
    warning: 1 # Params.Level.WARNING
@@ -76,7 +71,6 @@ apiVersion: "config.istio.io/v1alpha2"
 kind: rule
 metadata:
   name: newlogstdio
-  namespace: istio-system
 spec:
   match: "true" # match for all requests
   actions:

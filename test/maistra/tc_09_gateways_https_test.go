@@ -32,20 +32,20 @@ import (
 func cleanup09(namespace, kubeconfig string) {
 
 	log.Infof("# Cleanup. Following error can be ignored...")
-	util.OcDelete("", httpbinOCPRouteYaml, kubeconfig) // uncomment this OcDelete when IOR is not enabled
+	util.OcDelete(meshNamespace, httpbinOCPRouteYaml, kubeconfig) // uncomment this OcDelete when IOR is not enabled
 	util.KubeDelete(namespace, httpbinGatewayHTTPSMutualYaml, kubeconfig)
-	util.OcDelete("", httpbinOCPRouteHTTPSYaml, kubeconfig) // uncomment this OcDelete when IOR is not enabled
+	util.OcDelete(meshNamespace, httpbinOCPRouteHTTPSYaml, kubeconfig) // uncomment this OcDelete when IOR is not enabled
 	util.KubeDelete(namespace, httpbinRouteHTTPSYaml, kubeconfig)
 	util.KubeDelete(namespace, httpbinGatewayHTTPSYaml, kubeconfig)
 
 	util.ShellMuteOutput("oc delete secret %s -n %s --kubeconfig=%s",
-		"istio-ingressgateway-bookinfo-certs", "istio-system", kubeconfig)
+		"istio-ingressgateway-bookinfo-certs", meshNamespace, kubeconfig)
 	util.ShellMuteOutput("oc delete secret %s -n %s --kubeconfig=%s",
-		"istio-ingressgateway-certs", "istio-system", kubeconfig)
+		"istio-ingressgateway-certs", meshNamespace, kubeconfig)
 	util.ShellMuteOutput("oc delete secret %s -n %s --kubeconfig=%s",
-		"istio-ingressgateway-ca-certs", "istio-system", kubeconfig)
+		"istio-ingressgateway-ca-certs", meshNamespace, kubeconfig)
 	util.ShellMuteOutput("oc delete secret %s -n %s --kubeconfig=%s",
-		"istio.istio-ingressgateway-service-account", "istio-system", kubeconfig)
+		"istio.istio-ingressgateway-service-account", meshNamespace, kubeconfig)
 
 	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
@@ -58,17 +58,17 @@ func cleanup09(namespace, kubeconfig string) {
 // configHttpbinHTTPS configures https certs
 func configHttpbinHTTPS(namespace, kubeconfig string) error {
 	// create tls certs
-	if _, err := util.CreateTLSSecret("istio-ingressgateway-certs", "istio-system", httpbinSampleServerCertKey, httpbinSampleServerCert, kubeconfig); err != nil {
+	if _, err := util.CreateTLSSecret("istio-ingressgateway-certs", meshNamespace, httpbinSampleServerCertKey, httpbinSampleServerCert, kubeconfig); err != nil {
 		log.Infof("Failed to create secret %s\n", "istio-ingressgateway-certs")
 		return err
 	}
 	// check cert
-	pod, err := util.GetPodName("istio-system", "istio=ingressgateway", kubeconfig)
+	pod, err := util.GetPodName(meshNamespace, "istio=ingressgateway", kubeconfig)
 	msg, err := util.ShellSilent("oc exec --kubeconfig=%s -it -n %s %s -- %s ",
-		kubeconfig, "istio-system", pod, "ls -al /etc/istio/ingressgateway-certs | grep tls.crt")
+		kubeconfig, meshNamespace, pod, "ls -al /etc/istio/ingressgateway-certs | grep tls.crt")
 	for err != nil {
 		msg, err = util.ShellSilent("oc exec --kubeconfig=%s -it -n %s %s -- %s ",
-			kubeconfig, "istio-system", pod, "ls -al /etc/istio/ingressgateway-certs | grep tls.crt")
+			kubeconfig, meshNamespace, pod, "ls -al /etc/istio/ingressgateway-certs | grep tls.crt")
 		time.Sleep(time.Duration(10) * time.Second)
 	}
 	log.Infof("Secret %s created: %s\n", "istio-ingressgateway-certs", msg)
@@ -81,7 +81,7 @@ func configHttpbinHTTPS(namespace, kubeconfig string) error {
 		return err
 	}
 	
-	util.OcApply("", httpbinOCPRouteHTTPSYaml, kubeconfig)   // uncomment this OcApply when IOR is not enabled
+	util.OcApply(meshNamespace, httpbinOCPRouteHTTPSYaml, kubeconfig)   // uncomment this OcApply when IOR is not enabled
 
 	log.Info("Waiting for rules to propagate. Sleep 30 seconds...")
 	time.Sleep(time.Duration(30) * time.Second)
@@ -91,18 +91,18 @@ func configHttpbinHTTPS(namespace, kubeconfig string) error {
 func updateHttpbinHTTPS(namespace, kubeconfig string) error {
 	// create secret ca
 	_, err := util.ShellMuteOutput("oc create secret generic %s --from-file %s -n %s --kubeconfig=%s",
-		"istio-ingressgateway-ca-certs", httpbinSampleCACert, "istio-system", kubeconfig)
+		"istio-ingressgateway-ca-certs", httpbinSampleCACert, meshNamespace, kubeconfig)
 	if err != nil {
 		log.Infof("Failed to create secret %s\n", "istio-ingressgateway-ca-certs")
 		return err
 	}
 	// check ca chain
-	pod, err := util.GetPodName("istio-system", "istio=ingressgateway", kubeconfig)
+	pod, err := util.GetPodName(meshNamespace, "istio=ingressgateway", kubeconfig)
 	msg, err := util.ShellSilent("oc exec --kubeconfig=%s -it -n %s %s -- %s ",
-		kubeconfig, "istio-system", pod, "ls -al /etc/istio/ingressgateway-ca-certs | grep ca-chain")
+		kubeconfig, meshNamespace, pod, "ls -al /etc/istio/ingressgateway-ca-certs | grep ca-chain")
 	for err != nil {
 		msg, err = util.ShellSilent("oc exec --kubeconfig=%s -it -n %s %s -- %s ",
-			kubeconfig, "istio-system", pod, "ls -al /etc/istio/ingressgateway-ca-certs | grep ca-chain")
+			kubeconfig, meshNamespace, pod, "ls -al /etc/istio/ingressgateway-ca-certs | grep ca-chain")
 		time.Sleep(time.Duration(10) * time.Second)
 	}
 	log.Infof("Secret %s created: %s\n", "istio-ingressgateway-ca-certs", msg)
@@ -227,10 +227,10 @@ func Test09(t *testing.T) {
 	log.Info("Waiting for previous run to be cleaned up. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 
-	ingressHost, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	ingressHost, err := util.GetOCPIngressgateway("app=istio-ingressgateway", meshNamespace, kubeconfigFile)
 	util.Inspect(err, "failed to get ingressgateway URL", "", t)
 
-	secureIngressPort, err := util.GetSecureIngressPort("istio-system", "istio-ingressgateway", kubeconfigFile)
+	secureIngressPort, err := util.GetSecureIngressPort(meshNamespace, "istio-ingressgateway", kubeconfigFile)
 	util.Inspect(err, "cannot get ingress secure port", "", t)
 	
 	util.Inspect(deployHttpbin(testNamespace, kubeconfigFile), "failed to deploy httpbin", "", t)

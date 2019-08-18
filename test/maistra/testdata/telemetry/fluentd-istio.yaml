@@ -3,7 +3,6 @@ apiVersion: "config.istio.io/v1alpha2"
 kind: logentry
 metadata:
   name: newlog
-  namespace: istio-system
 spec:
   severity: '"info"'
   timestamp: request.time
@@ -21,7 +20,6 @@ apiVersion: "config.istio.io/v1alpha2"
 kind: fluentd
 metadata:
   name: handler
-  namespace: istio-system
 spec:
   address: "fluentd-es.logging:24224"
 ---
@@ -30,7 +28,6 @@ apiVersion: "config.istio.io/v1alpha2"
 kind: rule
 metadata:
   name: newlogtofluentd
-  namespace: istio-system
 spec:
   match: "true" # match for all requests
   actions:

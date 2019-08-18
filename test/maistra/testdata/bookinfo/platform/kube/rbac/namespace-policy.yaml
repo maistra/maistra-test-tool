@@ -19,7 +19,7 @@ metadata:
 spec:
   subjects:
   - properties:
-      source.namespace: "istio-system"
+      source.namespace: "[mesh]"
   - properties:
       source.namespace: "default"
   roleRef:

@@ -72,10 +72,10 @@ func Test06(t *testing.T) {
 
 	log.Infof("# TC_06 TCP Traffic Shifting")
 
-	ingress, err := util.GetOCP4Ingressgateway("istio-system", kubeconfigFile)
+	ingress, err := util.GetOCP4Ingressgateway(meshNamespace, kubeconfigFile)
 	util.Inspect(err, "failed to get ingressgateway URL", "", t)
 
-	ingressTCPPort, err := util.GetTCPIngressPort("istio-system", "istio-ingressgateway", kubeconfigFile)
+	ingressTCPPort, err := util.GetTCPIngressPort(meshNamespace, "istio-ingressgateway", kubeconfigFile)
 	util.Inspect(err, "cannot get ingress TCP port", "", t)
 
 	util.Inspect(deployEcho(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
@@ -103,7 +103,7 @@ func Test06(t *testing.T) {
 			time.Sleep(time.Duration(1) * time.Second)
 			msg, err := checkEcho(ingress, ingressTCPPort)
 			if err != nil {
-				ingress, err = util.GetOCP4Ingressgateway("istio-system", kubeconfigFile)
+				ingress, err = util.GetOCP4Ingressgateway(meshNamespace, kubeconfigFile)
 				msg, err = checkEcho(ingress, ingressTCPPort)
 			}
 			util.Inspect(err, "faild to get date", "", t)
@@ -134,7 +134,7 @@ func Test06(t *testing.T) {
 		log.Info("# Shifting 20% TCP traffic to v2 tolerance 10% ")
 		util.Inspect(routeTraffic20v2(testNamespace, kubeconfigFile), "failed to apply rules", "", t)
 		time.Sleep(time.Duration(5) * time.Second)
-		ingress, err := util.GetOCP4Ingressgateway("istio-system", kubeconfigFile)
+		ingress, err := util.GetOCP4Ingressgateway(meshNamespace, kubeconfigFile)
 		util.Inspect(err, "cannot get ingress host ip", "", t)
 
 		tolerance := 0.15
@@ -147,7 +147,7 @@ func Test06(t *testing.T) {
 			time.Sleep(time.Duration(2) * time.Second)
 			msg, err := checkEcho(ingress, ingressTCPPort)
 			if err != nil {
-				ingress, err = util.GetOCP4Ingressgateway("istio-system", kubeconfigFile)
+				ingress, err = util.GetOCP4Ingressgateway(meshNamespace, kubeconfigFile)
 				msg, err = checkEcho(ingress, ingressTCPPort)
 			}
 			util.Inspect(err, "failed to get date", "", t)

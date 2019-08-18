@@ -2,7 +2,6 @@ apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   name: httpbin.example.com
-  namespace: istio-system
 spec:
   host: httpbin.example.com
   port:

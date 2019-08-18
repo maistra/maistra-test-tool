@@ -30,8 +30,8 @@ func cleanup16(namespace, kubeconfig string) {
 	util.KubeDelete(namespace, nginxYaml, kubeconfig)
 	util.ShellMuteOutput("oc delete configmap nginxconfigmap -n %s --kubeconfig=%s", namespace, kubeconfig)
 	util.ShellMuteOutput("oc delete secret nginxsecret -n %s --kubeconfig=%s", namespace, kubeconfig)
-	util.ShellMuteOutput("oc delete ServiceMeshPolicy -n istio-system default")
-	util.ShellMuteOutput("oc delete destinationrules -n istio-system default")
+	util.ShellMuteOutput("oc delete ServiceMeshPolicy default -n " + meshNamespace)
+	util.ShellMuteOutput("oc delete destinationrules default -n " + meshNamespace)
 	log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
 	time.Sleep(time.Duration(20) * time.Second)
 }
@@ -122,8 +122,8 @@ func Test16(t *testing.T) {
 		}()
 
 		log.Info("Enable mutual TLS")
-		util.Inspect(util.KubeApplyContents("", meshPolicy, kubeconfigFile), "failed to apply ServiceMeshPolicy", "", t)
-		util.Inspect(util.KubeApplyContents("", clientRule, kubeconfigFile), "failed to apply clientRule", "", t)
+		util.Inspect(util.KubeApplyContents(meshNamespace, meshPolicy, kubeconfigFile), "failed to apply ServiceMeshPolicy", "", t)
+		util.Inspect(util.KubeApplyContents(meshNamespace, clientRule, kubeconfigFile), "failed to apply clientRule", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)
 
