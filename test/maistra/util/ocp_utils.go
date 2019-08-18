@@ -83,7 +83,6 @@ func GetOCP4Ingressgateway(namespace, kubeconfig string) (string, error) {
 }
 
 // GetIngressPort returns the http ingressgateway port
-// "$(${OC_COMMAND} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')"
 func GetIngressPort(namespace, serviceName, kubeconfig string) (string, error) {
 	port, err := Shell(
 		"oc -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"http2\")].port}' --kubeconfig=%s",
@@ -102,7 +101,6 @@ func GetIngressPort(namespace, serviceName, kubeconfig string) (string, error) {
 }
 
 // GetSecureIngressPort returns the https ingressgateway port
-// "$(${OC_COMMAND} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}')"
 func GetSecureIngressPort(namespace, serviceName, kubeconfig string) (string, error) {
 	port, err := Shell(
 		"oc -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"https\")].port}' --kubeconfig=%s",
@@ -121,7 +119,6 @@ func GetSecureIngressPort(namespace, serviceName, kubeconfig string) (string, er
 }
 
 // GetTCPIngressPort returns the tcp ingressgateway port
-// oc -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="tcp")].port}'
 func GetTCPIngressPort(namespace, serviceName, kubeconfig string) (string, error) {
 	port, err := Shell(
 		"oc -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"tcp\")].port}' --kubeconfig=%s",

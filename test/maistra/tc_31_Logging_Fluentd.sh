@@ -5,10 +5,11 @@ DIR=$(cd $(dirname $0); pwd -P)
 BASE_DIR="${DIR}/../"
 
 OC_COMMAND="oc"
+MESH="service-mesh-1"
 LOGGING_STACK="testdata/telemetry/logging-stack.yaml"
 FLUENTD_ISTIO="testdata/telemetry/fluentd-istio.yaml"
 
-INGRESS_HOST="$(${OC_COMMAND} get routes -n istio-system -l app=istio-ingressgateway -o jsonpath='{.items[0].spec.host}')"
+INGRESS_HOST="$(${OC_COMMAND} get routes -n ${MESH} -l app=istio-ingressgateway -o jsonpath='{.items[0].spec.host}')"
 
 while getopts 'h:' OPTION; do
   case "$OPTION" in
@@ -17,8 +18,8 @@ while getopts 'h:' OPTION; do
 done
 shift $((OPTIND-1))
 
-INGRESS_PORT="$(${OC_COMMAND} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')"
-SECURE_INGRESS_PORT="$(${OC_COMMAND} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}')"
+INGRESS_PORT="$(${OC_COMMAND} -n ${MESH} get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')"
+SECURE_INGRESS_PORT="$(${OC_COMMAND} -n ${MESH} get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}')"
 GATEWAY_URL="${INGRESS_HOST}:${INGRESS_PORT}"
 
 function banner() {
@@ -32,7 +33,7 @@ function banner() {
 function cleanup() {
     set +e
 	banner "Cleanup"
-    ${OC_COMMAND} delete -f ${FLUENTD_ISTIO}
+    ${OC_COMMAND} delete -f ${FLUENTD_ISTIO} -n ${MESH}
     ${OC_COMMAND} delete -f ${LOGGING_STACK}
     echo "bookinfo" | ./bookinfo_uninstall.sh
     killall ${OC_COMMAND}
@@ -65,7 +66,7 @@ function check_pod() {
 }
 
 function configure_istio() {
-    ${OC_COMMAND} apply -f ${FLUENTD_ISTIO}
+    ${OC_COMMAND} apply -f ${FLUENTD_ISTIO} -n ${MESH}
 }
 
 function check_logs() {

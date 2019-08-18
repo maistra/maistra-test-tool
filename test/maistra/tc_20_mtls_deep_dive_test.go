@@ -58,7 +58,7 @@ func Test20mtls(t *testing.T) {
 		}()
 
 		log.Info("Verify Citadel runs properly. Available column should be 1 below")
-		util.Shell("oc get deploy -l istio=citadel -n istio-system")
+		util.Shell("oc get deploy -l istio=citadel -n " + meshNamespace)
 	})
 
 	t.Run("verify_certs_test", func(t *testing.T) {

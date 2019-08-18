@@ -28,8 +28,8 @@ import (
 
 func cleanup21(namespace string, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
-	util.Shell("oc delete secret cacerts -n istio-system")
-	util.Shell("oc rollout undo deployment -n istio-system istio-citadel")
+	util.Shell("oc delete secret cacerts -n " + meshNamespace)
+	util.Shell("oc rollout undo deployment istio-citadel -n " + meshNamespace)
 	util.ShellMuteOutput("rm -f /tmp/istio-citadel-new.yaml")
 	cleanBookinfo(namespace, kubeconfig)
 	log.Info("Waiting... Sleep 20 seconds...")
@@ -111,7 +111,7 @@ func Test21mtls(t *testing.T) {
 		log.Info("Create secret")
 		_, err := util.ShellMuteOutput("oc create secret generic %s -n %s --from-file %s --from-file %s --from-file %s --from-file %s --kubeconfig=%s", 
 								"cacerts",
-								"istio-system",
+								meshNamespace,
 								caCert,
 								caCertKey,
 								caRootCert,
@@ -129,7 +129,7 @@ func Test21mtls(t *testing.T) {
 		newFile := "/tmp/istio-citadel-new.yaml"
 
 		util.ShellMuteOutput("oc get deployment -n %s %s -o yaml --kubeconfig=%s > %s",
-						"istio-system",
+						meshNamespace,
 						"istio-citadel",
 						kubeconfigFile,
 						backupFile)
@@ -146,7 +146,7 @@ func Test21mtls(t *testing.T) {
 			log.Infof("Update citadel deployment error: %v", err)
 			t.Errorf("Update citadel deployment error: %v", err)
 		}
-		util.Shell("oc apply -n %s -f %s", "istio-system", newFile)
+		util.Shell("oc apply -n %s -f %s", meshNamespace, newFile)
 		time.Sleep(time.Duration(20) * time.Second)
 		
 		log.Info("Delete existing istio.default secret")

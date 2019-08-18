@@ -53,7 +53,7 @@ func Test25(t *testing.T) {
 	util.Inspect(util.KubeApply(testNamespace, bookinfoAllv1Yaml, kubeconfigFile), "failed to apply all v1 virtual service", "", t)
 	util.Inspect(util.KubeApply(testNamespace, bookinfoReviewv2v3Yaml, kubeconfigFile), "failed to apply review v2 v3 virtual service", "", t)
 
-	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", meshNamespace, kubeconfigFile)
 	util.Inspect(err, "failed to get ingressgateway URL", "", t)
 	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
 	testUserJar := util.GetCookieJar(testUsername, "", "http://"+ingress)
@@ -61,10 +61,10 @@ func Test25(t *testing.T) {
 	fmt.Print(productpageURL, testUserJar)
 
 	log.Info("Enable policy check")
-	util.ShellMuteOutput("oc -n istio-system get cm istio -o jsonpath=\"{@.data.mesh}\" | sed -e \"s@disablePolicyChecks: true@disablePolicyChecks: false@\" > /tmp/mesh.yaml")
-	util.ShellMuteOutput("oc -n istio-system create cm istio -o yaml --dry-run --from-file=mesh=/tmp/mesh.yaml | oc replace -f -")
+	util.ShellMuteOutput("oc -n " + meshNamespace + " get cm istio -o jsonpath=\"{@.data.mesh}\" | sed -e \"s@disablePolicyChecks: true@disablePolicyChecks: false@\" > /tmp/mesh.yaml")
+	util.ShellMuteOutput("oc -n " + meshNamespace + " create cm istio -o yaml --dry-run --from-file=mesh=/tmp/mesh.yaml | oc replace -f -")
 	log.Info("Verify disablePolicyChecks should be false")
-	util.Shell("oc -n istio-system get cm istio -o jsonpath=\"{@.data.mesh}\" | grep disablePolicyChecks")
+	util.Shell("oc -n " + meshNamespace + " get cm istio -o jsonpath=\"{@.data.mesh}\" | grep disablePolicyChecks")
 
 	t.Run("simple_denials_test", func(t *testing.T) {
 		defer func() {
@@ -181,7 +181,7 @@ func Test25(t *testing.T) {
 		log.Info("Sleep 10 seconds...")
 		time.Sleep(time.Duration(10) * time.Second)
 
-		log.Info("Check productpage. Get expected error: PERMISSION_DENIED:staticversion.istio-system:<your mesh source ip> is not whitelisted")
+		log.Info("Check productpage. Get expected error: PERMISSION_DENIED:staticversion. *:<your mesh source ip> is not whitelisted")
 		resp, _, err := util.GetHTTPResponse(productpageURL, nil)
 		defer util.CloseResponseBody(resp)
 

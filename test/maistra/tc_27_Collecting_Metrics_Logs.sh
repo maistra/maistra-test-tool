@@ -5,10 +5,11 @@ DIR=$(cd $(dirname $0); pwd -P)
 BASE_DIR="${DIR}/../"
 
 OC_COMMAND="oc"
+MESH="service-mesh-1"
 TELEMETRY="testdata/telemetry/new_telemetry.yaml"
 
-INGRESS_HOST="$(${OC_COMMAND} get routes -n istio-system -l app=istio-ingressgateway -o jsonpath='{.items[0].spec.host}')"
-PROMETHEUS_ROUTE="$(${OC_COMMAND} get routes -n istio-system -l app=prometheus -o jsonpath='{.items[0].spec.host}')"
+INGRESS_HOST="$(${OC_COMMAND} get routes -n ${MESH} -l app=istio-ingressgateway -o jsonpath='{.items[0].spec.host}')"
+PROMETHEUS_ROUTE="$(${OC_COMMAND} get routes -n ${MESH} -l app=prometheus -o jsonpath='{.items[0].spec.host}')"
 
 while getopts 'h:' OPTION; do
   case "$OPTION" in
@@ -17,8 +18,8 @@ while getopts 'h:' OPTION; do
 done
 shift $((OPTIND-1))
 
-INGRESS_PORT="$(${OC_COMMAND} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')"
-SECURE_INGRESS_PORT="$(${OC_COMMAND} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}')"
+INGRESS_PORT="$(${OC_COMMAND} -n ${MESH} get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')"
+SECURE_INGRESS_PORT="$(${OC_COMMAND} -n ${MESH} get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}')"
 GATEWAY_URL="${INGRESS_HOST}:${INGRESS_PORT}"
 
 
@@ -33,7 +34,7 @@ function banner() {
 function cleanup() {
     set +e
     banner "Cleanup"
-    ${OC_COMMAND} delete -f ${TELEMETRY}
+    ${OC_COMMAND} delete -f ${TELEMETRY} -n ${MESH}
     #killall ${OC_COMMAND}
     echo "bookinfo" | ./bookinfo_uninstall.sh
 }
@@ -41,10 +42,10 @@ trap cleanup EXIT
 
 
 function check_metrics() {
-    ${OC_COMMAND} apply -f ${TELEMETRY}
-    sleep 5
-    #${OC_COMMAND} -n istio-system port-forward $(${OC_COMMAND} -n istio-system get pod -l app=prometheus -o jsonpath='{.items[0].metadata.name}') 9090:9090 &
 
+    #cat ${TELEMETRY} | sed 's@\[mesh\]@${MESH}@g' | ${OC_COMMAND} apply -n ${MESH} -f -
+    ${OC_COMMAND} apply -f ${TELEMETRY} -n ${MESH}
+    sleep 5
     curl -o /dev/null -s -w "%{http_code}\n" http://$GATEWAY_URL/productpage
     curl -o /dev/null -s -w "%{http_code}\n" http://$GATEWAY_URL/productpage
     curl -o /dev/null -s -w "%{http_code}\n" http://$GATEWAY_URL/productpage
@@ -57,9 +58,9 @@ function check_metrics() {
     sleep 2
 
     echo "# Verify logs stream has been created."
-    ${OC_COMMAND} -n istio-system logs \
-        $(${OC_COMMAND} -n istio-system get pods -l istio-mixer-type=telemetry -o jsonpath='{.items[0].metadata.name}') \
-        -c mixer | grep \"instance\":\"newlog.logentry.istio-system\"
+    ${OC_COMMAND} -n ${MESH} logs \
+        $(${OC_COMMAND} -n ${MESH} get pods -l istio-mixer-type=telemetry -o jsonpath='{.items[0].metadata.name}') \
+        -c mixer | grep \"instance\":\"newlog.logentry.${MESH}\"
     echo
     echo "# Check logs stream..."
     read -p "Press enter to continue: "

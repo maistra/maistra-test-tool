@@ -14,6 +14,11 @@
 
 package maistra
 
+import (
+	"io/ioutil"
+	"strings"
+)
+
 const (
 	bookinfoYaml           = "testdata/bookinfo/platform/kube/bookinfo.yaml"
 	bookinfoGateway        = "testdata/bookinfo/networking/bookinfo-gateway.yaml"
@@ -96,7 +101,7 @@ const (
 	mixerDenyPolicyYaml      = "testdata/policy/mixer-rule-deny-label.yaml"
 	policyDenyWhitelistYaml  = "testdata/policy/mixer-rule-deny-whitelist.yaml"
 	policyDenyIPYaml         = "testdata/policy/mixer-rule-deny-ip.yaml"
-	rateLimitYaml            = "testdata/policy/mixer-rule-productpage-ratelimit.yaml"
+	rateLimitYamlTemplate    = "testdata/policy/mixer-rule-productpage-ratelimit.yaml"
 	rateLimitConditionalYaml = "testdata/policy/mixer-rule-conditional.yaml"
 
 	telemetryYaml    = "testdata/telemetry/new_telemetry.yaml"
@@ -122,6 +127,48 @@ const (
 	testNamespace  = "bookinfo"
 	testUsername   = "jason"
 	kubeconfigFile = ""
+
+	meshNamespace = "service-mesh-1"
+
+	testRetryTimes = 5
 )
 
-var testRetryTimes = 5
+var (
+	bookinfoRBACOn            string
+	bookinfoRBAConDB          string
+	bookinfoNamespacePolicy   string
+	bookinfoProductpagePolicy string
+	bookinfoReviewPolicy      string
+	bookinfoRatingPolicy      string
+	bookinfoMongodbPolicy     string
+	rateLimitYaml			  string
+)
+
+
+func updateYaml() {
+	data, _ := ioutil.ReadFile(bookinfoRBACOnTemplate)
+	bookinfoRBACOn = strings.Replace(string(data), "\"default\"", "\""+testNamespace+"\"", -1)
+
+	data, _ = ioutil.ReadFile(bookinfoRBACOnDBTemplate)
+	bookinfoRBAConDB = strings.Replace(string(data), "mongodb.default", "mongodb."+testNamespace, -1)
+
+	data, _ = ioutil.ReadFile(bookinfoNamespacePolicyTemplate)
+	bookinfoNamespacePolicytmp := strings.Replace(string(data), "default", testNamespace, -1)
+	bookinfoNamespacePolicy = strings.Replace(bookinfoNamespacePolicytmp, "[mesh]", meshNamespace, -1)
+
+	data, _ = ioutil.ReadFile(bookinfoProductpagePolicyTemplate)
+	bookinfoProductpagePolicy = strings.Replace(string(data), "default", testNamespace, -1)
+
+	data, _ = ioutil.ReadFile(bookinfoReviewPolicyTemplate)
+	bookinfoReviewPolicy = strings.Replace(string(data), "default", testNamespace, -1)
+
+	data, _ = ioutil.ReadFile(bookinfoRatingPolicyTemplate)
+	bookinfoRatingPolicy = strings.Replace(string(data), "default", testNamespace, -1)
+
+	data, _ = ioutil.ReadFile(bookinfoMongodbPolicyTemplate)
+	bookinfoMongodbPolicy = strings.Replace(string(data), "default", testNamespace, -1)
+
+	data, _ = ioutil.ReadFile(rateLimitYamlTemplate)
+	rateLimitYaml = strings.Replace(string(data), "[mesh]", meshNamespace, -1)
+
+}

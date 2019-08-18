@@ -26,7 +26,7 @@ import (
 
 func cleanup23(namespace string, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
-	util.KubeDelete("istio-system", rateLimitYaml, kubeconfig)
+	util.KubeDeleteContents(meshNamespace, rateLimitYaml, kubeconfig)
 	time.Sleep(time.Duration(30) * time.Second)
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
 	util.ShellSilent("rm -f /tmp/mesh.yaml")
@@ -47,17 +47,19 @@ func Test23(t *testing.T) {
 	}()
 	
 	log.Infof("# TC_23 Rate Limitting")
+	updateYaml()
+
 	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
-	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", meshNamespace, kubeconfigFile)
 	util.Inspect(err, "failed to get ingressgateway URL", "", t)
 	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
 	testUserJar := util.GetCookieJar(testUsername, "", "http://"+ingress)
 	
 	log.Info("Enable policy check")
-	util.ShellMuteOutput("oc -n istio-system get cm istio -o jsonpath=\"{@.data.mesh}\" | sed -e \"s@disablePolicyChecks: true@disablePolicyChecks: false@\" > /tmp/mesh.yaml")
-	util.ShellMuteOutput("oc -n istio-system create cm istio -o yaml --dry-run --from-file=mesh=/tmp/mesh.yaml | oc replace -f -")
+	util.ShellMuteOutput("oc -n " + meshNamespace + " get cm istio -o jsonpath=\"{@.data.mesh}\" | sed -e \"s@disablePolicyChecks: true@disablePolicyChecks: false@\" > /tmp/mesh.yaml")
+	util.ShellMuteOutput("oc -n " + meshNamespace + " create cm istio -o yaml --dry-run --from-file=mesh=/tmp/mesh.yaml | oc replace -f -")
 	log.Info("Verify disablePolicyChecks should be false")
-	util.Shell("oc -n istio-system get cm istio -o jsonpath=\"{@.data.mesh}\" | grep disablePolicyChecks")
+	util.Shell("oc -n " + meshNamespace + " get cm istio -o jsonpath=\"{@.data.mesh}\" | grep disablePolicyChecks")
 
 	t.Run("rate_limits_test", func(t *testing.T) {
 		defer func() {
@@ -68,17 +70,17 @@ func Test23(t *testing.T) {
 		}()
 
 		util.KubeApply(testNamespace, bookinfoAllv1Yaml, kubeconfigFile)
-		util.KubeApply("istio-system", rateLimitYaml, kubeconfigFile)
+		util.KubeApplyContents(meshNamespace, rateLimitYaml, kubeconfigFile)
 		log.Info("Verify memquota handler was created")
-		util.Shell("oc -n istio-system get memquota handler -o yaml")
+		util.Shell("oc get memquota handler -o yaml -n " + meshNamespace)
 		log.Info("Verify quota instance was created")
-		util.Shell("oc -n istio-system get quotas requestcount -o yaml")
+		util.Shell("oc get quotas requestcount -o yaml -n " + meshNamespace)
 		log.Info("Verify quota rule was created")
-		util.Shell("oc -n istio-system get rules quota -o yaml")
+		util.Shell("oc get rules quota -o yaml -n " + meshNamespace)
 		log.Info("Verify quotaspec was created")
-		util.Shell("oc -n istio-system get QuotaSpec request-count -o yaml")
+		util.Shell("oc get QuotaSpec request-count -o yaml -n " + meshNamespace)
 		log.Info("Verify quotaspecbinding was created")
-		util.Shell("oc -n istio-system get QuotaSpecBinding request-count -o yaml")
+		util.Shell("oc get QuotaSpecBinding request-count -o yaml -n " + meshNamespace)
 
 		log.Info("Sleep 60 seconds...")
 		time.Sleep(time.Duration(60) * time.Second)
@@ -128,7 +130,7 @@ func Test23(t *testing.T) {
 		}()
 
 		log.Info("Conditional rate limits")
-		util.KubeApply("istio-system", rateLimitConditionalYaml, kubeconfigFile)
+		util.KubeApply(meshNamespace, rateLimitConditionalYaml, kubeconfigFile)
 		
 		log.Info("Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)

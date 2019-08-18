@@ -28,13 +28,13 @@ import (
 
 func cleanup24(namespace, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
-	util.ShellMuteOutput("oc delete rule/keyval -n istio-system")
+	util.ShellMuteOutput("oc delete rule/keyval -n " + meshNamespace)
 	log.Info("Waiting for rules to be cleaned up. Sleep 30 seconds...")
 	time.Sleep(time.Duration(30) * time.Second)
-	util.ShellMuteOutput("oc delete handler/keyval instance/keyval adapter/keyval template/keyval -n istio-system")
-	util.ShellMuteOutput("oc delete service keyval -n istio-system")
-	util.ShellMuteOutput("oc delete deployment keyval -n istio-system")
-	util.ShellMuteOutput("oc delete dc keyval -n istio-system")
+	util.ShellMuteOutput("oc delete handler/keyval instance/keyval adapter/keyval template/keyval -n " + meshNamespace)
+	util.ShellMuteOutput("oc delete service keyval -n " + meshNamespace)
+	util.ShellMuteOutput("oc delete deployment keyval -n " + meshNamespace)
+	util.ShellMuteOutput("oc delete dc keyval -n " + meshNamespace)
 	util.ShellSilent("rm -f /tmp/mesh.yaml")
 
 	util.KubeDelete(namespace, httpbinPolicyAllYaml, kubeconfig)
@@ -74,26 +74,26 @@ func Test24(t *testing.T) {
 	time.Sleep(time.Duration(10) * time.Second)
 	util.CheckPodRunning(testNamespace, "app=httpbin", kubeconfigFile)
 
-	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", meshNamespace, kubeconfigFile)
 	util.Inspect(err, "failed to get ingressgateway URL", "", t)
-	ingressPort, err := util.GetIngressPort("istio-system", "istio-ingressgateway", kubeconfigFile)
+	ingressPort, err := util.GetIngressPort(meshNamespace, "istio-ingressgateway", kubeconfigFile)
 	util.Inspect(err, "cannot get ingress port", "", t)
 
 	log.Info("Enable policy check")
-	util.ShellMuteOutput("oc -n istio-system get cm istio -o jsonpath=\"{@.data.mesh}\" | sed -e \"s@disablePolicyChecks: true@disablePolicyChecks: false@\" > /tmp/mesh.yaml")
-	util.ShellMuteOutput("oc -n istio-system create cm istio -o yaml --dry-run --from-file=mesh=/tmp/mesh.yaml | oc replace -f -")
+	util.ShellMuteOutput("oc -n " + meshNamespace + " get cm istio -o jsonpath=\"{@.data.mesh}\" | sed -e \"s@disablePolicyChecks: true@disablePolicyChecks: false@\" > /tmp/mesh.yaml")
+	util.ShellMuteOutput("oc -n " + meshNamespace + " create cm istio -o yaml --dry-run --from-file=mesh=/tmp/mesh.yaml | oc replace -f -")
 	log.Info("Verify disablePolicyChecks should be false")
-	util.Shell("oc -n istio-system get cm istio -o jsonpath=\"{@.data.mesh}\" | grep disablePolicyChecks")
+	util.Shell("oc -n " + meshNamespace + " get cm istio -o jsonpath=\"{@.data.mesh}\" | grep disablePolicyChecks")
 
 	log.Info("Output Producing Adapters")
 
-	util.Shell("oc run keyval --image=gcr.io/istio-testing/keyval:release-1.1 --namespace istio-system --port 9070 --expose")
-	util.Inspect(util.KubeApply("istio-system", httpbinKeyvalTemplateYaml, kubeconfigFile), "failed to apply keyval template", "",t)
-	util.Inspect(util.KubeApply("istio-system", httpbinKeyvalYaml, kubeconfigFile), "failed to apply keyval", "", t)
+	util.Shell("oc run keyval --image=gcr.io/istio-testing/keyval:release-1.1 --namespace " + meshNamespace + " --port 9070 --expose")
+	util.Inspect(util.KubeApply(meshNamespace, httpbinKeyvalTemplateYaml, kubeconfigFile), "failed to apply keyval template", "",t)
+	util.Inspect(util.KubeApply(meshNamespace, httpbinKeyvalYaml, kubeconfigFile), "failed to apply keyval", "", t)
 
 	log.Info("Create a rule for adapter")
-	util.Inspect(util.KubeApplyContents("istio-system", demoAdapter, kubeconfigFile), "failed to apply adapter handler", "", t)
-	util.Inspect(util.KubeApplyContents("istio-system", keyvalInstance, kubeconfigFile), "failed to apply keyval instance", "", t)
+	util.Inspect(util.KubeApplyContents(meshNamespace, demoAdapter, kubeconfigFile), "failed to apply adapter handler", "", t)
+	util.Inspect(util.KubeApplyContents(meshNamespace, keyvalInstance, kubeconfigFile), "failed to apply keyval instance", "", t)
 		
 	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
@@ -126,7 +126,7 @@ func Test24(t *testing.T) {
 		}()
 		
 		log.Info("Create a demo adapter rule")
-		util.Inspect(util.KubeApplyContents("istio-system", demoAdapterRule, kubeconfigFile), "failed to apply demo adapter rule", "", t)
+		util.Inspect(util.KubeApplyContents(meshNamespace, demoAdapterRule, kubeconfigFile), "failed to apply demo adapter rule", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 70 seconds...")
 		time.Sleep(time.Duration(70) * time.Second)
 
@@ -153,7 +153,7 @@ func Test24(t *testing.T) {
 		}()
 
 		log.Info("Redirect the URI path to a 418 virtual service")
-		util.Inspect(util.KubeApplyContents("istio-system", demoAdapterRule2, kubeconfigFile), "failed to apply demo adapter rule 2", "", t)
+		util.Inspect(util.KubeApplyContents(meshNamespace, demoAdapterRule2, kubeconfigFile), "failed to apply demo adapter rule 2", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 40 seconds...")
 		time.Sleep(time.Duration(40) * time.Second)
 

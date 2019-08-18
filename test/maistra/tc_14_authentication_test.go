@@ -32,10 +32,10 @@ func cleanup14(kubeconfig string) {
 	util.KubeDelete("bar", sleepYaml, kubeconfig)
 	util.KubeDelete("legacy", httpbinLegacyYaml, kubeconfig)
 	util.KubeDelete("legacy", sleepLegacyYaml, kubeconfig)
-	util.ShellSilent("oc delete ServiceMeshPolicy -n istio-system default")
+	util.ShellSilent("oc delete ServiceMeshPolicy default -n " + meshNamespace)
 	util.ShellSilent("oc delete destinationrules -n legacy httpbin-legacy")
 	//util.ShellSilent("oc delete destinationrules -n default api-server")
-	util.ShellSilent("oc delete destinationrules -n istio-system default")
+	util.ShellSilent("oc delete destinationrules default -n " + meshNamespace)
 	util.ShellSilent("oc delete policy default overwrite-example -n foo")
 	util.ShellSilent("oc delete policy httpbin -n bar")
 	util.ShellSilent("oc delete destinationrules default overwrite-example -n foo")
@@ -52,10 +52,10 @@ func cleanup14(kubeconfig string) {
 
 func cleanupPart1() {
 	log.Infof("# Cleanup part 1. Following error can be ignored...")
-	util.ShellSilent("oc delete ServiceMeshPolicy -n istio-system default")
+	util.ShellSilent("oc delete ServiceMeshPolicy default -n " + meshNamespace)
 	util.ShellMuteOutput("oc delete destinationrules -n legacy httpbin-legacy ")
 	//util.ShellMuteOutput("oc delete destinationrules -n default api-server")
-	util.ShellMuteOutput("oc delete destinationrules -n istio-system default")
+	util.ShellMuteOutput("oc delete destinationrules default -n " + meshNamespace)
 	log.Info("Waiting for rules to be cleaned up. Sleep 30 seconds...")
 	time.Sleep(time.Duration(30) * time.Second)
 }
@@ -188,7 +188,7 @@ func Test14(t *testing.T) {
 		}()
 
 		log.Info("Globally enabling Istio mutual TLS")
-		util.Inspect(util.KubeApplyContents("", meshPolicy, kubeconfigFile), "failed to apply ServiceMeshPolicy", "", t)
+		util.Inspect(util.KubeApplyContents(meshNamespace, meshPolicy, kubeconfigFile), "failed to apply ServiceMeshPolicy", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 50 seconds...")
 		time.Sleep(time.Duration(50) * time.Second)
 
@@ -211,7 +211,7 @@ func Test14(t *testing.T) {
 		}
 		time.Sleep(time.Duration(5) * time.Second)
 
-		util.Inspect(util.KubeApplyContents("", clientRule, kubeconfigFile), "failed to apply clientRule", "", t)
+		util.Inspect(util.KubeApplyContents(meshNamespace, clientRule, kubeconfigFile), "failed to apply clientRule", "", t)
 		log.Info("Waiting for rules to propagate. Sleep 30 seconds...")
 		time.Sleep(time.Duration(30) * time.Second)
 		for _, from := range ns {
@@ -538,7 +538,7 @@ func Test14(t *testing.T) {
 		}()
 
 		log.Info("End-user authentication")
-		ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+		ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", meshNamespace, kubeconfigFile)
 		util.Inspect(err, "failed to get ingressgateway URL", "", t)
 		url := fmt.Sprintf("http://%s/headers", ingress)
 

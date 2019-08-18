@@ -27,7 +27,7 @@ import (
 func cleanup18(namespace, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDeleteContents(namespace, bookinfoMongodbPolicy, kubeconfig)
-	util.KubeDeleteContents("istio-system", bookinfoRBAConDB, kubeconfig)
+	util.KubeDeleteContents(meshNamespace, bookinfoRBAConDB, kubeconfig)
 	log.Info("Waiting... Sleep 10 seconds...")
 	time.Sleep(time.Duration(10) * time.Second)
 
@@ -44,17 +44,6 @@ func cleanup18(namespace, kubeconfig string) {
 	time.Sleep(time.Duration(20) * time.Second)
 }
 
-func setup18(namespace, kubeconfig string) error {
-	
-	if err := util.KubeApply(namespace, bookinfoRatingv2ServiceAccount, kubeconfig); err != nil {
-		return err
-	}
-	//util.OcGrantPermission("bookinfo-ratings-v2", namespace, kubeconfig)
-	log.Info("Waiting for rules to propagate. Sleep 30 seconds...")
-	time.Sleep(time.Duration(30) * time.Second)
-	err := util.CheckPodRunning(namespace, "app=ratings,version=v2", kubeconfig)
-	return err
-}
 
 func Test18mtls(t *testing.T) {
 	defer cleanup18(testNamespace, kubeconfigFile)
@@ -66,21 +55,27 @@ func Test18mtls(t *testing.T) {
 	}()
 
 	log.Infof("# TC_18 Authorization for TCP Services")
-	updateYaml(testNamespace)
+	updateYaml()
 
 	util.CreateNamespace(testNamespace, kubeconfigFile)
 	//util.OcGrantPermission("default", testNamespace, kubeconfigFile)
 
 	log.Info("Deploy bookinfo")
 	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
-	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", "istio-system", kubeconfigFile)
+	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", meshNamespace, kubeconfigFile)
 	util.Inspect(err, "failed to get ingressgateway URL", "", t)
 	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
 
 	log.Info("Create Service Accounts")
-	util.KubeDeleteContents("istio-system", bookinfoRBAConDB, kubeconfigFile)
-	
-	util.Inspect(setup18(testNamespace, kubeconfigFile), "failed to create service account", "", t)
+	//util.KubeDeleteContents(meshNamespace, bookinfoRBAConDB, kubeconfigFile)
+	if err := util.KubeApply(testNamespace, bookinfoRatingv2ServiceAccount, kubeconfigFile); err != nil {
+		log.Errorf("failed to create service account")
+	}
+	//util.OcGrantPermission("bookinfo-ratings-v2", namespace, kubeconfig)
+	log.Info("Waiting for rules to propagate. Sleep 30 seconds...")
+	time.Sleep(time.Duration(30) * time.Second)
+	util.CheckPodRunning(testNamespace, "app=ratings,version=v2", kubeconfigFile)
+
 	util.Inspect(util.KubeApply(testNamespace, bookinfoRuleAllTLSYaml, kubeconfigFile), "failed to apply rule", "", t)
 
 	log.Info("Deploy MongoDB")
@@ -88,8 +83,8 @@ func Test18mtls(t *testing.T) {
 
 	util.Inspect(deployMongoDB(testNamespace, kubeconfigFile), "failed to deploy mongoDB", "", t)
 
-	log.Info("Waiting... Sleep 20 seconds...")
-	time.Sleep(time.Duration(20) * time.Second)
+	log.Info("Waiting... Sleep 40 seconds...")
+	time.Sleep(time.Duration(40) * time.Second)
 
 	/*
 	t.Run("verify_setup_test", func(t *testing.T) {
@@ -122,7 +117,7 @@ func Test18mtls(t *testing.T) {
 		}()
 
 		log.Info("Enable Istio Authorization")
-		util.Inspect(util.KubeApplyContents("istio-system", bookinfoRBAConDB, kubeconfigFile), "failed to apply policy", "", t)
+		util.Inspect(util.KubeApplyContents(meshNamespace, bookinfoRBAConDB, kubeconfigFile), "failed to apply policy", "", t)
 		log.Info("Waiting... Sleep 10 seconds...")
 		time.Sleep(time.Duration(10) * time.Second)
 		resp, _, err := util.GetHTTPResponse(productpageURL, nil)

@@ -116,7 +116,7 @@ func Test10(t *testing.T) {
 				log.Errorf("sidecar proxy log for httpbin.org: %s", logMsg)
 			}
 
-			logMsg = util.GetPodLogsForLabel("istio-system", "istio-mixer-type=telemetry", "mixer", false, false, kubeconfigFile)
+			logMsg = util.GetPodLogsForLabel(meshNamespace, "istio-mixer-type=telemetry", "mixer", false, false, kubeconfigFile)
 			if strings.Contains(logMsg, "\"destinationServiceHost\":\"httpbin.org\"") {
 				log.Infof("Get correct mixer log for httpbin.org")
 			} else {
@@ -156,7 +156,7 @@ func Test10(t *testing.T) {
 
 			log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 			time.Sleep(time.Duration(10) * time.Second)
-			logMsg = util.GetPodLogsForLabel("istio-system", "istio-mixer-type=telemetry", "mixer", true, false, kubeconfigFile)
+			logMsg = util.GetPodLogsForLabel(meshNamespace, "istio-mixer-type=telemetry", "mixer", true, false, kubeconfigFile)
 			if strings.Contains(logMsg, "\"requestedServerName\":\"www.google.com\"") {
 				log.Infof("Get correct mixer log for www.google.com")
 			} else {
