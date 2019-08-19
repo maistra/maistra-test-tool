@@ -239,7 +239,7 @@ class ControlPlane(object):
         proc = sp.run(['oc', 'apply', '-n', self.namespace, '-f', self.smmr], stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
         print(proc.stdout)
         print(proc.stderr)
-        sp.run(['sleep', '40'])
+        sp.run(['sleep', '5'])
 
 
     def smoke_check(self):
