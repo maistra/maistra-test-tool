@@ -138,7 +138,7 @@ func Test06(t *testing.T) {
 		util.Inspect(err, "cannot get ingress host ip", "", t)
 
 		tolerance := 0.15
-		totalShot := 30
+		totalShot := 60
 		c1, c2 := 0, 0
 
 		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot*2)
