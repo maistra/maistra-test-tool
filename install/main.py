@@ -28,7 +28,6 @@ class Moitt(object):
     def __init__(self):
         self.profile = None
         self.pullsec = None
-        self.oc_version = '0.10.0'
         self.crfile = None
         self.install = False
         self.uninstall = False
@@ -66,7 +65,7 @@ def main():
     if not moitt.pullsec:
         raise KeyError("Missing PULL_SEC environment variable")
 
-    ocp = OCP(profile=moitt.profile, oc_version=moitt.oc_version, assets=moitt.assets)
+    ocp = OCP(profile=moitt.profile, assets=moitt.assets)
     os.environ['KUBECONFIG'] = moitt.assets + '/auth/kubeconfig'
     
     if moitt.component == 'ocp':
@@ -113,6 +112,7 @@ def main():
             with open(moitt.assets + '/auth/kubeadmin-password') as f:
                 pw = f.read() 
             ocp.login('kubeadmin', pw)
+            operator.deploy_es()
             operator.deploy_jaeger()
             operator.deploy_kiali()
             operator.deploy_istio()
