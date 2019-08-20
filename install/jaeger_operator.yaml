@@ -28,7 +28,7 @@ spec:
             - --jaeger-ingester-image=quay.io/maistra/jaeger-ingester-rhel7
             - --jaeger-all-in-one-image=quay.io/maistra/jaeger-all-in-one-rhel7
             - --jaeger-es-index-cleaner-image=quay.io/maistra/jaeger-es-index-cleaner-rhel7
-            - --openshift-oauth-proxy-image=registry.redhat.io/openshift4/ose-oauth-proxy:4.1
+            - --openshift-oauth-proxy-image=quay.io/maistra/ose-oauth-proxy:4.1
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
