@@ -52,12 +52,15 @@ class Operator(object):
 
     def deploy_es(self, es_version="4.1"):
         # install the Elasticsearch Operator
-        sp.run(['oc', 'new-project', 'openshift-logging'], stderr=sp.PIPE)
+        # use kubectl for the creation of the openshift-logging namespace, as the oc command will return error
+        sp.run(['kubectl', 'create', 'ns', 'openshift-logging'], stderr=sp.PIPE)
+        
         sp.run(['oc', 'create', '-n', 'openshift-logging', '-f', "https://raw.githubusercontent.com/openshift/elasticsearch-operator/release-%s/manifests/01-service-account.yaml" % es_version])
         sp.run(['oc', 'create', '-f', "https://raw.githubusercontent.com/openshift/elasticsearch-operator/release-%s/manifests/02-role.yaml" % es_version])
         sp.run(['oc', 'create', '-f', "https://raw.githubusercontent.com/openshift/elasticsearch-operator/release-%s/manifests/03-role-bindings.yaml" % es_version])
         sp.run(['oc', 'create', '-n', 'openshift-logging', '-f', "https://raw.githubusercontent.com/openshift/elasticsearch-operator/release-%s/manifests/04-crd.yaml" % es_version])
         # curl https://raw.githubusercontent.com/openshift/elasticsearch-operator/release-4.1/manifests/05-deployment.yaml | sed 's/latest/4.1/g' | oc create -n openshift-logging -f -
+        sp.run(['oc', 'create', '-n', 'openshift-logging', '-f', 'es_operator.yaml'])
         sp.run(['sleep', '10'])
 
 
@@ -71,23 +74,18 @@ class Operator(object):
         
         #sp.run(['oc', 'create', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/operator.yaml" % jaeger_version])
         # curl https://raw.githubusercontent.com/jaegertracing/jaeger-operator/v1.13.1/deploy/operator.yaml | sed 's@jaegertracing/jaeger-operator:1.13.1@quay.io/maistra/jaeger-operator:1.13.1@g' | oc create -n observability -f -
-        """
-        imageP1 = re.compile('jaegertracing')
-        with open('jaeger_operator.yaml', 'r') as f:
-            lines = f.readlines()
-        with open('jaeger_operator.yaml', 'w') as f:
-            for line in lines:
-                f.write(imageP1.sub("quay.io/maistra", line))
-        """
+        
         sp.run(['oc', 'create', '-n', 'observability', '-f', 'jaeger_operator.yaml'])
         sp.run(['sleep', '10'])
 
 
-    def deploy_kiali(self, kiali_version="v1.0.5"):
+    def deploy_kiali(self, kiali_version=""):
         # install the Kiali operator as a prerequisit
-        sp.run(['curl', '-o', 'deploy-kiali-operator.sh', '-L', 'https://git.io/getLatestKialiOperator'])
-        os.chmod('deploy-kiali-operator.sh', 0o755)
-        sp.call("./deploy-kiali-operator.sh %s %s %s %s %s" % ("--operator-image-version", kiali_version, "--kiali-image-version", kiali_version, "--operator-watch-namespace '**' --accessible-namespaces '**' --operator-install-kiali false"), shell=True)
+        #sp.run(['curl', '-o', 'deploy-kiali-operator.sh', '-L', 'https://git.io/getLatestKialiOperator'])
+        #os.chmod('deploy-kiali-operator.sh', 0o755)
+        #sp.call("./deploy-kiali-operator.sh %s %s %s %s %s" % ("--operator-image-version", kiali_version, "--kiali-image-version", kiali_version, "--operator-watch-namespace '**' --accessible-namespaces '**' --operator-install-kiali false"), shell=True)
+        sp.run(['oc', 'new-project', 'kiali-operator'], stderr=sp.PIPE)
+        sp.run(['oc', 'create', '-n', 'kiali-operator', '-f', 'kiali_operator.yaml'])
         sp.run(['sleep', '10'])
 
 
@@ -112,7 +110,7 @@ class Operator(object):
         sp.run(['sleep', '30'])
 
 
-    def uninstall(self, operator_file="operator_quay.yaml", jaeger_version="v1.13.1", kiali_version="v1.0.0"):
+    def uninstall(self, operator_file="operator_quay.yaml", es_version="4.1", jaeger_version="master", kiali_version=""):
 
         sp.run(['oc', 'delete', '-n', 'istio-operator', '-f', operator_file])
 
@@ -125,13 +123,24 @@ class Operator(object):
         sp.run(['oc', 'delete', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/crds/jaegertracing_v1_jaeger_crd.yaml" % jaeger_version])
         sp.run(['sleep', '10'])
 
+        sp.run(['oc', 'delete', '-n', 'openshift-logging', '-f', 'es_operator.yaml'])
+        sp.run(['oc', 'delete', '-n', 'openshift-logging', '-f', "https://raw.githubusercontent.com/openshift/elasticsearch-operator/release-%s/manifests/04-crd.yaml" % es_version])
+        sp.run(['oc', 'delete', '-f', "https://raw.githubusercontent.com/openshift/elasticsearch-operator/release-%s/manifests/03-role-bindings.yaml" % es_version])
+        sp.run(['oc', 'delete', '-f', "https://raw.githubusercontent.com/openshift/elasticsearch-operator/release-%s/manifests/02-role.yaml" % es_version])
+        sp.run(['oc', 'delete', '-n', 'openshift-logging', '-f', "https://raw.githubusercontent.com/openshift/elasticsearch-operator/release-%s/manifests/01-service-account.yaml" % es_version])
+        sp.run(['sleep', '10'])
+
         # uninstall the Kiali Operator
-        sp.run(['curl', '-o', 'deploy-kiali-operator.sh', '-L', 'https://git.io/getLatestKialiOperator'])
-        os.chmod('deploy-kiali-operator.sh', 0o755)
-        sp.call("./deploy-kiali-operator.sh %s" % "--uninstall-mode true --operator-watch-namespace '**'", shell=True)
-        
+        #sp.run(['curl', '-o', 'deploy-kiali-operator.sh', '-L', 'https://git.io/getLatestKialiOperator'])
+        #os.chmod('deploy-kiali-operator.sh', 0o755)
+        #sp.call("./deploy-kiali-operator.sh %s" % "--uninstall-mode true --operator-watch-namespace '**'", shell=True)
+        sp.run(['oc', 'delete', '-n', 'kiali-operator', '-f', 'kiali_operator.yaml'])
+        sp.run(['sleep', '10'])
+
+        sp.run(['oc', 'delete', 'project', 'kiali-operator'])
         sp.run(['oc', 'delete', 'project', 'istio-operator'])
         sp.run(['oc', 'delete', 'project', 'observability'])
+        sp.run(['kubectl', 'delete', 'ns', 'openshift-logging'])
         sp.run(['sleep', '10'])
 
 
@@ -151,6 +160,11 @@ class Operator(object):
         for line in imageIDs.stdout.split(' '):
             print(line)
 
+        print("# Verify elasticsearch-operator image name: ")
+        imageIDs = sp.run(['oc', 'get', 'pods', '-n', 'openshift-logging', '-o', 'jsonpath="{..image}"'], stdout=sp.PIPE, universal_newlines=True)
+        for line in imageIDs.stdout.split(' '):
+            print(line)
+
         print("# Verify istio-operator image ID: ")
         imageIDs = sp.run(['oc', 'get', 'pods', '-n', 'istio-operator', '-o', 'jsonpath="{..imageID}"'], stdout=sp.PIPE, universal_newlines=True)
         for line in imageIDs.stdout.split(' '):
@@ -163,6 +177,11 @@ class Operator(object):
 
         print("# Verify jaeger-operator image ID: ")
         imageIDs = sp.run(['oc', 'get', 'pods', '-n', 'observability', '-o', 'jsonpath="{..imageID}"'], stdout=sp.PIPE, universal_newlines=True)
+        for line in imageIDs.stdout.split(' '):
+            print(line)
+
+        print("# Verify elasticsearch-operator image ID: ")
+        imageIDs = sp.run(['oc', 'get', 'pods', '-n', 'openshift-logging', '-o', 'jsonpath="{..imageID}"'], stdout=sp.PIPE, universal_newlines=True)
         for line in imageIDs.stdout.split(' '):
             print(line)
 

@@ -25,6 +25,7 @@ install/env
 **/istioctl
 install/README.md
 **/users.htpasswd
+**/install-config.yaml
 
 # registry-puller
 **/registry-puller

@@ -112,6 +112,7 @@ def main():
             with open(moitt.assets + '/auth/kubeadmin-password') as f:
                 pw = f.read() 
             ocp.login('kubeadmin', pw)
+            operator.deploy_es()
             operator.deploy_jaeger()
             operator.deploy_kiali()
             operator.deploy_istio()
