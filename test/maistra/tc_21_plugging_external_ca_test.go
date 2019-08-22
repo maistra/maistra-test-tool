@@ -153,8 +153,17 @@ func Test21mtls(t *testing.T) {
 		util.Shell("oc delete -n %s secret istio.default", testNamespace)
 
 		log.Info("Deploy bookinfo")
-		util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, true), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
-		time.Sleep(time.Duration(20) * time.Second)
+		if err := util.KubeApply(testNamespace, bookinfoYaml, kubeconfigFile); err != nil {
+			log.Errorf("failed to deploy bookinfo")
+		}
+		log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
+		time.Sleep(time.Duration(10) * time.Second)
+		util.CheckPodRunning(testNamespace, "app=details", kubeconfigFile)
+		util.CheckPodRunning(testNamespace, "app=ratings", kubeconfigFile)
+		util.CheckPodRunning(testNamespace, "app=reviews,version=v1", kubeconfigFile)
+		util.CheckPodRunning(testNamespace, "app=reviews,version=v2", kubeconfigFile)
+		util.CheckPodRunning(testNamespace, "app=reviews,version=v3", kubeconfigFile)
+		util.CheckPodRunning(testNamespace, "app=productpage", kubeconfigFile)
 		
 		log.Info("Verify certs")
 		err = verifyCerts()

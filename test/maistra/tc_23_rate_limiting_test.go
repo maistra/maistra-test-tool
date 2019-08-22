@@ -86,7 +86,7 @@ func Test23(t *testing.T) {
 		time.Sleep(time.Duration(60) * time.Second)
 
 		log.Info("productpage permits 2 requests every 5 seconds. Verify 'Quota is exhausted' message")
-		for i := 0; i < 20; i++ {
+		for i := 0; i < 40; i++ {
 			resp, _, err := util.GetHTTPResponse(productpageURL, nil)
 			defer util.CloseResponseBody(resp)
 			util.Inspect(err, "failed to get HTTP Response", "", t)
@@ -99,7 +99,7 @@ func Test23(t *testing.T) {
 					"Success. Response matches with expected.",
 					t)
 
-			} else if i < 19{
+			} else if i < 39{
 				err = util.CompareHTTPResponse(body, "productpage-quota-exhausted.html")
 				if err != nil {
 					continue
