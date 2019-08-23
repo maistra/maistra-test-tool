@@ -109,6 +109,7 @@ def main():
         if moitt.install:
             # deploy operators
             # Read kubeadmin password
+            """
             with open(moitt.assets + '/auth/kubeadmin-password') as f:
                 pw = f.read() 
             ocp.login('kubeadmin', pw)
@@ -118,6 +119,7 @@ def main():
             operator.deploy_istio()
             operator.check()
             ocp.logout()
+            """
 
             # deploy controlplane
             ocp.login('qe1', os.getenv('QE1_PWD', 'qe1pw'))
@@ -146,11 +148,13 @@ def main():
 
             # uninstall operators
             # Read kubeadmin password
+            """
             with open(moitt.assets + '/auth/kubeadmin-password') as f:
                 pw = f.read() 
             ocp.login('kubeadmin', pw)
             operator.uninstall()
             ocp.logout()
+            """
 
    
 if __name__ == '__main__':
