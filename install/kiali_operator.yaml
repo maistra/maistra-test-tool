@@ -388,7 +388,7 @@ spec:
       serviceAccountName: kiali-operator
       containers:
       - name: operator
-        image: quay.io/maistra/kiali-operator:1.0.5
+        image: quay.io/maistra/kiali-rhel7-operator:1.0.5
         imagePullPolicy: IfNotPresent
         volumeMounts:
         - mountPath: /tmp/ansible-operator/runner
