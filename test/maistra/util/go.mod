@@ -1,4 +1,4 @@
-module github.com/yxun/moitt/test/maistra/util
+module github.com/Maistra/istio-test-tool/test/maistra/util
 
 require (
 	github.com/natefinch/lumberjack v2.0.0+incompatible // indirect
