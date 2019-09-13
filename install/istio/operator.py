@@ -41,13 +41,13 @@ class Operator(object):
             lines = f.readlines()
         with open('operator_quay.yaml', 'w') as f:
             for line in lines:
-                f.write(imageP1.sub("image: quay.io/maistra/istio-rhel8-operator:latest-qe", line))
+                f.write(imageP1.sub("image: registry.redhat.io/openshift-service-mesh/istio-rhel8-operator:1.0.0", line))
 
         with open('operator_quay.yaml', 'r') as f:
             lines = f.readlines()
         with open('operator_quay.yaml', 'w') as f:
             for line in lines:
-                f.write(imageP2.sub("value: quay.io/maistra/istio-cni-rhel8:latest-qe", line))
+                f.write(imageP2.sub("value: registry.redhat.io/openshift-service-mesh/proxy-init-rhel7:1.0.0", line))
 
 
     def deploy_es(self, es_version="4.1"):

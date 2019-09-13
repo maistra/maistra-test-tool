@@ -82,6 +82,14 @@ func GetOCP4Ingressgateway(namespace, kubeconfig string) (string, error) {
 	return ingress, err
 }
 
+// GetOCP3Ingressgateway returns OCP3.11 ingress-ingresssgateway external IP
+func GetOCP3Ingressgateway(namespace, kubeconfig string) (string, error) {
+	ingress, err := Shell("oc -n %s get routes istio-ingressgateway -o jsonpath='{.status.ingress[0].host}' --kubeconfig=%s",
+								namespace, kubeconfig)
+
+	return ingress, err
+}
+
 // GetIngressPort returns the http ingressgateway port
 func GetIngressPort(namespace, serviceName, kubeconfig string) (string, error) {
 	port, err := Shell(

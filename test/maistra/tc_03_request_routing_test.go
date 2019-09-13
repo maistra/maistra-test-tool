@@ -64,7 +64,7 @@ func Test03(t *testing.T) {
 
 	log.Infof("# TC_03 Traffic Routing")
 	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
-	ingress, err := util.GetOCPIngressgateway("app=istio-ingressgateway", meshNamespace, kubeconfigFile)
+	ingress, err := util.GetOCP3Ingressgateway(meshNamespace, kubeconfigFile)
 	util.Inspect(err, "failed to get ingressgateway URL", "", t)
 	productpageURL := fmt.Sprintf("http://%s/productpage", ingress)
 
