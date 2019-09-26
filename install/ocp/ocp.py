@@ -36,8 +36,8 @@ class OCP(object):
         """
         self.profile = profile
         self.assets = assets
-        self.installer_url = 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.1.11/openshift-install-linux-4.1.11.tar.gz'
-        self.oc_url = 'https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz'
+        self.installer_url = 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/4.2.0-0.nightly-2019-09-24-025718/openshift-install-linux-4.2.0-0.nightly-2019-09-24-025718.tar.gz'
+        self.oc_url = 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/4.2.0-0.nightly-2019-09-24-025718/openshift-client-linux-4.2.0-0.nightly-2019-09-24-025718.tar.gz'
 
 
     def install(self):
@@ -74,6 +74,7 @@ class OCP(object):
         # deploy the cluster
         print('Deploying the cluster...')
         os.makedirs(self.assets, mode=0o775, exist_ok=True)
+        shutil.copy2('./install-config.yaml', self.assets)
         proc = sp.run(['./openshift-install', '--dir=' + self.assets, 'create', 'cluster'], check=False)
 
         print('Cluster deployment completed.')
@@ -96,7 +97,8 @@ class OCP(object):
         os.remove('oc.tar.gz')
 
         os.chmod('oc', 0o755)
-        os.symlink('oc', 'kubectl')
+        os.chmod('kubectl', 0o755)
+        #os.symlink('oc', 'kubectl')
         shutil.move('oc', os.getenv('HOME') + '/bin/oc')
         shutil.move('kubectl', os.getenv('HOME') + '/bin/kubectl')
         
@@ -147,6 +149,5 @@ class OCP(object):
             print('Uninstall completed')
             shutil.rmtree(self.assets)
             os.remove('openshift-install')
-            #sp.run(['sudo', 'rm', '-f', '/usr/bin/kubectl'])
-            #sp.run(['sudo', 'rm', '-f', '/usr/bin/oc'])
-
+            sp.run(['sudo', 'rm', '-f', os.getenv('HOME') + '/bin/oc'])
+            sp.run(['sudo', 'rm', '-f', os.getenv('HOME') + '/bin/kubectl'])
