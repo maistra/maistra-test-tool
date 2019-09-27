@@ -74,7 +74,9 @@ class OCP(object):
         # deploy the cluster
         print('Deploying the cluster...')
         os.makedirs(self.assets, mode=0o775, exist_ok=True)
-        shutil.copy2('./install-config.yaml', self.assets)
+        if os.path.isfile('./install-config.yaml'):
+            shutil.copy2('./install-config.yaml', self.assets)
+
         proc = sp.run(['./openshift-install', '--dir=' + self.assets, 'create', 'cluster'], check=False)
 
         print('Cluster deployment completed.')
@@ -97,8 +99,11 @@ class OCP(object):
         os.remove('oc.tar.gz')
 
         os.chmod('oc', 0o755)
-        os.chmod('kubectl', 0o755)
-        #os.symlink('oc', 'kubectl')
+        if os.path.isfile('./kubectl'):
+            os.chmod('kubectl', 0o755)
+        else:
+            os.symlink('oc', 'kubectl')
+
         shutil.move('oc', os.getenv('HOME') + '/bin/oc')
         shutil.move('kubectl', os.getenv('HOME') + '/bin/kubectl')
         
@@ -149,5 +154,5 @@ class OCP(object):
             print('Uninstall completed')
             shutil.rmtree(self.assets)
             os.remove('openshift-install')
-            sp.run(['sudo', 'rm', '-f', os.getenv('HOME') + '/bin/oc'])
-            sp.run(['sudo', 'rm', '-f', os.getenv('HOME') + '/bin/kubectl'])
+            os.remove(os.getenv('HOME') + '/bin/oc')
+            os.remove(os.getenv('HOME') + '/bin/kubectl')
