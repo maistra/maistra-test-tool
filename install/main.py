@@ -109,7 +109,10 @@ def main():
         if moitt.install:
             # deploy operators
             # Read kubeadmin password
+<<<<<<< HEAD
 
+=======
+>>>>>>> maistra-1.0.1
             with open(moitt.assets + '/auth/kubeadmin-password') as f:
                 pw = f.read() 
             ocp.login('kubeadmin', pw)
@@ -153,6 +156,10 @@ def main():
             ocp.login('kubeadmin', pw)
             operator.uninstall()
             ocp.logout()
+<<<<<<< HEAD
+=======
+
+>>>>>>> maistra-1.0.1
 
    
 if __name__ == '__main__':

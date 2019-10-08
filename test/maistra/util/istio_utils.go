@@ -120,7 +120,7 @@ func ShellMuteOutput(format string, args ...interface{}) (string, error) {
 	return sh(context.Background(), format, true, false, true, args...)
 }
 
-// ShellMuteOutput run command on shell and get back output and error if get one
+// ShellMuteOutputError run command on shell and get back output and error if get one
 // without logging the output or errors
 func ShellMuteOutputError(format string, args ...interface{}) (string, error) {
 	return sh(context.Background(), format, true, false, false, args...)
