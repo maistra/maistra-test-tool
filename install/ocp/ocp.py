@@ -36,8 +36,8 @@ class OCP(object):
         """
         self.profile = profile
         self.assets = assets
-        self.installer_url = 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/4.2.0-0.nightly-2019-09-24-025718/openshift-install-linux-4.2.0-0.nightly-2019-09-24-025718.tar.gz'
-        self.oc_url = 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp-dev-preview/4.2.0-0.nightly-2019-09-24-025718/openshift-client-linux-4.2.0-0.nightly-2019-09-24-025718.tar.gz'
+        self.installer_url = 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.2.0/openshift-install-linux-4.2.0.tar.gz'
+        self.oc_url = 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.2.0/openshift-client-linux-4.2.0.tar.gz'
 
 
     def install(self):
