@@ -29,11 +29,18 @@ The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/).
 
 ### 1. Prepare 
 
-* Install language runtime and tools. Run `scripts/setup_install.sh`
-* Prepare aws configuration files or configure them from `awscli`
+* Install language runtime and tools on Fedora. Run `scripts/setup_install.sh`
+  * Prepare aws configuration files or configure them from `awscli`
 * Save OpenShift Pull Secret content and we need that in running openshift-installer.
 * Download your Istio private registry pull secret and create a file called "`secret.yaml`"
-* Confirm a shell has been started by pipenv. Otherwise, go to "`install`" directory and run "`pipenv install; pipenv shell`"
+* It is generally recommended to install packages in a virtual environment
+
+```shell
+$ python3 -m venv .env
+$ source .env/bin/activate
+(.env) $ pip install -r requirements.txt
+
+```
 
 
 ### 2. Environment Variables
@@ -58,7 +65,7 @@ The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/).
   * Create a Cluster Name
   * Paste the Pull Secret content ( This Pull Secret content is different from the environment variable `PULL_SEC` )
 * Waiting for the cluster creation completes. It usually takes 40 - 50 minutes.
-* After the cluster creation, this script automatically downloads a Maistra origin oc client and moves it to `/usr/bin/`. This script also automatically creates a kubectl soft link using `sudo ln -s oc /usr/bin/kubectl`
+
 
     When OCP installation compeleted, you should see INFO message "Install complete".
 

@@ -15,28 +15,29 @@
 *.pyc
 __pycache__
 *.python-version
+.env
 
 # OCP4 assets
-**/assets/*
-**/openshift-install
-install/env
-**/oc
-**/oc.tar.gz
-**/istioctl
+assets
+openshift-install
+env.sh
+oc
+oc.tar.gz
+istioctl
 install/README.md
-**/users.htpasswd
-**/install-config.yaml
+users.htpasswd
+install-config.yaml
 
 # registry-puller
-**/registry-puller
+registry-puller
 
 # istio-operator
-**/istio-operator
-**/operator_quay.yaml
-**/deploy-kiali-operator.sh
+istio-operator
+operator_quay.yaml
+deploy-kiali-operator.sh
 
 # pylarion
-**/pylarion
+pylarion
 
 
 ### Vim ###

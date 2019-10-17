@@ -18,12 +18,3 @@
 sudo dnf install -y awscli
 sudo dnf install -y python37
 sudo dnf install -y golang
-
-# install pipenv
-sudo pip3 install pipenv
-
-# install pip packages
-pushd $(cd $(dirname $0); pwd -P)/../install
-pipenv install
-pipenv shell
-popd
