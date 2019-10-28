@@ -18,7 +18,7 @@ __pycache__
 .env
 
 # OCP4 assets
-assets
+assets*
 openshift-install
 env.sh
 oc
@@ -35,10 +35,6 @@ registry-puller
 istio-operator
 operator_quay.yaml
 deploy-kiali-operator.sh
-
-# pylarion
-pylarion
-
 
 ### Vim ###
 # swap

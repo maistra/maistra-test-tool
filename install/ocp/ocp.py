@@ -31,14 +31,14 @@ class OCP(object):
         - `installer_version`: OpenShift installer version
     """
 
-    def __init__(self, profile='', assets='assets'):
+    def __init__(self, profile='', assets='assets', version='', config='install-config.yaml'):
         """ Initialize configuration parameters
         """
         self.profile = profile
         self.assets = assets
-        self.installer_url = 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.2.0/openshift-install-linux-4.2.0.tar.gz'
-        self.oc_url = 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.2.0/openshift-client-linux-4.2.0.tar.gz'
-
+        self.installer_url = "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{:s}/openshift-install-linux-{:s}.tar.gz".format(version, version)
+        self.oc_url = "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{:s}/openshift-client-linux-{:s}.tar.gz".format(version, version)
+        self.config = config
 
     def install(self):
         """ 
@@ -74,8 +74,8 @@ class OCP(object):
         # deploy the cluster
         print('Deploying the cluster...')
         os.makedirs(self.assets, mode=0o775, exist_ok=True)
-        if os.path.isfile('./install-config.yaml'):
-            shutil.copy2('./install-config.yaml', self.assets)
+        if os.path.isfile(self.config):
+            shutil.copy2(self.config, self.assets)
 
         proc = sp.run(['./openshift-install', '--dir=' + self.assets, 'create', 'cluster'], check=False)
 
@@ -154,5 +154,5 @@ class OCP(object):
             print('Uninstall completed')
             shutil.rmtree(self.assets)
             os.remove('openshift-install')
-            os.remove(os.getenv('HOME') + '/bin/oc')
-            os.remove(os.getenv('HOME') + '/bin/kubectl')
+            #os.remove(os.getenv('HOME') + '/bin/oc')
+            #os.remove(os.getenv('HOME') + '/bin/kubectl')
