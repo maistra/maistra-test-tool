@@ -32,7 +32,8 @@ class Moitt(object):
         self.install = False
         self.uninstall = False
         self.component = None
-        self.assets = os.getcwd() + '/assets'
+        self.assets = None
+        self.version = None
         
     def envParse(self):
         if 'AWS_PROFILE' in os.environ:
@@ -49,10 +50,14 @@ class Moitt(object):
         group.add_argument('-i', '--install', help='install operation', action='store_true')
         group.add_argument('-u', '--uninstall', help='uninstall operation', action='store_true')
         parser.add_argument('-c', '--component', type=str, choices=['ocp', 'registry-puller', 'istio'], help='Specify Component from ocp, registry-puller, istio')
+        parser.add_argument('-d', '--directory', type=str, default='assets', help='OCP cluster config assets directory name')
+        parser.add_argument('-v', '--version', type=str, default='4.2.0', help='OCP installer version')
         args = parser.parse_args()
         self.install = args.install
         self.uninstall = args.uninstall
-        self.component = args.component        
+        self.component = args.component
+        self.assets = os.getcwd() + '/' + args.directory
+        self.version = args.version
       
 
 def main():
@@ -65,7 +70,7 @@ def main():
     if not moitt.pullsec:
         raise KeyError("Missing PULL_SEC environment variable")
 
-    ocp = OCP(profile=moitt.profile, assets=moitt.assets)
+    ocp = OCP(profile=moitt.profile, assets=moitt.assets, version=moitt.version)
     os.environ['KUBECONFIG'] = moitt.assets + '/auth/kubeconfig'
     
     if moitt.component == 'ocp':
