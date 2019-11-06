@@ -29,11 +29,11 @@ class Operator(object):
          
     """
 
-    def __init__(self, operator_version="maistra-1.0"):
-        sp.run(['curl', '-o', 'operator_quay.yaml', '-L', "https://raw.githubusercontent.com/Maistra/istio-operator/%s/deploy/servicemesh-operator.yaml" % operator_version])
+    def __init__(self, operator_branch="maistra-1.0"):
+        sp.run(['curl', '-o', 'operator_quay.yaml', '-L', "https://raw.githubusercontent.com/Maistra/istio-operator/{:s}/deploy/servicemesh-operator.yaml".format(operator_branch)])
         
         
-    def mutate(self, operator_file="operator_quay.yaml"):
+    def mutate(self, operator_file="operator_quay.yaml", tag="latest-1.0-qe"):
         imageP1 = re.compile('image:.*istio-.*-operator.*')
         imageP2 = re.compile('value:.*istio-cni-rhel8:.*')
 
@@ -41,13 +41,13 @@ class Operator(object):
             lines = f.readlines()
         with open('operator_quay.yaml', 'w') as f:
             for line in lines:
-                f.write(imageP1.sub("image: quay.io/maistra/istio-rhel8-operator:1.0.1", line))
+                f.write(imageP1.sub("image: quay.io/maistra/istio-rhel8-operator:{:s}".format(tag), line))
 
         with open('operator_quay.yaml', 'r') as f:
             lines = f.readlines()
         with open('operator_quay.yaml', 'w') as f:
             for line in lines:
-                f.write(imageP2.sub("value: quay.io/maistra/istio-cni-rhel8:1.0.1", line))
+                f.write(imageP2.sub("value: quay.io/maistra/istio-cni-rhel8:{:s}".format(tag), line))
 
 
     def deploy_es(self, es_version="4.1"):

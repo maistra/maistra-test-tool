@@ -27,6 +27,7 @@ istioctl
 install/README.md
 users.htpasswd
 install-config.yaml
+install-config.bak.yaml
 
 # registry-puller
 registry-puller
