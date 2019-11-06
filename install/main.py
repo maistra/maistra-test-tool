@@ -108,7 +108,7 @@ def main():
     
     if moitt.component == 'istio':
         operator = Operator(operator_branch="maistra-1.0")
-        operator.mutate(tag=moitt.tag)
+        operator.mutate(cr_file=moitt.crfile, tag=moitt.tag)
 
         nslist = ['bookinfo', 'foo', 'bar', 'legacy']
         smmr = os.getcwd() + '/member-roll.yaml'

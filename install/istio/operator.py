@@ -33,9 +33,10 @@ class Operator(object):
         sp.run(['curl', '-o', 'operator_quay.yaml', '-L', "https://raw.githubusercontent.com/Maistra/istio-operator/{:s}/deploy/servicemesh-operator.yaml".format(operator_branch)])
         
         
-    def mutate(self, operator_file="operator_quay.yaml", tag="latest-1.0-qe"):
+    def mutate(self, operator_file="operator_quay.yaml", cr_file="cr_mt_quay.yaml", tag="latest-1.0-qe"):
         imageP1 = re.compile('image:.*istio-.*-operator.*')
         imageP2 = re.compile('value:.*istio-cni-rhel8:.*')
+        imageP3 = re.compile('tag: latest-1.0-qe')
 
         with open('operator_quay.yaml', 'r') as f:
             lines = f.readlines()
@@ -48,6 +49,12 @@ class Operator(object):
         with open('operator_quay.yaml', 'w') as f:
             for line in lines:
                 f.write(imageP2.sub("value: quay.io/maistra/istio-cni-rhel8:{:s}".format(tag), line))
+
+        with open(cr_file, 'r') as f:
+            lines = f.readlines()
+        with open(cr_file, 'w') as f:
+            for line in lines:
+                f.write(imageP3.sub("tag: {:s}".format(tag), line))
 
 
     def deploy_es(self, es_version="4.1"):
