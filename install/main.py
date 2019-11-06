@@ -34,6 +34,7 @@ class Moitt(object):
         self.component = None
         self.assets = None
         self.version = None
+        self.tag = None
         
     def envParse(self):
         if 'AWS_PROFILE' in os.environ:
@@ -52,12 +53,14 @@ class Moitt(object):
         parser.add_argument('-c', '--component', type=str, choices=['ocp', 'registry-puller', 'istio'], help='Specify Component from ocp, registry-puller, istio')
         parser.add_argument('-d', '--directory', type=str, default='assets', help='OCP cluster config assets directory name')
         parser.add_argument('-v', '--version', type=str, default='4.2.0', help='OCP installer version')
+        parser.add_argument('-t', '--tag', type=str, default='latest-1.0-qe', help='Istio Operator and SMCP image tag')
         args = parser.parse_args()
         self.install = args.install
         self.uninstall = args.uninstall
         self.component = args.component
         self.assets = os.getcwd() + '/' + args.directory
         self.version = args.version
+        self.tag = args.tag
       
 
 def main():
@@ -104,8 +107,8 @@ def main():
         ocp.logout()
     
     if moitt.component == 'istio':
-        operator = Operator(operator_version="maistra-1.0")
-        operator.mutate()
+        operator = Operator(operator_branch="maistra-1.0")
+        operator.mutate(tag=moitt.tag)
 
         nslist = ['bookinfo', 'foo', 'bar', 'legacy']
         smmr = os.getcwd() + '/member-roll.yaml'
