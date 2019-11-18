@@ -16,19 +16,11 @@ spec:
       serviceAccountName: jaeger-operator
       containers:
         - name: jaeger-operator
-          image: quay.io/maistra/jaeger-rhel7-operator:1.13.1
+          image: quay.io/maistra/jaeger-operator:1.13.1
           ports:
           - containerPort: 8383
             name: metrics
-          args:
-            - start
-            - --jaeger-agent-image=quay.io/maistra/jaeger-agent-rhel7
-            - --jaeger-query-image=quay.io/maistra/jaeger-query-rhel7
-            - --jaeger-collector-image=quay.io/maistra/jaeger-collector-rhel7
-            - --jaeger-ingester-image=quay.io/maistra/jaeger-ingester-rhel7
-            - --jaeger-all-in-one-image=quay.io/maistra/jaeger-all-in-one-rhel7
-            - --jaeger-es-index-cleaner-image=quay.io/maistra/jaeger-es-index-cleaner-rhel7
-            - --openshift-oauth-proxy-image=quay.io/maistra/ose-oauth-proxy:4.1
+          args: ["start"]
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
@@ -37,9 +29,5 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            - name: POD_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
             - name: OPERATOR_NAME
               value: "jaeger-operator"

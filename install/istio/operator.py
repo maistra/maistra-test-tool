@@ -71,7 +71,7 @@ class Operator(object):
         sp.run(['sleep', '10'])
 
 
-    def deploy_jaeger(self, jaeger_version="master"):
+    def deploy_jaeger(self, jaeger_version="v1.13.1"):
         # install the Jaeger operator as a prerequisit
         sp.run(['oc', 'new-project', 'observability'], stderr=sp.PIPE)
         sp.run(['oc', 'create', '-n', 'observability', '-f', "https://raw.githubusercontent.com/jaegertracing/jaeger-operator/%s/deploy/crds/jaegertracing_v1_jaeger_crd.yaml" % jaeger_version])
@@ -117,7 +117,7 @@ class Operator(object):
         sp.run(['sleep', '30'])
 
 
-    def uninstall(self, operator_file="operator_quay.yaml", es_version="4.1", jaeger_version="master", kiali_version=""):
+    def uninstall(self, operator_file="operator_quay.yaml", es_version="4.1", jaeger_version="v1.13.1", kiali_version=""):
 
         sp.run(['oc', 'delete', '-n', 'istio-operator', '-f', operator_file])
 
