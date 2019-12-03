@@ -1,2 +1,2 @@
-V	191121040834Z		100212	unknown	/C=US/ST=Denial/L=Springfield/O=Dis/CN=bookinfo.com
-V	191121040836Z		100213	unknown	/C=US/ST=Denial/L=Springfield/O=Dis/CN=bookinfo.com
+V	201212193529Z		100212	unknown	/C=US/ST=Denial/L=Springfield/O=Dis/CN=bookinfo.com
+V	201212193531Z		100213	unknown	/C=US/ST=Denial/L=Springfield/O=Dis/CN=bookinfo.com
