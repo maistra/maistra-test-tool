@@ -56,7 +56,7 @@ $ source .env/bin/activate
 
 ### 3. OCP/AWS
 * Go to directory "`install`".
-* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -c ocp`" will install an OCP cluster on AWS. 
+* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -c ocp -d ./assets -v 4.2.2`" will install an OCP 4.2.2 cluster on AWS. 
 * After `Deploying the cluster...` starts, follow the prompts.
   * Select a SSH public key
   * Select Platform > aws
@@ -72,12 +72,12 @@ $ source .env/bin/activate
 ### 4. (Optional) [registry-puller](https://github.com/knrc/registry-puller)
 * If you need to pull images from a private registry, install this registry-puller tool on an OCP cluster first. 
 * Go to directory "`install`"
-* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -c registry-puller`" will deploy the registry-puller pod in registry-puller namespace.
+* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -c registry-puller -d ./assets`" will deploy the registry-puller pod in registry-puller namespace.
 
 
 ### 5. Maistra/Istio
 * Go to directory "`install`"
-* Run "`python main -h`" and follow arguments help message. e.g. "`python main.py -i -c istio`" will follow [Maistra istio-operator](https://github.com/Maistra/istio-operator) and install the Jaeger Operator, Kiali Operator, Istio Operator and Istio system.
+* Run "`python main -h`" and follow arguments help message. e.g. "`python main.py -i -c istio -d ./assets`" will follow [Maistra istio-operator](https://github.com/Maistra/istio-operator) and install the Jaeger Operator, Kiali Operator, Istio Operator and Istio system.
 * Waiting for the Istio system installation completes. It usually takes 10 - 15 minutes.
 
     When Istio system installation completed, you should see message "Installed=True, reason=InstallSuccessful"

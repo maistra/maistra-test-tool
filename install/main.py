@@ -51,14 +51,14 @@ class Moitt(object):
         group.add_argument('-i', '--install', help='install operation', action='store_true')
         group.add_argument('-u', '--uninstall', help='uninstall operation', action='store_true')
         parser.add_argument('-c', '--component', type=str, choices=['ocp', 'registry-puller', 'istio'], help='Specify Component from ocp, registry-puller, istio')
-        parser.add_argument('-d', '--directory', type=str, default='assets', help='OCP cluster config assets directory name')
+        parser.add_argument('-d', '--directory', type=str, default='./assets', help='OCP cluster config assets directory path')
         parser.add_argument('-v', '--version', type=str, default='4.2.0', help='OCP installer version')
         parser.add_argument('-t', '--tag', type=str, default='latest-1.0-qe', help='Istio Operator and SMCP image tag')
         args = parser.parse_args()
         self.install = args.install
         self.uninstall = args.uninstall
         self.component = args.component
-        self.assets = os.getcwd() + '/' + args.directory
+        self.assets = args.directory
         self.version = args.version
         self.tag = args.tag
       
