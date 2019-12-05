@@ -77,10 +77,10 @@ $ source .env/bin/activate
 
 ### 5. Maistra/Istio
 * Go to directory "`install`"
-* Run "`python main -h`" and follow arguments help message. e.g. "`python main.py -i -c istio -d ./assets`" will follow [Maistra istio-operator](https://github.com/Maistra/istio-operator) and install the Jaeger Operator, Kiali Operator, Istio Operator and Istio system.
-* Waiting for the Istio system installation completes. It usually takes 10 - 15 minutes.
+* Run "`python main -h`" and follow arguments help message. e.g. "`python main.py -i -c istio -d ./assets`" will install the Elastic Search, Jaeger, Kiali, Istio Operators from OpenShift OLM OperatorHub. After operators are running, a service mesh control plane and a memeber roll will be created.
+* Waiting for the service mesh control plane installation completes. It usually takes 10 - 15 minutes.
 
-    When Istio system installation completed, you should see message "Installed=True, reason=InstallSuccessful"
+    When service mesh control plane installation completed, you should see message "Installed=True, reason=InstallSuccessful"
 
 
 ## Testing Prerequisite
@@ -100,8 +100,8 @@ Note: tc_17, 18, 19, 20, 21, 22 requires an installation with mtls/auth enabled 
 
 ## Uninstallation
 
-* Follow the [Installation](https://github.com/yxun/moitt#installation) section and replace argument `-i` with `-u` for each component.
+* Follow the [Installation](https://github.com/Maistra/istio-test-tool#installation) section and replace argument `-i` with `-u` for each component.
 
 ## License
 
-[Maistra OpenShift Istio Test Tool](https://github.com/yxun/moitt) is [Apache 2.0 licensed](https://github.com/yxun/moitt/blob/master/LICENSE)
+[Maistra OpenShift Istio Test Tool](https://github.com/Maistra/istio-test-tool) is [Apache 2.0 licensed](https://github.com/Maistra/istio-test-tool/blob/master/LICENSE)

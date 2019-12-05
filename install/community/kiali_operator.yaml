@@ -359,7 +359,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: kiali-operator
-  namespace: kiali-operator
+  namespace: openshift-operators
 roleRef:
   kind: ClusterRole
   name: kiali-operator
