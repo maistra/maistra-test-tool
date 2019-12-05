@@ -25,22 +25,24 @@ import shutil
 class Operator(object):
     """ An instance of this class installs operators from OLM openshift-marketplace."""
 
-    def __init__(self, operator_branch="maistra-1.0"):
+    def __init__(self, maistra_branch="maistra-1.0", maistra_tag="latest-1.0-qe"):
         self.es_sub_channel = "4.2"
         self.jaeger_sub_channel = "stable"
         self.kiali_sub_channel = "stable"
         self.ossm_sub_channel = "1.0"
         self.namespace = "openshift-operators"
+        self.maistra_branch = maistra_branch
+        self.maistra_tag = maistra_tag
 
     # def updateTemplate(self):
 
-    def mutate(self, cr_file="cr_mt_quay.yaml", tag="latest-1.0-qe"):
-        imageP3 = re.compile('tag: latest-1.0-qe')
+    def mutate(self, cr_file="cr_mt_quay.yaml"):
+        image = re.compile('tag: latest-1.0-qe')
         with open(cr_file, 'r') as f:
             lines = f.readlines()
         with open(cr_file, 'w') as f:
             for line in lines:
-                f.write(imageP3.sub("tag: {:s}".format(tag), line))
+                f.write(image.sub("tag: {:s}".format(self.maistra_tag), line))
 
 
     def checkRunning(self):
@@ -88,7 +90,37 @@ class Operator(object):
     def deploy_istio(self):
         sp.run(['oc', 'apply', '-f', 'olm/ossm_subscription.yaml'])
 
-    # def deploy_latest_istio(self):
+    def deploy_quay_istio(self):
+        sp.run(['curl', '-o', 'ossm_operator.yaml', '-L',
+            "https://raw.githubusercontent.com/Maistra/istio-operator/{:s}/deploy/servicemesh-operator.yaml".format(self.maistra_branch)])
+
+        imageP1 = re.compile('image:.*istio-.*-operator.*')
+        imageP2 = re.compile('value:.*istio-cni-rhel8:.*')
+        imageP3 = re.compile('namespace:.*istio-operator')
+
+        with open('ossm_operator.yaml', 'r') as f:
+            lines = f.readlines()
+        with open('ossm_operator.yaml', 'w') as f:
+            for line in lines:
+                f.write(imageP1.sub("image: quay.io/maistra/istio-rhel8-operator:{:s}".format(self.maistra_tag), line))
+
+        with open('ossm_operator.yaml', 'r') as f:
+            lines = f.readlines()
+        with open('ossm_operator.yaml', 'w') as f:
+            for line in lines:
+                f.write(imageP2.sub("value: quay.io/maistra/istio-cni-rhel8:{:s}".format(self.maistra_tag), line))
+
+        with open('ossm_operator.yaml', 'r') as f:
+            lines = f.readlines()
+        with open('ossm_operator.yaml', 'w') as f:
+            for line in lines:
+                f.write(imageP3.sub("namespace: " + self.namespace, line))
+
+        sp.run(['oc', 'create', '-n', self.namespace, '-f', 'ossm_operator.yaml'])
+
+
+    def uninstall_quay_istio(self):
+        sp.run(['oc', 'delete', '-n', self.namespace, '-f', 'ossm_operator.yaml'])
 
     def uninstall(self):
         # delete subscription
