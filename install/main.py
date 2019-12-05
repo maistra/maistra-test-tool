@@ -35,6 +35,7 @@ class Moitt(object):
         self.assets = None
         self.version = None
         self.tag = None
+        self.quay = False
         
     def envParse(self):
         if 'AWS_PROFILE' in os.environ:
@@ -51,16 +52,18 @@ class Moitt(object):
         group.add_argument('-i', '--install', help='install operation', action='store_true')
         group.add_argument('-u', '--uninstall', help='uninstall operation', action='store_true')
         parser.add_argument('-c', '--component', type=str, choices=['ocp', 'registry-puller', 'istio'], help='Specify Component from ocp, registry-puller, istio')
-        parser.add_argument('-d', '--directory', type=str, default='assets', help='OCP cluster config assets directory name')
+        parser.add_argument('-d', '--directory', type=str, default='./assets', help='OCP cluster config assets directory path')
         parser.add_argument('-v', '--version', type=str, default='4.2.0', help='OCP installer version')
         parser.add_argument('-t', '--tag', type=str, default='latest-1.0-qe', help='Istio Operator and SMCP image tag')
+        parser.add_argument('-q', '--quay', help='install istio operator from quay.io', action='store_true')
         args = parser.parse_args()
         self.install = args.install
         self.uninstall = args.uninstall
         self.component = args.component
-        self.assets = os.getcwd() + '/' + args.directory
+        self.assets = args.directory
         self.version = args.version
         self.tag = args.tag
+        self.quay = args.quay
       
 
 def main():
@@ -107,8 +110,8 @@ def main():
         ocp.logout()
     
     if moitt.component == 'istio':
-        operator = Operator(operator_branch="maistra-1.0")
-        operator.mutate(cr_file=moitt.crfile, tag=moitt.tag)
+        operator = Operator(maistra_branch="maistra-1.0", maistra_tag=moitt.tag)
+        operator.mutate(cr_file=moitt.crfile)
 
         nslist = ['bookinfo', 'foo', 'bar', 'legacy']
         smmr = os.getcwd() + '/member-roll.yaml'
@@ -123,7 +126,11 @@ def main():
             operator.deploy_es()
             operator.deploy_jaeger()
             operator.deploy_kiali()
-            operator.deploy_istio()
+            if moitt.quay:
+                operator.deploy_quay_istio()
+            else:
+                operator.deploy_istio()
+
             operator.check()
             ocp.logout()
 
@@ -158,6 +165,9 @@ def main():
             with open(moitt.assets + '/auth/kubeadmin-password') as f:
                 pw = f.read() 
             ocp.login('kubeadmin', pw)
+            if moitt.quay:
+                operator.uninstall_quay_istio()
+
             operator.uninstall()
             ocp.logout()
 

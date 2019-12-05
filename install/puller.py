@@ -75,8 +75,8 @@ class Puller(object):
         sp.run(['oc', 'new-project', 'registry-puller'])
         sp.run(['oc', 'create', 'configmap', '-n', 'registry-puller', 'registry-secret', '--from-file=' + self.secret_file])
         os.chdir(self.savedPath)
-        os.chdir('registry-puller')
-        proc = sp.run(['oc', 'create', '-f', 'registry-puller-4.0.yaml'], stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
+
+        proc = sp.run(['oc', 'create', '-f', 'registry-puller/registry-puller-4.0.yaml'], stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
         print(proc.stdout)
         print(proc.stderr)
 
@@ -91,5 +91,3 @@ class Puller(object):
             print('registry-puller pod is running')
         else:
             print('Error: registry-puller is not running\n' + proc.stdout)
-        os.chdir(self.savedPath)
-

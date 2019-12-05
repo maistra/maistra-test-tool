@@ -34,8 +34,7 @@ registry-puller
 
 # istio-operator
 istio-operator
-operator_quay.yaml
-deploy-kiali-operator.sh
+ossm_operator.yaml
 
 ### Vim ###
 # swap
