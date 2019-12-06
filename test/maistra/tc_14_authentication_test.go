@@ -597,28 +597,21 @@ func Test14(t *testing.T) {
 		token, err = util.ShellSilent("%s %s --expire 5", jwtGen, jwtKey)
 		token = strings.Trim(token, "\n")
 		util.Inspect(err, "failed to get JWT token", "", t)
-		for i := 0; i < 10; i++ {
-			resp, err = util.GetWithJWT(url, token, "")
-			util.Inspect(err, "failed to get httpbin header response", "", t)
-			if i == 0 {
-				if resp.StatusCode != 200 {
-					t.Errorf("Expected: 200; Got unexpected response code: %d", resp.StatusCode)
-					log.Errorf("Expected: 200; Got unexpected response code: %d", resp.StatusCode)
-				} else {
-					log.Infof("Success. Get response: %d", resp.StatusCode)
-				}
-			}
-			if i > 5 {
-				if resp.StatusCode != 401 {
-					t.Errorf("Expected: 401; Got unexpected response code: %d", resp.StatusCode)
-					log.Errorf("Expected: 401; Got unexpected response code: %d", resp.StatusCode)
-				} else {
-					log.Infof("Success. Get expected response 401: %d", resp.StatusCode)
-				}
-			}
-			util.CloseResponseBody(resp)
-			time.Sleep(time.Duration(1) * time.Second)
+		resp, err = util.GetWithJWT(url, token, "")
+		log.Infof("Success. Get response: %d", resp.StatusCode)
+
+		time.Sleep(time.Duration(7) * time.Second)
+		resp, err = util.GetWithJWT(url, token, "")
+		util.Inspect(err, "failed to get httpbin header response", "", t)
+		if resp.StatusCode != 401 {
+			t.Errorf("Expected: 401; Got unexpected response code: %d", resp.StatusCode)
+			log.Errorf("Expected: 401; Got unexpected response code: %d", resp.StatusCode)
+		} else {
+			log.Infof("Success. Get expected response 401: %d", resp.StatusCode)
 		}
+		
+		util.CloseResponseBody(resp)
+		time.Sleep(time.Duration(1) * time.Second)
 		jwcryptoCleanup()
 	})
 
