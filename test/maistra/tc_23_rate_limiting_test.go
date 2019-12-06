@@ -71,19 +71,9 @@ func Test23(t *testing.T) {
 
 		util.KubeApply(testNamespace, bookinfoAllv1Yaml, kubeconfigFile)
 		util.KubeApplyContents(meshNamespace, rateLimitYaml, kubeconfigFile)
-		log.Info("Verify memquota handler was created")
-		util.Shell("oc get memquota handler -o yaml -n " + meshNamespace)
-		log.Info("Verify quota instance was created")
-		util.Shell("oc get quotas requestcount -o yaml -n " + meshNamespace)
-		log.Info("Verify quota rule was created")
-		util.Shell("oc get rules quota -o yaml -n " + meshNamespace)
-		log.Info("Verify quotaspec was created")
-		util.Shell("oc get QuotaSpec request-count -o yaml -n " + meshNamespace)
-		log.Info("Verify quotaspecbinding was created")
-		util.Shell("oc get QuotaSpecBinding request-count -o yaml -n " + meshNamespace)
-
-		log.Info("Sleep 60 seconds...")
-		time.Sleep(time.Duration(60) * time.Second)
+		
+		log.Info("Sleep 90 seconds...")
+		time.Sleep(time.Duration(90) * time.Second)
 
 		log.Info("productpage permits 2 requests every 5 seconds. Verify 'Quota is exhausted' message")
 		for i := 0; i < 40; i++ {
