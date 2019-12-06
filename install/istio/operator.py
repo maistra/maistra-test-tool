@@ -90,7 +90,8 @@ class Operator(object):
     def deploy_istio(self):
         sp.run(['oc', 'apply', '-f', 'olm/ossm_subscription.yaml'])
 
-    def deploy_quay_istio(self):
+
+    def get_quay_yaml(self):
         sp.run(['curl', '-o', 'ossm_operator.yaml', '-L',
             "https://raw.githubusercontent.com/Maistra/istio-operator/{:s}/deploy/servicemesh-operator.yaml".format(self.maistra_branch)])
 
@@ -116,10 +117,14 @@ class Operator(object):
             for line in lines:
                 f.write(imageP3.sub("namespace: " + self.namespace, line))
 
+
+    def deploy_quay_istio(self):
+        self.get_quay_yaml()
         sp.run(['oc', 'create', '-n', self.namespace, '-f', 'ossm_operator.yaml'])
 
 
     def uninstall_quay_istio(self):
+        self.get_quay_yaml()
         sp.run(['oc', 'delete', '-n', self.namespace, '-f', 'ossm_operator.yaml'])
 
     def uninstall(self):
