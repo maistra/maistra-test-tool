@@ -78,7 +78,7 @@ $ source .env/bin/activate
 ### 5. Maistra/Istio
 * Go to directory "`install`"
 * Run "`python main -h`" and follow arguments help message. e.g. "`python main.py -i -c istio -d ./assets`" will install the Elastic Search, Jaeger, Kiali, Istio Operators from OpenShift OLM OperatorHub. After operators are running, a service mesh control plane and a memeber roll will be created.
-* If user need to deploy the latest istio operator from quay.io private registry. Run the above python script with an additional argument `-q`. e.g. "`python main.py -i -c istio -d ./assets` -q".
+* If user need to deploy the latest istio operator from quay.io private registry. Run the above python script with an additional argument `-q`. e.g. "`python main.py -i -c istio -d ./assets -q`".
 * Waiting for the service mesh control plane installation completes. It usually takes 10 - 15 minutes.
 
     When service mesh control plane installation completed, you should see message "Installed=True, reason=InstallSuccessful"
@@ -102,7 +102,7 @@ Note: tc_17, 18, 19, 20, 21, 22 requires an installation with mtls/auth enabled 
 ## Uninstallation
 
 * Follow the [Installation](https://github.com/Maistra/istio-test-tool#installation) section and replace argument `-i` with `-u` for each component.
-* If user need to uninstall the latest istio operator which was deployed from quay.io private registry. Run the above python script with an additional argument `-q`. e.g. "`python main.py -u -c istio -d ./assets` -q".
+* If user need to uninstall the latest istio operator which was deployed from quay.io private registry. Run the above python script with an additional argument `-q`. e.g. "`python main.py -u -c istio -d ./assets -q`".
 
 ## License
 

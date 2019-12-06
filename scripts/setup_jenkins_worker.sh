@@ -69,7 +69,3 @@ exec "$SHELL"
 pyenv install 3.7.3
 pyenv local 3.7.3
 pyenv version
-
-pip install pipenv
-
-
