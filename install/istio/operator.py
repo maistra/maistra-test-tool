@@ -90,6 +90,20 @@ class Operator(object):
     def deploy_istio(self):
         sp.run(['oc', 'apply', '-f', 'olm/ossm_subscription.yaml'])
 
+    # TBD patch41 is a temporary patch method for OCP 4.1
+    def patch41(self):
+        proc = sp.run(['oc', 'get', 'clusterversion'], stdout=sp.PIPE, universal_newlines=True)
+        if "4.1" in proc.stdout:
+            sp.run(['oc', 'patch', 'csc/redhat-operators', '-n', 'openshift-marketplace', '--type', 'merge',
+             '-p', r'{"spec":{"targetNamespace": "openshift-operators"}}'])
+            sp.run(['oc', 'patch', 'subscription/elasticsearch-operator', '-n', self.namespace, '--type', 'merge',
+             '-p', r'{"spec":{"sourceNamespace": "openshift-operators"}}'])
+            sp.run(['oc', 'patch', 'subscription/jaeger-product', '-n', self.namespace, '--type', 'merge',
+             '-p', r'{"spec":{"sourceNamespace": "openshift-operators"}}'])
+            sp.run(['oc', 'patch', 'subscription/kiali-ossm', '-n', self.namespace, '--type', 'merge',
+             '-p', r'{"spec":{"sourceNamespace": "openshift-operators"}}'])
+            sp.run(['oc', 'patch', 'subscription/servicemeshoperator', '-n', self.namespace, '--type', 'merge',
+             '-p', r'{"spec":{"sourceNamespace": "openshift-operators"}}'])
 
     def get_quay_yaml(self):
         sp.run(['curl', '-o', 'ossm_operator.yaml', '-L',
