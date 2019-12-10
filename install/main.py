@@ -131,6 +131,7 @@ def main():
             else:
                 operator.deploy_istio()
 
+            operator.patch41()  # temporary patch for OCP 4.1 to enable csv installations
             operator.check()
             ocp.logout()
 
