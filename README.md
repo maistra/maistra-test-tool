@@ -29,10 +29,6 @@ The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/).
 
 ### 1. Prepare 
 
-* Install language runtime and tools on Fedora. Run `scripts/setup_install.sh`
-  * Prepare aws configuration files or configure them from `awscli`
-* Save OpenShift Pull Secret content and we need that in running openshift-installer.
-* Download your Istio private registry pull secret and create a file called "`secret.yaml`"
 * It is generally recommended to install packages in a virtual environment
 
 ```shell
@@ -41,6 +37,10 @@ $ source .env/bin/activate
 (.env) $ pip install -r requirements.txt
 
 ```
+
+* Prepare aws configuration files or configure them from `awscli`
+* Save OpenShift Pull Secret content and we need that in running openshift-installer.
+* Download your Istio private registry pull secret and create a file called "`secret.yaml`"
 
 
 ### 2. Environment Variables

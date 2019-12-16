@@ -1,0 +1,15 @@
+FROM registry.access.redhat.com/ubi8/ubi:latest as tester
+
+MAINTAINER Yuanlin Xu <yuaxu@redhat.com>
+
+RUN dnf install -y --disableplugin=subscription-manager --setopt=tsflags=nodocs \
+    golang && \
+    dnf clean all
+
+USER 1001
+
+COPY . /tmp/
+
+WORKDIR /tmp/test/maistra
+
+CMD ["go", "test", "-timeout", "3h", "-v"]
