@@ -67,10 +67,6 @@ class Puller(object):
         proc = sp.run(['oc', 'version'])
         if proc.returncode != 0:
             raise RuntimeError('Missing oc client')
-        # check os login
-        proc = sp.run(['oc', 'status'])
-        if proc.returncode != 0:
-            raise RuntimeError('Login not completed')
 
         sp.run(['oc', 'new-project', 'registry-puller'])
         sp.run(['oc', 'create', 'configmap', '-n', 'registry-puller', 'registry-secret', '--from-file=' + self.secret_file])
