@@ -10,6 +10,6 @@ USER 1001
 
 COPY . /tmp/
 
-WORKDIR /tmp/test/maistra
+WORKDIR /tmp/test/maistra_1_1
 
-CMD ["go", "test", "-timeout", "3h", "-v"]
+CMD ["go", "test", "-timeout", "3h", "-v", "-c"]

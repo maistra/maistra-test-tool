@@ -21,7 +21,7 @@ The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/).
 | Name      | Version       |
 | --        | --            |
 | OS        | Fedora 28+    |
-| Golang    | 1.12+         |
+| Golang    | 1.13+         |
 | Python    | 3.7+          |
 
 
