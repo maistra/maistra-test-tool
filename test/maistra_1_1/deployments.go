@@ -26,7 +26,7 @@ func deployBookinfo(namespace string, mtls bool) {
 
 	util.KubeApply(namespace, bookinfoYaml, kubeconfig)
 	log.Info("Waiting deployments complete...")
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(waitTime) * time.Second)
 	util.CheckPodRunning(namespace, "app=details", kubeconfig)
 	util.CheckPodRunning(namespace, "app=ratings", kubeconfig)
 	util.CheckPodRunning(namespace, "app=reviews,version=v1", kubeconfig)
@@ -42,7 +42,7 @@ func deployBookinfo(namespace string, mtls bool) {
 	} else {
 		util.KubeApply(namespace, bookinfoRuleAllYaml, kubeconfig)
 	}
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(waitTime) * time.Second)
 }
 
 func cleanBookinfo(namespace string) {
@@ -51,7 +51,7 @@ func cleanBookinfo(namespace string) {
 	util.KubeDelete(namespace, bookinfoRuleAllYaml, kubeconfig)
 	util.KubeDelete(namespace, bookinfoGateway, kubeconfig)
 	util.KubeDelete(namespace, bookinfoYaml, kubeconfig)
-	time.Sleep(time.Duration(20) * time.Second)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
 }
 
 func deployHttpbin(namespace string) {
@@ -59,16 +59,16 @@ func deployHttpbin(namespace string) {
 
 	util.KubeApply(namespace, httpbinYaml, kubeconfig)
 	log.Info("Waiting deployments complete...")
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(waitTime) * time.Second)
 	util.CheckPodRunning(namespace, "app=httpbin", kubeconfig)
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(waitTime) * time.Second)
 }
 
 func cleanHttpbin(namespace string) {
 	log.Info("* Cleanup Httpbin")
 
 	util.KubeDelete(namespace, httpbinYaml, kubeconfig)
-	time.Sleep(time.Duration(20) * time.Second)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
 }
 
 func deployFortio(namespace string) {
@@ -76,16 +76,16 @@ func deployFortio(namespace string) {
 
 	util.KubeApply(namespace, httpbinFortioYaml, kubeconfig)
 	log.Info("Waiting deployments complete...")
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(waitTime) * time.Second)
 	util.CheckPodRunning(namespace, "app=fortio", kubeconfig)
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(waitTime) * time.Second)
 }
 
 func cleanFortio(namespace string) {
 	log.Info("* Cleanup fortio")
 
 	util.KubeDelete(namespace, httpbinFortioYaml, kubeconfig)
-	time.Sleep(time.Duration(20) * time.Second)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
 }
 
 func deployEcho(namespace string) {
@@ -93,17 +93,17 @@ func deployEcho(namespace string) {
 
 	util.KubeApply(namespace, echoYaml, kubeconfig)
 	log.Info("Waiting deployments complete...")
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(waitTime) * time.Second)
 	util.CheckPodRunning(namespace, "app=tcp-echo,version=v1", kubeconfig)
 	util.CheckPodRunning(namespace, "app=tcp-echo,version=v2", kubeconfig)
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(waitTime) * time.Second)
 }
 
 func cleanEcho(namespace string) {
 	log.Info("* Cleanup tcp-echo")
 
 	util.KubeDelete(namespace, echoYaml, kubeconfig)
-	time.Sleep(time.Duration(20) * time.Second)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
 }
 
 func deploySleep(namespace string) {
@@ -111,16 +111,16 @@ func deploySleep(namespace string) {
 
 	util.KubeApply(namespace, sleepYaml, kubeconfig)
 	log.Info("Waiting deployments complete...")
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(waitTime) * time.Second)
 	util.CheckPodRunning(namespace, "app=sleep", kubeconfig)
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(waitTime) * time.Second)
 }
 
 func cleanSleep(namespace string) {
 	log.Info("* Cleanup Sleep")
 
 	util.KubeDelete(namespace, sleepYaml, kubeconfig)
-	time.Sleep(time.Duration(20) * time.Second)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
 }
 
 func deployNginx(enableSidecar bool, namespace string) {
@@ -132,16 +132,16 @@ func deployNginx(enableSidecar bool, namespace string) {
 		util.KubeApply(namespace, nginxNoSidecarYaml, kubeconfig)
 	}
 	log.Info("Waiting deployments complete...")
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(waitTime) * time.Second)
 	util.CheckPodRunning(namespace, "app=nginx", kubeconfig)
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(waitTime) * time.Second)
 }
 
 func cleanNginx(namespace string) {
 	log.Info("* Cleanup Nginx")
 
 	util.KubeDelete(namespace, nginxYaml, kubeconfig)
-	time.Sleep(time.Duration(20) * time.Second)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
 }
 
 func deployMongoDB(namespace string) {
@@ -149,14 +149,14 @@ func deployMongoDB(namespace string) {
 
 	util.KubeApply(namespace, bookinfoDBYaml, kubeconfig)
 	log.Info("Waiting deployments complete...")
-	time.Sleep(time.Duration(30) * time.Second)
+	time.Sleep(time.Duration(waitTime*6) * time.Second)
 	util.CheckPodRunning(namespace, "app=mongodb", kubeconfig)
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(waitTime) * time.Second)
 }
 
 func cleanMongoDB(namespace string) {
 	log.Info("* Cleanup MongoDB")
 
 	util.KubeDelete(namespace, bookinfoDBYaml, kubeconfig)
-	time.Sleep(time.Duration(30) * time.Second)
+	time.Sleep(time.Duration(waitTime*6) * time.Second)
 }

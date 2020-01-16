@@ -26,3 +26,8 @@ func recoverPanic(t *testing.T) {
 	}
 }
 
+func isWithinPercentage(count int, total int, rate float64, tolerance float64) bool {
+	minimum := int((rate - tolerance) * float64(total))
+	maximum := int((rate + tolerance) * float64(total))
+	return count >= minimum && count <= maximum
+}

@@ -29,6 +29,22 @@ var tests = []testing.InternalTest{
 		Name: "Fault_Injection",
 		F: TestFaultInjection,
 	},
+	testing.InternalTest {
+		Name: "Traffic_Shifting",
+		F: TestTrafficShifting,
+	},
+	testing.InternalTest {
+		Name: "Request_Timeouts",
+		F: TestRequestTimeouts,
+	},
+	testing.InternalTest {
+		Name: "Circuit_Breaking",
+		F: TestCircuitBreaking,
+	},
+	testing.InternalTest {
+		Name: "Mirroring",
+		F: TestMirroring,
+	},
 }
 
 func matchString(a, b string) (bool, error) {

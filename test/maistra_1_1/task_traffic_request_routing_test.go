@@ -29,7 +29,7 @@ func cleanupRequestRouting(namespace string) {
 	log.Info("# Cleanup ...")
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
 	cleanBookinfo(namespace)
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(waitTime*2) * time.Second)
 }
 
 func TestRequestRouting(t *testing.T) {
@@ -41,7 +41,7 @@ func TestRequestRouting(t *testing.T) {
 	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
 	testUserJar := util.GetCookieJar(testUsername, "", "http://"+ gatewayHTTP)
 
-	t.Run("Test the new routing configuration", func(t *testing.T) {
+	t.Run("Test_the_new_routing_configuration", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Infof("# Routing traffic to all v1")
@@ -49,7 +49,7 @@ func TestRequestRouting(t *testing.T) {
 			t.Errorf("Failed to route traffic to all v1")
 			log.Errorf("Failed to route traffic to all v1")
 		}
-		time.Sleep(time.Duration(5) * time.Second)
+		time.Sleep(time.Duration(waitTime) * time.Second)
 
 		for i := 0; i <= 5; i++ {
 			resp, duration, err := util.GetHTTPResponse(productpageURL, nil)
@@ -61,12 +61,12 @@ func TestRequestRouting(t *testing.T) {
 			util.Inspect(
 				util.CompareHTTPResponse(body, "productpage-normal-user-v1.html"),
 				"Didn't get expected response.",
-				"Success. Response matches with expected.",
+				"Success. Routing traffic to all v1.",
 				t)
 		}
 	})
 
-	t.Run("Route based on user identity", func(t *testing.T) {
+	t.Run("Route_based_on_user_identity", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Infof("# Traffic routing based on user identity")
@@ -74,7 +74,7 @@ func TestRequestRouting(t *testing.T) {
 			t.Errorf("Failed to route traffic based on user")
 			log.Errorf("Failed to route traffic based on user")
 		}
-		time.Sleep(time.Duration(5) * time.Second)
+		time.Sleep(time.Duration(waitTime) * time.Second)
 
 		for i := 0; i <= 5; i++ {
 			resp, duration, err := util.GetHTTPResponse(productpageURL, testUserJar)
@@ -86,7 +86,7 @@ func TestRequestRouting(t *testing.T) {
 			util.Inspect(
 				util.CompareHTTPResponse(body, "productpage-test-user-v2.html"),
 				"Didn't get expected response.",
-				"Success. Response matches with expected.",
+				"Success. Route_based_on_user_identity.",
 				t)
 		}
 	})

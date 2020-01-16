@@ -21,6 +21,11 @@ const (
 	bookinfoRuleAllTLSYaml 	= "samples/bookinfo/networking/destination-rule-all-mtls.yaml"
 	bookinfoAllv1Yaml       = "samples/bookinfo/networking/virtual-service-all-v1.yaml"
 	bookinfoReviewV2Yaml    = "samples/bookinfo/networking/virtual-service-reviews-test-v2.yaml"
+	bookinfoReview50V3Yaml  = "samples/bookinfo/networking/virtual-service-reviews-50-v3.yaml"
+	bookinfoReviewV3Yaml    = "samples/bookinfo/networking/virtual-service-reviews-v3.yaml"
+
+	bookinfoRatingDelayYaml = "samples/bookinfo/networking/virtual-service-ratings-test-delay.yaml"
+	bookinfoRatingAbortYaml = "samples/bookinfo/networking/virtual-service-ratings-test-abort.yaml"
 
 	bookinfoDBYaml          = "samples/bookinfo/platform/kube/bookinfo-db.yaml"
 
@@ -38,6 +43,7 @@ const (
 	kubeconfig 				= ""
 	testNamespace 			= "bookinfo"
 	testUsername   			= "jason"
+	waitTime				= 5
 	gatewayHTTP 			= "localhost:8001/api/v1/namespaces/istio-system/services/istio-ingressgateway:80/proxy"
 	
 )
