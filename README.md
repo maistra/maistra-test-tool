@@ -21,7 +21,7 @@ The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/).
 | Name      | Version       |
 | --        | --            |
 | OS        | Fedora 28+    |
-| Golang    | 1.12+         |
+| Golang    | 1.13+         |
 | Python    | 3.7+          |
 
 
@@ -94,10 +94,6 @@ $ source .env/bin/activate
 
 Go to directory "`test/maistra`" 
 - To run all the test cases (End-to-End run): `go test -timeout 2h -v`
-- To run a specific test case: `go test -run [test case number, e.g. 03] -v`
-
-Note: tc_17, 18, 19, 20, 21, 22 requires an installation with mtls/auth enabled ControlPlane CR file. 
-
 
 ## Uninstallation
 
