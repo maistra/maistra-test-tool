@@ -241,6 +241,8 @@ export CR_FILE=$WORKSPACE/configs/cr.yaml
 export OCP_VERSION=${OCP_VERSION}
 export TAG=${TAG}
 export OCP_SERVER=https://api.${CLUSTER_NAME}.devcluster.openshift.com:6443
+export QE1_PWD=qe1pw
+export QE2_PWD=qe2pw
 
 # Log names
 OCP_LOGNAME=$(echo OCP-$(date +&quot;%Y%m%d_%H%M%S&quot;)&apos;.log&apos;)
@@ -251,6 +253,7 @@ TEST_LOGNAME1=$(echo Test1-$(date +&quot;%Y%m%d_%H%M%S&quot;)&apos;.log&apos;)
 JUNIT_FILE2=$(echo JUnit2-$(date +&quot;%Y%m%d_%H%M%S&quot;)&apos;.xml&apos;)
 TEST_LOGNAME2=$(echo Test2-$(date +&quot;%Y%m%d_%H%M%S&quot;)&apos;.log&apos;)
 mkdir -p $WORKSPACE/report
+rm -f $WORKSPACE/report/*
 
 # Create OCP4.x AWS Cluster
 pushd install
@@ -279,11 +282,8 @@ popd
 # Run ACC Tests
 pushd test/maistra
 
-export TEST_USER=qe1
-export TEST_PASS=qe1pw
-
 # login OCP
-oc login -u ${TEST_USER} -p ${TEST_PASS} --server=${OCP_SERVER} --insecure-skip-tls-verify=true
+oc login -u qe1 -p ${QE1_PWD} --server=${OCP_SERVER} --insecure-skip-tls-verify=true
 
 go test -run &quot;\d+$&quot; -timeout 3h -v 2&gt;&amp;1 | tee &gt;(~/go/bin/go-junit-report &gt; $WORKSPACE/report/$JUNIT_FILE1) $WORKSPACE/report/$TEST_LOGNAME1
 
@@ -292,12 +292,15 @@ oc patch -n service-mesh-1 smcp/basic-install --type merge -p &apos;{&quot;spec&
 
 # Run mtls tests
 go test -run &quot;\d+mtls$&quot; -timeout 3h -v 2&gt;&amp;1 | tee &gt;(~/go/bin/go-junit-report &gt; $WORKSPACE/report/$JUNIT_FILE2) $WORKSPACE/report/$TEST_LOGNAME2
+# Patch mtls enabled to false
+oc patch -n service-mesh-1 smcp/basic-install --type merge -p '{"spec":{"istio":{"global":{"controlPlaneSecurityEnabled":false,"mtls":{"enabled":false}}}}}'
+
 popd</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
     <hudson.tasks.ArtifactArchiver>
-      <artifacts>report/*</artifacts>
+      <artifacts>install/assets,report/*</artifacts>
       <allowEmptyArchive>false</allowEmptyArchive>
       <onlyIfSuccessful>false</onlyIfSuccessful>
       <fingerprint>false</fingerprint>
