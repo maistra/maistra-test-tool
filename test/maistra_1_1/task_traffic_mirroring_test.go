@@ -39,7 +39,7 @@ func TestMirroring(t *testing.T) {
 	defer cleanupMirroring(testNamespace)
 	defer recoverPanic(t)
 
-	log.Info("# TC_13 Mirroring")
+	log.Info("# Mirroring")
 	if err := util.KubeApplyContents(testNamespace, httpbinv1, kubeconfig); err != nil {
 		t.Errorf("Failed to deploy httpbin v1")
 		log.Errorf("Failed to deploy httpbin v1")
@@ -55,13 +55,14 @@ func TestMirroring(t *testing.T) {
 		t.Errorf("Failed to apply httpbin service")
 		log.Errorf("Failed to apply httpbin service")
 	}
+	time.Sleep(time.Duration(waitTime*2) * time.Second)
 
 	if err := util.KubeApplyContents(testNamespace, sleepv2, kubeconfig); err != nil {
 		t.Errorf("Failed to deploy sleep")
 		log.Errorf("Failed to deploy sleep")
 	}
 	util.CheckPodRunning(testNamespace, "app=sleep", kubeconfig)
-	time.Sleep(time.Duration(waitTime) * time.Second)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 	t.Run("Creating_a_default_routing_policy", func(t *testing.T) {
 		defer recoverPanic(t)
@@ -73,11 +74,11 @@ func TestMirroring(t *testing.T) {
 			t.Errorf("Failed to apply httpbin all v1")
 			log.Errorf("Failed to apply httpbin all v1")
 		}
-		time.Sleep(time.Duration(waitTime) * time.Second)
+		time.Sleep(time.Duration(waitTime*2) * time.Second)
 
 		sleepPod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfig)
 		util.Inspect(err, "Failed to get sleep pod name", "", t)
-		_, err = util.PodExec(testNamespace, sleepPod, "sleep", "sh -c 'curl  http://httpbin:8000/headers' | python -m json.tool", true, kubeconfig)
+		_, err = util.PodExec(testNamespace, sleepPod, "sleep", "sh -c 'curl  http://httpbin:8080/headers' | python -m json.tool", true, kubeconfig)
 		util.Inspect(err, "Failed to get sleep curl response", "", t)
 
 		// check httpbin v1 logs
@@ -105,11 +106,11 @@ func TestMirroring(t *testing.T) {
 			t.Errorf("Failed to apply httpbin mirror v2")
 			log.Errorf("Failed to apply httpbin mirror v2")
 		}
-		time.Sleep(time.Duration(waitTime) * time.Second)
+		time.Sleep(time.Duration(waitTime*2) * time.Second)
 
 		sleepPod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfig)
 		util.Inspect(err, "Failed to get sleep pod name", "", t)
-		_, err = util.PodExec(testNamespace, sleepPod, "sleep", "sh -c 'curl  http://httpbin:8000/headers' | python -m json.tool", true, kubeconfig)
+		_, err = util.PodExec(testNamespace, sleepPod, "sleep", "sh -c 'curl  http://httpbin:8080/headers' | python -m json.tool", true, kubeconfig)
 		util.Inspect(err, "Failed to get sleep curl response", "", t)
 
 		// check httpbin v1 logs

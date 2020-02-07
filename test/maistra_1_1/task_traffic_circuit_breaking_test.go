@@ -39,7 +39,7 @@ func TestCircuitBreaking(t *testing.T) {
 	defer cleanupCircuitBreaking(testNamespace)
 	defer recoverPanic(t)
 
-	log.Info("# TC_12 Circuit Breaking")
+	log.Info("# Circuit Breaking")
 	deployHttpbin(testNamespace)
 
 	/*
@@ -49,7 +49,7 @@ func TestCircuitBreaking(t *testing.T) {
 		t.Errorf("Failed to configure circuit breaker")
 		log.Errorf("Failed to configure circuit breaker")
 	}
-	time.Sleep(time.Duration(waitTime) * time.Second)
+	time.Sleep(time.Duration(waitTime*2) * time.Second)
 
 	deployFortio(testNamespace)
 
@@ -72,8 +72,8 @@ func TestCircuitBreaking(t *testing.T) {
 
 		log.Info("# Tripping the circuit breaker")
 		connection := 3
-		reqCount := 30
-		tolerance := 0.20
+		reqCount := 40
+		tolerance := 0.45
 
 		command = fmt.Sprintf("load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount)
 		msg, err = util.PodExec(testNamespace, pod, "fortio /usr/bin/fortio", command, false, kubeconfig)

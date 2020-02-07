@@ -45,6 +45,15 @@ var tests = []testing.InternalTest{
 		Name: "Mirroring",
 		F: TestMirroring,
 	},
+	testing.InternalTest {
+		Name: "Ingress_Gateways",
+		F: TestIngressGateways,
+	},
+	testing.InternalTest {
+		Name: "Secure_Ingress_Gateways",
+		F: TestIngressHttps,
+	},
+
 }
 
 func matchString(a, b string) (bool, error) {

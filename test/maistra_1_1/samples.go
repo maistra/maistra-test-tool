@@ -14,6 +14,8 @@
 
 package main
 
+import "maistra/util"
+
 const (
 	bookinfoYaml 			= "samples/bookinfo/platform/kube/bookinfo.yaml"
 	bookinfoGateway			= "samples/bookinfo/networking/bookinfo-gateway.yaml"
@@ -29,8 +31,12 @@ const (
 
 	bookinfoDBYaml          = "samples/bookinfo/platform/kube/bookinfo-db.yaml"
 
-	httpbinYaml             = "samples/httpbin/httpbin.yaml"
+	httpbinYaml             = "samples/httpbin/httpbin-1.1.yaml"
 	httpbinFortioYaml       = "samples/httpbin/sample-client/fortio-deploy.yaml"
+
+	httpbinSampleServerCertKey 	= "samples/certs/httpbin.example.com/httpbin.example.com.key"
+	httpbinSampleServerCert 	= "samples/certs/httpbin.example.com/httpbin.example.com.crt"
+	httpbinSampleCACert        	= "samples/certs/httpbin.example.com/example.com.crt"
 
 	echoYaml				= "samples/tcp-echo/tcp-echo-services.yaml"
 
@@ -44,8 +50,16 @@ const (
 	testNamespace 			= "bookinfo"
 	testUsername   			= "jason"
 	waitTime				= 5
-	gatewayHTTP 			= "localhost:8001/api/v1/namespaces/istio-system/services/istio-ingressgateway:80/proxy"
+	// KIND
+	//gatewayHTTP 			= "localhost:8001/api/v1/namespaces/istio-system/services/istio-ingressgateway:80/proxy"
 	
+	meshNamespace 			= "service-mesh-1"
+
 )
 
+var (
+	// OCP4.x
+	gatewayHTTP, _ = util.ShellSilent("kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'", meshNamespace)
+	secureIngressPort, _ = util.GetSecureIngressPort(meshNamespace, "istio-ingressgateway", kubeconfig)
 
+)

@@ -36,7 +36,7 @@ func TestRequestRouting(t *testing.T) {
 	defer cleanupRequestRouting(testNamespace)
 	defer recoverPanic(t)
 
-	log.Infof("# TC_03 Traffic Routing")
+	log.Infof("# Traffic Routing")
 	deployBookinfo(testNamespace, false)
 	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
 	testUserJar := util.GetCookieJar(testUsername, "", "http://"+ gatewayHTTP)

@@ -133,9 +133,9 @@ spec:
       - image: docker.io/kennethreitz/httpbin
         imagePullPolicy: IfNotPresent
         name: httpbin
-        command: ["gunicorn", "--access-logfile", "-", "-b", "0.0.0.0:80", "httpbin:app"]
+        command: ["gunicorn", "--access-logfile", "-", "-b", "0.0.0.0:8080", "httpbin:app"]
         ports:
-        - containerPort: 80
+        - containerPort: 8080
 `
 
 httpbinv2 = `
@@ -161,9 +161,9 @@ spec:
       - image: docker.io/kennethreitz/httpbin
         imagePullPolicy: IfNotPresent
         name: httpbin
-        command: ["gunicorn", "--access-logfile", "-", "-b", "0.0.0.0:80", "httpbin:app"]
+        command: ["gunicorn", "--access-logfile", "-", "-b", "0.0.0.0:8080", "httpbin:app"]
         ports:
-        - containerPort: 80
+        - containerPort: 8080
 `
 
 httpbinService = `
@@ -176,8 +176,7 @@ metadata:
 spec:
   ports:
   - name: http
-    port: 8000
-    targetPort: 80
+    port: 8080
   selector:
     app: httpbin
 `
@@ -262,7 +261,152 @@ spec:
     mirror:
       host: httpbin
       subset: v2
-    mirror_percent: 100
+`
+
+httpbinGateway1 = `
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: httpbin-gateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "httpbin.example.com"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: httpbin
+spec:
+  hosts:
+  - "httpbin.example.com"
+  gateways:
+  - httpbin-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /status
+    - uri:
+        prefix: /delay
+    route:
+    - destination:
+        port:
+          number: 8000
+        host: httpbin
+`
+
+httpbinOCPRoute = `
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: httpbin.example.com
+spec:
+  host: httpbin.example.com
+  port:
+    targetPort: http2
+  to:
+    kind: Service
+    name: istio-ingressgateway
+`
+
+httpbinGateway2 = `
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: httpbin-gateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: httpbin
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - httpbin-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /headers
+    route:
+    - destination:
+        port:
+          number: 8000
+        host: httpbin
+`
+
+httpbinGatewayHTTPS = `
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: httpbin-gateway
+spec:
+  selector:
+    istio: ingressgateway # use istio default ingress gateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      serverCertificate: /etc/istio/ingressgateway-certs/tls.crt
+      privateKey: /etc/istio/ingressgateway-certs/tls.key
+    hosts:
+    - "httpbin.example.com"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: httpbin
+spec:
+  hosts:
+  - "httpbin.example.com"
+  gateways:
+  - httpbin-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /status
+    - uri:
+        prefix: /delay
+    route:
+    - destination:
+        port:
+          number: 8000
+        host: httpbin
+`
+
+httpbinOCPRouteHTTPS = `
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: httpbin.example.com
+spec:
+  host: httpbin.example.com
+  port:
+    targetPort: https
+  to:
+    kind: Service
+    name: istio-ingressgateway
+  tls:
+    termination: passthrough
 `
 
 sleepv2 = `
