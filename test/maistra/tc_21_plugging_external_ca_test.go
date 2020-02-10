@@ -122,7 +122,7 @@ func Test21mtls(t *testing.T) {
 			t.Errorf("Failed to create secret %s\n", "cacerts")
 		}
 		log.Infof("Secret %s created\n", "cacerts")
-		time.Sleep(time.Duration(5) * time.Second)
+		time.Sleep(time.Duration(10) * time.Second)
 
 		log.Info("Redeploy Citadel")
 		backupFile := "/tmp/istio-citadel-bak.yaml"
@@ -147,17 +147,18 @@ func Test21mtls(t *testing.T) {
 			t.Errorf("Update citadel deployment error: %v", err)
 		}
 		util.Shell("oc apply -n %s -f %s", meshNamespace, newFile)
-		time.Sleep(time.Duration(20) * time.Second)
+		time.Sleep(time.Duration(30) * time.Second)
 		
 		log.Info("Delete existing istio.default secret")
 		util.Shell("oc delete -n %s secret istio.default", testNamespace)
+		time.Sleep(time.Duration(10) * time.Second)
 
 		log.Info("Deploy bookinfo")
 		if err := util.KubeApply(testNamespace, bookinfoYaml, kubeconfigFile); err != nil {
 			log.Errorf("failed to deploy bookinfo")
 		}
-		log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-		time.Sleep(time.Duration(10) * time.Second)
+		log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
+		time.Sleep(time.Duration(20) * time.Second)
 		util.CheckPodRunning(testNamespace, "app=details", kubeconfigFile)
 		util.CheckPodRunning(testNamespace, "app=ratings", kubeconfigFile)
 		util.CheckPodRunning(testNamespace, "app=reviews,version=v1", kubeconfigFile)
