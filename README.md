@@ -23,6 +23,7 @@ The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/).
 | OS        | Fedora 28+    |
 | Golang    | 1.13+         |
 | Python    | 3.7+          |
+| Docker    | 18.09+        |
 
 
 ## Installation

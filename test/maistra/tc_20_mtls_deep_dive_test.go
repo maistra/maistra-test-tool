@@ -29,7 +29,7 @@ func cleanup20(kubeconfig string) {
     util.KubeDelete("foo", httpbinYaml, kubeconfig)
 	util.KubeDelete("foo", sleepYaml, kubeconfig)
 	log.Info("Waiting... Sleep 20 seconds...")
-	time.Sleep(time.Duration(30) * time.Second)
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func Test20mtls(t *testing.T) {
