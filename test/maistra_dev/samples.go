@@ -31,16 +31,26 @@ const (
 
 	bookinfoDBYaml          = "samples/bookinfo/platform/kube/bookinfo-db.yaml"
 
+	bookinfoServerCert		= "samples/certs/bookinfo.com/bookinfo.com.crt"
+	bookinfoServerCertKey	= "samples/certs/bookinfo.com/bookinfo.com.key"
+	bookinfoSampleCACert	= "samples/certs/bookinfo.com/example.com.crt"
+
 	httpbinYaml             = "samples/httpbin/httpbin-1.1.yaml"
 	httpbinFortioYaml       = "samples/httpbin/sample-client/fortio-deploy.yaml"
+	httpbinLegacyYaml       = "samples/httpbin/httpbin-1.1-legacy.yaml"
 
 	httpbinSampleServerCertKey 	= "samples/certs/httpbin.example.com/httpbin.example.com.key"
 	httpbinSampleServerCert 	= "samples/certs/httpbin.example.com/httpbin.example.com.crt"
 	httpbinSampleCACert        	= "samples/certs/httpbin.example.com/example.com.crt"
+	httpbinSampleClientCert		= "samples/certs/httpbin.example.com/httpbin-client.example.com.crt"
+	httpbinSampleClientCertKey	= "samples/certs/httpbin.example.com/httpbin-client.example.com.key"
 
 	echoYaml				= "samples/tcp-echo/tcp-echo-services.yaml"
+	echoAllv1Yaml			= "samples/tcp-echo/tcp-echo-all-v1.yaml"
+	echo20v2Yaml  			= "samples/tcp-echo/tcp-echo-20-v2.yaml"
 
 	sleepYaml				= "samples/sleep/sleep.yaml"
+	sleepLegacyYaml			= "samples/sleep/sleep-legacy.yaml"
 
 	nginxYaml          		= "samples/https/nginx-app.yaml"
 	nginxNoSidecarYaml 		= "samples/https/nginx-app-without-sidecar.yaml"

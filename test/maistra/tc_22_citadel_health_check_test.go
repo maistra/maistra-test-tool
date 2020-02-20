@@ -69,10 +69,12 @@ func Test22mtls(t *testing.T) {
 			log.Infof("Unable to read citadel deployment yaml: %v", err)
 			t.Errorf("Unable to read citadel deployment yaml: %v", err)
 		}
+		newdata := strings.Replace(string(data), "extensions/v1beta1", "apps/v1", -1)
+
 		w, _ := os.Create(newFile)
 		defer w.Close()
 		
-		err = util.ConfigCitadelHealthCheck(data, w)
+		err = util.ConfigCitadelHealthCheck([]byte(newdata), w)
 		if err != nil {
 			log.Infof("Update citadel deployment error: %v", err)
 			t.Errorf("Update citadel deployment error: %v", err)

@@ -13,40 +13,52 @@
 #   limitations under the License.
 
 ##################################################################################################
-# httpbin service
+# Sleep service
 ##################################################################################################
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sleep
+---
 apiVersion: v1
 kind: Service
 metadata:
-  name: httpbin
+  name: sleep
   labels:
-    app: httpbin
+    app: sleep
 spec:
   ports:
-  - name: http
-    port: 8000
+  - port: 80
+    name: http
   selector:
-    app: httpbin
+    app: sleep
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: httpbin
+  name: sleep
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: httpbin
-      version: v1
+      app: sleep
   template:
     metadata:
       labels:
-        app: httpbin
-        version: v1
+        app: sleep
     spec:
+      serviceAccountName: sleep
       containers:
-      - image: docker.io/citizenstig/httpbin
+      - name: sleep
+        image: governmentpaas/curl-ssl
+        command: ["/bin/sleep", "3650d"]
         imagePullPolicy: IfNotPresent
-        name: httpbin
-        ports:
-        - containerPort: 8000
+        volumeMounts:
+        - mountPath: /etc/sleep/tls
+          name: secret-volume
+      volumes:
+      - name: secret-volume
+        secret:
+          secretName: sleep-secret
+          optional: true
+---

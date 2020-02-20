@@ -36,6 +36,17 @@ func ocCommand(subCommand, namespace, yamlFileName string, kubeconfig string) st
 	return fmt.Sprintf("oc %s -n %s -f %s --kubeconfig=%s", subCommand, namespace, yamlFileName, kubeconfig)
 }
 
+// CreateNamespace create a kubernetes namespace
+func CreateOCPNamespace(n string, kubeconfig string) error {
+	if _, err := ShellMuteOutput("oc new-project %s", n); err != nil {
+		if !strings.Contains(err.Error(), "AlreadyExists") {
+			return err
+		}
+	}
+	log.Infof("namespace %s created\n", n)
+	return nil
+}
+
 // OcGrantPermission OCP cluster specific requirements for deploying an application with sidecar.
 // This is a temporary permission config
 func OcGrantPermission(account, namespace, kubeconfig string) {
@@ -93,7 +104,7 @@ func GetIngressPort(namespace, serviceName, kubeconfig string) (string, error) {
 	port = strings.Trim(port, "'")
 	rp := regexp.MustCompile(`^[0-9]{1,5}$`)
 	if rp.FindString(port) == "" {
-		err = fmt.Errorf("unable to find the port of %s", serviceName)
+		err = fmt.Errorf("unable to find the http2 port of %s", serviceName)
 		log.Warna(err)
 		return "", err
 	}
@@ -111,7 +122,7 @@ func GetSecureIngressPort(namespace, serviceName, kubeconfig string) (string, er
 	port = strings.Trim(port, "'")
 	rp := regexp.MustCompile(`^[0-9]{1,5}$`)
 	if rp.FindString(port) == "" {
-		err = fmt.Errorf("unable to find the port of %s", serviceName)
+		err = fmt.Errorf("unable to find the https port of %s", serviceName)
 		log.Warna(err)
 		return "", err
 	}
@@ -129,7 +140,7 @@ func GetTCPIngressPort(namespace, serviceName, kubeconfig string) (string, error
 	port = strings.Trim(port, "'")
 	rp := regexp.MustCompile(`^[0-9]{1,5}$`)
 	if rp.FindString(port) == "" {
-		err = fmt.Errorf("unable to find the port of %s", serviceName)
+		err = fmt.Errorf("unable to find the tcp port of %s", serviceName)
 		log.Warna(err)
 		return "", err
 	}
