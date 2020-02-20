@@ -409,22 +409,134 @@ spec:
     termination: passthrough
 `
 
+bookinfoOCPRouteHTTPS = `
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: bookinfo.com
+spec:
+  host: bookinfo.com
+  port:
+    targetPort: https
+  to:
+    kind: Service
+    name: istio-ingressgateway
+  tls:
+    termination: passthrough
+`
+
+bookinfoGatewayHTTPS = `
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: bookinfo-gateway
+spec:
+  selector:
+    istio: ingressgateway # use istio default ingress gateway
+  servers:
+  - port:
+      number: 443
+      name: https-bookinfo
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      serverCertificate: /etc/istio/ingressgateway-bookinfo-certs/tls.crt
+      privateKey: /etc/istio/ingressgateway-bookinfo-certs/tls.key
+    hosts:
+    - "bookinfo.com"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: bookinfo
+spec:
+  hosts:
+  - "bookinfo.com"
+  gateways:
+  - bookinfo-gateway
+  http:
+  - match:
+    - uri:
+        exact: /productpage
+    - uri:
+        exact: /login
+    - uri:
+        exact: /logout
+    - uri:
+        prefix: /api/v1/products
+    route:
+    - destination:
+        host: productpage
+        port:
+          number: 9080
+`
+
+httpbinGatewayMTLS = `
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: httpbin-gateway
+spec:
+  selector:
+    istio: ingressgateway # use istio default ingress gateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: MUTUAL
+      serverCertificate: /etc/istio/ingressgateway-certs/tls.crt
+      privateKey: /etc/istio/ingressgateway-certs/tls.key
+      caCertificates: /etc/istio/ingressgateway-ca-certs/example.com.crt
+    hosts:
+    - "httpbin.example.com"
+`
+
+gatewayPatchJSON = `
+[{
+  "op": "add",
+  "path": "/spec/template/spec/containers/0/volumeMounts/0",
+  "value": {
+    "mountPath": "/etc/istio/ingressgateway-bookinfo-certs",
+    "name": "ingressgateway-bookinfo-certs",
+    "readOnly": true
+  }
+},
+{
+  "op": "add",
+  "path": "/spec/template/spec/volumes/0",
+  "value": {
+  "name": "ingressgateway-bookinfo-certs",
+    "secret": {
+      "secretName": "istio-ingressgateway-bookinfo-certs",
+      "optional": true
+    }
+  }
+}]
+`
+
 sleepv2 = `
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sleep
+  labels:
+    app: sleep
+    version: v2
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: sleep
+      version: v2
   template:
     metadata:
       annotations:
         sidecar.istio.io/inject: "true"
       labels:
         app: sleep
+        version: v2
     spec:
       containers:
       - name: sleep
@@ -433,5 +545,16 @@ spec:
         imagePullPolicy: IfNotPresent
 `
 
+clientRule = `
+apiVersion: "networking.istio.io/v1alpha3"
+kind: "DestinationRule"
+metadata:
+  name: "default"
+spec:
+  host: "*.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+`
 
 )

@@ -18,7 +18,7 @@ import (
 	"io"
 
 	"k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
+	appsV1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	
@@ -32,7 +32,7 @@ func ConfigCitadelCerts(data []byte, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	deployment := obj.(*v1beta1.Deployment)
+	deployment := obj.(*appsV1.Deployment)
 	
 	args := &(deployment.Spec.Template.Spec.Containers[0].Args)
 	for i, item := range(*args) {
@@ -79,7 +79,7 @@ func ConfigCitadelHealthCheck(data []byte, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	deployment := obj.(*v1beta1.Deployment)
+	deployment := obj.(*appsV1.Deployment)
 	args := &(deployment.Spec.Template.Spec.Containers[0].Args)
 	newCertList := []string{
 		"--liveness-probe-path=/tmp/ca.liveness",
