@@ -33,9 +33,9 @@ EOF
 }
 
 function create_cluster_admin_user() {
-  oc adm policy add-cluster-role-to-user cluster-admin "ike"
-  oc adm policy add-cluster-role-to-user cluster-admin "aslak"
-  oc adm policy add-cluster-role-to-user cluster-admin "bartosz"
+  oc adm policy add-cluster-role-to-user cluster-admin ike
+  oc adm policy add-cluster-role-to-user cluster-admin aslak
+  oc adm policy add-cluster-role-to-user cluster-admin bartosz
 
 }
 
@@ -44,6 +44,7 @@ function main() {
   create_htpasswd_file
   create_htpasswd_secret
   update_oauth
+  sleep 40
   create_cluster_admin_user
 }
 

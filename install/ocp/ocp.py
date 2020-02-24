@@ -118,8 +118,10 @@ class OCP(object):
         print(proc.stderr)
 
     def login(self, user, pw):
-        proc = sp.run(['oc', 'login', '-u', user, '-p', pw], stdout=sp.PIPE, universal_newlines=True)
+        os.environ['KUBECONFIG'] = self.assets + '/auth/kubeconfig'
+        proc = sp.run(['oc', 'login', '-u', user, '-p', pw], stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
         print(proc.stdout)
+        print(proc.stderr)
 
     def logout(self):
         proc = sp.run(['oc', 'logout'], stdout=sp.PIPE, universal_newlines=True)

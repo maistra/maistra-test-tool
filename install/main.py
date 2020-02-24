@@ -92,6 +92,13 @@ def main():
             # Create testing users, qe1 and qe2
             ocp.create_users()
             ocp.logout()
+            # login tests
+            ocp.login('ike', os.environ['IKE_PWD'])
+            ocp.logout()
+            ocp.login('aslak', os.environ['ASLAK_PWD'])
+            ocp.logout()
+            ocp.login('bartosz', os.environ['BARTOSZ_PWD'])
+            ocp.logout()
 
         elif moitt.uninstall:
             ocp.uninstall()
