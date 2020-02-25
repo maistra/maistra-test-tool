@@ -50,7 +50,7 @@ var tests = []testing.InternalTest{
 		F: TestIngressGateways,
 	},
 	testing.InternalTest {
-		Name: "Secure_Ingress_Gateways",
+		Name: "Secure_Gateways_FileMount",
 		F: TestIngressHttps,
 	},
 
