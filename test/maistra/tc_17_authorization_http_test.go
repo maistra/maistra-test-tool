@@ -57,6 +57,12 @@ func Test17mtls(t *testing.T) {
 	Retry := 3
 
 	log.Infof("# TC_17 Authorization for HTTP Services")
+
+	// update mtls to true
+	log.Info("Update SMCP mtls to true")
+	util.ShellMuteOutput("oc patch -n %s smcp/basic-install --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace)
+	time.Sleep(time.Duration(20) * time.Second)
+
 	updateYaml()
 
 	log.Info("Deploy bookinfo")

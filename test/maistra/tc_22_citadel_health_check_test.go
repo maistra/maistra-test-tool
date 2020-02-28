@@ -95,4 +95,9 @@ func Test22mtls(t *testing.T) {
 		}
 	})
 
+	// update mtls to true
+	log.Info("Update SMCP mtls to false")
+	util.ShellMuteOutput("oc patch -n %s smcp/basic-install --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace)
+	time.Sleep(time.Duration(20) * time.Second)
+
 }
