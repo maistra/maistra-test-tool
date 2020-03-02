@@ -49,7 +49,7 @@ func Test02(t *testing.T) {
 	time.Sleep(time.Duration(10) * time.Second)
 	
 	// update mtls to false
-	log.Info("Update SMCP mtls to true")
+	log.Info("Update SMCP mtls to false")
 	util.ShellMuteOutput("oc patch -n %s smcp/basic-install --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace)
 
 	// patch smcp ingressgateway

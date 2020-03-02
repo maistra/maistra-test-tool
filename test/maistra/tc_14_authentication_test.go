@@ -128,16 +128,16 @@ func getSecretToken() (string, error) {
 }
 
 func jwcryptoInstall() {
-	util.ShellSilent("pip install jwcrypto")
+	util.ShellSilent("pip3 install jwcrypto")
 	util.ShellSilent("chmod +x " + jwtGen)
 }
 
 func jwcryptoCleanup() {
-	util.ShellSilent("pip uninstall -y jwcrypto")
-	util.ShellSilent("pip uninstall -y pycparser")
-	util.ShellSilent("pip uninstall -y cffi")
-	util.ShellSilent("pip uninstall -y asn1crypto")
-	util.ShellSilent("pip uninstall -y cryptography")
+	util.ShellSilent("pip3 uninstall -y jwcrypto")
+	util.ShellSilent("pip3 uninstall -y pycparser")
+	util.ShellSilent("pip3 uninstall -y cffi")
+	util.ShellSilent("pip3 uninstall -y asn1crypto")
+	util.ShellSilent("pip3 uninstall -y cryptography")
 
 }
 
