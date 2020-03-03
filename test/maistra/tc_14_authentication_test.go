@@ -132,15 +132,6 @@ func jwcryptoInstall() {
 	util.ShellSilent("chmod +x " + jwtGen)
 }
 
-func jwcryptoCleanup() {
-	util.ShellSilent("pip3 uninstall -y jwcrypto")
-	util.ShellSilent("pip3 uninstall -y pycparser")
-	util.ShellSilent("pip3 uninstall -y cffi")
-	util.ShellSilent("pip3 uninstall -y asn1crypto")
-	util.ShellSilent("pip3 uninstall -y cryptography")
-
-}
-
 func Test14(t *testing.T) {
 	defer cleanup14(kubeconfigFile)
 	defer func() {
@@ -612,7 +603,6 @@ func Test14(t *testing.T) {
 		
 		util.CloseResponseBody(resp)
 		time.Sleep(time.Duration(1) * time.Second)
-		jwcryptoCleanup()
 	})
 
 	// end user authentication with per-path requirements
