@@ -5,7 +5,7 @@ DIR=$(cd $(dirname $0); pwd -P)
 BASE_DIR="${DIR}/../"
 
 OC_COMMAND="oc"
-MESH="service-mesh-1"
+MESH="istio-system"
 TELEMETRY="testdata/telemetry/new_telemetry.yaml"
 
 INGRESS_HOST="$(${OC_COMMAND} get routes -n ${MESH} -l app=istio-ingressgateway -o jsonpath='{.items[0].spec.host}')"
