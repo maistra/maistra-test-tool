@@ -33,7 +33,7 @@ func cleanup24(namespace, kubeconfig string) {
 	time.Sleep(time.Duration(30) * time.Second)
 	util.ShellMuteOutput("oc delete handler/keyval instance/keyval adapter/keyval template/keyval -n " + meshNamespace)
 	util.ShellMuteOutput("oc delete service keyval -n " + meshNamespace)
-	util.ShellMuteOutput("oc delete deployment keyval -n " + meshNamespace)
+	//util.ShellMuteOutput("oc delete deployment keyval -n " + meshNamespace)
 	util.ShellMuteOutput("oc delete dc keyval -n " + meshNamespace)
 	util.ShellSilent("rm -f /tmp/mesh.yaml")
 

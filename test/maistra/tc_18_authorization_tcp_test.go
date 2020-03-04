@@ -57,6 +57,11 @@ func Test18mtls(t *testing.T) {
 	log.Infof("# TC_18 Authorization for TCP Services")
 	updateYaml()
 
+	// update mtls to true
+	log.Info("Update SMCP mtls to true")
+	util.ShellMuteOutput("oc patch -n %s smcp/basic-install --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace)
+	time.Sleep(time.Duration(20) * time.Second)
+
 	util.CreateNamespace(testNamespace, kubeconfigFile)
 	//util.OcGrantPermission("default", testNamespace, kubeconfigFile)
 
