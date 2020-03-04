@@ -32,8 +32,8 @@ func cleanup21(namespace string, kubeconfig string) {
 	util.Shell("oc rollout undo deployment istio-citadel -n " + meshNamespace)
 	util.ShellMuteOutput("rm -f /tmp/istio-citadel-new.yaml")
 	cleanBookinfo(namespace, kubeconfig)
-	log.Info("Waiting... Sleep 20 seconds...")
-	time.Sleep(time.Duration(20) * time.Second)
+	log.Info("Waiting... Sleep 40 seconds...")
+	time.Sleep(time.Duration(40) * time.Second)
 }
 
 
@@ -95,9 +95,16 @@ func Test21mtls(t *testing.T) {
 		}
 	}()
 
+	log.Infof("# TC_21 Plugging in External CA Key and Certificate")
+
 	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
 	cleanBookinfo(testNamespace, kubeconfigFile)
 	util.ShellMuteOutput("oc delete secret cacerts -n " + meshNamespace)
+
+	// update mtls to true
+	log.Info("Update SMCP mtls to true")
+	util.ShellMuteOutput("oc patch -n %s smcp/basic-install --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace)
+	time.Sleep(time.Duration(20) * time.Second)
 
 	t.Run("plugging_external_certs_test", func(t *testing.T) {
 		defer func() {
@@ -106,8 +113,6 @@ func Test21mtls(t *testing.T) {
 				t.Errorf("Test panic: %v", err)
 			}
 		}()
-
-		log.Infof("# TC_21 Plugging in External CA Key and Certificate")
 
 		util.CreateNamespace(testNamespace, kubeconfigFile)
 		//util.OcGrantPermission("default", testNamespace, kubeconfigFile)
