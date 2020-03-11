@@ -170,5 +170,6 @@ func updateYaml() {
 
 	data, _ = ioutil.ReadFile(rateLimitYamlTemplate)
 	rateLimitYaml = strings.Replace(string(data), "[mesh]", meshNamespace, -1)
+	rateLimitYaml = strings.Replace(rateLimitYaml, "[test]", testNamespace, -1)
 
 }

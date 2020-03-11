@@ -6,6 +6,6 @@ spec:
   # quota only applies if you are not logged in.
   match: match(request.headers["cookie"], "session=*") == false
   actions:
-  - handler: handler.memquota
+  - handler: quotahandler
     instances:
-    - requestcount.quota
+    - requestcountquota
