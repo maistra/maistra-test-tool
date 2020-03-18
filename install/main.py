@@ -54,7 +54,7 @@ class Moitt(object):
         parser.add_argument('-c', '--component', type=str, choices=['ocp', 'registry-puller', 'istio'], help='Specify Component from ocp, registry-puller, istio')
         parser.add_argument('-d', '--directory', type=str, default='./assets', help='OCP cluster config assets directory path')
         parser.add_argument('-v', '--version', type=str, default='4.3.5', help='OCP installer version')
-        parser.add_argument('-t', '--tag', type=str, default='latest-1.0-qe', help='Istio Operator and SMCP image tag')
+        parser.add_argument('-t', '--tag', type=str, default='latest-1.1-qe', help='Istio Operator and SMCP image tag')
         parser.add_argument('-q', '--quay', help='install istio operator from quay.io', action='store_true')
         args = parser.parse_args()
         self.install = args.install
@@ -117,7 +117,7 @@ def main():
         ocp.logout()
     
     if moitt.component == 'istio':
-        operator = Operator(maistra_branch="maistra-1.0", maistra_tag=moitt.tag)
+        operator = Operator(maistra_branch="maistra-1.1", maistra_tag=moitt.tag)
         operator.mutate(cr_file=moitt.crfile)
 
         nslist = ['bookinfo', 'foo', 'bar', 'legacy']
