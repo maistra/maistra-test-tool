@@ -53,7 +53,7 @@ class Moitt(object):
         group.add_argument('-u', '--uninstall', help='uninstall operation', action='store_true')
         parser.add_argument('-c', '--component', type=str, choices=['ocp', 'registry-puller', 'istio'], help='Specify Component from ocp, registry-puller, istio')
         parser.add_argument('-d', '--directory', type=str, default='./assets', help='OCP cluster config assets directory path')
-        parser.add_argument('-v', '--version', type=str, default='4.2.0', help='OCP installer version')
+        parser.add_argument('-v', '--version', type=str, default='4.3.5', help='OCP installer version')
         parser.add_argument('-t', '--tag', type=str, default='latest-1.0-qe', help='Istio Operator and SMCP image tag')
         parser.add_argument('-q', '--quay', help='install istio operator from quay.io', action='store_true')
         args = parser.parse_args()

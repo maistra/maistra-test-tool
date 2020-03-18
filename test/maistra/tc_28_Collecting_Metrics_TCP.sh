@@ -6,7 +6,7 @@ BASE_DIR="${DIR}/../"
 
 OC_COMMAND="oc"
 MESH="istio-system"
-TCP_TELEMETRY="testdata/telemetry/tcp_telemetry.yaml"
+TCP_TELEMETRY="testdata/bookinfo/telemetry/tcp-metrics.yaml"
 BOOKINFO_RATE_V2="testdata/bookinfo/platform/kube/bookinfo-ratings-v2.yaml"
 BOOKINFO_DB="testdata/bookinfo/platform/kube/bookinfo-db.yaml"
 BOOKINFO_RULE="testdata/bookinfo/networking/destination-rule-all.yaml"
