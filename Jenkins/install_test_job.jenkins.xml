@@ -1,0 +1,312 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>-1</daysToKeep>
+        <numToKeep>5</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>-1</artifactNumToKeep>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
+    <hudson.plugins.disk__usage.DiskUsageProperty plugin="disk-usage@0.28"/>
+    <com.dabsquared.gitlabjenkins.connection.GitLabConnectionProperty plugin="gitlab-plugin@1.5.3">
+      <gitLabConnection>Red Hat GitLab</gitLabConnection>
+    </com.dabsquared.gitlabjenkins.connection.GitLabConnectionProperty>
+    <org.jenkinsci.plugins.ZMQEventPublisher.HudsonNotificationProperty plugin="zmq-event-publisher@0.0.5">
+      <enabled>false</enabled>
+    </org.jenkinsci.plugins.ZMQEventPublisher.HudsonNotificationProperty>
+    <com.synopsys.arc.jenkins.plugins.ownership.jobs.JobOwnerJobProperty plugin="ownership@0.11.0"/>
+    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.27">
+      <autoRebuild>false</autoRebuild>
+      <rebuildDisabled>false</rebuildDisabled>
+    </com.sonyericsson.rebuild.RebuildSettings>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>OCP_VERSION</name>
+          <description>OCP cluster installer version</description>
+          <defaultValue>4.2.13</defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>TAG</name>
+          <description>quay.io/maistra images tag</description>
+          <defaultValue>latest-1.0-qe</defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.TextParameterDefinition>
+          <name>INSTALL_CONFIG_TEMPLATE</name>
+          <description>AWS OCP4 installer template for install-config.yaml</description>
+          <defaultValue>apiVersion: v1
+baseDomain: devcluster.openshift.com
+compute:
+- hyperthreading: Enabled
+  name: worker
+  platform: {}
+  replicas: 3
+controlPlane:
+  hyperthreading: Enabled
+  name: master
+  platform: {}
+  replicas: 3
+metadata:
+  creationTimestamp: null
+  name: ${CLUSTER_NAME}
+networking:
+  clusterNetwork:
+  - cidr: 10.128.0.0/14
+    hostPrefix: 23
+  machineCIDR: 10.0.0.0/16
+  networkType: OpenShiftSDN
+  serviceNetwork:
+  - 172.30.0.0/16
+platform:
+  aws:
+    region: us-east-2
+pullSecret: &apos;${AWS_OCP_SECRET}&apos;
+</defaultValue>
+        </hudson.model.TextParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>CLUSTER_NAME</name>
+          <description>AWS OCP4 cluster name. Must starts with your kerberos shortname-</description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.PasswordParameterDefinition>
+          <name>AWS_OCP_SECRET</name>
+          <description>OCP4 doc: https://docs.openshift.com/container-platform/4.0/welcome/index.html 
+AWS OCP4 pull secret. Example value as below:
+{&quot;auths&quot;:{&quot;cloud.openshift.com&quot;:{&quot;auth&quot;:......}}}</description>
+          <defaultValue>{}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+        <hudson.model.TextParameterDefinition>
+          <name>QUAY_MAISTRA_PULL_SEC_TEMPLATE</name>
+          <description>quay.io/maistra repo pull secret template for registry-puller</description>
+          <defaultValue>apiVersion: v1
+kind: Secret
+metadata:
+  name: maistra-istio-pull-secret
+data:
+  .dockerconfigjson: ${CONFIGJSON}
+type: kubernetes.io/dockerconfigjson
+</defaultValue>
+        </hudson.model.TextParameterDefinition>
+        <hudson.model.PasswordParameterDefinition>
+          <name>CONFIGJSON</name>
+          <description>quay.io/maistra repo pull secret .dockerconfigjson value</description>
+          <defaultValue>{}</defaultValue>
+        </hudson.model.PasswordParameterDefinition>
+        <hudson.model.TextParameterDefinition>
+          <name>SMCP_CR</name>
+          <description>SMCP basic-install CR content</description>
+          <defaultValue>apiVersion: maistra.io/v1
+kind: ServiceMeshControlPlane
+metadata:
+  name: basic-install
+spec:
+  istio:
+    global:
+      hub: quay.io/maistra
+      tag: ${TAG}
+      imagePullPolicy: Always
+ 
+    gateways:
+      istio-egressgateway:
+        autoscaleEnabled: false
+      istio-ingressgateway:
+        # disable autoscaling for use in smaller environments
+        autoscaleEnabled: false
+        type: LoadBalancer
+        ports:
+        - port: 15020
+          targetPort: 15020
+          name: status-port
+        - port: 80
+          targetPort: 8080
+          name: http2
+        - port: 443
+          targetPort: 8443
+          name: https
+          # This is the port where sni routing happens
+        - port: 15443
+          targetPort: 15443
+          name: tls
+        - port: 31400
+          targetPort: 31400
+          name: tcp
+
+    mixer:
+      policy:
+        autoscaleEnabled: false
+
+      telemetry:
+        autoscaleEnabled: false
+
+    pilot:
+      autoscaleEnabled: false
+      traceSampling: 100.0
+
+    kiali:
+      hub: quay.io/maistra
+      image: kiali-rhel7
+      imagePullPolicy: Always
+      enabled: true
+
+    tracing:
+      # change to false to disable tracing (i.e. jaeger)
+      enabled: true
+      jaeger:
+        hub: quay.io/maistra
+        imagePullPolicy: Always
+        # simple, all-in-one strategy
+        template: all-in-one
+</defaultValue>
+        </hudson.model.TextParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+    <hudson.plugins.throttleconcurrents.ThrottleJobProperty plugin="throttle-concurrents@2.0.1">
+      <maxConcurrentPerNode>0</maxConcurrentPerNode>
+      <maxConcurrentTotal>0</maxConcurrentTotal>
+      <categories class="java.util.concurrent.CopyOnWriteArrayList"/>
+      <throttleEnabled>false</throttleEnabled>
+      <throttleOption>project</throttleOption>
+      <limitOneJobWithMatchingParams>false</limitOneJobWithMatchingParams>
+      <paramsToUseForLimit></paramsToUseForLimit>
+    </hudson.plugins.throttleconcurrents.ThrottleJobProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@3.9.1">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>https://github.com/Maistra/istio-test-tool.git</url>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>*/master</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="list"/>
+    <extensions/>
+  </scm>
+  <assignedNode>worker1</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+
+# Copyright 2020 Red Hat, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http:#www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+set -e
+
+# Prepare environment
+python3 -m venv .env
+source .env/bin/activate
+pip install -r requirements.txt
+
+unset GOOS &amp;&amp; unset GOARCH &amp;&amp; CGO_ENABLED=1 go get &quot;github.com/knrc/registry-puller/cmd&quot;
+unset GOOS &amp;&amp; unset GOARCH &amp;&amp; CGO_ENABLED=1 go get -u github.com/jstemmer/go-junit-report
+
+# Prepare config files
+mkdir -p $WORKSPACE/configs
+
+echo &quot;${INSTALL_CONFIG_TEMPLATE}&quot; | CLUSTER_NAME=${CLUSTER_NAME} envsubst | AWS_OCP_SECRET=${AWS_OCP_SECRET} envsubst &gt; $WORKSPACE/configs/install-config.yaml
+echo &quot;${QUAY_MAISTRA_PULL_SEC_TEMPLATE}&quot; | CONFIGJSON=${CONFIGJSON} envsubst &gt; $WORKSPACE/configs/secret.yaml
+echo &quot;${SMCP_CR}&quot; | TAG=${TAG} envsubst &gt; $WORKSPACE/configs/cr.yaml
+
+# Parse parameters
+export AWS_PROFILE=openshift-dev
+export INSTALL_CONFIG=$WORKSPACE/configs/install-config.yaml
+export PULL_SEC=$WORKSPACE/configs/secret.yaml
+export CR_FILE=$WORKSPACE/configs/cr.yaml
+export OCP_VERSION=${OCP_VERSION}
+export TAG=${TAG}
+export OCP_SERVER=https://api.${CLUSTER_NAME}.devcluster.openshift.com:6443
+export QE1_PWD=qe1pw
+export QE2_PWD=qe2pw
+
+# Log names
+OCP_LOGNAME=$(echo OCP-$(date +&quot;%Y%m%d_%H%M%S&quot;)&apos;.log&apos;)
+PULLER_LOGNAME=$(echo Puller-$(date +&quot;%Y%m%d_%H%M%S&quot;)&apos;.log&apos;)
+SMCP_LOGNAME=$(echo SMCP-$(date +&quot;%Y%m%d_%H%M%S&quot;)&apos;.log&apos;)
+JUNIT_FILE1=$(echo JUnit1-$(date +&quot;%Y%m%d_%H%M%S&quot;)&apos;.xml&apos;)
+TEST_LOGNAME1=$(echo Test1-$(date +&quot;%Y%m%d_%H%M%S&quot;)&apos;.log&apos;)
+JUNIT_FILE2=$(echo JUnit2-$(date +&quot;%Y%m%d_%H%M%S&quot;)&apos;.xml&apos;)
+TEST_LOGNAME2=$(echo Test2-$(date +&quot;%Y%m%d_%H%M%S&quot;)&apos;.log&apos;)
+mkdir -p $WORKSPACE/report
+rm -f $WORKSPACE/report/*
+
+# Create OCP4.x AWS Cluster
+pushd install
+mkdir -p ./assets
+            
+export KUBECONFIG=$WORKSPACE/install/assets/auth/kubeconfig
+mv -f ${INSTALL_CONFIG} $WORKSPACE/install/assets/install-config.yaml
+
+if [ -f $KUBECONFIG ]; then
+	echo &quot;OCP4 daily cluster exists.&quot; &gt;&gt; $WORKSPACE/report/$OCP_LOGNAME
+else
+	echo &quot;Creating OCP4 AWS cluster...Wait 50mins...&quot;
+	python main.py -i -c ocp -v $OCP_VERSION | tee $WORKSPACE/report/$OCP_LOGNAME
+fi
+
+cp -f $WORKSPACE/install/assets/.openshift_install.log $WORKSPACE/report/
+
+# Install Registry Puller
+python main.py -i -c registry-puller | tee $WORKSPACE/report/$PULLER_LOGNAME
+rm -f $WORKSPACE/configs/secret.yaml
+
+# Deploy Service Mesh
+python main.py -i -c istio -t $TAG -q | tee $WORKSPACE/report/$SMCP_LOGNAME
+popd
+
+# Run ACC Tests
+pushd test/maistra
+
+# login OCP
+oc login -u qe1 -p ${QE1_PWD} --server=${OCP_SERVER} --insecure-skip-tls-verify=true
+
+go test -run &quot;\d+$&quot; -timeout 3h -v 2&gt;&amp;1 | tee &gt;(~/go/bin/go-junit-report &gt; $WORKSPACE/report/$JUNIT_FILE1) $WORKSPACE/report/$TEST_LOGNAME1
+
+# Patch mtls enabled to true
+oc patch -n service-mesh-1 smcp/basic-install --type merge -p &apos;{&quot;spec&quot;:{&quot;istio&quot;:{&quot;global&quot;:{&quot;controlPlaneSecurityEnabled&quot;:true,&quot;mtls&quot;:{&quot;enabled&quot;:true}}}}}&apos;
+
+# Run mtls tests
+go test -run &quot;\d+mtls$&quot; -timeout 3h -v 2&gt;&amp;1 | tee &gt;(~/go/bin/go-junit-report &gt; $WORKSPACE/report/$JUNIT_FILE2) $WORKSPACE/report/$TEST_LOGNAME2
+# Patch mtls enabled to false
+oc patch -n service-mesh-1 smcp/basic-install --type merge -p '{"spec":{"istio":{"global":{"controlPlaneSecurityEnabled":false,"mtls":{"enabled":false}}}}}'
+
+popd</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.tasks.ArtifactArchiver>
+      <artifacts>install/assets,report/*</artifacts>
+      <allowEmptyArchive>false</allowEmptyArchive>
+      <onlyIfSuccessful>false</onlyIfSuccessful>
+      <fingerprint>false</fingerprint>
+      <defaultExcludes>true</defaultExcludes>
+      <caseSensitive>true</caseSensitive>
+    </hudson.tasks.ArtifactArchiver>
+  </publishers>
+  <buildWrappers/>
+</project>

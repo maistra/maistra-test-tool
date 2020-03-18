@@ -43,6 +43,11 @@ func Test20mtls(t *testing.T) {
 	
 	log.Infof("# TC_20 Mutual TLS Deep-Dive")
 
+	// update mtls to true
+	log.Info("Update SMCP mtls to true")
+	util.ShellMuteOutput("oc patch -n %s smcp/basic-install --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace)
+	time.Sleep(time.Duration(20) * time.Second)
+
 	util.Inspect(util.CreateNamespace("foo", kubeconfigFile), "failed to create namespace", "", t)
 	//util.OcGrantPermission("default", "foo", kubeconfigFile)
 

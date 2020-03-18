@@ -14,7 +14,7 @@
     </jenkins.model.BuildDiscarderProperty>
     <hudson.plugins.disk__usage.DiskUsageProperty plugin="disk-usage@0.28"/>
     <com.dabsquared.gitlabjenkins.connection.GitLabConnectionProperty plugin="gitlab-plugin@1.5.3">
-      <gitLabConnection>GitLab</gitLabConnection>
+      <gitLabConnection>Red Hat GitLab</gitLabConnection>
     </com.dabsquared.gitlabjenkins.connection.GitLabConnectionProperty>
     <org.jenkinsci.plugins.ZMQEventPublisher.HudsonNotificationProperty plugin="zmq-event-publisher@0.0.5">
       <enabled>false</enabled>
@@ -27,20 +27,9 @@
     <hudson.model.ParametersDefinitionProperty>
       <parameterDefinitions>
         <hudson.model.StringParameterDefinition>
-          <name>KUBECONFIG</name>
-          <description>KUBECONFIG file. Note: Do not use ~ character. Use the explicit full path
-Default: /home/jenkins/.kube/config</description>
-          <defaultValue>/home/jenkins/.kube/config</defaultValue>
-        </hudson.model.StringParameterDefinition>
-        <hudson.model.PasswordParameterDefinition>
-          <name>OCP_TOKEN</name>
-          <description>value of &quot;oc login --token= &quot;</description>
-          <defaultValue></defaultValue>
-        </hudson.model.PasswordParameterDefinition>
-        <hudson.model.StringParameterDefinition>
-          <name>OCP_HOST</name>
-          <description>OCP host server URL and port. value of &quot;oc login --server= &quot;</description>
-          <defaultValue></defaultValue>
+          <name>OCP_VERSION</name>
+          <description>OCP installer version</description>
+          <defaultValue>4.2.13</defaultValue>
         </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
@@ -58,7 +47,7 @@ Default: /home/jenkins/.kube/config</description>
     <configVersion>2</configVersion>
     <userRemoteConfigs>
       <hudson.plugins.git.UserRemoteConfig>
-        <url>https://github.com/yxun/moitt.git</url>
+        <url>https://github.com/Maistra/istio-test-tool.git</url>
       </hudson.plugins.git.UserRemoteConfig>
     </userRemoteConfigs>
     <branches>
@@ -95,64 +84,29 @@ Default: /home/jenkins/.kube/config</description>
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
-source ~/.bash_profile
+set -e
 
-export KUBECONFIG=$KUBECONFIG
+cd $HOME/workspace/run_acc_tests_all/
 
-# Download oc client and create a symlink kubectl
-OC_URL=&apos;https://github.com/Maistra/origin/releases/download/v3.11.0+maistra-0.10.0/istiooc_linux&apos;
+python3 -m venv .env
+source .env/bin/activate
+pip install -r requirements.txt
 
-if (hash oc 2&gt;/dev/null) &amp;&amp; (hash kubectl 2&gt;/dev/null); then
-	echo &quot;oc/kubectl client exists&quot;
-else
-	wget -nv --progress=dot  $OC_URL
-	mv istiooc_linux oc
-	chmod 755 oc
-	ln -s oc kubectl
-	mkdir -p ~/bin
-	mv oc ~/bin/oc
-	mv kubectl ~/bin/kubectl
-fi
+# Run Install
+cd install
 
-# Remove existing KUBECONFIG files
-rm -f $KUBECONFIG
+export AWS_PROFILE=openshift-dev
+export PULL_SEC=$HOME/daily/secret.yaml
+export CR_FILE=$HOME/daily/cr/cr_mt_quay.yaml
 
-# Verify kubectl cluster info
-oc login --insecure-skip-tls-verify --token=$OCP_TOKEN --server=$OCP_HOST
-kubectl cluster-info
+export KUBECONFIG=$HOME/workspace/run_acc_tests_all/install/assets/auth/kubeconfig
 
-# JUnit XML Report
-unset GOOS &amp;&amp; unset GOARCH &amp;&amp; CGO_ENABLED=1 go get -u github.com/jstemmer/go-junit-report
-mkdir -p $WORKSPACE/report
-
-# Run Test
-cd test/maistra
-FILENAME=$(echo ${JOB_NAME}$(date +&quot;%Y%m%d_%H%M%S&quot;)&apos;.xml&apos;)
-LOGNAME=$(echo ${JOB_NAME}$(date +&quot;%Y%m%d_%H%M%S&quot;)&apos;.log&apos;)
-go test -run -timeout 2h -v 2&gt;&amp;1 | tee &gt;(~/go/bin/go-junit-report &gt; $WORKSPACE/report/$FILENAME) $WORKSPACE/report/$LOGNAME
-
-
+python main.py -u -c ocp -v $OCP_VERSION
 
 </command>
     </hudson.tasks.Shell>
   </builders>
-  <publishers>
-    <hudson.tasks.ArtifactArchiver>
-      <artifacts>report/*</artifacts>
-      <allowEmptyArchive>false</allowEmptyArchive>
-      <onlyIfSuccessful>false</onlyIfSuccessful>
-      <fingerprint>false</fingerprint>
-      <defaultExcludes>true</defaultExcludes>
-      <caseSensitive>true</caseSensitive>
-    </hudson.tasks.ArtifactArchiver>
-    <hudson.tasks.junit.JUnitResultArchiver plugin="junit@1.27">
-      <testResults>report/*.xml</testResults>
-      <keepLongStdio>false</keepLongStdio>
-      <healthScaleFactor>1.0</healthScaleFactor>
-      <allowEmptyResults>false</allowEmptyResults>
-    </hudson.tasks.junit.JUnitResultArchiver>
-  </publishers>
+  <publishers/>
   <buildWrappers>
     <hudson.plugins.ws__cleanup.PreBuildCleanup plugin="ws-cleanup@0.36">
       <deleteDirs>false</deleteDirs>
@@ -162,4 +116,3 @@ go test -run -timeout 2h -v 2&gt;&amp;1 | tee &gt;(~/go/bin/go-junit-report &gt;
     </hudson.plugins.ws__cleanup.PreBuildCleanup>
   </buildWrappers>
 </project>
-    

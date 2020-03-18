@@ -92,6 +92,13 @@ def main():
             # Create testing users, qe1 and qe2
             ocp.create_users()
             ocp.logout()
+            # login tests
+            ocp.login('ike', os.environ['IKE_PWD'])
+            ocp.logout()
+            ocp.login('aslak', os.environ['ASLAK_PWD'])
+            ocp.logout()
+            ocp.login('bartosz', os.environ['BARTOSZ_PWD'])
+            ocp.logout()
 
         elif moitt.uninstall:
             ocp.uninstall()
@@ -116,7 +123,7 @@ def main():
         nslist = ['bookinfo', 'foo', 'bar', 'legacy']
         smmr = os.getcwd() + '/member-roll.yaml'
         sample = os.getcwd() + '/bookinfo.yaml'
-        cp = ControlPlane("basic-install", "service-mesh-1", "bookinfo", nslist, smmr, sample)
+        cp = ControlPlane("basic-install", "istio-system", "bookinfo", nslist, smmr, sample)
         if moitt.install:
             # deploy operators
             # Read kubeadmin password

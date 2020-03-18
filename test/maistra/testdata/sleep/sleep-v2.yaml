@@ -1,15 +1,23 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sleep
+  labels:
+    app: sleep
+    version: v2
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: sleep
+      version: v2
   template:
     metadata:
       annotations:
         sidecar.istio.io/inject: "true"
       labels:
         app: sleep
+        version: v2
     spec:
       containers:
       - name: sleep

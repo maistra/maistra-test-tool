@@ -30,8 +30,8 @@ func cleanup22(kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.Shell("oc rollout undo deployment istio-citadel -n " + meshNamespace)
 	util.ShellMuteOutput("rm -f /tmp/istio-citadel-new.yaml")
-	log.Info("Waiting... Sleep 20 seconds...")
-	time.Sleep(time.Duration(20) * time.Second)
+	log.Info("Waiting... Sleep 40 seconds...")
+	time.Sleep(time.Duration(40) * time.Second)
 }
 
 
@@ -44,6 +44,13 @@ func Test22mtls(t *testing.T) {
 		}
 	}()
 
+	log.Info("# TC_22 Citadel Health Checking")
+
+	// update mtls to true
+	log.Info("Update SMCP mtls to true")
+	util.ShellMuteOutput("oc patch -n %s smcp/basic-install --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace)
+	time.Sleep(time.Duration(20) * time.Second)
+
 	t.Run("citadel_health_check_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
@@ -52,8 +59,6 @@ func Test22mtls(t *testing.T) {
 			}
 		}()
 
-		log.Info("# TC_22 Citadel Health Checking")
-		
 		log.Info("Redeploy Citadel")
 		backupFile := "/tmp/istio-citadel-bak.yaml"
 		newFile := "/tmp/istio-citadel-new.yaml"
@@ -69,10 +74,12 @@ func Test22mtls(t *testing.T) {
 			log.Infof("Unable to read citadel deployment yaml: %v", err)
 			t.Errorf("Unable to read citadel deployment yaml: %v", err)
 		}
+		newdata := strings.Replace(string(data), "extensions/v1beta1", "apps/v1", -1)
+
 		w, _ := os.Create(newFile)
 		defer w.Close()
 		
-		err = util.ConfigCitadelHealthCheck(data, w)
+		err = util.ConfigCitadelHealthCheck([]byte(newdata), w)
 		if err != nil {
 			log.Infof("Update citadel deployment error: %v", err)
 			t.Errorf("Update citadel deployment error: %v", err)

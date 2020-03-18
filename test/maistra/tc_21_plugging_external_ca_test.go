@@ -32,8 +32,8 @@ func cleanup21(namespace string, kubeconfig string) {
 	util.Shell("oc rollout undo deployment istio-citadel -n " + meshNamespace)
 	util.ShellMuteOutput("rm -f /tmp/istio-citadel-new.yaml")
 	cleanBookinfo(namespace, kubeconfig)
-	log.Info("Waiting... Sleep 20 seconds...")
-	time.Sleep(time.Duration(20) * time.Second)
+	log.Info("Waiting... Sleep 40 seconds...")
+	time.Sleep(time.Duration(40) * time.Second)
 }
 
 
@@ -95,6 +95,17 @@ func Test21mtls(t *testing.T) {
 		}
 	}()
 
+	log.Infof("# TC_21 Plugging in External CA Key and Certificate")
+
+	util.Inspect(deployBookinfo(testNamespace, kubeconfigFile, false), "failed to deploy bookinfo", "Bookinfo deployment completed", t)
+	cleanBookinfo(testNamespace, kubeconfigFile)
+	util.ShellMuteOutput("oc delete secret cacerts -n " + meshNamespace)
+
+	// update mtls to true
+	log.Info("Update SMCP mtls to true")
+	util.ShellMuteOutput("oc patch -n %s smcp/basic-install --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace)
+	time.Sleep(time.Duration(20) * time.Second)
+
 	t.Run("plugging_external_certs_test", func(t *testing.T) {
 		defer func() {
 			// recover from panic if one occured. This allows cleanup to be executed after panic.
@@ -102,8 +113,6 @@ func Test21mtls(t *testing.T) {
 				t.Errorf("Test panic: %v", err)
 			}
 		}()
-
-		log.Infof("# TC_21 Plugging in External CA Key and Certificate")
 
 		util.CreateNamespace(testNamespace, kubeconfigFile)
 		//util.OcGrantPermission("default", testNamespace, kubeconfigFile)
@@ -122,7 +131,7 @@ func Test21mtls(t *testing.T) {
 			t.Errorf("Failed to create secret %s\n", "cacerts")
 		}
 		log.Infof("Secret %s created\n", "cacerts")
-		time.Sleep(time.Duration(5) * time.Second)
+		time.Sleep(time.Duration(20) * time.Second)
 
 		log.Info("Redeploy Citadel")
 		backupFile := "/tmp/istio-citadel-bak.yaml"
@@ -139,31 +148,35 @@ func Test21mtls(t *testing.T) {
 			log.Infof("Unable to read citadel deployment yaml: %v", err)
 			t.Errorf("Unable to read citadel deployment yaml: %v", err)
 		}
+		newdata := strings.Replace(string(data), "extensions/v1beta1", "apps/v1", -1)
+
 		w, _ := os.Create(newFile)
 		defer w.Close()
-		err = util.ConfigCitadelCerts(data, w)
+		err = util.ConfigCitadelCerts([]byte(newdata), w)
 		if err != nil {
 			log.Infof("Update citadel deployment error: %v", err)
 			t.Errorf("Update citadel deployment error: %v", err)
 		}
 		util.Shell("oc apply -n %s -f %s", meshNamespace, newFile)
-		time.Sleep(time.Duration(20) * time.Second)
+		time.Sleep(time.Duration(40) * time.Second)
 		
 		log.Info("Delete existing istio.default secret")
 		util.Shell("oc delete -n %s secret istio.default", testNamespace)
+		time.Sleep(time.Duration(40) * time.Second)
 
 		log.Info("Deploy bookinfo")
 		if err := util.KubeApply(testNamespace, bookinfoYaml, kubeconfigFile); err != nil {
 			log.Errorf("failed to deploy bookinfo")
 		}
-		log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
-		time.Sleep(time.Duration(10) * time.Second)
+		log.Info("Waiting for rules to propagate. Sleep 20 seconds...")
+		time.Sleep(time.Duration(20) * time.Second)
 		util.CheckPodRunning(testNamespace, "app=details", kubeconfigFile)
 		util.CheckPodRunning(testNamespace, "app=ratings", kubeconfigFile)
 		util.CheckPodRunning(testNamespace, "app=reviews,version=v1", kubeconfigFile)
 		util.CheckPodRunning(testNamespace, "app=reviews,version=v2", kubeconfigFile)
 		util.CheckPodRunning(testNamespace, "app=reviews,version=v3", kubeconfigFile)
 		util.CheckPodRunning(testNamespace, "app=productpage", kubeconfigFile)
+		time.Sleep(time.Duration(20) * time.Second)
 		
 		log.Info("Verify certs")
 		err = verifyCerts()

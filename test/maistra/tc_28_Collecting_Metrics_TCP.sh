@@ -5,7 +5,7 @@ DIR=$(cd $(dirname $0); pwd -P)
 BASE_DIR="${DIR}/../"
 
 OC_COMMAND="oc"
-MESH="service-mesh-1"
+MESH="istio-system"
 TCP_TELEMETRY="testdata/telemetry/tcp_telemetry.yaml"
 BOOKINFO_RATE_V2="testdata/bookinfo/platform/kube/bookinfo-ratings-v2.yaml"
 BOOKINFO_DB="testdata/bookinfo/platform/kube/bookinfo-db.yaml"

@@ -128,7 +128,7 @@ const (
 	testUsername   = "jason"
 	kubeconfigFile = ""
 
-	meshNamespace = "service-mesh-1"
+	meshNamespace = "istio-system"
 
 	testRetryTimes = 5
 )

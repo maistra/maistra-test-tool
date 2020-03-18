@@ -128,17 +128,8 @@ func getSecretToken() (string, error) {
 }
 
 func jwcryptoInstall() {
-	util.ShellSilent("pip install jwcrypto")
+	util.ShellSilent("pip3 install jwcrypto")
 	util.ShellSilent("chmod +x " + jwtGen)
-}
-
-func jwcryptoCleanup() {
-	util.ShellSilent("pip uninstall -y jwcrypto")
-	util.ShellSilent("pip uninstall -y pycparser")
-	util.ShellSilent("pip uninstall -y cffi")
-	util.ShellSilent("pip uninstall -y asn1crypto")
-	util.ShellSilent("pip uninstall -y cryptography")
-
 }
 
 func Test14(t *testing.T) {
@@ -612,7 +603,6 @@ func Test14(t *testing.T) {
 		
 		util.CloseResponseBody(resp)
 		time.Sleep(time.Duration(1) * time.Second)
-		jwcryptoCleanup()
 	})
 
 	// end user authentication with per-path requirements

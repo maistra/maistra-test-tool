@@ -454,6 +454,22 @@ spec:
     values: [ '"/status/418"' ]
 `
 
+  smmrDefault = `
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  members:
+  # a list of namespaces that should be joined into the service mesh
+  # for example, to add the bookinfo namespace
+  - bookinfo
+  - foo
+  - bar
+  - legacy
+`
+
+
 )
 
 var (

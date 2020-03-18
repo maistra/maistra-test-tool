@@ -57,6 +57,20 @@ func Test17mtls(t *testing.T) {
 	Retry := 3
 
 	log.Infof("# TC_17 Authorization for HTTP Services")
+
+	// add anyuid
+	log.Infof("Add anyuid scc")
+	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z bookinfo-productpage -n bookinfo")
+	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z bookinfo-reviews -n bookinfo")
+	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z bookinfo-ratings-v2 -n bookinfo")
+	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z default -n bookinfo")
+	time.Sleep(time.Duration(10) * time.Second)
+
+	// update mtls to true
+	log.Info("Update SMCP mtls to true")
+	util.ShellMuteOutput("oc patch -n %s smcp/basic-install --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace)
+	time.Sleep(time.Duration(20) * time.Second)
+
 	updateYaml()
 
 	log.Info("Deploy bookinfo")

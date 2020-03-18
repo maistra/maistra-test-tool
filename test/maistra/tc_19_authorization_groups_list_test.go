@@ -48,6 +48,12 @@ func Test19mtls(t *testing.T) {
 	}()
 
 	log.Infof("# TC_19 Authorization for groups and list claims")
+
+	// update mtls to true
+	log.Info("Update SMCP mtls to true")
+	util.ShellMuteOutput("oc patch -n %s smcp/basic-install --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace)
+	time.Sleep(time.Duration(20) * time.Second)
+
 	util.Inspect(util.CreateNamespace("foo", kubeconfigFile), "failed to create namespace", "", t)
 
 	util.Inspect(deployHttpbin("foo", kubeconfigFile), "failed to deploy httpbin", "", t)
