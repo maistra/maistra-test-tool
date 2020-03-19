@@ -37,7 +37,7 @@ class Operator(object):
     # def updateTemplate(self):
 
     def mutate(self, cr_file="cr_mt_quay.yaml"):
-        image = re.compile('tag: latest-1.0-qe')
+        image = re.compile('tag: .*')
         with open(cr_file, 'r') as f:
             lines = f.readlines()
         with open(cr_file, 'w') as f:
