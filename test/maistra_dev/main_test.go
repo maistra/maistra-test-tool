@@ -18,43 +18,6 @@ import (
 	"testing"
 )
 
-var t = &testing.T{}
-
-var tests = []testing.InternalTest{
-	testing.InternalTest {
-		Name: "Request_Routing",
-		F: TestRequestRouting,
-	},
-	testing.InternalTest {
-		Name: "Fault_Injection",
-		F: TestFaultInjection,
-	},
-	testing.InternalTest {
-		Name: "Traffic_Shifting",
-		F: TestTrafficShifting,
-	},
-	testing.InternalTest {
-		Name: "Request_Timeouts",
-		F: TestRequestTimeouts,
-	},
-	testing.InternalTest {
-		Name: "Circuit_Breaking",
-		F: TestCircuitBreaking,
-	},
-	testing.InternalTest {
-		Name: "Mirroring",
-		F: TestMirroring,
-	},
-	testing.InternalTest {
-		Name: "Ingress_Gateways",
-		F: TestIngressGateways,
-	},
-	testing.InternalTest {
-		Name: "Secure_Gateways_FileMount",
-		F: TestIngressHttps,
-	},
-
-}
 
 func matchString(a, b string) (bool, error) {
 	return a == b, nil
@@ -62,6 +25,10 @@ func matchString(a, b string) (bool, error) {
 
 func TestMain(m *testing.M) {
 
-	testing.Main(matchString, tests, nil, nil)
+	// prepare configuration for OCP4 environment
+	prepareOCPConfig()
+
+	// test runs
+	testing.Main(matchString, testCases, nil, nil)
 
 }

@@ -16,6 +16,21 @@ package main
 
 const (
 
+smmrDefault = `
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  members:
+  # a list of namespaces that should be joined into the service mesh
+  # for example, to add the bookinfo namespace
+  - bookinfo
+  - foo
+  - bar
+  - legacy
+`
+
 ratingsDelay2 = `
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
@@ -555,6 +570,112 @@ spec:
   trafficPolicy:
     tls:
       mode: ISTIO_MUTUAL
+`
+
+nginxServer = `
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-nginx
+  labels:
+    run: my-nginx
+spec:
+  ports:
+  - port: 443
+    protocol: TCP
+  selector:
+    run: my-nginx
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  selector:
+    matchLabels:
+      run: my-nginx
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+      labels:
+        run: my-nginx
+    spec:
+      containers:
+      - name: my-nginx
+        image: nginx
+        ports:
+        - containerPort: 443
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx
+          readOnly: true
+        - name: nginx-server-certs
+          mountPath: /etc/nginx-server-certs
+          readOnly: true
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-configmap
+      - name: nginx-server-certs
+        secret:
+          secretName: nginx-server-certs
+`
+
+nginxIngressGateway = `
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: mygateway
+spec:
+  selector:
+    istio: ingressgateway # use istio default ingress gateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: PASSTHROUGH
+    hosts:
+    - nginx.example.com
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: nginx
+spec:
+  hosts:
+  - nginx.example.com
+  gateways:
+  - mygateway
+  tls:
+  - match:
+    - port: 443
+      sni_hosts:
+      - nginx.example.com
+    route:
+    - destination:
+        host: my-nginx
+        port:
+          number: 443
+`
+
+nginxOCPRouteHTTPS = `
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: nginx.example.com
+spec:
+  host: nginx.example.com
+  port:
+    targetPort: https
+  to:
+    kind: Service
+    name: istio-ingressgateway
+  tls:
+    termination: passthrough
 `
 
 )

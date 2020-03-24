@@ -45,16 +45,17 @@ func TestCircuitBreaking(t *testing.T) {
 	/*
 	If you installed/configured Istio with mutual TLS authentication enabled, you must add a TLS traffic policy mode: ISTIO_MUTUAL to the DestinationRule before applying it. Otherwise requests will generate 503 errors as described here.
 	*/
-	if err := util.KubeApplyContents(testNamespace, httpbinCircuitBreaker, kubeconfig); err != nil {
-		t.Errorf("Failed to configure circuit breaker")
-		log.Errorf("Failed to configure circuit breaker")
-	}
-	time.Sleep(time.Duration(waitTime*2) * time.Second)
 
 	deployFortio(testNamespace)
 
-	t.Run("Tripping_the_circuit_breaker", func(t *testing.T) {
+	t.Run("Tripping_circuit_breaker", func(t *testing.T) {
 		defer recoverPanic(t)
+
+		if err := util.KubeApplyContents(testNamespace, httpbinCircuitBreaker, kubeconfig); err != nil {
+			t.Errorf("Failed to configure circuit breaker")
+			log.Errorf("Failed to configure circuit breaker")
+		}
+		time.Sleep(time.Duration(waitTime*2) * time.Second)
 
 		// trip breaker
 		pod, err := util.GetPodName(testNamespace, "app=fortio", kubeconfig)
