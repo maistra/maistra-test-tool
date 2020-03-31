@@ -117,7 +117,7 @@ def main():
         ocp.logout()
     
     if moitt.component == 'istio':
-        operator = Operator(maistra_branch="maistra-1.1", maistra_tag=moitt.tag)
+        operator = Operator(maistra_branch="maistra-1.1", maistra_tag=moitt.tag, release="1.1")
         operator.mutate(cr_file=moitt.crfile)
 
         nslist = ['bookinfo', 'foo', 'bar', 'legacy']
@@ -130,13 +130,15 @@ def main():
             with open(moitt.assets + '/auth/kubeadmin-password') as f:
                 pw = f.read() 
             ocp.login('kubeadmin', pw)
+
+            if moitt.quay:
+                operator.update_quay_token()
+                operator.apply_operator_source()
+
             operator.deploy_es()
             operator.deploy_jaeger()
             operator.deploy_kiali()
-            if moitt.quay:
-                operator.deploy_quay_istio()
-            else:
-                operator.deploy_istio()
+            operator.deploy_istio()
 
             operator.patch41()  # temporary patch for OCP 4.1 to enable csv installations
             operator.check()
@@ -173,10 +175,11 @@ def main():
             with open(moitt.assets + '/auth/kubeadmin-password') as f:
                 pw = f.read() 
             ocp.login('kubeadmin', pw)
-            if moitt.quay:
-                operator.uninstall_quay_istio()
-
             operator.uninstall()
+
+            if moitt.quay:
+                operator.uninstall_operator_source()
+
             ocp.logout()
 
    
