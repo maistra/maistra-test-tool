@@ -4,7 +4,7 @@ metadata:
   name: kiali-ossm
   namespace: openshift-operators
 spec:
-  channel: "1.1"
+  channel: "stable"
   installPlanApproval: Automatic
   name: kiali-ossm 
   source: quay-maistraqe

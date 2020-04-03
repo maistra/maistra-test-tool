@@ -36,6 +36,7 @@ class Moitt(object):
         self.version = None
         self.tag = None
         self.quay = False
+        self.release = None
         
     def envParse(self):
         if 'AWS_PROFILE' in os.environ:
@@ -56,6 +57,7 @@ class Moitt(object):
         parser.add_argument('-v', '--version', type=str, default='4.3.5', help='OCP installer version')
         parser.add_argument('-t', '--tag', type=str, default='latest-1.1-qe', help='Istio Operator and SMCP image tag')
         parser.add_argument('-q', '--quay', help='install istio operator from quay.io', action='store_true')
+        parser.add_argument('-r', '--release', type=str, default='1.1', help='OLM release channel')
         args = parser.parse_args()
         self.install = args.install
         self.uninstall = args.uninstall
@@ -64,6 +66,7 @@ class Moitt(object):
         self.version = args.version
         self.tag = args.tag
         self.quay = args.quay
+        self.release = args.release
       
 
 def main():
@@ -117,7 +120,7 @@ def main():
         ocp.logout()
     
     if moitt.component == 'istio':
-        operator = Operator(maistra_branch="maistra-1.1", maistra_tag=moitt.tag, release="1.1")
+        operator = Operator(maistra_branch="maistra-"+moitt.release, maistra_tag=moitt.tag, release=moitt.release)
         operator.mutate(cr_file=moitt.crfile)
 
         nslist = ['bookinfo', 'foo', 'bar', 'legacy']

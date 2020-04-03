@@ -105,7 +105,7 @@ class Operator(object):
     def patch41(self):
         proc = sp.run(['oc', 'get', 'clusterversion'], stdout=sp.PIPE, universal_newlines=True)
         if "4.1" in proc.stdout:
-            sp.run(['oc', 'patch', 'csc/redhat-operators', '-n', 'openshift-marketplace', '--type', 'merge',
+            sp.run(['oc', 'patch', 'csc/quay-maistraqe', '-n', 'openshift-marketplace', '--type', 'merge',
              '-p', r'{"spec":{"targetNamespace": "openshift-operators"}}'])
             sp.run(['oc', 'patch', 'subscription/elasticsearch-operator', '-n', self.namespace, '--type', 'merge',
              '-p', r'{"spec":{"sourceNamespace": "openshift-operators"}}'])
@@ -258,12 +258,12 @@ class ControlPlane(object):
             raise RuntimeError('Missing cr yaml file')
 
         sp.run(['oc', 'delete', '-n', self.namespace, '-f', self.smmr])
-        sp.run(['sleep', '10'])
+        sp.run(['sleep', '40'])
         for ns in self.nslist:
             sp.run(['oc', 'delete', 'project', ns])
 
         sp.run(['oc', 'delete', '-n', self.namespace, '-f', cr_file])
-        sp.run(['sleep', '60'])
+        sp.run(['sleep', '40'])
         sp.run(['oc', 'delete', 'project', self.namespace])
         print("Waiting 40 seconds...")
         sp.run(['sleep', '40'])
