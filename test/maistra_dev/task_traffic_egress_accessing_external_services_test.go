@@ -38,6 +38,7 @@ func TestAccessExternalServices(t *testing.T) {
 	defer cleanupAccessExternalServices(testNamespace)
 	defer recoverPanic(t)
 
+	log.Info("# TestAccessExternalServices")
 	deploySleep(testNamespace)
 	sleepPod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfig)
 	util.Inspect(err, "Failed to get sleep pod name", "", t)
@@ -54,6 +55,7 @@ func TestAccessExternalServices(t *testing.T) {
 		if strings.Contains(msg, "200") {
 			log.Infof("Success. Get https://www.google.com response: %s", msg)
 		} else {
+			log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		}
 	})
@@ -97,6 +99,7 @@ func TestAccessExternalServices(t *testing.T) {
 		if strings.Contains(msg, "200") {
 			log.Infof("Success. Get https://www.google.com response: %s", msg)
 		} else {
+			log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		}
 	})

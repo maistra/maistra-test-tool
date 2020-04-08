@@ -36,7 +36,7 @@ func TestFaultInjection(t *testing.T) {
 	defer cleanupFaultInjection(testNamespace)
 	defer recoverPanic(t)
 
-	log.Infof("# Fault injection")
+	log.Infof("# TestFaultInjection")
 	deployBookinfo(testNamespace, false)
 	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
 	testUserJar := util.GetCookieJar(testUsername, "", "http://"+ gatewayHTTP)

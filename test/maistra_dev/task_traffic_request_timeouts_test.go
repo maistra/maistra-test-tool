@@ -37,7 +37,7 @@ func TestRequestTimeouts(t *testing.T) {
 	defer cleanupRequestTimeouts(testNamespace)
 	defer recoverPanic(t)
 
-	log.Infof("# Setting Request Timeouts")
+	log.Infof("# TestRequestTimeouts")
 	deployBookinfo(testNamespace, false)
 	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
 

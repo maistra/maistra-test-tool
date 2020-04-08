@@ -45,8 +45,7 @@ func TestTCPShifting(t *testing.T) {
 	defer cleanupTCPShifting(testNamespace)
 	defer recoverPanic(t)
 
-	log.Infof("# TCP Traffic Shifting")
-
+	log.Infof("# TestTCPShifting")
 	tcpPort, _ := util.GetTCPIngressPort(meshNamespace, "istio-ingressgateway", kubeconfig)
 
 	deployEcho(testNamespace)

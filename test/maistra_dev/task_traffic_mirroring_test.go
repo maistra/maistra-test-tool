@@ -40,7 +40,7 @@ func TestMirroring(t *testing.T) {
 	defer cleanupMirroring(testNamespace)
 	defer recoverPanic(t)
 
-	log.Info("# Mirroring")
+	log.Info("# TestMirroring")
 	if err := util.KubeApplyContents(testNamespace, httpbinv1, kubeconfig); err != nil {
 		t.Errorf("Failed to deploy httpbin v1")
 		log.Errorf("Failed to deploy httpbin v1")

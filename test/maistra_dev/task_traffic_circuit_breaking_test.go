@@ -39,7 +39,7 @@ func TestCircuitBreaking(t *testing.T) {
 	defer cleanupCircuitBreaking(testNamespace)
 	defer recoverPanic(t)
 
-	log.Info("# Circuit Breaking")
+	log.Info("# TestCircuitBreaking")
 	deployHttpbin(testNamespace)
 
 	/*

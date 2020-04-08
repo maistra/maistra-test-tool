@@ -38,7 +38,7 @@ func TestTrafficShifting(t *testing.T) {
 	defer cleanupTrafficShifting(testNamespace)
 	defer recoverPanic(t)
 
-	log.Infof("# Traffic Shifting")
+	log.Infof("# TestTrafficShifting")
 	deployBookinfo(testNamespace, false)
 	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
 
