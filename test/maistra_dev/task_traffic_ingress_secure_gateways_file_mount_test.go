@@ -26,7 +26,7 @@ import (
 )
 
 
-func cleanupIngressHTTPS(namespace string) {
+func cleanupIngressGatewaysFileMount(namespace string) {
 	log.Info("# Cleanup ...")
 
 	//util.KubeDeleteContents(meshNamespace, bookinfoOCPRouteHTTPS, kubeconfig)
@@ -41,11 +41,11 @@ func cleanupIngressHTTPS(namespace string) {
 
 }
 
-func TestIngressHttps(t *testing.T) {
-	defer cleanupIngressHTTPS(testNamespace)
+func TestIngressGatewaysFileMount(t *testing.T) {
+	defer cleanupIngressGatewaysFileMount(testNamespace)
 	defer recoverPanic(t)
 
-	log.Infof("# Securing Gateways File Mount")
+	log.Infof("# TestIngressGatewaysFileMount")
 	deployHttpbin(testNamespace)
 
 	if _, err := util.CreateTLSSecret("istio-ingressgateway-certs", meshNamespace, httpbinSampleServerCertKey, httpbinSampleServerCert, kubeconfig); err != nil {
@@ -71,11 +71,7 @@ func TestIngressHttps(t *testing.T) {
 	}
 
 	// OCP4 Route
-	if err := util.KubeApplyContents(meshNamespace, httpbinOCPRouteHTTPS, kubeconfig); err != nil {
-		t.Errorf("Failed to configure OCP Route")
-		log.Errorf("Failed to configure OCP Route")
-	}
-
+	util.KubeApplyContents(meshNamespace, httpbinOCPRouteHTTPS, kubeconfig)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 	
 	t.Run("TrafficManagement_ingress_general_tls_test", func(t *testing.T) {
@@ -180,10 +176,7 @@ func TestIngressHttps(t *testing.T) {
 		log.Infof("Secret %s created: %s\n", "istio-ingressgateway-bookinfo-certs", msg)
 
 		// OCP4 Route
-		if err = util.KubeApplyContents(meshNamespace, bookinfoOCPRouteHTTPS, kubeconfig); err != nil {
-			t.Errorf("Failed to configure OCP Route")
-			log.Errorf("Failed to configure OCP Route")
-		}
+		util.KubeApplyContents(meshNamespace, bookinfoOCPRouteHTTPS, kubeconfig)
 		time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 		// deploy bookinfo

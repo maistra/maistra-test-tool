@@ -53,9 +53,11 @@ func prepareOCPConfig() {
 	time.Sleep(time.Duration(waitTime) * time.Second)
 
 	// if testing in mtls disable mode, update mtls to false
-	util.ShellSilent("oc patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
+	util.ShellSilent("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
+	util.ShellSilent("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"gateways\":{\"istio-ingressgateway\":{\"ior_enabled\":\"true\"}}}}}}'", meshNamespace, smcpName)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
 
-	// TBD: path smcp ingressgateway, loadbalancer, ior
+	// TBD: path smcp ingressgateway loadbalancer
 
 	// add anyuid
 	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z bookinfo-productpage -n %s", testNamespace)

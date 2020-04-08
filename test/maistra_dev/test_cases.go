@@ -54,7 +54,7 @@ var testCases = []testing.InternalTest{
 	},
 	testing.InternalTest {
 		Name: "11",
-		F: TestIngressHttps,
+		F: TestIngressGatewaysFileMount,
 	},
 	testing.InternalTest {
 		Name: "12",
@@ -63,5 +63,13 @@ var testCases = []testing.InternalTest{
 	testing.InternalTest {
 		Name: "13",
 		F: TestAccessExternalServices,
+	},
+	testing.InternalTest {
+		Name: "14",
+		F: TestEgressTLSOrigination,
+	},
+	testing.InternalTest {
+		Name: "15",
+		F: TestEgressGateways,
 	},
 }

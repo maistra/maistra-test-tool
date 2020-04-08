@@ -42,8 +42,7 @@ func TestIngressWithOutTLS(t *testing.T) {
 	defer cleanupIngressWithOutTLS(testNamespace)
 	defer recoverPanic(t)
 
-	log.Infof("# Ingress Gateway without TLS Termination")
-
+	log.Infof("# TestIngressWithOutTLS Termination")
 	log.Info("Create Secret")
 	if _, err := util.CreateTLSSecret("nginx-server-certs", testNamespace, nginxServerCertKey, nginxServerCert, kubeconfig); err != nil {
 		t.Errorf("Failed to create secret %s\n", "nginx-server-certs")
@@ -82,11 +81,8 @@ func TestIngressWithOutTLS(t *testing.T) {
 			log.Errorf("Failed to configure NGINX ingress gateway")
 		}
 		// OCP4 Route
-		if err := util.KubeApplyContents(meshNamespace, nginxOCPRouteHTTPS, kubeconfig); err != nil {
-			t.Errorf("Failed to configure OCP Route")
-			log.Errorf("Failed to configure OCP Route")
-		}
-		time.Sleep(time.Duration(waitTime*2) * time.Second)
+		util.KubeApplyContents(meshNamespace, nginxOCPRouteHTTPS, kubeconfig)
+		time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 		url := "https://nginx.example.com:" + secureIngressPort
 		resp, err := curlWithCA(url, gatewayHTTP, secureIngressPort, "nginx.example.com", nginxServerCACert)

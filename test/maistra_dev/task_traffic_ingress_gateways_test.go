@@ -19,8 +19,9 @@ import (
 	"testing"
 	"time"
 
-	"istio.io/istio/pkg/log"
 	"maistra/util"
+
+	"istio.io/istio/pkg/log"
 )
 
 
@@ -37,7 +38,7 @@ func TestIngressGateways(t *testing.T) {
 	defer cleanupIngressGateways(testNamespace)
 	defer recoverPanic(t)
 
-	log.Infof("# Control Ingress Traffic")
+	log.Infof("# TestIngressGateways")
 	deployHttpbin(testNamespace)
 
 	if err := util.KubeApplyContents(testNamespace, httpbinGateway1, kubeconfig); err != nil {
@@ -46,13 +47,8 @@ func TestIngressGateways(t *testing.T) {
 	}
 
 	// OCP4 Route
-	if err := util.KubeApplyContents(meshNamespace, httpbinOCPRoute, kubeconfig); err != nil {
-		t.Errorf("Failed to configure OCP Route")
-		log.Errorf("Failed to configure OCP Route")
-	}
-
+	util.KubeApplyContents(meshNamespace, httpbinOCPRoute, kubeconfig)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
-
 	
 	t.Run("TrafficManagement_ingress_status_200_test", func(t *testing.T) {
 		defer recoverPanic(t)
