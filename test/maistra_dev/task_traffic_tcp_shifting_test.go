@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"maistra/util"
+
 	"istio.io/istio/pkg/log"
 )
 
@@ -50,7 +51,7 @@ func TestTCPShifting(t *testing.T) {
 
 	deployEcho(testNamespace)
 
-	t.Run("100_percent_v1_shift_test", func(t *testing.T) {
+	t.Run("TrafficManagement_100_percent_v1_tcp_shift_test", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("# Shifting all TCP traffic to v1")
@@ -89,7 +90,7 @@ func TestTCPShifting(t *testing.T) {
 		}
 	})
 
-	t.Run("20_percent_v2_shift_test", func(t *testing.T) {
+	t.Run("TrafficManagement_20_percent_v2_tcp_shift_test", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("# Shifting 20% TCP traffic to v2 tolerance 10% ")

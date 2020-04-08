@@ -48,7 +48,7 @@ func TestCircuitBreaking(t *testing.T) {
 
 	deployFortio(testNamespace)
 
-	t.Run("Tripping_circuit_breaker", func(t *testing.T) {
+	t.Run("TrafficManagement_tripping_circuit_breaker", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		if err := util.KubeApplyContents(testNamespace, httpbinCircuitBreaker, kubeconfig); err != nil {

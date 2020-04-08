@@ -54,7 +54,7 @@ func TestIngressGateways(t *testing.T) {
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 	
-	t.Run("Status_200_test", func(t *testing.T) {
+	t.Run("TrafficManagement_ingress_status_200_test", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		resp, err := util.GetWithHost(fmt.Sprintf("http://%s/status/200", gatewayHTTP), "httpbin.example.com")
@@ -64,7 +64,7 @@ func TestIngressGateways(t *testing.T) {
 	})
 	
 
-	t.Run("Headers_test", func(t *testing.T) {
+	t.Run("TrafficManagement_ingress_headers_test", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		if err := util.KubeApplyContents(testNamespace, httpbinGateway2, kubeconfig); err != nil {

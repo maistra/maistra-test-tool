@@ -20,8 +20,9 @@ import (
 	"testing"
 	"time"
 
-	"istio.io/istio/pkg/log"
 	"maistra/util"
+
+	"istio.io/istio/pkg/log"
 )
 
 
@@ -77,7 +78,7 @@ func TestIngressHttps(t *testing.T) {
 
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 	
-	t.Run("General_tls_test", func(t *testing.T) {
+	t.Run("TrafficManagement_ingress_general_tls_test", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		// check teapot
@@ -96,7 +97,7 @@ func TestIngressHttps(t *testing.T) {
 		}
 	})
 
-	t.Run("Mutual_tls_test", func(t *testing.T) {
+	t.Run("TrafficManagement_ingress_mutual_tls_test", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Configure Mutual TLS Gateway")
@@ -156,7 +157,7 @@ func TestIngressHttps(t *testing.T) {
 	})
 
 	/*
-	t.Run("Multiple_hosts_tls_test", func(t *testing.T) {
+	t.Run("TrafficManagement_ingress_multiple_hosts_tls_test", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Configure multiple hosts Gateway")

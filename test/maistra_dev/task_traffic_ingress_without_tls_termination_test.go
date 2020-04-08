@@ -73,7 +73,7 @@ func TestIngressWithOutTLS(t *testing.T) {
 		log.Infof("Success. Get expected response: %s", msg)
 	}
 
-	t.Run("Configure_ingress_gateway_without_TLS_Termination", func(t *testing.T) {
+	t.Run("TrafficManagement_ingress_configure_ingress_gateway_without_TLS_Termination", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Configure an ingress gateway")

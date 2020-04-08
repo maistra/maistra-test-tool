@@ -20,8 +20,9 @@ import (
 	"testing"
 	"time"
 
-	"istio.io/istio/pkg/log"
 	"maistra/util"
+
+	"istio.io/istio/pkg/log"
 )
 
 func cleanupAuthPolicy() {
@@ -80,7 +81,7 @@ func TestAuthPolicy(t *testing.T) {
 		}
 	}
 
-	t.Run("Global_mTLS_test", func(t *testing.T) {
+	t.Run("Security_authentication_global_mTLS_test", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Globally enabling Istio mutual TLS")

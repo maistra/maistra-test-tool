@@ -20,8 +20,9 @@ import (
 	"testing"
 	"time"
 
-	"istio.io/istio/pkg/log"
 	"maistra/util"
+
+	"istio.io/istio/pkg/log"
 )
 
 
@@ -51,7 +52,7 @@ func TestRequestTimeouts(t *testing.T) {
 	}
 	time.Sleep(time.Duration(waitTime) * time.Second)
 
-	t.Run("Request_timeouts", func(t *testing.T) {
+	t.Run("TrafficManagement_request_timeouts", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		if err := util.KubeApplyContents(testNamespace, reviewTimeout, kubeconfig); err != nil {
