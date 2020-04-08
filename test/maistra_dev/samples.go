@@ -74,6 +74,5 @@ const (
 var (
 	// OCP4.x
 	gatewayHTTP, _ = util.ShellSilent("kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'", meshNamespace)
-	secureIngressPort, _ = util.GetSecureIngressPort(meshNamespace, "istio-ingressgateway", kubeconfig)
-
+	secureIngressPort, _ = util.ShellSilent("kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"https\")].port}'", meshNamespace, "istio-ingressgateway")
 )

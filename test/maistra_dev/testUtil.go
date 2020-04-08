@@ -53,7 +53,7 @@ func prepareOCPConfig() {
 	time.Sleep(time.Duration(waitTime) * time.Second)
 
 	// if testing in mtls disable mode, update mtls to false
-	util.ShellMuteOutput("oc patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
+	util.ShellSilent("oc patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
 
 	// TBD: path smcp ingressgateway, loadbalancer, ior
 

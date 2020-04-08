@@ -60,5 +60,8 @@ var testCases = []testing.InternalTest{
 		Name: "12",
 		F: TestIngressWithOutTLS,
 	},
-
+	testing.InternalTest {
+		Name: "13",
+		F: TestAccessExternalServices,
+	},
 }
