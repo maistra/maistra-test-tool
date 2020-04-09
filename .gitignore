@@ -34,7 +34,7 @@ registry-puller
 
 # istio-operator
 istio-operator
-ossm_operator.yaml
+install/olm/operator_source.yaml
 
 ### Vim ###
 # swap

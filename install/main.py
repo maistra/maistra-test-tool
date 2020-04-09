@@ -36,6 +36,7 @@ class Moitt(object):
         self.version = None
         self.tag = None
         self.quay = False
+        self.release = None
         
     def envParse(self):
         if 'AWS_PROFILE' in os.environ:
@@ -53,9 +54,10 @@ class Moitt(object):
         group.add_argument('-u', '--uninstall', help='uninstall operation', action='store_true')
         parser.add_argument('-c', '--component', type=str, choices=['ocp', 'registry-puller', 'istio'], help='Specify Component from ocp, registry-puller, istio')
         parser.add_argument('-d', '--directory', type=str, default='./assets', help='OCP cluster config assets directory path')
-        parser.add_argument('-v', '--version', type=str, default='4.2.0', help='OCP installer version')
-        parser.add_argument('-t', '--tag', type=str, default='latest-1.0-qe', help='Istio Operator and SMCP image tag')
+        parser.add_argument('-v', '--version', type=str, default='4.3.5', help='OCP installer version')
+        parser.add_argument('-t', '--tag', type=str, default='latest-1.1-qe', help='Istio Operator and SMCP image tag')
         parser.add_argument('-q', '--quay', help='install istio operator from quay.io', action='store_true')
+        parser.add_argument('-r', '--release', type=str, default='1.1', help='OLM release channel')
         args = parser.parse_args()
         self.install = args.install
         self.uninstall = args.uninstall
@@ -64,6 +66,7 @@ class Moitt(object):
         self.version = args.version
         self.tag = args.tag
         self.quay = args.quay
+        self.release = args.release
       
 
 def main():
@@ -117,7 +120,7 @@ def main():
         ocp.logout()
     
     if moitt.component == 'istio':
-        operator = Operator(maistra_branch="maistra-1.0", maistra_tag=moitt.tag)
+        operator = Operator(maistra_branch="maistra-"+moitt.release, maistra_tag=moitt.tag, release=moitt.release)
         operator.mutate(cr_file=moitt.crfile)
 
         nslist = ['bookinfo', 'foo', 'bar', 'legacy']
@@ -130,13 +133,15 @@ def main():
             with open(moitt.assets + '/auth/kubeadmin-password') as f:
                 pw = f.read() 
             ocp.login('kubeadmin', pw)
+
+            if moitt.quay:
+                operator.update_quay_token()
+                operator.apply_operator_source()
+
             operator.deploy_es()
             operator.deploy_jaeger()
             operator.deploy_kiali()
-            if moitt.quay:
-                operator.deploy_quay_istio()
-            else:
-                operator.deploy_istio()
+            operator.deploy_istio()
 
             operator.patch41()  # temporary patch for OCP 4.1 to enable csv installations
             operator.check()
@@ -173,10 +178,11 @@ def main():
             with open(moitt.assets + '/auth/kubeadmin-password') as f:
                 pw = f.read() 
             ocp.login('kubeadmin', pw)
-            if moitt.quay:
-                operator.uninstall_quay_istio()
-
             operator.uninstall()
+
+            if moitt.quay:
+                operator.uninstall_operator_source()
+
             ocp.logout()
 
    

@@ -32,8 +32,8 @@ func cleanup16(namespace, kubeconfig string) {
 	util.ShellMuteOutput("oc delete secret nginxsecret -n %s --kubeconfig=%s", namespace, kubeconfig)
 	util.ShellMuteOutput("oc delete ServiceMeshPolicy default -n " + meshNamespace)
 	util.ShellMuteOutput("oc delete destinationrules default -n " + meshNamespace)
-	log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
-	time.Sleep(time.Duration(20) * time.Second)
+	log.Info("Waiting for rules to be cleaned up. Sleep 30 seconds...")
+	time.Sleep(time.Duration(30) * time.Second)
 }
 
 func Test16(t *testing.T) {

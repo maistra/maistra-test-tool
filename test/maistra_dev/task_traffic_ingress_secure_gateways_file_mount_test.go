@@ -15,21 +15,18 @@
 package main
 
 import (
-	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"io/ioutil"
-	"net"
-	"net/http"
 	"strings"
 	"testing"
 	"time"
 
-	"istio.io/istio/pkg/log"
 	"maistra/util"
+
+	"istio.io/istio/pkg/log"
 )
 
-func cleanupIngressHTTPS(namespace string) {
+
+func cleanupIngressGatewaysFileMount(namespace string) {
 	log.Info("# Cleanup ...")
 
 	//util.KubeDeleteContents(meshNamespace, bookinfoOCPRouteHTTPS, kubeconfig)
@@ -44,109 +41,11 @@ func cleanupIngressHTTPS(namespace string) {
 
 }
 
-func curlWithCA(url, ingressHost, secureIngressPort, host, cacertFile string) (*http.Response, error) {
-	// Load CA cert
-	caCert, err := ioutil.ReadFile(cacertFile)
-	if err != nil {
-		return nil, err
-	}
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
-
-	// Setup HTTPS transport
-	tlsConfig := &tls.Config{
-		RootCAs: caCertPool,
-	}
-	tlsConfig.BuildNameToCertificate()
-	transport := &http.Transport{TLSClientConfig: tlsConfig}
-
-	// Custom DialContext
-	dialer := &net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
-		DualStack: true,
-	}
-
-	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
-		if addr == host+":"+secureIngressPort {
-			addr = ingressHost + ":" + secureIngressPort
-		}
-		return dialer.DialContext(ctx, network, addr)
-	}
-
-	// Setup HTTPS client
-	client := &http.Client{Transport: transport}
-
-	// GET something
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-	// Set host
-	req.Host = host
-	req.Header.Set("Host", req.Host)
-	// Get response
-	return client.Do(req)
-}
-
-func curlWithCAClient(url, ingressHost, secureIngressPort, host, cacertFile, certFile, keyFile string) (*http.Response, error) {
-	// Load client cert
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
-		return nil, err
-	}
-
-	// Load CA cert
-	caCert, err := ioutil.ReadFile(cacertFile)
-	if err != nil {
-		return nil, err
-	}
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
-
-	// Setup HTTPS transport
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		RootCAs:      caCertPool,
-	}
-	tlsConfig.BuildNameToCertificate()
-	transport := &http.Transport{TLSClientConfig: tlsConfig}
-
-	// Custom DialContext
-	dialer := &net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
-		DualStack: true,
-	}
-
-	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
-		if addr == host+":"+secureIngressPort {
-			addr = ingressHost + ":" + secureIngressPort
-		}
-		return dialer.DialContext(ctx, network, addr)
-	}
-
-	// Setup HTTPS client
-	client := &http.Client{Transport: transport}
-
-	// GET something
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-	// Set host
-	req.Host = host
-	req.Header.Set("Host", req.Host)
-	// Get response
-	return client.Do(req)
-}
-
-
-func TestIngressHttps(t *testing.T) {
-	defer cleanupIngressHTTPS(testNamespace)
+func TestIngressGatewaysFileMount(t *testing.T) {
+	defer cleanupIngressGatewaysFileMount(testNamespace)
 	defer recoverPanic(t)
 
-	log.Infof("# Securing Gateways with HTTPS")
+	log.Infof("# TestIngressGatewaysFileMount")
 	deployHttpbin(testNamespace)
 
 	if _, err := util.CreateTLSSecret("istio-ingressgateway-certs", meshNamespace, httpbinSampleServerCertKey, httpbinSampleServerCert, kubeconfig); err != nil {
@@ -172,14 +71,10 @@ func TestIngressHttps(t *testing.T) {
 	}
 
 	// OCP4 Route
-	if err := util.KubeApplyContents(meshNamespace, httpbinOCPRouteHTTPS, kubeconfig); err != nil {
-		t.Errorf("Failed to configure OCP Route")
-		log.Errorf("Failed to configure OCP Route")
-	}
-
+	util.KubeApplyContents(meshNamespace, httpbinOCPRouteHTTPS, kubeconfig)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 	
-	t.Run("General_tls_test", func(t *testing.T) {
+	t.Run("TrafficManagement_ingress_general_tls_test", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		// check teapot
@@ -198,7 +93,7 @@ func TestIngressHttps(t *testing.T) {
 		}
 	})
 
-	t.Run("Mutual_tls_test", func(t *testing.T) {
+	t.Run("TrafficManagement_ingress_mutual_tls_test", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Configure Mutual TLS Gateway")
@@ -258,7 +153,7 @@ func TestIngressHttps(t *testing.T) {
 	})
 
 	/*
-	t.Run("Multiple_hosts_tls_test", func(t *testing.T) {
+	t.Run("TrafficManagement_ingress_multiple_hosts_tls_test", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Configure multiple hosts Gateway")
@@ -281,10 +176,7 @@ func TestIngressHttps(t *testing.T) {
 		log.Infof("Secret %s created: %s\n", "istio-ingressgateway-bookinfo-certs", msg)
 
 		// OCP4 Route
-		if err = util.KubeApplyContents(meshNamespace, bookinfoOCPRouteHTTPS, kubeconfig); err != nil {
-			t.Errorf("Failed to configure OCP Route")
-			log.Errorf("Failed to configure OCP Route")
-		}
+		util.KubeApplyContents(meshNamespace, bookinfoOCPRouteHTTPS, kubeconfig)
 		time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 		// deploy bookinfo

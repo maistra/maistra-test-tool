@@ -36,7 +36,7 @@ func TestFaultInjection(t *testing.T) {
 	defer cleanupFaultInjection(testNamespace)
 	defer recoverPanic(t)
 
-	log.Infof("# Fault injection")
+	log.Infof("# TestFaultInjection")
 	deployBookinfo(testNamespace, false)
 	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
 	testUserJar := util.GetCookieJar(testUsername, "", "http://"+ gatewayHTTP)
@@ -51,7 +51,7 @@ func TestFaultInjection(t *testing.T) {
 	}
 	time.Sleep(time.Duration(waitTime) * time.Second)
 
-	t.Run("Injecting_an_HTTP_delay_fault", func(t *testing.T) {
+	t.Run("TrafficManagement_injecting_an_HTTP_delay_fault", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		if err := util.KubeApply(testNamespace, bookinfoRatingDelayYaml, kubeconfig); err != nil {
@@ -89,7 +89,7 @@ func TestFaultInjection(t *testing.T) {
 		}
 	})
 
-	t.Run("Injecting_an_HTTP_abort_fault", func(t *testing.T) {
+	t.Run("TrafficManagement_injecting_an_HTTP_abort_fault", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		if err := util.KubeApply(testNamespace, bookinfoRatingAbortYaml, kubeconfig); err != nil {

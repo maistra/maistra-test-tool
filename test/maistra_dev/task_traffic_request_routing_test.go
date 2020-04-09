@@ -20,8 +20,8 @@ import (
 	"testing"
 	"time"
 
-	"istio.io/istio/pkg/log"
 	"maistra/util"
+	"istio.io/istio/pkg/log"
 )
 
 
@@ -36,12 +36,12 @@ func TestRequestRouting(t *testing.T) {
 	defer cleanupRequestRouting(testNamespace)
 	defer recoverPanic(t)
 
-	log.Infof("# Traffic Routing")
+	log.Infof("# TestRequestRouting")
 	deployBookinfo(testNamespace, false)
 	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
 	testUserJar := util.GetCookieJar(testUsername, "", "http://"+ gatewayHTTP)
 
-	t.Run("Test_the_new_routing_configuration", func(t *testing.T) {
+	t.Run("TrafficManagement_test_the_new_routing_configuration", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Infof("# Routing traffic to all v1")
@@ -66,7 +66,7 @@ func TestRequestRouting(t *testing.T) {
 		}
 	})
 
-	t.Run("Route_based_on_user_identity", func(t *testing.T) {
+	t.Run("TrafficManagement_route_based_on_user_identity", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Infof("# Traffic routing based on user identity")

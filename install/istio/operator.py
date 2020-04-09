@@ -25,7 +25,7 @@ import shutil
 class Operator(object):
     """ An instance of this class installs operators from OLM openshift-marketplace."""
 
-    def __init__(self, maistra_branch="maistra-1.0", maistra_tag="latest-1.0-qe"):
+    def __init__(self, maistra_branch="maistra-1.1", maistra_tag="latest-1.1-qe", release="1.1"):
         self.es_sub_channel = "4.2"
         self.jaeger_sub_channel = "stable"
         self.kiali_sub_channel = "stable"
@@ -33,6 +33,7 @@ class Operator(object):
         self.namespace = "openshift-operators"
         self.maistra_branch = maistra_branch
         self.maistra_tag = maistra_tag
+        self.release = release
 
     # def updateTemplate(self):
 
@@ -77,24 +78,34 @@ class Operator(object):
         proc = sp.run(['oc', 'adm', 'policy', 'add-scc-to-user', 'anyuid', '-z', account, '-n', namespace], stdout=sp.PIPE, universal_newlines=True)
         print(proc.stdout)
 
+    def update_quay_token(self):
+        with open('olm/template/operator_source_template.yaml', 'r') as f:
+            lines = f.readlines()
+        with open('olm/operator_source.yaml', 'w') as f:
+            for line in lines:
+                f.write(line.replace("[quay_token]", os.environ['QUAY_TOKEN']))
+
+    def apply_operator_source(self):
+        sp.run(['oc', 'apply', '-f', 'olm/operator_source.yaml'])
+        sp.run(['sleep', '30'])
 
     def deploy_es(self):
-        sp.run(['oc', 'apply', '-f', 'olm/elastic_search_subscription.yaml'])
+        sp.run(['oc', 'apply', '-f', 'olm/{:s}/elastic_search_subscription.yaml'.format(self.release)])
 
     def deploy_jaeger(self):
-        sp.run(['oc', 'apply', '-f', 'olm/jaeger_subscription.yaml'])
+        sp.run(['oc', 'apply', '-f', 'olm/{:s}/jaeger_subscription.yaml'.format(self.release)])
 
     def deploy_kiali(self):
-        sp.run(['oc', 'apply', '-f', 'olm/kiali_subscription.yaml'])
+        sp.run(['oc', 'apply', '-f', 'olm/{:s}/kiali_subscription.yaml'.format(self.release)])
 
     def deploy_istio(self):
-        sp.run(['oc', 'apply', '-f', 'olm/ossm_subscription.yaml'])
+        sp.run(['oc', 'apply', '-f', 'olm/{:s}/ossm_subscription.yaml'.format(self.release)])
 
     # TBD patch41 is a temporary patch method for OCP 4.1
     def patch41(self):
         proc = sp.run(['oc', 'get', 'clusterversion'], stdout=sp.PIPE, universal_newlines=True)
         if "4.1" in proc.stdout:
-            sp.run(['oc', 'patch', 'csc/redhat-operators', '-n', 'openshift-marketplace', '--type', 'merge',
+            sp.run(['oc', 'patch', 'csc/quay-maistraqe', '-n', 'openshift-marketplace', '--type', 'merge',
              '-p', r'{"spec":{"targetNamespace": "openshift-operators"}}'])
             sp.run(['oc', 'patch', 'subscription/elasticsearch-operator', '-n', self.namespace, '--type', 'merge',
              '-p', r'{"spec":{"sourceNamespace": "openshift-operators"}}'])
@@ -105,53 +116,20 @@ class Operator(object):
             sp.run(['oc', 'patch', 'subscription/servicemeshoperator', '-n', self.namespace, '--type', 'merge',
              '-p', r'{"spec":{"sourceNamespace": "openshift-operators"}}'])
 
-    def get_quay_yaml(self):
-        sp.run(['curl', '-o', 'ossm_operator.yaml', '-L',
-            "https://raw.githubusercontent.com/Maistra/istio-operator/{:s}/deploy/servicemesh-operator.yaml".format(self.maistra_branch)])
-
-        imageP1 = re.compile('image:.*istio-.*-operator.*')
-        imageP2 = re.compile('value:.*istio-cni-rhel8:.*')
-        imageP3 = re.compile('namespace:.*istio-operator')
-
-        with open('ossm_operator.yaml', 'r') as f:
-            lines = f.readlines()
-        with open('ossm_operator.yaml', 'w') as f:
-            for line in lines:
-                f.write(imageP1.sub("image: quay.io/maistra/istio-rhel8-operator:{:s}".format(self.maistra_tag), line))
-
-        with open('ossm_operator.yaml', 'r') as f:
-            lines = f.readlines()
-        with open('ossm_operator.yaml', 'w') as f:
-            for line in lines:
-                f.write(imageP2.sub("value: quay.io/maistra/istio-cni-rhel8:{:s}".format(self.maistra_tag), line))
-
-        with open('ossm_operator.yaml', 'r') as f:
-            lines = f.readlines()
-        with open('ossm_operator.yaml', 'w') as f:
-            for line in lines:
-                f.write(imageP3.sub("namespace: " + self.namespace, line))
-
-
-    def deploy_quay_istio(self):
-        self.get_quay_yaml()
-        sp.run(['oc', 'create', '-n', self.namespace, '-f', 'ossm_operator.yaml'])
-
-
-    def uninstall_quay_istio(self):
-        self.get_quay_yaml()
-        sp.run(['oc', 'delete', '-n', self.namespace, '-f', 'ossm_operator.yaml'])
-
     def uninstall(self):
         # delete subscription
-        sp.run(['oc', 'delete', '-f', 'olm/ossm_subscription.yaml'])
-        sp.run(['oc', 'delete', '-f', 'olm/kiali_subscription.yaml'])
-        sp.run(['oc', 'delete', '-f', 'olm/jaeger_subscription.yaml'])
-        sp.run(['oc', 'delete', '-f', 'olm/elastic_search_subscription.yaml'])
+        sp.run(['oc', 'delete', '-f', 'olm/{:s}/ossm_subscription.yaml'.format(self.release)])
+        sp.run(['oc', 'delete', '-f', 'olm/{:s}/kiali_subscription.yaml'.format(self.release)])
+        sp.run(['oc', 'delete', '-f', 'olm/{:s}/jaeger_subscription.yaml'.format(self.release)])
+        sp.run(['oc', 'delete', '-f', 'olm/{:s}/elastic_search_subscription.yaml'.format(self.release)])
         sp.run(['sleep', '10'])
 
         # delete all CSV
         sp.run(['oc', 'delete', 'csv', '-n', self.namespace, '--all'])
         sp.run(['sleep', '30'])
+
+    def uninstall_operator_source(self):
+        sp.run(['oc', 'delete', '-f', 'olm/operator_source.yaml'])
 
 
 class ControlPlane(object):
@@ -280,10 +258,12 @@ class ControlPlane(object):
             raise RuntimeError('Missing cr yaml file')
 
         sp.run(['oc', 'delete', '-n', self.namespace, '-f', self.smmr])
+        sp.run(['sleep', '40'])
         for ns in self.nslist:
             sp.run(['oc', 'delete', 'project', ns])
 
         sp.run(['oc', 'delete', '-n', self.namespace, '-f', cr_file])
+        sp.run(['sleep', '40'])
         sp.run(['oc', 'delete', 'project', self.namespace])
         print("Waiting 40 seconds...")
         sp.run(['sleep', '40'])

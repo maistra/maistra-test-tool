@@ -21,8 +21,9 @@ import (
 	"testing"
 	"time"
 
-	"istio.io/istio/pkg/log"
 	"maistra/util"
+
+	"istio.io/istio/pkg/log"
 )
 
 
@@ -37,7 +38,7 @@ func TestTrafficShifting(t *testing.T) {
 	defer cleanupTrafficShifting(testNamespace)
 	defer recoverPanic(t)
 
-	log.Infof("# Traffic Shifting")
+	log.Infof("# TestTrafficShifting")
 	deployBookinfo(testNamespace, false)
 	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
 
@@ -47,7 +48,7 @@ func TestTrafficShifting(t *testing.T) {
 	}
 	time.Sleep(time.Duration(waitTime) * time.Second)
 
-	t.Run("Shift_50_percent_v3_traffic", func(t *testing.T) {
+	t.Run("TrafficManagement_shift_50_percent_v3_traffic", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("# Traffic shifting 50 percent v1 and 50 percent v3, tolerance 10 percent")
@@ -104,7 +105,7 @@ func TestTrafficShifting(t *testing.T) {
 	})
 
 
-	t.Run("Shift_100_percent_v3_traffic", func(t *testing.T) {
+	t.Run("TrafficManagement_shift_100_percent_v3_traffic", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("# Traffic shifting 100 percent v3, tolerance 0 percent")

@@ -27,12 +27,12 @@ import (
 func cleanup23(namespace string, kubeconfig string) {
 	log.Infof("# Cleanup. Following error can be ignored...")
 	util.KubeDeleteContents(meshNamespace, rateLimitYaml, kubeconfig)
-	time.Sleep(time.Duration(30) * time.Second)
+	time.Sleep(time.Duration(10) * time.Second)
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
 	util.ShellSilent("rm -f /tmp/mesh.yaml")
 	cleanBookinfo(namespace, kubeconfig)
-	log.Info("Waiting for rules to be cleaned up. Sleep 20 seconds...")
-	time.Sleep(time.Duration(20) * time.Second)
+	log.Info("Waiting for rules to be cleaned up. Sleep 10 seconds...")
+	time.Sleep(time.Duration(10) * time.Second)
 }
 
 
@@ -72,11 +72,11 @@ func Test23(t *testing.T) {
 		util.KubeApply(testNamespace, bookinfoAllv1Yaml, kubeconfigFile)
 		util.KubeApplyContents(meshNamespace, rateLimitYaml, kubeconfigFile)
 		
-		log.Info("Sleep 90 seconds...")
-		time.Sleep(time.Duration(90) * time.Second)
+		log.Info("Sleep 20 seconds...")
+		time.Sleep(time.Duration(20) * time.Second)
 
 		log.Info("productpage permits 2 requests every 5 seconds. Verify 'Quota is exhausted' message")
-		for i := 0; i < 40; i++ {
+		for i := 0; i < 20; i++ {
 			resp, _, err := util.GetHTTPResponse(productpageURL, nil)
 			defer util.CloseResponseBody(resp)
 			util.Inspect(err, "failed to get HTTP Response", "", t)
@@ -89,7 +89,7 @@ func Test23(t *testing.T) {
 					"Success. Response matches with expected.",
 					t)
 
-			} else if i < 39{
+			} else if i < 19{
 				err = util.CompareHTTPResponse(body, "productpage-quota-exhausted.html")
 				if err != nil {
 					continue
@@ -122,8 +122,8 @@ func Test23(t *testing.T) {
 		log.Info("Conditional rate limits")
 		util.KubeApply(meshNamespace, rateLimitConditionalYaml, kubeconfigFile)
 		
-		log.Info("Sleep 50 seconds...")
-		time.Sleep(time.Duration(50) * time.Second)
+		log.Info("Sleep 20 seconds...")
+		time.Sleep(time.Duration(20) * time.Second)
 
 		log.Info("productpage permits 2 requests every 5 seconds. Verify 'Quota is exhausted' message. Login user jason should not see quota message")
 		

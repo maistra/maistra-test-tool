@@ -6,7 +6,7 @@ BASE_DIR="${DIR}/../"
 
 OC_COMMAND="oc"
 MESH="istio-system"
-TELEMETRY="testdata/telemetry/new_telemetry.yaml"
+TELEMETRY="testdata/bookinfo/telemetry/metrics.yaml"
 
 INGRESS_HOST="$(${OC_COMMAND} get routes -n ${MESH} -l app=istio-ingressgateway -o jsonpath='{.items[0].spec.host}')"
 PROMETHEUS_ROUTE="$(${OC_COMMAND} get routes -n ${MESH} -l app=prometheus -o jsonpath='{.items[0].spec.host}')"
@@ -55,15 +55,7 @@ function check_metrics() {
     echo "https://${PROMETHEUS_ROUTE}"
     echo "# Go to Prometheus Dashboard and query Execute 'istio_double_request_count'..."
     read -p "Press enter to continue: "
-    sleep 2
 
-    echo "# Verify logs stream has been created."
-    ${OC_COMMAND} -n ${MESH} logs \
-        $(${OC_COMMAND} -n ${MESH} get pods -l istio-mixer-type=telemetry -o jsonpath='{.items[0].metadata.name}') \
-        -c mixer | grep \"instance\":\"newlog.logentry.${MESH}\"
-    echo
-    echo "# Check logs stream..."
-    read -p "Press enter to continue: "
 }
 
 function main() {

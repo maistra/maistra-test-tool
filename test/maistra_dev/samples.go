@@ -54,7 +54,10 @@ const (
 
 	nginxYaml          		= "samples/https/nginx-app.yaml"
 	nginxNoSidecarYaml 		= "samples/https/nginx-app-without-sidecar.yaml"
-	
+
+	nginxServerCertKey 		= "samples/certs/nginx.example.com/3_application/private/nginx.example.com.key.pem"
+	nginxServerCert			= "samples/certs/nginx.example.com/3_application/certs/nginx.example.com.cert.pem"
+	nginxServerCACert		= "samples/certs/nginx.example.com/2_intermediate/certs/ca-chain.cert.pem"
 
 	kubeconfig 				= ""
 	testNamespace 			= "bookinfo"
@@ -63,13 +66,13 @@ const (
 	// KIND
 	//gatewayHTTP 			= "localhost:8001/api/v1/namespaces/istio-system/services/istio-ingressgateway:80/proxy"
 	
-	meshNamespace 			= "service-mesh-1"
+	meshNamespace 			= "istio-system"
+	smcpName				= "basic-install"
 
 )
 
 var (
 	// OCP4.x
 	gatewayHTTP, _ = util.ShellSilent("kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'", meshNamespace)
-	secureIngressPort, _ = util.GetSecureIngressPort(meshNamespace, "istio-ingressgateway", kubeconfig)
-
+	secureIngressPort, _ = util.ShellSilent("kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"https\")].port}'", meshNamespace, "istio-ingressgateway")
 )

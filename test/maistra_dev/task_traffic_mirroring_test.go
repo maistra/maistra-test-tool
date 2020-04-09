@@ -19,8 +19,9 @@ import (
 	"testing"
 	"time"
 
-	"istio.io/istio/pkg/log"
 	"maistra/util"
+
+	"istio.io/istio/pkg/log"
 )
 
 
@@ -39,7 +40,7 @@ func TestMirroring(t *testing.T) {
 	defer cleanupMirroring(testNamespace)
 	defer recoverPanic(t)
 
-	log.Info("# Mirroring")
+	log.Info("# TestMirroring")
 	if err := util.KubeApplyContents(testNamespace, httpbinv1, kubeconfig); err != nil {
 		t.Errorf("Failed to deploy httpbin v1")
 		log.Errorf("Failed to deploy httpbin v1")
@@ -64,7 +65,7 @@ func TestMirroring(t *testing.T) {
 	util.CheckPodRunning(testNamespace, "app=sleep", kubeconfig)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 
-	t.Run("Creating_a_default_routing_policy", func(t *testing.T) {
+	t.Run("TrafficManagement_creating_a_default_routing_policy", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		/*
@@ -99,7 +100,7 @@ func TestMirroring(t *testing.T) {
 		}
 	})
 
-	t.Run("Mirroring_traffic_to_v2", func(t *testing.T) {
+	t.Run("TrafficManagement_mirroring_traffic_to_v2", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		if err := util.KubeApplyContents(testNamespace, httpbinMirrorv2, kubeconfig); err != nil {
