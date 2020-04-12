@@ -68,6 +68,7 @@ class Puller(object):
         if proc.returncode != 0:
             raise RuntimeError('Missing oc client')
 
+        sp.run(['go', 'get', 'github.com/knrc/registry-puller/cmd'])
         sp.run(['oc', 'new-project', 'registry-puller'])
         sp.run(['oc', 'create', 'configmap', '-n', 'registry-puller', 'registry-secret', '--from-file=' + self.secret_file])
         os.chdir(self.savedPath)
