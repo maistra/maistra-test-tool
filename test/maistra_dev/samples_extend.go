@@ -560,6 +560,57 @@ spec:
         imagePullPolicy: IfNotPresent
 `
 
+sleepNginx = `
+apiVersion: v1
+kind: Service
+metadata:
+  name: sleep
+  labels:
+    app: sleep
+spec:
+  ports:
+  - port: 80
+    name: http
+  selector:
+    app: sleep
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sleep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sleep
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+      labels:
+        app: sleep
+    spec:
+      containers:
+      - name: sleep
+        image: tutum/curl
+        command: ["/bin/sleep","infinity"]
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: nginx-client-certs
+          mountPath: /etc/nginx-client-certs
+          readOnly: true
+        - name: nginx-ca-certs
+          mountPath: /etc/nginx-ca-certs
+          readOnly: true
+      volumes:
+      - name: nginx-client-certs
+        secret:
+          secretName: nginx-client-certs
+      - name: nginx-ca-certs
+        secret:
+          secretName: nginx-ca-certs
+`
+
 clientRule = `
 apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
@@ -621,6 +672,102 @@ spec:
       - name: nginx-server-certs
         secret:
           secretName: nginx-server-certs
+`
+
+nginxSSLServer = `
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-nginx
+  labels:
+    run: my-nginx
+spec:
+  ports:
+  - port: 443
+    protocol: TCP
+  selector:
+    run: my-nginx
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  selector:
+    matchLabels:
+      run: my-nginx
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+      labels:
+        run: my-nginx
+    spec:
+      containers:
+      - name: my-nginx
+        image: nginx
+        ports:
+        - containerPort: 443
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx
+          readOnly: true
+        - name: nginx-server-certs
+          mountPath: /etc/nginx-server-certs
+          readOnly: true
+        - name: nginx-ca-certs
+          mountPath: /etc/nginx-ca-certs
+          readOnly: true
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-configmap
+      - name: nginx-server-certs
+        secret:
+          secretName: nginx-server-certs
+      - name: nginx-ca-certs
+        secret:
+          secretName: nginx-ca-certs
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: nginx
+spec:
+  hosts:
+  - nginx.example.com
+  ports:
+  - number: 80
+    name: http
+    protocol: HTTP
+  - number: 443
+    name: https
+    protocol: HTTPS
+  resolution: DNS
+  endpoints:
+  - address: my-nginx.bookinfo.svc.cluster.local
+    ports:
+      https: 443
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: nginx
+spec:
+  hosts:
+  - nginx.example.com
+  tls:
+  - match:
+    - port: 443
+      sni_hosts:
+      - nginx.example.com
+    route:
+    - destination:
+        host: nginx.example.com
+        port:
+          number: 443
+      weight: 100
 `
 
 nginxIngressGateway = `
@@ -1142,6 +1289,200 @@ spec:
         port:
           number: 443
       weight: 100
+`
+
+cnnextGatewayTLSOrigination = `
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: cnn
+spec:
+  hosts:
+  - edition.cnn.com
+  ports:
+  - number: 80
+    name: http
+    protocol: HTTP
+  - number: 443
+    name: https
+    protocol: HTTPS
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: istio-egressgateway
+spec:
+  selector:
+    istio: egressgateway
+  servers:
+  - port:
+      number: 80
+      name: http-port-for-tls-origination
+      protocol: HTTP
+    hosts:
+    - edition.cnn.com
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: egressgateway-for-cnn
+spec:
+  host: istio-egressgateway.istio-system.svc.cluster.local
+  subsets:
+  - name: cnn
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: direct-cnn-through-egress-gateway
+spec:
+  hosts:
+  - edition.cnn.com
+  gateways:
+  - istio-egressgateway
+  - mesh
+  http:
+  - match:
+    - gateways:
+      - mesh
+      port: 80
+    route:
+    - destination:
+        host: istio-egressgateway.istio-system.svc.cluster.local
+        subset: cnn
+        port:
+          number: 80
+      weight: 100
+  - match:
+    - gateways:
+      - istio-egressgateway
+      port: 80
+    route:
+    - destination:
+        host: edition.cnn.com
+        port:
+          number: 443
+      weight: 100
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: originate-tls-for-edition-cnn-com
+spec:
+  host: edition.cnn.com
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    portLevelSettings:
+    - port:
+        number: 443
+      tls:
+        mode: SIMPLE # initiates HTTPS for connections to edition.cnn.com
+`
+
+cnnextGatewayTLSOriginationMTLS = `
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: cnn
+spec:
+  hosts:
+  - edition.cnn.com
+  ports:
+  - number: 80
+    name: http
+    protocol: HTTP
+  - number: 443
+    name: https
+    protocol: HTTPS
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: istio-egressgateway
+spec:
+  selector:
+    istio: egressgateway
+  servers:
+  - port:
+      number: 80
+      name: https
+      protocol: HTTPS
+    hosts:
+    - edition.cnn.com
+    tls:
+      mode: MUTUAL
+      serverCertificate: /etc/certs/cert-chain.pem
+      privateKey: /etc/certs/key.pem
+      caCertificates: /etc/certs/root-cert.pem
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: egressgateway-for-cnn
+spec:
+  host: istio-egressgateway.istio-system.svc.cluster.local
+  subsets:
+  - name: cnn
+    trafficPolicy:
+      loadBalancer:
+        simple: ROUND_ROBIN
+      portLevelSettings:
+      - port:
+          number: 80
+        tls:
+          mode: ISTIO_MUTUAL
+          sni: edition.cnn.com
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: direct-cnn-through-egress-gateway
+spec:
+  hosts:
+  - edition.cnn.com
+  gateways:
+  - istio-egressgateway
+  - mesh
+  http:
+  - match:
+    - gateways:
+      - mesh
+      port: 80
+    route:
+    - destination:
+        host: istio-egressgateway.istio-system.svc.cluster.local
+        subset: cnn
+        port:
+          number: 80
+      weight: 100
+  - match:
+    - gateways:
+      - istio-egressgateway
+      port: 80
+    route:
+    - destination:
+        host: edition.cnn.com
+        port:
+          number: 443
+      weight: 100
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: originate-tls-for-edition-cnn-com
+spec:
+  host: edition.cnn.com
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    portLevelSettings:
+    - port:
+        number: 443
+      tls:
+        mode: SIMPLE # initiates HTTPS for connections to edition.cnn.com
 `
 
 
