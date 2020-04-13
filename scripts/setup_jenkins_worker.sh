@@ -58,14 +58,3 @@ echo 'export PATH="$PATH:$HOME/bin/go/bin:$GOPATH/bin"' >> $HOME/.bashrc
 exec "$SHELL"
 
 go version
-
-git clone https://github.com/pyenv/pyenv.git $HOME/.pyenv
-
-echo 'export PYENV_ROOT="$HOME/.pyenv"' >> $HOME/.bashrc
-echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> $HOME/.bashrc
-echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nfi' >> $HOME/.bashrc
-exec "$SHELL"
-
-pyenv install 3.7.3
-pyenv local 3.7.3
-pyenv version
