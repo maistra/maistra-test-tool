@@ -1,19 +1,16 @@
 # Maistra OpenShift Istio Test Tool
 
-[![](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat)](https://github.com/yxun/moitt/blob/master/LICENSE)
-[![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg?style=flat)](https://www.python.org/downloads/release/python-370/)
-[![](https://goreportcard.com/badge/github.com/yxun/moitt)](https://goreportcard.com/report/github.com/yxun/moitt)
-![](https://img.shields.io/github/repo-size/yxun/moitt.svg?style=flat)
+[![](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat)](https://github.com/Maistra/istio-test-tool/blob/master/LICENSE)
+[![](https://goreportcard.com/badge/github.com/Maistra/istio-test-tool)](https://goreportcard.com/report/github.com/Maistra/istio-test-tool)
+![](https://img.shields.io/github/repo-size/Maistra/istio-test-tool.svg?style=flat)
 
 A testing tool for running Istio Doc tasks on AWS OpenShift 4.x cluster. 
 
 ## Introduction
 
-This project aims to automate installation/uninstallation and testing of  Maistra Istio system on an AWS OpenShift 4.x Cluster.
+This project aims to automate the running Maistra Istio Doc tasks on an AWS OpenShift 4.x Cluster.
 
-The installation/uninstallation follows [OpenShift Installer](https://github.com/openshift/installer) and [Maistra istio-operator](https://github.com/Maistra/istio-operator). 
-
-The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/).
+The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/) and [Maistra Doc](https://maistra-1-1.maistra.io/).
 
 
 ## Versions
@@ -22,84 +19,17 @@ The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/).
 | --        | --            |
 | OS        | Fedora 28+    |
 | Golang    | 1.13+         |
-| Python    | 3.7+          |
-| Docker    | 18.09+        |
-
-
-## Installation
-
-### 1. Prepare 
-
-* It is generally recommended to install packages in a virtual environment
-
-```shell
-$ python3 -m venv .env
-$ source .env/bin/activate
-(.env) $ pip install -r requirements.txt
-
-```
-
-* Prepare aws configuration files or configure them from `awscli`
-* Save OpenShift Pull Secret content and we need that in running openshift-installer.
-* Download your Istio private registry pull secret and create a file called "`secret.yaml`"
-
-
-### 2. Environment Variables
-
-| Name        | Description |
-| ----------- | ----------- |
-| AWS_PROFILE | AWS profile name |
-| PULL_SEC    | Istio private registry pull secret.yaml file path |
-| CR_FILE     | Istio ControlPlane CR file path  |
-
-* Export the environment variables (See the table above) with their values.
-
-
-### 3. OCP/AWS
-* Go to directory "`install`".
-* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -c ocp -d ./assets -v 4.2.2`" will install an OCP 4.2.2 cluster on AWS. 
-* After `Deploying the cluster...` starts, follow the prompts.
-  * Select a SSH public key
-  * Select Platform > aws
-  * Select a Region
-  * Select a Base Domain
-  * Create a Cluster Name
-  * Paste the Pull Secret content ( This Pull Secret content is different from the environment variable `PULL_SEC` )
-* Waiting for the cluster creation completes. It usually takes 40 - 50 minutes.
-
-
-    When OCP installation compeleted, you should see INFO message "Install complete".
-
-### 4. (Optional) [registry-puller](https://github.com/knrc/registry-puller)
-* If you need to pull images from a private registry, install this registry-puller tool on an OCP cluster first. 
-* Go to directory "`install`"
-* Run "`python main.py -h`" and follow arguments help message. e.g. "`python main.py -i -c registry-puller -d ./assets`" will deploy the registry-puller pod in registry-puller namespace.
-
-
-### 5. Maistra/Istio
-* Go to directory "`install`"
-* Run "`python main -h`" and follow arguments help message. e.g. "`python main.py -i -c istio -d ./assets`" will install the Elastic Search, Jaeger, Kiali, Istio Operators from OpenShift OLM OperatorHub. After operators are running, a service mesh control plane and a memeber roll will be created.
-* If user need to deploy the latest istio operator from quay.io private registry. Run the above python script with an additional argument `-q`. e.g. "`python main.py -i -c istio -d ./assets -q`".
-* Waiting for the service mesh control plane installation completes. It usually takes 10 - 15 minutes.
-
-    When service mesh control plane installation completed, you should see message "Installed=True, reason=InstallSuccessful"
 
 
 ## Testing Prerequisite
 
-* Istio system has been installed on an OpenShift cluster.
-* Login the OCP cluster.
+* Maistra istio system has been installed on an OpenShift OCP4 cluster.
+* Completed login the OCP cluster.
 
 
 ## Testing
 
-Go to directory "`test/maistra`" 
-- To run all the test cases (End-to-End run): `go test -timeout 2h -v`
-
-## Uninstallation
-
-* Follow the [Installation](https://github.com/Maistra/istio-test-tool#installation) section and replace argument `-i` with `-u` for each component.
-* If user need to uninstall the latest istio operator which was deployed from quay.io private registry. Run the above python script with an additional argument `-q`. e.g. "`python main.py -u -c istio -d ./assets -q`".
+- To run all the test cases (End-to-End run): `go test -timeout 3h -v`
 
 ## License
 
