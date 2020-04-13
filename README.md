@@ -1,8 +1,9 @@
 # Maistra OpenShift Istio Test Tool
 
 [![](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat)](https://github.com/Maistra/istio-test-tool/blob/master/LICENSE)
-[![](https://goreportcard.com/badge/github.com/Maistra/istio-test-tool)](https://goreportcard.com/report/github.com/Maistra/istio-test-tool)
 ![](https://img.shields.io/github/repo-size/Maistra/istio-test-tool.svg?style=flat)
+[![](https://goreportcard.com/badge/github.com/Maistra/istio-test-tool)](https://goreportcard.com/report/github.com/Maistra/istio-test-tool)
+
 
 A testing tool for running Istio Doc tasks on AWS OpenShift 4.x cluster. 
 
