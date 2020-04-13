@@ -33,8 +33,6 @@ import (
 	"istio.io/istio/pkg/log"
 )
 
-
-
 // WriteTextFile overwrites the file on the given path with content
 func WriteTextFile(filePath, content string) error {
 	if len(content) > 0 && content[len(content)-1] != '\n' {
@@ -254,8 +252,6 @@ func CopyFile(src, dst string) error {
 	err = out.Sync()
 	return err
 }
-
-
 
 // ExtractTarGz extracts a .tar.gz file into current dir.
 func ExtractTarGz(gzipStream io.Reader) error {

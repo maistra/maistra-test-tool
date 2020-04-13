@@ -15,8 +15,7 @@
 package main
 
 const (
-
-ratingsDelay2 = `
+	ratingsDelay2 = `
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
@@ -49,7 +48,7 @@ spec:
         subset: v1
 `
 
-reviewTimeout = `
+	reviewTimeout = `
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
@@ -65,7 +64,7 @@ spec:
     timeout: 0.5s
 `
 
-httpbinCircuitBreaker = `
+	httpbinCircuitBreaker = `
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
@@ -86,7 +85,7 @@ spec:
       maxEjectionPercent: 100
 `
 
-httpbinCircuitBreakerMTLS = `
+	httpbinCircuitBreakerMTLS = `
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
@@ -109,8 +108,7 @@ spec:
       maxEjectionPercent: 100
 `
 
-
-httpbinv1 = `
+	httpbinv1 = `
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -138,7 +136,7 @@ spec:
         - containerPort: 8080
 `
 
-httpbinv2 = `
+	httpbinv2 = `
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -166,7 +164,7 @@ spec:
         - containerPort: 8080
 `
 
-httpbinService = `
+	httpbinService = `
 apiVersion: v1
 kind: Service
 metadata:
@@ -181,7 +179,7 @@ spec:
     app: httpbin
 `
 
-httpbinAllv1 = `
+	httpbinAllv1 = `
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
@@ -211,7 +209,7 @@ spec:
       version: v2
 `
 
-httpbinAllv1MTLS = `
+	httpbinAllv1MTLS = `
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
@@ -244,7 +242,7 @@ spec:
       version: v2
 `
 
-httpbinMirrorv2 = `
+	httpbinMirrorv2 = `
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
@@ -263,7 +261,7 @@ spec:
       subset: v2
 `
 
-httpbinGateway1 = `
+	httpbinGateway1 = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -301,7 +299,7 @@ spec:
         host: httpbin
 `
 
-httpbinOCPRoute = `
+	httpbinOCPRoute = `
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -315,7 +313,7 @@ spec:
     name: istio-ingressgateway
 `
 
-httpbinGateway2 = `
+	httpbinGateway2 = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -351,7 +349,7 @@ spec:
         host: httpbin
 `
 
-httpbinGatewayHTTPS = `
+	httpbinGatewayHTTPS = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -393,7 +391,7 @@ spec:
         host: httpbin
 `
 
-httpbinOCPRouteHTTPS = `
+	httpbinOCPRouteHTTPS = `
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -409,7 +407,7 @@ spec:
     termination: passthrough
 `
 
-bookinfoOCPRouteHTTPS = `
+	bookinfoOCPRouteHTTPS = `
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -425,7 +423,7 @@ spec:
     termination: passthrough
 `
 
-bookinfoGatewayHTTPS = `
+	bookinfoGatewayHTTPS = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -471,7 +469,7 @@ spec:
           number: 9080
 `
 
-httpbinGatewayMTLS = `
+	httpbinGatewayMTLS = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -493,7 +491,7 @@ spec:
     - "httpbin.example.com"
 `
 
-gatewayPatchJSON = `
+	gatewayPatchJSON = `
 [{
   "op": "add",
   "path": "/spec/template/spec/containers/0/volumeMounts/0",
@@ -516,7 +514,7 @@ gatewayPatchJSON = `
 }]
 `
 
-sleepv2 = `
+	sleepv2 = `
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -545,7 +543,7 @@ spec:
         imagePullPolicy: IfNotPresent
 `
 
-sleepNginx = `
+	sleepNginx = `
 apiVersion: v1
 kind: Service
 metadata:
@@ -596,7 +594,7 @@ spec:
           secretName: nginx-ca-certs
 `
 
-nginxServer = `
+	nginxServer = `
 apiVersion: v1
 kind: Service
 metadata:
@@ -647,7 +645,7 @@ spec:
           secretName: nginx-server-certs
 `
 
-nginxSSLServer = `
+	nginxSSLServer = `
 apiVersion: v1
 kind: Service
 metadata:
@@ -743,7 +741,7 @@ spec:
       weight: 100
 `
 
-nginxIngressGateway = `
+	nginxIngressGateway = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -782,7 +780,7 @@ spec:
           number: 443
 `
 
-nginxOCPRouteHTTPS = `
+	nginxOCPRouteHTTPS = `
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -798,7 +796,7 @@ spec:
     termination: passthrough
 `
 
-httbinextServiceEntry = `
+	httbinextServiceEntry = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
@@ -814,7 +812,7 @@ spec:
   location: MESH_EXTERNAL
 `
 
-googleextServiceEntry = `
+	googleextServiceEntry = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
@@ -830,7 +828,7 @@ spec:
   location: MESH_EXTERNAL
 `
 
-httpbinextTimeout = `
+	httpbinextTimeout = `
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
@@ -846,7 +844,7 @@ spec:
         weight: 100
 `
 
-cnnextServiceEntry = `
+	cnnextServiceEntry = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
@@ -883,7 +881,7 @@ spec:
       weight: 100
 `
 
-cnnextServiceEntryTLS = `
+	cnnextServiceEntryTLS = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
@@ -935,7 +933,7 @@ spec:
           mode: SIMPLE # initiates HTTPS when accessing edition.cnn.com
 `
 
-cnnextGateway = `
+	cnnextGateway = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
@@ -1010,7 +1008,7 @@ spec:
       weight: 100
 `
 
-cnnextGatewayMTLS = `
+	cnnextGatewayMTLS = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
@@ -1099,7 +1097,7 @@ spec:
       weight: 100
 `
 
-cnnextGatewayHTTPS = `
+	cnnextGatewayHTTPS = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
@@ -1176,7 +1174,7 @@ spec:
       weight: 100
 `
 
-cnnextGatewayHTTPSMTLS = `
+	cnnextGatewayHTTPSMTLS = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
@@ -1264,7 +1262,7 @@ spec:
       weight: 100
 `
 
-cnnextGatewayTLSOrigination = `
+	cnnextGatewayTLSOrigination = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
@@ -1354,7 +1352,7 @@ spec:
         mode: SIMPLE # initiates HTTPS for connections to edition.cnn.com
 `
 
-cnnextGatewayTLSOriginationMTLS = `
+	cnnextGatewayTLSOriginationMTLS = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
@@ -1458,7 +1456,7 @@ spec:
         mode: SIMPLE # initiates HTTPS for connections to edition.cnn.com
 `
 
-clientRule = `
+	clientRule = `
 apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
 metadata:
@@ -1470,7 +1468,7 @@ spec:
       mode: ISTIO_MUTUAL
 `
 
-legacyRule = `
+	legacyRule = `
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
@@ -1483,7 +1481,7 @@ spec:
      mode: DISABLE
 `
 
-fooPolicy = `
+	fooPolicy = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"
 metadata:
@@ -1494,7 +1492,7 @@ spec:
   - mtls: {}
 `
 
-fooRule = `
+	fooRule = `
 apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
 metadata:
@@ -1507,7 +1505,7 @@ spec:
       mode: ISTIO_MUTUAL
 `
 
-barPolicy = `
+	barPolicy = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"
 metadata:
@@ -1520,7 +1518,7 @@ spec:
   - mtls: {}
 `
 
-barRule = `
+	barRule = `
 apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
 metadata:
@@ -1533,7 +1531,7 @@ spec:
       mode: ISTIO_MUTUAL
 `
 
-barPortPolicy = `
+	barPortPolicy = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"
 metadata:
@@ -1548,7 +1546,7 @@ spec:
   - mtls: {}
 `
 
-barPortRule = `
+	barPortRule = `
 apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
 metadata:
@@ -1566,7 +1564,7 @@ spec:
         mode: ISTIO_MUTUAL
 `
 
-fooPolicyOverwrite = `
+	fooPolicyOverwrite = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"
 metadata:
@@ -1577,7 +1575,7 @@ spec:
   - name: httpbin
 `
 
-fooRuleOverwrite = `
+	fooRuleOverwrite = `
 apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
 metadata:
@@ -1590,7 +1588,7 @@ spec:
       mode: DISABLE
 `
 
-fooGateway = `
+	fooGateway = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -1608,7 +1606,7 @@ spec:
     - "*"
 `
 
-fooVS = `
+	fooVS = `
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
@@ -1627,7 +1625,7 @@ spec:
         host: httpbin.foo.svc.cluster.local
 `
 
-fooJWTPolicy = `
+	fooJWTPolicy = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"
 metadata:
@@ -1643,7 +1641,7 @@ spec:
   principalBinding: USE_ORIGIN
 `
 
-fooJWTUserAgentPolicy = `
+	fooJWTUserAgentPolicy = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"
 metadata:
@@ -1662,7 +1660,7 @@ spec:
   principalBinding: USE_ORIGIN
 `
 
-fooJWTIPPolicy = `
+	fooJWTIPPolicy = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"
 metadata:
@@ -1681,7 +1679,7 @@ spec:
   principalBinding: USE_ORIGIN
 `
 
-fooJWTMTLSPolicy = `
+	fooJWTMTLSPolicy = `
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"
 metadata:
@@ -1699,7 +1697,7 @@ spec:
   principalBinding: USE_ORIGIN
 `
 
-fooMTLSRule = `
+	fooMTLSRule = `
 apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
 metadata:
@@ -1711,6 +1709,4 @@ spec:
     tls:
       mode: ISTIO_MUTUAL
 `
-
-
 )

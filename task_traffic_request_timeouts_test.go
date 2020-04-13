@@ -25,7 +25,6 @@ import (
 	"istio.io/istio/pkg/log"
 )
 
-
 func cleanupRequestTimeouts(namespace string) {
 	log.Info("# Cleanup ...")
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
@@ -45,7 +44,7 @@ func TestRequestTimeouts(t *testing.T) {
 		t.Errorf("Failed to route traffic to all v1")
 		log.Errorf("Failed to route traffic to all v1")
 	}
-	
+
 	if err := util.KubeApplyContents(testNamespace, ratingsDelay2, kubeconfig); err != nil {
 		t.Errorf("Failed to inject delay")
 		log.Errorf("Failed to inject delay")

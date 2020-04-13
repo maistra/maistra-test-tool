@@ -20,10 +20,9 @@ import (
 	"testing"
 	"time"
 
-	"maistra/util"
 	"istio.io/istio/pkg/log"
+	"maistra/util"
 )
-
 
 func cleanupRequestRouting(namespace string) {
 	log.Info("# Cleanup ...")
@@ -39,7 +38,7 @@ func TestRequestRouting(t *testing.T) {
 	log.Infof("# TestRequestRouting")
 	deployBookinfo(testNamespace, false)
 	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
-	testUserJar := util.GetCookieJar(testUsername, "", "http://"+ gatewayHTTP)
+	testUserJar := util.GetCookieJar(testUsername, "", "http://"+gatewayHTTP)
 
 	t.Run("TrafficManagement_test_the_new_routing_configuration", func(t *testing.T) {
 		defer recoverPanic(t)

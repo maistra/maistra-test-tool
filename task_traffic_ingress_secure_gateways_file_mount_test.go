@@ -25,13 +25,12 @@ import (
 	"istio.io/istio/pkg/log"
 )
 
-
 func cleanupIngressGatewaysFileMount(namespace string) {
 	log.Info("# Cleanup ...")
 
 	//util.KubeDeleteContents(meshNamespace, bookinfoOCPRouteHTTPS, kubeconfig)
 	util.KubeDeleteContents(meshNamespace, httpbinOCPRouteHTTPS, kubeconfig)
-	util.KubeDeleteContents(namespace, httpbinGatewayHTTPS, kubeconfig)	
+	util.KubeDeleteContents(namespace, httpbinGatewayHTTPS, kubeconfig)
 	util.ShellMuteOutput("kubectl delete secret %s -n %s", "istio-ingressgateway-certs", meshNamespace)
 	util.ShellMuteOutput("kubectl delete secret %s -n %s", "istio-ingressgateway-ca-certs", meshNamespace)
 	//util.ShellMuteOutput("kubectl delete secret %s -n %s", "istio-ingressgateway-bookinfo-certs", meshNamespace)
@@ -73,7 +72,7 @@ func TestIngressGatewaysFileMount(t *testing.T) {
 	// OCP4 Route
 	util.KubeApplyContents(meshNamespace, httpbinOCPRouteHTTPS, kubeconfig)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
-	
+
 	t.Run("TrafficManagement_ingress_general_tls_test", func(t *testing.T) {
 		defer recoverPanic(t)
 
@@ -99,7 +98,7 @@ func TestIngressGatewaysFileMount(t *testing.T) {
 		log.Info("Configure Mutual TLS Gateway")
 		// create ca secret
 		_, err := util.ShellMuteOutput("kubectl create secret generic %s --from-file %s -n %s --kubeconfig=%s",
-		"istio-ingressgateway-ca-certs", httpbinSampleCACert, meshNamespace, kubeconfig)
+			"istio-ingressgateway-ca-certs", httpbinSampleCACert, meshNamespace, kubeconfig)
 		if err != nil {
 			log.Infof("Failed to create secret %s\n", "istio-ingressgateway-ca-certs")
 			t.Errorf("Failed to create secret %s\n", "istio-ingressgateway-ca-certs")
@@ -153,71 +152,71 @@ func TestIngressGatewaysFileMount(t *testing.T) {
 	})
 
 	/*
-	t.Run("TrafficManagement_ingress_multiple_hosts_tls_test", func(t *testing.T) {
-		defer recoverPanic(t)
+		t.Run("TrafficManagement_ingress_multiple_hosts_tls_test", func(t *testing.T) {
+			defer recoverPanic(t)
 
-		log.Info("Configure multiple hosts Gateway")
-		if _, err := util.CreateTLSSecret("istio-ingressgateway-bookinfo-certs", meshNamespace, bookinfoServerCertKey, bookinfoServerCert, kubeconfig); err != nil {
-			t.Errorf("Failed to create secret %s\n", "istio-ingressgateway-bookinfo-certs")
-			log.Infof("Failed to create secret %s\n", "istio-ingressgateway-bookinfo-certs")
-		}
+			log.Info("Configure multiple hosts Gateway")
+			if _, err := util.CreateTLSSecret("istio-ingressgateway-bookinfo-certs", meshNamespace, bookinfoServerCertKey, bookinfoServerCert, kubeconfig); err != nil {
+				t.Errorf("Failed to create secret %s\n", "istio-ingressgateway-bookinfo-certs")
+				log.Infof("Failed to create secret %s\n", "istio-ingressgateway-bookinfo-certs")
+			}
 
-		// config https gateway
+			// config https gateway
 
 
-		// verify gateway
-		msg, err = util.ShellSilent("kubectl exec -i -n %s $(kubectl -n %s get pods -l istio=ingressgateway -o jsonpath='{.items[0].metadata.name}') -- %s",
-			meshNamespace, meshNamespace, "ls -al /etc/istio/ingressgateway-bookinfo-certs | grep tls.crt")
-		for err != nil {
+			// verify gateway
 			msg, err = util.ShellSilent("kubectl exec -i -n %s $(kubectl -n %s get pods -l istio=ingressgateway -o jsonpath='{.items[0].metadata.name}') -- %s",
 				meshNamespace, meshNamespace, "ls -al /etc/istio/ingressgateway-bookinfo-certs | grep tls.crt")
-			time.Sleep(time.Duration(waitTime*2) * time.Second)
-		}
-		log.Infof("Secret %s created: %s\n", "istio-ingressgateway-bookinfo-certs", msg)
+			for err != nil {
+				msg, err = util.ShellSilent("kubectl exec -i -n %s $(kubectl -n %s get pods -l istio=ingressgateway -o jsonpath='{.items[0].metadata.name}') -- %s",
+					meshNamespace, meshNamespace, "ls -al /etc/istio/ingressgateway-bookinfo-certs | grep tls.crt")
+				time.Sleep(time.Duration(waitTime*2) * time.Second)
+			}
+			log.Infof("Secret %s created: %s\n", "istio-ingressgateway-bookinfo-certs", msg)
 
-		// OCP4 Route
-		util.KubeApplyContents(meshNamespace, bookinfoOCPRouteHTTPS, kubeconfig)
-		time.Sleep(time.Duration(waitTime*4) * time.Second)
+			// OCP4 Route
+			util.KubeApplyContents(meshNamespace, bookinfoOCPRouteHTTPS, kubeconfig)
+			time.Sleep(time.Duration(waitTime*4) * time.Second)
 
-		// deploy bookinfo
-		deployBookinfo(testNamespace, true)
-		if err = util.KubeApplyContents(meshNamespace, bookinfoGatewayHTTPS, kubeconfig); err != nil {
-			t.Errorf("Failed to configure bookinfo gateway https")
-			log.Errorf("Failed to configure bookinfo gateway https")
-		}
-		time.Sleep(time.Duration(waitTime*4) * time.Second)
+			// deploy bookinfo
+			deployBookinfo(testNamespace, true)
+			if err = util.KubeApplyContents(meshNamespace, bookinfoGatewayHTTPS, kubeconfig); err != nil {
+				t.Errorf("Failed to configure bookinfo gateway https")
+				log.Errorf("Failed to configure bookinfo gateway https")
+			}
+			time.Sleep(time.Duration(waitTime*4) * time.Second)
 
-		// send a request to bookinfo productpage
-		log.Info("Check SSL bookinfo productpage")
-		url := "https://bookinfo.com:" + secureIngressPort + "/productpage"
-		resp, err := curlWithCA(url, gatewayHTTP, secureIngressPort, "bookinfo.com", bookinfoSampleCACert)
-		defer util.CloseResponseBody(resp)
-		util.Inspect(err, "Failed to get response", "", t)
-		bodyByte, err := ioutil.ReadAll(resp.Body)
-		util.Inspect(err, "Failed to read response body", "", t)
-		if strings.Contains(string(bodyByte), "200") {
-			log.Info(string(bodyByte))
-		} else {
-			t.Errorf("Failed to get productpage: %v", string(bodyByte))
-			log.Info(string(bodyByte))
-		}
+			// send a request to bookinfo productpage
+			log.Info("Check SSL bookinfo productpage")
+			url := "https://bookinfo.com:" + secureIngressPort + "/productpage"
+			resp, err := curlWithCA(url, gatewayHTTP, secureIngressPort, "bookinfo.com", bookinfoSampleCACert)
+			defer util.CloseResponseBody(resp)
+			util.Inspect(err, "Failed to get response", "", t)
+			bodyByte, err := ioutil.ReadAll(resp.Body)
+			util.Inspect(err, "Failed to read response body", "", t)
+			if strings.Contains(string(bodyByte), "200") {
+				log.Info(string(bodyByte))
+			} else {
+				t.Errorf("Failed to get productpage: %v", string(bodyByte))
+				log.Info(string(bodyByte))
+			}
 
-		// verify httpbin.example.com
-		log.Info("Check SSL return a teapot")
-		url = "https://httpbin.example.com:" + secureIngressPort + "/status/418"
-		resp, err = curlWithCAClient(url, gatewayHTTP, secureIngressPort, "httpbin.example.com",
-			httpbinSampleCACert, httpbinSampleClientCert, httpbinSampleClientCertKey)
-		defer util.CloseResponseBody(resp)
-		util.Inspect(err, "Failed to get response", "", t)
-		bodyByte, err = ioutil.ReadAll(resp.Body)
-		util.Inspect(err, "Failed to read response body", "", t)
+			// verify httpbin.example.com
+			log.Info("Check SSL return a teapot")
+			url = "https://httpbin.example.com:" + secureIngressPort + "/status/418"
+			resp, err = curlWithCAClient(url, gatewayHTTP, secureIngressPort, "httpbin.example.com",
+				httpbinSampleCACert, httpbinSampleClientCert, httpbinSampleClientCertKey)
+			defer util.CloseResponseBody(resp)
+			util.Inspect(err, "Failed to get response", "", t)
+			bodyByte, err = ioutil.ReadAll(resp.Body)
+			util.Inspect(err, "Failed to read response body", "", t)
 
-		if strings.Contains(string(bodyByte), "-=[ teapot ]=-") {
-			log.Info(string(bodyByte))
-		} else {
-			log.Info(string(bodyByte))
-			t.Errorf("Failed to get teapot: %v", string(bodyByte))
-		}
-	})
+			if strings.Contains(string(bodyByte), "-=[ teapot ]=-") {
+				log.Info(string(bodyByte))
+			} else {
+				log.Info(string(bodyByte))
+				t.Errorf("Failed to get teapot: %v", string(bodyByte))
+			}
+		})
 	*/
 }

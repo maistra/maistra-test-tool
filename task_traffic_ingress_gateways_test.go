@@ -24,7 +24,6 @@ import (
 	"istio.io/istio/pkg/log"
 )
 
-
 func cleanupIngressGateways(namespace string) {
 	log.Info("# Cleanup ...")
 	util.KubeDeleteContents(meshNamespace, httpbinOCPRoute, kubeconfig)
@@ -49,7 +48,7 @@ func TestIngressGateways(t *testing.T) {
 	// OCP4 Route
 	util.KubeApplyContents(meshNamespace, httpbinOCPRoute, kubeconfig)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
-	
+
 	t.Run("TrafficManagement_ingress_status_200_test", func(t *testing.T) {
 		defer recoverPanic(t)
 
@@ -58,7 +57,6 @@ func TestIngressGateways(t *testing.T) {
 		util.Inspect(err, "Failed to get response", "", t)
 		util.Inspect(util.CheckHTTPResponse200(resp), "Failed to get HTTP 200", resp.Status, t)
 	})
-	
 
 	t.Run("TrafficManagement_ingress_headers_test", func(t *testing.T) {
 		defer recoverPanic(t)

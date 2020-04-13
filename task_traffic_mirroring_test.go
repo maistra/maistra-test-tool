@@ -24,7 +24,6 @@ import (
 	"istio.io/istio/pkg/log"
 )
 
-
 func cleanupMirroring(namespace string) {
 	log.Info("# Cleanup ...")
 	util.KubeDeleteContents(namespace, httpbinAllv1, kubeconfig)
@@ -34,7 +33,6 @@ func cleanupMirroring(namespace string) {
 	util.KubeDeleteContents(namespace, sleepv2, kubeconfig)
 	time.Sleep(time.Duration(waitTime*2) * time.Second)
 }
-
 
 func TestMirroring(t *testing.T) {
 	defer cleanupMirroring(testNamespace)
@@ -69,7 +67,7 @@ func TestMirroring(t *testing.T) {
 		defer recoverPanic(t)
 
 		/*
-		If you installed/configured Istio with mutual TLS authentication enabled, you must add a TLS traffic policy mode: ISTIO_MUTUAL to the DestinationRule before applying it. Otherwise requests will generate 503 errors.
+			If you installed/configured Istio with mutual TLS authentication enabled, you must add a TLS traffic policy mode: ISTIO_MUTUAL to the DestinationRule before applying it. Otherwise requests will generate 503 errors.
 		*/
 		if err := util.KubeApplyContents(testNamespace, httpbinAllv1, kubeconfig); err != nil {
 			t.Errorf("Failed to apply httpbin all v1")

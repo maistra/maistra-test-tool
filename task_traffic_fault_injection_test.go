@@ -24,7 +24,6 @@ import (
 	"maistra/util"
 )
 
-
 func cleanupFaultInjection(namespace string) {
 	log.Info("# Cleanup ...")
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
@@ -39,7 +38,7 @@ func TestFaultInjection(t *testing.T) {
 	log.Infof("# TestFaultInjection")
 	deployBookinfo(testNamespace, false)
 	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
-	testUserJar := util.GetCookieJar(testUsername, "", "http://"+ gatewayHTTP)
+	testUserJar := util.GetCookieJar(testUsername, "", "http://"+gatewayHTTP)
 
 	if err := util.KubeApply(testNamespace, bookinfoAllv1Yaml, kubeconfig); err != nil {
 		t.Errorf("Failed to route traffic to all v1")
@@ -99,14 +98,14 @@ func TestFaultInjection(t *testing.T) {
 		time.Sleep(time.Duration(waitTime) * time.Second)
 
 		resp, duration, err := util.GetHTTPResponse(productpageURL, testUserJar)
-			defer util.CloseResponseBody(resp)
-			log.Infof("bookinfo productpage returned in %d ms", duration)
-			body, err := ioutil.ReadAll(resp.Body)
-			util.Inspect(err, "Failed to read response body", "", t)
-			util.Inspect(
-				util.CompareHTTPResponse(body, "productpage-test-user-v2-rating-unavailable.html"),
-				"Didn't get expected response.",
-				"Success. HTTP_abort_fault.",
-				t)
+		defer util.CloseResponseBody(resp)
+		log.Infof("bookinfo productpage returned in %d ms", duration)
+		body, err := ioutil.ReadAll(resp.Body)
+		util.Inspect(err, "Failed to read response body", "", t)
+		util.Inspect(
+			util.CompareHTTPResponse(body, "productpage-test-user-v2-rating-unavailable.html"),
+			"Didn't get expected response.",
+			"Success. HTTP_abort_fault.",
+			t)
 	})
 }

@@ -248,8 +248,6 @@ func getRetrier(serviceType string) Retrier {
 	}
 }
 
-
-
 func getServiceLoadBalancer(name, namespace, kubeconfig string) (string, error) {
 	ip, err := ShellSilent(
 		"oc get svc %s -n %s -o jsonpath='{.status.loadBalancer.ingress[*].ip}' --kubeconfig=%s",
@@ -509,8 +507,6 @@ func CheckDeployment(ctx context.Context, namespace, deployment string, kubeconf
 	}
 }
 
-
-
 // CheckDeploymentRemoved waits until a deployment is removed or times out
 func CheckDeploymentRemoved(namespace, deployment string, kubeconfig string) error {
 	retry := Retrier{
@@ -540,7 +536,6 @@ func CheckDeploymentRemoved(namespace, deployment string, kubeconfig string) err
 	}
 	return nil
 }
-
 
 // WaitForDeploymentsReady wait up to 'timeout' duration
 // return an error if deployments are not ready

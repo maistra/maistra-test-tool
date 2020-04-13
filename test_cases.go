@@ -18,66 +18,66 @@ import "testing"
 
 var t = &testing.T{}
 var testCases = []testing.InternalTest{
-	testing.InternalTest {
+	testing.InternalTest{
 		Name: "03",
-		F: TestRequestRouting,
+		F:    TestRequestRouting,
 	},
-	testing.InternalTest {
+	testing.InternalTest{
 		Name: "04",
-		F: TestFaultInjection,
+		F:    TestFaultInjection,
 	},
-	testing.InternalTest {
+	testing.InternalTest{
 		Name: "05",
-		F: TestTrafficShifting,
+		F:    TestTrafficShifting,
 	},
 	/*
-	testing.InternalTest {
-		Name: "06",
-		F: TestTCPShifting,
-	},
+		testing.InternalTest {
+			Name: "06",
+			F: TestTCPShifting,
+		},
 	*/
-	testing.InternalTest {
+	testing.InternalTest{
 		Name: "07",
-		F: TestRequestTimeouts,
+		F:    TestRequestTimeouts,
 	},
-	testing.InternalTest {
+	testing.InternalTest{
 		Name: "08",
-		F: TestCircuitBreaking,
+		F:    TestCircuitBreaking,
 	},
-	testing.InternalTest {
+	testing.InternalTest{
 		Name: "09",
-		F: TestMirroring,
+		F:    TestMirroring,
 	},
-	testing.InternalTest {
+	testing.InternalTest{
 		Name: "10",
-		F: TestIngressGateways,
+		F:    TestIngressGateways,
 	},
-	testing.InternalTest {
+	testing.InternalTest{
 		Name: "11",
-		F: TestIngressGatewaysFileMount,
+		F:    TestIngressGatewaysFileMount,
 	},
-	testing.InternalTest {
+	testing.InternalTest{
 		Name: "12",
-		F: TestIngressWithOutTLS,
+		F:    TestIngressWithOutTLS,
 	},
-	testing.InternalTest {
+	testing.InternalTest{
 		Name: "13",
-		F: TestAccessExternalServices,
+		F:    TestAccessExternalServices,
 	},
-	testing.InternalTest {
+	testing.InternalTest{
 		Name: "14",
-		F: TestEgressTLSOrigination,
+		F:    TestEgressTLSOrigination,
 	},
-	testing.InternalTest {
+	testing.InternalTest{
 		Name: "15",
-		F: TestEgressGateways,
+		F:    TestEgressGateways,
 	},
-	testing.InternalTest {
+	testing.InternalTest{
 		Name: "16",
-		F: TestEgressGatewaysTLSOrigination,
+		F:    TestEgressGatewaysTLSOrigination,
 	},
-	testing.InternalTest {
+	testing.InternalTest{
 		Name: "17",
-		F: TestAuthPolicy,
+		F:    TestAuthPolicy,
 	},
 }

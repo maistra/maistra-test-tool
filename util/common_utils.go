@@ -15,7 +15,6 @@
 package util
 
 import (
-	
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -30,9 +29,8 @@ import (
 )
 
 var (
-	cjopts 					= cookiejar.Options { PublicSuffixList: publicsuffix.List,}
+	cjopts = cookiejar.Options{PublicSuffixList: publicsuffix.List}
 )
-
 
 // Inspect error handling function
 func Inspect(err error, fMsg, sMsg string, t *testing.T) {
@@ -113,10 +111,9 @@ func GetWithJWT(url, token, host string) (*http.Response, error) {
 	}
 	req.Host = host
 	req.Header.Set("Host", req.Host)
-	req.Header.Add("Authorization", "Bearer " + token)
+	req.Header.Add("Authorization", "Bearer "+token)
 	return client.Do(req)
 }
-
 
 // CloseResponseBody ...
 func CloseResponseBody(r *http.Response) {
@@ -166,7 +163,7 @@ func SaveHTTPResponse(body []byte, dst string) error {
 }
 
 // CompareHTTPResponse compares a HTTP Response body with a model HTML file
-// modelFile is the file name. Not the file path. 
+// modelFile is the file name. Not the file path.
 func CompareHTTPResponse(body []byte, modelFile string) error {
 	modelPath := filepath.Join("compareHTML", modelFile)
 	if err := CompareToFile(body, modelPath); err != nil {
@@ -175,4 +172,3 @@ func CompareHTTPResponse(body []byte, modelFile string) error {
 	}
 	return nil
 }
-

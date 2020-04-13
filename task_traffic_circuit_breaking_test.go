@@ -22,10 +22,10 @@ import (
 	"testing"
 	"time"
 
-	"istio.io/istio/pkg/log"
 	"maistra/util"
-)
 
+	"istio.io/istio/pkg/log"
+)
 
 func cleanupCircuitBreaking(namespace string) {
 	log.Info("# Cleanup ...")
@@ -43,7 +43,7 @@ func TestCircuitBreaking(t *testing.T) {
 	deployHttpbin(testNamespace)
 
 	/*
-	If you installed/configured Istio with mutual TLS authentication enabled, you must add a TLS traffic policy mode: ISTIO_MUTUAL to the DestinationRule before applying it. Otherwise requests will generate 503 errors as described here.
+		If you installed/configured Istio with mutual TLS authentication enabled, you must add a TLS traffic policy mode: ISTIO_MUTUAL to the DestinationRule before applying it. Otherwise requests will generate 503 errors as described here.
 	*/
 
 	deployFortio(testNamespace)

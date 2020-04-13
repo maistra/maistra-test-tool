@@ -14,17 +14,16 @@
 
 package util
 
-
 import (
 	"fmt"
 	"regexp"
 	"strings"
 	"time"
-	
+
 	"istio.io/istio/pkg/log"
 )
 
-var testRetryTimes			= 5
+var testRetryTimes = 5
 
 // TBD
 // OcLogin runs oc login command to log into the OCP CLI
@@ -69,15 +68,15 @@ func OcDelete(namespace, yamlFileName string, kubeconfig string) error {
 // GetOCPIngressgateway returns the OCP cluster ingressgateway host URL.
 func GetOCPIngressgateway(podLabel, namespace, kubeconfig string) (string, error) {
 	ingress, err := Shell("oc get routes -l %s -n %s -o jsonpath='{.items[0].spec.host}' --kubeconfig=%s",
-							podLabel, namespace, kubeconfig)
-	
+		podLabel, namespace, kubeconfig)
+
 	for i := 0; i < testRetryTimes; i++ {
 		if err == nil {
 			break
 		}
 		time.Sleep(time.Duration(5) * time.Second)
 		ingress, err = Shell("oc get routes -l %s -n %s -o jsonpath='{.items[0].spec.host}' --kubeconfig=%s",
-							podLabel, namespace, kubeconfig)
+			podLabel, namespace, kubeconfig)
 	}
 	if err != nil {
 		return "", err
@@ -88,7 +87,7 @@ func GetOCPIngressgateway(podLabel, namespace, kubeconfig string) (string, error
 // GetOCP4Ingressgateway returns OCP4 ingress-ingresssgateway external IP hostname
 func GetOCP4Ingressgateway(namespace, kubeconfig string) (string, error) {
 	ingress, err := Shell("oc -n %s get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' --kubeconfig=%s",
-								namespace, kubeconfig)
+		namespace, kubeconfig)
 
 	return ingress, err
 }
@@ -156,10 +155,9 @@ func GetIngressHostIP(kubeconfig string) (string, error) {
 	return ip, nil
 }
 
-
 // GetJaegerRoute returns the Jaeger Dashboard route
 func GetJaegerRoute(namespace, kubeconfig string) (string, error) {
 	ingress, err := Shell("oc get routes -n %s -l app=jaeger -o jsonpath='{.items[0].spec.host}' --kubeconfig=%s",
-								namespace, kubeconfig)
+		namespace, kubeconfig)
 	return ingress, err
 }

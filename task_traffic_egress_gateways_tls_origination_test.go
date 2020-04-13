@@ -24,7 +24,6 @@ import (
 	"istio.io/istio/pkg/log"
 )
 
-
 func cleanupEgressGatewaysTLSOrigination(namespace string) {
 	log.Info("# Cleanup ...")
 	util.KubeDeleteContents(namespace, sleepNginx, kubeconfig)
@@ -45,7 +44,7 @@ func TestEgressGatewaysTLSOrigination(t *testing.T) {
 	log.Info("# TestEgressGatewaysTLSOrigination")
 	log.Info("Enable Envoy's access logging")
 	util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"proxy\":{\"accessLogFile\":\"/dev/stdout\"}}}}}'", meshNamespace, smcpName)
-	
+
 	log.Info("Enable istio-ingressgateway ior")
 	util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"gateways\":{\"istio-ingressgateway\":{\"ior_enabled\":\"true\"}}}}}}'", meshNamespace, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
@@ -69,7 +68,7 @@ func TestEgressGatewaysTLSOrigination(t *testing.T) {
 			t.Errorf("Error response: %s", msg)
 		} else {
 			log.Infof("Success. Get http://edition.cnn.com/politics response: %s", msg)
-			
+
 		}
 		time.Sleep(time.Duration(waitTime*2) * time.Second)
 		log.Info("check istio-proxy log")

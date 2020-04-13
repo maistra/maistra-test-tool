@@ -137,7 +137,7 @@ func TestAuthPolicy(t *testing.T) {
 			}
 		}
 	})
-	
+
 	t.Run("Security_authentication_request_non-istio_to_istio_services", func(t *testing.T) {
 		defer recoverPanic(t)
 

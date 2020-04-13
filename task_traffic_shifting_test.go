@@ -26,7 +26,6 @@ import (
 	"istio.io/istio/pkg/log"
 )
 
-
 func cleanupTrafficShifting(namespace string) {
 	log.Info("# Cleanup ...")
 	util.KubeDelete(namespace, bookinfoAllv1Yaml, kubeconfig)
@@ -103,7 +102,6 @@ func TestTrafficShifting(t *testing.T) {
 					"old version hit %d of %d, new version hit %d of %d", c1, totalShot, cVersionToMigrate, totalShot)
 		}
 	})
-
 
 	t.Run("TrafficManagement_shift_100_percent_v3_traffic", func(t *testing.T) {
 		defer recoverPanic(t)

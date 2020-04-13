@@ -18,7 +18,6 @@ import (
 	"testing"
 )
 
-
 func matchString(a, b string) (bool, error) {
 	return a == b, nil
 }
