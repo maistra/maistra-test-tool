@@ -205,7 +205,7 @@ func removeFile(path string) {
 
 // KubeDelete oc delete from file
 func KubeDelete(namespace, yamlFileName string, kubeconfig string) error {
-	_, err := Shell(kubeCommand("delete", namespace, yamlFileName, kubeconfig))
+	_, err := ShellMuteOutputError(kubeCommand("delete", namespace, yamlFileName, kubeconfig))
 	return err
 }
 

@@ -107,9 +107,6 @@ ede-projects.el
 # smex
 smex-items
 
-# company-statistics
-company-statistics-cache.el
-
 # anaconda-mode
 anaconda-mode/
 

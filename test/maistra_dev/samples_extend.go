@@ -16,21 +16,6 @@ package main
 
 const (
 
-smmrDefault = `
-apiVersion: maistra.io/v1
-kind: ServiceMeshMemberRoll
-metadata:
-  name: default
-spec:
-  members:
-  # a list of namespaces that should be joined into the service mesh
-  # for example, to add the bookinfo namespace
-  - bookinfo
-  - foo
-  - bar
-  - legacy
-`
-
 ratingsDelay2 = `
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
@@ -609,18 +594,6 @@ spec:
       - name: nginx-ca-certs
         secret:
           secretName: nginx-ca-certs
-`
-
-clientRule = `
-apiVersion: "networking.istio.io/v1alpha3"
-kind: "DestinationRule"
-metadata:
-  name: "default"
-spec:
-  host: "*.local"
-  trafficPolicy:
-    tls:
-      mode: ISTIO_MUTUAL
 `
 
 nginxServer = `
@@ -1483,6 +1456,260 @@ spec:
         number: 443
       tls:
         mode: SIMPLE # initiates HTTPS for connections to edition.cnn.com
+`
+
+clientRule = `
+apiVersion: "networking.istio.io/v1alpha3"
+kind: "DestinationRule"
+metadata:
+  name: "default"
+spec:
+  host: "*.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+`
+
+legacyRule = `
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+ name: "httpbin-legacy"
+ namespace: "legacy"
+spec:
+ host: "httpbin.legacy.svc.cluster.local"
+ trafficPolicy:
+   tls:
+     mode: DISABLE
+`
+
+fooPolicy = `
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "default"
+  namespace: "foo"
+spec:
+  peers:
+  - mtls: {}
+`
+
+fooRule = `
+apiVersion: "networking.istio.io/v1alpha3"
+kind: "DestinationRule"
+metadata:
+  name: "default"
+  namespace: "foo"
+spec:
+  host: "*.foo.svc.cluster.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+`
+
+barPolicy = `
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "httpbin"
+  namespace: "bar"
+spec:
+  targets:
+  - name: httpbin
+  peers:
+  - mtls: {}
+`
+
+barRule = `
+apiVersion: "networking.istio.io/v1alpha3"
+kind: "DestinationRule"
+metadata:
+  name: "httpbin"
+  namespace: "bar"
+spec:
+  host: "httpbin.bar.svc.cluster.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+`
+
+barPortPolicy = `
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "httpbin"
+  namespace: "bar"
+spec:
+  targets:
+  - name: httpbin
+    ports:
+    - number: 1234
+  peers:
+  - mtls: {}
+`
+
+barPortRule = `
+apiVersion: "networking.istio.io/v1alpha3"
+kind: "DestinationRule"
+metadata:
+  name: "httpbin"
+  namespace: "bar"
+spec:
+  host: httpbin.bar.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: DISABLE
+    portLevelSettings:
+    - port:
+        number: 1234
+      tls:
+        mode: ISTIO_MUTUAL
+`
+
+fooPolicyOverwrite = `
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "overwrite-example"
+  namespace: "foo"
+spec:
+  targets:
+  - name: httpbin
+`
+
+fooRuleOverwrite = `
+apiVersion: "networking.istio.io/v1alpha3"
+kind: "DestinationRule"
+metadata:
+  name: "overwrite-example"
+  namespace: "foo"
+spec:
+  host: httpbin.foo.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: DISABLE
+`
+
+fooGateway = `
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: httpbin-gateway
+  namespace: foo
+spec:
+  selector:
+    istio: ingressgateway # use Istio default gateway implementation
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+`
+
+fooVS = `
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: httpbin
+  namespace: foo
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - httpbin-gateway
+  http:
+  - route:
+    - destination:
+        port:
+          number: 8000
+        host: httpbin.foo.svc.cluster.local
+`
+
+fooJWTPolicy = `
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "jwt-example"
+  namespace: "foo"
+spec:
+  targets:
+  - name: httpbin
+  origins:
+  - jwt:
+      issuer: "testing@secure.istio.io"
+      jwksUri: "https://raw.githubusercontent.com/istio/istio/release-1.4/security/tools/jwt/samples/jwks.json"
+  principalBinding: USE_ORIGIN
+`
+
+fooJWTUserAgentPolicy = `
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "jwt-example"
+  namespace: "foo"
+spec:
+  targets:
+  - name: httpbin
+  origins:
+  - jwt:
+      issuer: "testing@secure.istio.io"
+      jwksUri: "https://raw.githubusercontent.com/istio/istio/release-1.4/security/tools/jwt/samples/jwks.json"
+      trigger_rules:
+      - excluded_paths:
+        - exact: /user-agent
+  principalBinding: USE_ORIGIN
+`
+
+fooJWTIPPolicy = `
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "jwt-example"
+  namespace: "foo"
+spec:
+  targets:
+  - name: httpbin
+  origins:
+  - jwt:
+      issuer: "testing@secure.istio.io"
+      jwksUri: "https://raw.githubusercontent.com/istio/istio/release-1.4/security/tools/jwt/samples/jwks.json"
+      trigger_rules:
+      - included_paths:
+        - exact: /ip
+  principalBinding: USE_ORIGIN
+`
+
+fooJWTMTLSPolicy = `
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "jwt-example"
+  namespace: "foo"
+spec:
+  targets:
+  - name: httpbin
+  peers:
+  - mtls: {}
+  origins:
+  - jwt:
+      issuer: "testing@secure.istio.io"
+      jwksUri: "https://raw.githubusercontent.com/istio/istio/release-1.4/security/tools/jwt/samples/jwks.json"
+  principalBinding: USE_ORIGIN
+`
+
+fooMTLSRule = `
+apiVersion: "networking.istio.io/v1alpha3"
+kind: "DestinationRule"
+metadata:
+  name: "httpbin"
+  namespace: "foo"
+spec:
+  host: "httpbin.foo.svc.cluster.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
 `
 
 

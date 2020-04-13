@@ -49,11 +49,12 @@ func prepareOCPConfig() {
 	time.Sleep(time.Duration(waitTime) * time.Second)
 
 	// update smmr
-	util.KubeApplyContents(meshNamespace, smmrDefault, kubeconfig)
+	util.ShellSilent("kubectl apply -n %s -f %s", meshNamespace, "configFiles/smmrTest.yaml")
 	time.Sleep(time.Duration(waitTime) * time.Second)
 
 	// if testing in mtls disable mode, update mtls to false
 	util.ShellSilent("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
+	// enable ior
 	util.ShellSilent("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"gateways\":{\"istio-ingressgateway\":{\"ior_enabled\":\"true\"}}}}}}'", meshNamespace, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 
