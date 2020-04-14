@@ -29,8 +29,11 @@ The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/) and [Maistra
 
 
 ## Testing
+- The test cases include several changes for an OpenShift environment. Currently, those changes will not work in origin Kubernetes environments.
+- To run all the test cases (End-to-End run): `go test -timeout 3h -v`. It is required to use the `-timeout` flag. Otherwise, the go test by default will fall into panic after 10 minutes.
+- All case numbers are mapped in the `test_cases.go` file. Users can run a single test with the `-run [case number]` flag, e.g. `go -test -run 17 -timeout 1h -v`.
+- The testdata `samples` and `samples_extend` are pulling from [Istio 1.4.6](https://github.com/istio/istio/releases/tag/1.4.6) and [Istio 1.4 Doc](https://archive.istio.io/v1.4/docs/tasks/).
 
-- To run all the test cases (End-to-End run): `go test -timeout 3h -v`
 
 ## License
 
