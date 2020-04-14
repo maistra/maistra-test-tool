@@ -408,13 +408,14 @@ func TestAuthPolicy(t *testing.T) {
 		jwtGen := "https://raw.githubusercontent.com/istio/istio/release-1.4/security/tools/jwt/samples/gen-jwt.py"
 		jwtKey := "https://raw.githubusercontent.com/istio/istio/release-1.4/security/tools/jwt/samples/key.pem"
 
-		util.ShellMuteOutput("pip install jwcrypto")
+		log.Info("Install python package jwcrypto using /usr/bin/python")
+		util.Shell("/usr/bin/python -m pip install --user jwcrypto")
 		util.Shell("wget %s", jwtGen)
 		util.Shell("chmod +x gen-jwt.py")
 		util.Shell("wget %s", jwtKey)
 
 		log.Info("Check curls return severl 200s and then severl 401s")
-		token, err = util.ShellMuteOutput("python gen-jwt.py key.pem --expire 5")
+		token, err = util.ShellMuteOutput("/usr/bin/python gen-jwt.py key.pem --expire 5")
 		token = strings.Trim(token, "\n")
 		util.Inspect(err, "Failed to get JWT token", "", t)
 		resp, err = util.GetWithJWT(url, token, "")
