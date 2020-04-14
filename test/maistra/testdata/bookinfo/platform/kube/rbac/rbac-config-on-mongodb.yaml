@@ -1,9 +1,0 @@
-apiVersion: "rbac.maistra.io/v1"
-kind: ServiceMeshRbacConfig
-metadata:
-  name: default
-spec:
-  mode: 'ON_WITH_INCLUSION'
-  inclusion:
-    services: ["mongodb.default.svc.cluster.local"]
----
