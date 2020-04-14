@@ -54,6 +54,7 @@ const (
 
 	nginxYaml          = "samples/https/nginx-app.yaml"
 	nginxNoSidecarYaml = "samples/https/nginx-app-without-sidecar.yaml"
+	nginxDefaultConfig = "samples/https/default.conf"
 
 	nginxServerCertKey = "samples/certs/nginx.example.com/3_application/private/nginx.example.com.key.pem"
 	nginxServerCert    = "samples/certs/nginx.example.com/3_application/certs/nginx.example.com.cert.pem"

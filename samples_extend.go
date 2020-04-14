@@ -1709,4 +1709,43 @@ spec:
     tls:
       mode: ISTIO_MUTUAL
 `
+
+	httpbinMTLSRule = `
+apiVersion: "networking.istio.io/v1alpha3"
+kind: "DestinationRule"
+metadata:
+  name: "example-httpbin-istio-client-mtls"
+  namespace: "foo"
+spec:
+  host: httpbin.foo.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+`
+
+	httpbinStrictPolicy = `
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "example-httpbin-strict"
+  namespace: "foo"
+spec:
+  targets:
+  - name: httpbin
+  peers:
+  - mtls:
+      mode: STRICT
+`
+
+	globalMTLSRule = `
+apiVersion: "networking.istio.io/v1alpha3"
+kind: "DestinationRule"
+metadata:
+  name: "default"
+spec:
+  host: "*.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+`
 )

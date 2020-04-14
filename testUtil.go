@@ -18,6 +18,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -41,6 +42,7 @@ func isWithinPercentage(count int, total int, rate float64, tolerance float64) b
 }
 
 func prepareOCPConfig() {
+	fmt.Println("Preparing environment configurations. Wait to start...")
 	// create testing ns bookinfo, foo, bar, legacy
 	util.ShellSilent("oc new-project bookinfo")
 	util.ShellSilent("oc new-project foo")

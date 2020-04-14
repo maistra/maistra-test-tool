@@ -25,7 +25,7 @@ import (
 )
 
 func cleanupAuthMTLS(namespace string) {
-	log.Info("# Cleanup ...")	
+	log.Info("# Cleanup ...")
 	util.KubeDelete("foo", sleepYaml, kubeconfig)
 	util.KubeDelete("foo", httpbinYaml, kubeconfig)
 	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
@@ -105,7 +105,7 @@ func TestAuthMTLS(t *testing.T) {
 			t.Errorf("Unexpected response from requests without client cert: %s", msg)
 		}
 	})
-	
+
 	t.Run("Security_authentication_verify_mtls_with_cert_requests", func(t *testing.T) {
 		defer recoverPanic(t)
 
@@ -122,5 +122,3 @@ func TestAuthMTLS(t *testing.T) {
 		}
 	})
 }
-
-
