@@ -20,8 +20,9 @@ import (
 	"testing"
 	"time"
 
-	"istio.io/istio/pkg/log"
 	"maistra/util"
+
+	"istio.io/istio/pkg/log"
 )
 
 func cleanupAuthMTLS(namespace string) {
@@ -30,6 +31,7 @@ func cleanupAuthMTLS(namespace string) {
 	util.KubeDelete("foo", httpbinYaml, kubeconfig)
 	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
+	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
 }
 
 func TestAuthMTLS(t *testing.T) {
@@ -42,6 +44,7 @@ func TestAuthMTLS(t *testing.T) {
 	log.Info("Update SMCP mtls to true")
 	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
+	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
 
 	deployHttpbin("foo")
 	deploySleep("foo")

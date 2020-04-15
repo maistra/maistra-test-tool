@@ -62,6 +62,11 @@ const (
 	nginxClientCertKey = "samples/certs/nginx.example.com/4_client/private/nginx.example.com.key.pem"
 	nginxClientCert    = "samples/certs/nginx.example.com/4_client/certs/nginx.example.com.cert.pem"
 
+	caCert      = "samples/certs/ca-cert.pem"
+	caCertKey   = "samples/certs/ca-key.pem"
+	caRootCert  = "samples/certs/root-cert.pem"
+	caCertChain = "samples/certs/cert-chain.pem"
+
 	kubeconfig    = ""
 	testNamespace = "bookinfo"
 	testUsername  = "jason"

@@ -33,6 +33,7 @@ func cleanupAuthMTLSHTTPS(namespace string) {
 	util.ShellMuteOutput("kubectl delete secret nginxsecret -n %s", namespace)
 	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
+	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
 }
 
 func TestAuthMTLSHTTPS(t *testing.T) {
@@ -95,6 +96,7 @@ func TestAuthMTLSHTTPS(t *testing.T) {
 		log.Info("Update SMCP mtls to true")
 		util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace, smcpName)
 		time.Sleep(time.Duration(waitTime*4) * time.Second)
+		util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
 
 		deploySleep(testNamespace)
 		sleepPod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfig)

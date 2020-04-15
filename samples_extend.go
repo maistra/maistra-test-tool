@@ -1748,4 +1748,12 @@ spec:
     tls:
       mode: ISTIO_MUTUAL
 `
+
+	fooSampleSA = `
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sample-service-account
+  namespace: foo
+`
 )

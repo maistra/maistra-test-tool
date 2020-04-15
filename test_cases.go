@@ -92,4 +92,16 @@ var testCases = []testing.InternalTest{
 		Name: "18",
 		F:    TestAuthMTLSMigration,
 	},
+	testing.InternalTest{
+		Name: "19",
+		F:    TestExternalCert,
+	},
+	testing.InternalTest{
+		Name: "20",
+		F:    TestCitadelHealthCheck,
+	},
+	testing.InternalTest{
+		Name: "21",
+		F:    TestCitadelSecretGeneration,
+	},
 }
