@@ -65,10 +65,10 @@ func TestEgressGateways(t *testing.T) {
 			log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		}
-		time.Sleep(time.Duration(waitTime*2) * time.Second)
+		time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 		log.Info("check istio-proxy log")
-		msg, err = util.Shell("kubectl logs -l istio=egressgateway -c istio-proxy -n %s | tail", meshNamespace)
+		msg, err = util.ShellMuteOutput("kubectl logs -l istio=egressgateway -c istio-proxy -n %s", meshNamespace)
 		if strings.Contains(msg, "edition.cnn.com") {
 			log.Infof("Success. Get egressgateway istio-proxy log: %s", msg)
 		} else {
@@ -97,7 +97,7 @@ func TestEgressGateways(t *testing.T) {
 		time.Sleep(time.Duration(waitTime*2) * time.Second)
 
 		log.Info("check istio-proxy log")
-		msg, err = util.Shell("kubectl logs -l istio=egressgateway -c istio-proxy -n %s | tail", meshNamespace)
+		msg, err = util.ShellMuteOutput("kubectl logs -l istio=egressgateway -c istio-proxy -n %s", meshNamespace)
 		if strings.Contains(msg, "443||edition.cnn.com") {
 			log.Infof("Success. Get egressgateway istio-proxy log: %s", msg)
 		} else {
