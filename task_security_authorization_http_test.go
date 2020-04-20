@@ -78,7 +78,7 @@ func TestAuthorizationHTTP(t *testing.T) {
 		defer recoverPanic(t)
 
 		util.KubeApplyContents(testNamespace, productpageGETPolicy, kubeconfig)
-		time.Sleep(time.Duration(waitTime*2) * time.Second)
+		time.Sleep(time.Duration(waitTime*10) * time.Second)
 		util.GetHTTPResponse(productpageURL, nil) // dummy request to refresh previous page
 
 		resp, _, err := util.GetHTTPResponse(productpageURL, nil)
@@ -97,7 +97,7 @@ func TestAuthorizationHTTP(t *testing.T) {
 		util.KubeApplyContents(testNamespace, detailsGETPolicy, kubeconfig)
 		util.KubeApplyContents(testNamespace, reviewsGETPolicy, kubeconfig)
 		util.KubeApplyContents(testNamespace, ratingsGETPolicy, kubeconfig)
-		time.Sleep(time.Duration(waitTime*2) * time.Second)
+		time.Sleep(time.Duration(waitTime*10) * time.Second)
 		util.GetHTTPResponse(productpageURL, nil) // dummy request to refresh previous page
 
 		resp, _, err = util.GetHTTPResponse(productpageURL, nil)
