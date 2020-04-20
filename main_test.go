@@ -25,7 +25,7 @@ func matchString(a, b string) (bool, error) {
 func TestMain(m *testing.M) {
 
 	// prepare configuration for OCP4 environment
-	// prepareOCPConfig()
+	prepareOCPConfig()
 
 	// test runs
 	testing.Main(matchString, testCases, nil, nil)

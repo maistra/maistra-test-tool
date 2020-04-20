@@ -108,4 +108,14 @@ var testCases = []testing.InternalTest{
 		Name: "22",
 		F:    TestAuthorizationHTTP,
 	},
+	/*
+		testing.InternalTest{
+			Name: "23",
+			F:    TestAuthorizationTCP,
+		},
+	*/
+	testing.InternalTest{
+		Name: "24",
+		F:    TestEnablePolicyEnforcement,
+	},
 }

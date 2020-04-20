@@ -59,14 +59,21 @@ func prepareOCPConfig() {
 	// enable ior
 	util.ShellSilent("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"gateways\":{\"istio-ingressgateway\":{\"ior_enabled\":\"true\"}}}}}}'", meshNamespace, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
-
 	// TBD: path smcp ingressgateway loadbalancer
 
 	// add anyuid
+	// 10/TrafficManagement_ingress_configure_ingress_gateway_without_TLS_Termination
+	// 14/TestEgressGatewaysTLSOrigination
+	// 17/Mutual TLS over HTTPS
+	// nginx requires default sa anyuid scc
+	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z default -n %s", testNamespace)
+
+	// 22/TestAuthorizationHTTP
 	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z bookinfo-productpage -n %s", testNamespace)
 	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z bookinfo-reviews -n %s", testNamespace)
+
+	// 23/TestAuthorizationTCP
 	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z bookinfo-ratings-v2 -n %s", testNamespace)
-	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z default -n %s", testNamespace)
 	time.Sleep(time.Duration(waitTime) * time.Second)
 }
 
