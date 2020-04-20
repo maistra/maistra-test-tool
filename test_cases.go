@@ -104,4 +104,8 @@ var testCases = []testing.InternalTest{
 		Name: "21",
 		F:    TestCitadelSecretGeneration,
 	},
+	testing.InternalTest{
+		Name: "22",
+		F:    TestAuthorizationHTTP,
+	},
 }

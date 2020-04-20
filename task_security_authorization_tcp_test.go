@@ -16,18 +16,16 @@ package main
 
 import (
 	"testing"
+
+	"istio.io/istio/pkg/log"
 )
 
-func matchString(a, b string) (bool, error) {
-	return a == b, nil
+func cleanupAuthorizationTCP(namespace string) {
+	log.Info("# Cleanup ...")
 }
 
-func TestMain(m *testing.M) {
-
-	// prepare configuration for OCP4 environment
-	// prepareOCPConfig()
-
-	// test runs
-	testing.Main(matchString, testCases, nil, nil)
+func TestAuthorizationTCP(t *testing.T) {
+	defer cleanupAuthorizationTCP(testNamespace)
+	defer recoverPanic(t)
 
 }
