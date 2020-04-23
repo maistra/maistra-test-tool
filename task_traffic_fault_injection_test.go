@@ -20,8 +20,9 @@ import (
 	"testing"
 	"time"
 
-	"istio.io/istio/pkg/log"
 	"maistra/util"
+
+	"istio.io/istio/pkg/log"
 )
 
 func cleanupFaultInjection(namespace string) {
@@ -59,8 +60,8 @@ func TestFaultInjection(t *testing.T) {
 		}
 		time.Sleep(time.Duration(waitTime) * time.Second)
 
-		minDuration := 5000
-		maxDuration := 8000
+		minDuration := 4000
+		maxDuration := 9000
 		standby := 10
 
 		for i := 0; i < 5; i++ {

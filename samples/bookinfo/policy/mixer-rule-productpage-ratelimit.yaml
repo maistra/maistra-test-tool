@@ -68,7 +68,7 @@ spec:
     namespace: istio-system
   services:
   - name: productpage
-    namespace: default
+    namespace: bookinfo
     #  - service: '*'  # Uncomment this to bind *all* services to request-count
 ---
 apiVersion: config.istio.io/v1alpha2

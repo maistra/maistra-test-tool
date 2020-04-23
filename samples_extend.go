@@ -349,6 +349,44 @@ spec:
         host: httpbin
 `
 
+	httpbinGateway3 = `
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: httpbin-gateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: httpbin
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - httpbin-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /headers
+    - uri:
+        prefix: /status
+    route:
+    - destination:
+        port:
+          number: 8000
+        host: httpbin
+`
+
 	httpbinGatewayHTTPS = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
@@ -1747,5 +1785,168 @@ spec:
   trafficPolicy:
     tls:
       mode: ISTIO_MUTUAL
+`
+
+	fooSampleSA = `
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sample-service-account
+  namespace: foo
+`
+
+	denyAllPolicy = `
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-all
+  namespace: bookinfo
+spec:
+  {}
+`
+
+	productpageGETPolicy = `
+apiVersion: "security.istio.io/v1beta1"
+kind: "AuthorizationPolicy"
+metadata:
+  name: "productpage-viewer"
+  namespace: bookinfo
+spec:
+  selector:
+    matchLabels:
+      app: productpage
+  rules:
+  - to:
+    - operation:
+        methods: ["GET"]
+`
+
+	detailsGETPolicy = `
+apiVersion: "security.istio.io/v1beta1"
+kind: "AuthorizationPolicy"
+metadata:
+  name: "details-viewer"
+  namespace: bookinfo
+spec:
+  selector:
+    matchLabels:
+      app: details
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/bookinfo/sa/bookinfo-productpage"]
+    to:
+    - operation:
+        methods: ["GET"]
+`
+
+	reviewsGETPolicy = `
+apiVersion: "security.istio.io/v1beta1"
+kind: "AuthorizationPolicy"
+metadata:
+  name: "reviews-viewer"
+  namespace: bookinfo
+spec:
+  selector:
+    matchLabels:
+      app: reviews
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/bookinfo/sa/bookinfo-productpage"]
+    to:
+    - operation:
+        methods: ["GET"]
+`
+
+	ratingsGETPolicy = `
+apiVersion: "security.istio.io/v1beta1"
+kind: "AuthorizationPolicy"
+metadata:
+  name: "ratings-viewer"
+  namespace: bookinfo
+spec:
+  selector:
+    matchLabels:
+      app: ratings
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/bookinfo/sa/bookinfo-reviews"]
+    to:
+    - operation:
+        methods: ["GET"]
+`
+
+	mixerRuleConditional = `
+apiVersion: config.istio.io/v1alpha2
+kind: rule
+metadata:
+  name: quota
+  namespace: istio-system
+spec:
+  # quota only applies if you are not logged in.
+  match: match(request.headers["cookie"], "session=*") == false
+  actions:
+  - handler: quotahandler
+    instances:
+    - requestcountquota
+`
+
+	keyvalHandler = `
+apiVersion: config.istio.io/v1alpha2
+kind: handler
+metadata:
+  name: keyval
+spec:
+  adapter: keyval
+  connection:
+    address: keyval:9070
+  params:
+    table:
+      jason: admin
+`
+
+	keyvalInstance = `
+apiVersion: config.istio.io/v1alpha2
+kind: instance
+metadata:
+  name: keyval
+spec:
+  template: keyval
+  params:
+    key: request.headers["user"] | ""
+`
+
+	keyvalRule = `
+apiVersion: config.istio.io/v1alpha2
+kind: rule
+metadata:
+  name: keyval
+  namespace: istio-system
+spec:
+  actions:
+  - handler: keyval.istio-system
+    instances: [ keyval ]
+    name: x
+  requestHeaderOperations:
+  - name: user-group
+    values: [ x.output.value ]
+`
+
+	keyvalRule418 = `
+apiVersion: config.istio.io/v1alpha2
+kind: rule
+metadata:
+  name: keyval
+  namespace: istio-system
+spec:
+  match: source.labels["istio"] == "ingressgateway"
+  actions:
+  - handler: keyval.istio-system
+    instances: [ keyval ]
+  requestHeaderOperations:
+  - name: :path
+    values: [ '"/status/418"' ]
 `
 )

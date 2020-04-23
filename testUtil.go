@@ -59,14 +59,17 @@ func prepareOCPConfig() {
 	// enable ior
 	util.ShellSilent("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"gateways\":{\"istio-ingressgateway\":{\"ior_enabled\":\"true\"}}}}}}'", meshNamespace, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
-
 	// TBD: path smcp ingressgateway loadbalancer
 
 	// add anyuid
-	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z bookinfo-productpage -n %s", testNamespace)
-	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z bookinfo-reviews -n %s", testNamespace)
-	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z bookinfo-ratings-v2 -n %s", testNamespace)
+	// 10/TrafficManagement_ingress_configure_ingress_gateway_without_TLS_Termination
+	// 14/TestEgressGatewaysTLSOrigination
+	// 17/Mutual TLS over HTTPS
+	// nginx requires default sa anyuid scc
 	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z default -n %s", testNamespace)
+
+	// 23/TestAuthorizationTCP
+	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z bookinfo-ratings-v2 -n %s", testNamespace)
 	time.Sleep(time.Duration(waitTime) * time.Second)
 }
 
@@ -163,6 +166,21 @@ func curlWithCAClient(url, ingressHost, secureIngressPort, host, cacertFile, cer
 	// Set host
 	req.Host = host
 	req.Header.Set("Host", req.Host)
+	// Get response
+	return client.Do(req)
+}
+
+func checkUserGroup(url, ingress, ingressPort, user string) (*http.Response, error) {
+	// Declare http client
+	client := &http.Client{}
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set header key user
+	req.Header.Set("user", user)
 	// Get response
 	return client.Do(req)
 }

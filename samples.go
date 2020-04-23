@@ -25,6 +25,7 @@ const (
 	bookinfoReviewV2Yaml   = "samples/bookinfo/networking/virtual-service-reviews-test-v2.yaml"
 	bookinfoReview50V3Yaml = "samples/bookinfo/networking/virtual-service-reviews-50-v3.yaml"
 	bookinfoReviewV3Yaml   = "samples/bookinfo/networking/virtual-service-reviews-v3.yaml"
+	bookinfoReviewv2v3Yaml = "samples/bookinfo/networking/virtual-service-reviews-jason-v2-v3.yaml"
 
 	bookinfoRatingDelayYaml = "samples/bookinfo/networking/virtual-service-ratings-test-delay.yaml"
 	bookinfoRatingAbortYaml = "samples/bookinfo/networking/virtual-service-ratings-test-abort.yaml"
@@ -62,6 +63,19 @@ const (
 	nginxClientCertKey = "samples/certs/nginx.example.com/4_client/private/nginx.example.com.key.pem"
 	nginxClientCert    = "samples/certs/nginx.example.com/4_client/certs/nginx.example.com.cert.pem"
 
+	caCert      = "samples/certs/ca-cert.pem"
+	caCertKey   = "samples/certs/ca-key.pem"
+	caRootCert  = "samples/certs/root-cert.pem"
+	caCertChain = "samples/certs/cert-chain.pem"
+
+	keyvaltemplate = "samples/httpbin/policy/keyval-template.yaml"
+	keyvalYaml     = "samples/httpbin/policy/keyval.yaml"
+
+	mixerRuleProductpageRateLimit = "samples/bookinfo/policy/mixer-rule-productpage-ratelimit.yaml"
+	mixerRuleDenyLabel            = "samples/bookinfo/policy/mixer-rule-deny-label.yaml"
+	mixerRuleDenyWhitelist        = "samples/bookinfo/policy/mixer-rule-deny-whitelist.yaml"
+	mixerRuleDenyIP               = "samples/bookinfo/policy/mixer-rule-deny-ip.yaml"
+
 	kubeconfig    = ""
 	testNamespace = "bookinfo"
 	testUsername  = "jason"
@@ -76,5 +90,6 @@ const (
 var (
 	// OCP4.x
 	gatewayHTTP, _       = util.ShellSilent("kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'", meshNamespace)
+	ingressHTTPPort, _   = util.ShellSilent("kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"http2\")].port}'", meshNamespace, "istio-ingressgateway")
 	secureIngressPort, _ = util.ShellSilent("kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"https\")].port}'", meshNamespace, "istio-ingressgateway")
 )

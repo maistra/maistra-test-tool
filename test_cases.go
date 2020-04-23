@@ -92,4 +92,42 @@ var testCases = []testing.InternalTest{
 		Name: "18",
 		F:    TestAuthMTLSMigration,
 	},
+	testing.InternalTest{
+		Name: "19",
+		F:    TestExternalCert,
+	},
+	testing.InternalTest{
+		Name: "20",
+		F:    TestCitadelHealthCheck,
+	},
+	testing.InternalTest{
+		Name: "21",
+		F:    TestCitadelSecretGeneration,
+	},
+	testing.InternalTest{
+		Name: "22",
+		F:    TestAuthorizationHTTP,
+	},
+	/*
+		testing.InternalTest{
+			Name: "23",
+			F:    TestAuthorizationTCP,
+		},
+	*/
+	testing.InternalTest{
+		Name: "24",
+		F:    TestEnablePolicyEnforcement,
+	},
+	testing.InternalTest{
+		Name: "25",
+		F:    TestRateLimits,
+	},
+	testing.InternalTest{
+		Name: "26",
+		F:    TestControlHeadersRouting,
+	},
+	testing.InternalTest{
+		Name: "27",
+		F:    TestDenials,
+	},
 }
