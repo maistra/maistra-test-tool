@@ -1839,4 +1839,19 @@ spec:
     - operation:
         methods: ["GET"]
 `
+
+	mixerRuleConditional = `
+apiVersion: config.istio.io/v1alpha2
+kind: rule
+metadata:
+  name: quota
+  namespace: istio-system
+spec:
+  # quota only applies if you are not logged in.
+  match: match(request.headers["cookie"], "session=*") == false
+  actions:
+  - handler: quotahandler
+    instances:
+    - requestcountquota
+`
 )

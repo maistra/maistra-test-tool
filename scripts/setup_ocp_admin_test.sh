@@ -14,7 +14,5 @@ kubectl apply -n ${SMCP} -f ${SMMR}
 sleep 5
 
 oc adm policy add-scc-to-user anyuid -z default -n ${TESTNS}
-oc adm policy add-scc-to-user anyuid -z bookinfo-productpage -n ${TESTNS}
-oc adm policy add-scc-to-user anyuid -z bookinfo-reviews -n ${TESTNS}
 oc adm policy add-scc-to-user anyuid -z bookinfo-ratings-v2 -n ${TESTNS}
 sleep 5

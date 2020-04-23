@@ -68,10 +68,6 @@ func prepareOCPConfig() {
 	// nginx requires default sa anyuid scc
 	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z default -n %s", testNamespace)
 
-	// 22/TestAuthorizationHTTP
-	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z bookinfo-productpage -n %s", testNamespace)
-	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z bookinfo-reviews -n %s", testNamespace)
-
 	// 23/TestAuthorizationTCP
 	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z bookinfo-ratings-v2 -n %s", testNamespace)
 	time.Sleep(time.Duration(waitTime) * time.Second)

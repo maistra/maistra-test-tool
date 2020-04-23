@@ -67,6 +67,8 @@ const (
 	caRootCert  = "samples/certs/root-cert.pem"
 	caCertChain = "samples/certs/cert-chain.pem"
 
+	mixerRuleProductpageRateLimit = "samples/bookinfo/policy/mixer-rule-productpage-ratelimit.yaml"
+
 	kubeconfig    = ""
 	testNamespace = "bookinfo"
 	testUsername  = "jason"

@@ -118,4 +118,8 @@ var testCases = []testing.InternalTest{
 		Name: "24",
 		F:    TestEnablePolicyEnforcement,
 	},
+	testing.InternalTest{
+		Name: "25",
+		F:    TestRateLimits,
+	},
 }
