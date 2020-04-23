@@ -129,11 +129,13 @@ func TestDenials(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("IP-based whitelists or blacklists")
+
 		if err := util.KubeApply(testNamespace, mixerRuleDenyIP, kubeconfig); err != nil {
 			t.Errorf("Failed to apply mixer deny rule.")
 			log.Errorf("Failed to apply mixer deny rule.")
 		}
-		time.Sleep(time.Duration(waitTime*4) * time.Second)
+		log.Info("Waiting for rules to propagate. Sleep 100 seconds...")
+		time.Sleep(time.Duration(waitTime*20) * time.Second)
 
 		log.Info("Check productpage. Get expected error: PERMISSION_DENIED:staticversion. *:<your mesh source ip> is not whitelisted")
 		resp, _, err := util.GetHTTPResponse(productpageURL, nil)

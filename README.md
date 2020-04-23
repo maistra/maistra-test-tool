@@ -25,11 +25,11 @@ The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/) and [Maistra
 ## Testing Prerequisite
 
 1. Maistra istio system has been installed on an OpenShift OCP4 cluster.
-2. Configure additional scc permission after login as a cluster admin user.
+2. Several test cases require nginx or mongoDB running on OCP4 and we need to configure additional scc permission for them after login as a cluster admin user.
    ```
    $ oc login -u kubeadmin -p [token] --server=[OCP API server]
-   $ chmod +x scripts/setup_ocp_admin_test.sh;
-   $ scripts/setup_ocp_admin_test.sh
+   $ chmod +x scripts/setup_ocp_scc_anyuid.sh;
+   $ scripts/setup_ocp_scc_anyuid.sh
    ```
 3. Completed CLI login an OCP cluster as a regular user. Run `oc login -u [user] -p [token] --server=[OCP API server]` login command in a shell.
 

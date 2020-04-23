@@ -27,17 +27,21 @@ import (
 func TestEnablePolicyEnforcement(t *testing.T) {
 	defer recoverPanic(t)
 
-	log.Info("Enabling Policy Enforcement")
-	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"disablePolicyChecks\":false}}}}'", meshNamespace, smcpName)
-	time.Sleep(time.Duration(waitTime*4) * time.Second)
-	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
+	t.Run("Policies_enable_policy_enforcement", func(t *testing.T) {
+		defer recoverPanic(t)
 
-	log.Info("Validate the policy enforcement")
-	msg, _ := util.Shell("kubectl -n %s get cm istio -o jsonpath=\"{@.data.mesh}\" | grep disablePolicyChecks", meshNamespace)
-	if strings.Contains(msg, "false") {
-		log.Info("Success.")
-	} else {
-		log.Errorf("Failed. Got: %s", msg)
-		t.Errorf("Failed. Got: %s", msg)
-	}
+		log.Info("Enabling Policy Enforcement")
+		util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"disablePolicyChecks\":false}}}}'", meshNamespace, smcpName)
+		time.Sleep(time.Duration(waitTime*4) * time.Second)
+		util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
+
+		log.Info("Validate the policy enforcement")
+		msg, _ := util.Shell("kubectl -n %s get cm istio -o jsonpath=\"{@.data.mesh}\" | grep disablePolicyChecks", meshNamespace)
+		if strings.Contains(msg, "false") {
+			log.Info("Success.")
+		} else {
+			log.Errorf("Failed. Got: %s", msg)
+			t.Errorf("Failed. Got: %s", msg)
+		}
+	})
 }
