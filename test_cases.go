@@ -122,4 +122,12 @@ var testCases = []testing.InternalTest{
 		Name: "25",
 		F:    TestRateLimits,
 	},
+	testing.InternalTest{
+		Name: "26",
+		F:    TestControlHeadersRouting,
+	},
+	testing.InternalTest{
+		Name: "27",
+		F:    TestDenials,
+	},
 }

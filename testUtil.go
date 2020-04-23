@@ -169,3 +169,18 @@ func curlWithCAClient(url, ingressHost, secureIngressPort, host, cacertFile, cer
 	// Get response
 	return client.Do(req)
 }
+
+func checkUserGroup(url, ingress, ingressPort, user string) (*http.Response, error) {
+	// Declare http client
+	client := &http.Client{}
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set header key user
+	req.Header.Set("user", user)
+	// Get response
+	return client.Do(req)
+}
