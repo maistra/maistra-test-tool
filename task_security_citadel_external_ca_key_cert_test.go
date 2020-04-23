@@ -54,7 +54,7 @@ func verifyCerts() error {
 		return err
 	}
 	ioutil.WriteFile("/tmp/pod-root-cert.pem", []byte(podRootCert), 0644)
-	//util.ShellMuteOutput("oc exec -n %s -it %s -c istio-proxy -- /bin/cat /etc/certs/root-cert.pem > /tmp/pod-root-cert.pem", testNamespace, pod)
+	//util.ShellMuteOutput("kubectl exec -n %s -it %s -c istio-proxy -- /bin/cat /etc/certs/root-cert.pem > /tmp/pod-root-cert.pem", testNamespace, pod)
 
 	cmd = fmt.Sprintf("/bin/cat /etc/certs/cert-chain.pem")
 	podCertChain, err := util.PodExec(testNamespace, pod, "istio-proxy", cmd, true, kubeconfig)
@@ -62,7 +62,7 @@ func verifyCerts() error {
 		return err
 	}
 	ioutil.WriteFile("/tmp/pod-cert-chain.pem", []byte(podCertChain), 0644)
-	//util.ShellMuteOutput("oc exec -n %s -it %s -c istio-proxy -- /bin/cat /etc/certs/cert-chain.pem > /tmp/pod-cert-chain.pem", testNamespace, pod)
+	//util.ShellMuteOutput("kubectl exec -n %s -it %s -c istio-proxy -- /bin/cat /etc/certs/cert-chain.pem > /tmp/pod-cert-chain.pem", testNamespace, pod)
 
 	util.ShellMuteOutput("openssl x509 -in %s -text -noout > /tmp/root-cert.crt.txt", caRootCert)
 	util.ShellMuteOutput("openssl x509 -in %s -text -noout > /tmp/pod-root-cert.crt.txt", "/tmp/pod-root-cert.pem")
