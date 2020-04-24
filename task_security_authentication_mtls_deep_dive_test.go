@@ -22,7 +22,7 @@ import (
 
 	"maistra/util"
 
-	"istio.io/istio/pkg/log"
+	"istio.io/pkg/log"
 )
 
 func cleanupAuthMTLS(namespace string) {

@@ -30,7 +30,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"istio.io/istio/pkg/log"
+	"istio.io/pkg/log"
 )
 
 // WriteTextFile overwrites the file on the given path with content

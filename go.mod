@@ -1,7 +1,7 @@
 module github.com/Maistra/istio-test-tool
 
 require (
-	istio.io/istio v0.0.0-20190425185518-e0a807d18fd9
+	istio.io/pkg v0.0.0-20200422223412-3fdcd0a1c360
 	maistra/util v0.0.0
 )
 

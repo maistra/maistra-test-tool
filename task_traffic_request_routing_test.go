@@ -20,8 +20,9 @@ import (
 	"testing"
 	"time"
 
-	"istio.io/istio/pkg/log"
 	"maistra/util"
+
+	"istio.io/pkg/log"
 )
 
 func cleanupRequestRouting(namespace string) {

@@ -17,8 +17,9 @@ package main
 import (
 	"time"
 
-	"istio.io/istio/pkg/log"
 	"maistra/util"
+
+	"istio.io/pkg/log"
 )
 
 func deployBookinfo(namespace string, mtls bool) {

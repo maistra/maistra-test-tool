@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"istio.io/istio/pkg/log"
+	"istio.io/pkg/log"
 )
 
 var testRetryTimes = 5
