@@ -17,7 +17,7 @@ package main
 import (
 	"testing"
 
-	"istio.io/istio/pkg/log"
+	"istio.io/pkg/log"
 )
 
 func cleanupAuthorizationTCP(namespace string) {

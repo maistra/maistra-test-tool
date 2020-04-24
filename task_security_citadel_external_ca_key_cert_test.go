@@ -23,7 +23,7 @@ import (
 
 	"maistra/util"
 
-	"istio.io/istio/pkg/log"
+	"istio.io/pkg/log"
 )
 
 func cleanupExternalCert(namespace string) {

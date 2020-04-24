@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"golang.org/x/net/publicsuffix"
-	"istio.io/istio/pkg/log"
+	"istio.io/pkg/log"
 )
 
 var (
