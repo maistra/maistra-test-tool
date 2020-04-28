@@ -17,3 +17,7 @@
 ### VisualStudioCode ###
 .vscode
 .history
+
+reports
+results.xml
+test.log
