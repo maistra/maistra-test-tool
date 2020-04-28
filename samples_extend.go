@@ -769,7 +769,7 @@ spec:
   tls:
   - match:
     - port: 443
-      sni_hosts:
+      sniHosts:
       - nginx.example.com
     route:
     - destination:
@@ -809,7 +809,7 @@ spec:
   tls:
   - match:
     - port: 443
-      sni_hosts:
+      sniHosts:
       - nginx.example.com
     route:
     - destination:
@@ -909,7 +909,7 @@ spec:
   tls:
   - match:
     - port: 443
-      sni_hosts:
+      sniHosts:
       - edition.cnn.com
     route:
     - destination:
@@ -1190,7 +1190,7 @@ spec:
     - gateways:
       - mesh
       port: 443
-      sni_hosts:
+      sniHosts:
       - edition.cnn.com
     route:
     - destination:
@@ -1202,7 +1202,7 @@ spec:
     - gateways:
       - istio-egressgateway
       port: 443
-      sni_hosts:
+      sniHosts:
       - edition.cnn.com
     route:
     - destination:
@@ -1279,7 +1279,7 @@ spec:
     - gateways:
       - mesh
       port: 443
-      sni_hosts:
+      sniHosts:
       - edition.cnn.com
     route:
     - destination:
