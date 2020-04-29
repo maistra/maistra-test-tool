@@ -61,7 +61,7 @@ func TestDenials(t *testing.T) {
 			t.Errorf("Failed to apply mixer deny rule.")
 			log.Errorf("Failed to apply mixer deny rule.")
 		}
-		time.Sleep(time.Duration(waitTime*4) * time.Second)
+		time.Sleep(time.Duration(waitTime*6) * time.Second)
 
 		log.Info("Check productpage. Without login review shows ratings service is unavailable. Login user jason and see review black stars.")
 		resp, _, err := util.GetHTTPResponse(productpageURL, nil)
@@ -86,7 +86,7 @@ func TestDenials(t *testing.T) {
 			t)
 		util.CloseResponseBody(resp)
 		util.KubeDelete(testNamespace, mixerRuleDenyLabel, kubeconfig)
-		time.Sleep(time.Duration(waitTime*4) * time.Second)
+		time.Sleep(time.Duration(waitTime*6) * time.Second)
 	})
 
 	t.Run("Policies_attribute_white_black_lists", func(t *testing.T) {
@@ -97,7 +97,7 @@ func TestDenials(t *testing.T) {
 			t.Errorf("Failed to apply mixer deny rule.")
 			log.Errorf("Failed to apply mixer deny rule.")
 		}
-		time.Sleep(time.Duration(waitTime*4) * time.Second)
+		time.Sleep(time.Duration(waitTime*6) * time.Second)
 
 		log.Info("Check productpage. Without login review shows ratings service is unavailable. Login user jason and see review black stars.")
 		resp, _, err := util.GetHTTPResponse(productpageURL, nil)
@@ -122,7 +122,7 @@ func TestDenials(t *testing.T) {
 			t)
 		util.CloseResponseBody(resp)
 		util.KubeDelete(testNamespace, mixerRuleDenyWhitelist, kubeconfig)
-		time.Sleep(time.Duration(waitTime*4) * time.Second)
+		time.Sleep(time.Duration(waitTime*6) * time.Second)
 	})
 
 	t.Run("Policies_ip-based_white_black_lists", func(t *testing.T) {
