@@ -35,7 +35,7 @@ func ocCommand(subCommand, namespace, yamlFileName string, kubeconfig string) st
 	return fmt.Sprintf("oc %s -n %s -f %s --kubeconfig=%s", subCommand, namespace, yamlFileName, kubeconfig)
 }
 
-// CreateNamespace create a kubernetes namespace
+// CreateOCPNamespace create a kubernetes namespace
 func CreateOCPNamespace(n string, kubeconfig string) error {
 	if _, err := ShellMuteOutput("oc new-project %s", n); err != nil {
 		if !strings.Contains(err.Error(), "AlreadyExists") {
