@@ -35,10 +35,12 @@ The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/) and [Maistra
 
 
 ## Testing
+- All test cases and testdata are in the `tests` directory.
 - The test cases include several changes for an OpenShift environment. Currently, those changes will not work in origin Kubernetes environments.
 - To run all the test cases: `go test -timeout 3h -v`. It is required to use the `-timeout` flag. Otherwise, the go test by default will fall into panic after 10 minutes.
 - In order to save results in a junit report, we can run a go test command with "github.com/jstemmer/go-junit-report", e.g.
     ```
+    $ cd tests
     $ go get -u github.com/jstemmer/go-junit-report
     $ go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
     ```

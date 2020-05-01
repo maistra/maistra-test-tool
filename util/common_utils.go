@@ -165,7 +165,7 @@ func SaveHTTPResponse(body []byte, dst string) error {
 // CompareHTTPResponse compares a HTTP Response body with a model HTML file
 // modelFile is the file name. Not the file path.
 func CompareHTTPResponse(body []byte, modelFile string) error {
-	modelPath := filepath.Join("compareHTML", modelFile)
+	modelPath := filepath.Join("resources/html", modelFile)
 	if err := CompareToFile(body, modelPath); err != nil {
 		ioutil.WriteFile("/tmp/diffbody", body, 0644)
 		return err
