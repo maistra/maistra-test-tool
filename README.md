@@ -5,11 +5,11 @@
 [![](https://goreportcard.com/badge/github.com/Maistra/maistra-test-tool)](https://goreportcard.com/report/github.com/Maistra/maistra-test-tool)
 
 
-A testing tool for running Istio Doc tasks on AWS OpenShift 4.x cluster. 
+A testing tool for running Maistra tasks on AWS OpenShift 4.x cluster.
 
 ## Introduction
 
-This project aims to automate the running Maistra Istio Doc tasks on an AWS OpenShift 4.x Cluster.
+This project aims to automate the running Maistra tasks on an AWS OpenShift 4.x Cluster.
 
 The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/) and [Maistra Doc](https://maistra-1-1.maistra.io/).
 
