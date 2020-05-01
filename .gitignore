@@ -18,6 +18,7 @@
 .vscode
 .history
 
+## results
 reports
 results.xml
 test.log
