@@ -1,4 +1,4 @@
-module github.com/Maistra/istio-test-tool/test/maistra/util
+module github.com/Maistra/maistra-test-tool/util
 
 require (
 	github.com/pkg/errors v0.8.1

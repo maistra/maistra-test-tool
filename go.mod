@@ -1,4 +1,4 @@
-module github.com/Maistra/istio-test-tool
+module github.com/Maistra/maistra-test-tool
 
 require (
 	istio.io/pkg v0.0.0-20200422223412-3fdcd0a1c360
