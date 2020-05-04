@@ -24,7 +24,7 @@ The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/) and [Maistra
 
 ## Testing Prerequisite
 
-1. Maistra istio system has been installed on an OpenShift OCP4 cluster.
+1. Maistra has been installed on an OpenShift OCP4 cluster.
 2. Several test cases require nginx or mongoDB running on OCP4 and we need to configure additional scc permission for them after login as a cluster admin user.
    ```
    $ oc login -u kubeadmin -p [token] --server=[OCP API server]
