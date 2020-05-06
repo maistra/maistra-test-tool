@@ -32,6 +32,7 @@ The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/) and [Maistra
    $ scripts/setup_ocp_scc_anyuid.sh
    ```
 3. Completed CLI login an OCP cluster as a regular user. Run `oc login -u [user] -p [token] --server=[OCP API server]` login command in a shell.
+4. For the test case using JWT token, the system needs python3 installed to be able to run the python script.
 
 
 ## Testing
