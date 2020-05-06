@@ -130,4 +130,16 @@ var testCases = []testing.InternalTest{
 		Name: "27",
 		F:    TestDenials,
 	},
+	testing.InternalTest{
+		Name: "28",
+		F:    TestJaegerTracing,
+	},
+	testing.InternalTest{
+		Name: "29",
+		F:    TestPrometheusMetrics,
+	},
+	testing.InternalTest{
+		Name: "30",
+		F:    TestGrafanaMetrics,
+	},
 }

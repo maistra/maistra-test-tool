@@ -36,6 +36,8 @@ const (
 	bookinfoServerCertKey = "samples/certs/bookinfo.com/bookinfo.com.key"
 	bookinfoSampleCACert  = "samples/certs/bookinfo.com/example.com.crt"
 
+	bookinfoMetrics = "samples/bookinfo/telemetry/metrics.yaml"
+
 	httpbinYaml       = "samples/httpbin/httpbin-1.1.yaml"
 	httpbinFortioYaml = "samples/httpbin/sample-client/fortio-deploy.yaml"
 	httpbinLegacyYaml = "samples/httpbin/httpbin-1.1-legacy.yaml"
