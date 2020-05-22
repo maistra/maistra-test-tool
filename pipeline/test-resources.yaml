@@ -1,0 +1,19 @@
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: acc-test-repo
+spec:
+  type: git
+  params:
+  - name: url
+    value: https://github.com/Maistra/maistra-test-tool.git
+---
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: acc-test-image
+spec:
+  type: image
+  params:
+  - name: url
+    value: quay.io/maistra/pipeline-cli:latest

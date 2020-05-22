@@ -1,0 +1,23 @@
+apiVersion: tekton.dev/v1beta1
+kind: ClusterTask
+metadata:
+  name: run-all-acc-tests
+spec:
+  resources:
+    inputs:
+    - name: acc-test-repo
+      targetPath: /
+      type: git
+  steps:
+  - name: check-go-version
+    image: quay.io/maistra/pipeline-cli:latest
+    command: ["go"]
+    args:
+      - "version"
+    
+  - name: run-all-test-cases
+    image: quay.io/maistra/pipeline-cli:latest
+    script: |
+      #!/usr/bin/env bash
+      cd tests;
+      go test -timeout 3h -v;
