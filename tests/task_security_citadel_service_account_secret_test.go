@@ -98,6 +98,7 @@ func TestCitadelSecretGeneration(t *testing.T) {
 			log.Infof("OCP4 permission forbidden. Need cluster admin user to run label ns command.")
 		} else {
 			util.KubeApplyContents("foo", fooSampleSA, kubeconfig)
+			time.Sleep(time.Duration(waitTime*2) * time.Second)
 			msg, err = util.Shell("kubectl get secrets -n foo | grep istio.io")
 			util.Inspect(err, "Failed to get sa", "", t)
 			if !strings.Contains(msg, "istio.sample-service-account") {
