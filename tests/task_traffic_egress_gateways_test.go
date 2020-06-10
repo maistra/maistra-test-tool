@@ -76,6 +76,7 @@ func TestEgressGateways(t *testing.T) {
 			t.Errorf("Error response: %s", msg)
 		}
 		util.KubeDeleteContents(testNamespace, cnnextGateway, kubeconfig)
+		time.Sleep(time.Duration(waitTime*2) * time.Second)
 	})
 
 	t.Run("TrafficManagement_egress_gateway_for_https_traffic", func(t *testing.T) {
@@ -84,7 +85,7 @@ func TestEgressGateways(t *testing.T) {
 		log.Info("create a https Gateway to external edition.cnn.com")
 		util.KubeApplyContents(testNamespace, cnnextGatewayHTTPS, kubeconfig)
 		// OCP Route created by ior
-		time.Sleep(time.Duration(waitTime) * time.Second)
+		time.Sleep(time.Duration(waitTime*2) * time.Second)
 		command := "curl -sL -o /dev/null -D - https://edition.cnn.com/politics"
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
