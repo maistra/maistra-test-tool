@@ -61,8 +61,8 @@ func TestCircuitBreaking(t *testing.T) {
 		pod, err := util.GetPodName(testNamespace, "app=fortio", kubeconfig)
 		util.Inspect(err, "failed to get fortio pod", "", t)
 
-		command := "load -curl  http://httpbin:8000/get"
-		msg, err := util.PodExec(testNamespace, pod, "fortio /usr/bin/fortio", command, false, kubeconfig)
+		command := "/usr/bin/fortio load -curl  http://httpbin:8000/get"
+		msg, err := util.PodExec(testNamespace, pod, "fortio", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "200 OK") {
 			log.Infof("Success. Get correct response")
@@ -76,8 +76,8 @@ func TestCircuitBreaking(t *testing.T) {
 		reqCount := 40
 		tolerance := 0.45
 
-		command = fmt.Sprintf("load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount)
-		msg, err = util.PodExec(testNamespace, pod, "fortio /usr/bin/fortio", command, false, kubeconfig)
+		command = fmt.Sprintf("/usr/bin/fortio load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount)
+		msg, err = util.PodExec(testNamespace, pod, "fortio", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
 
 		re := regexp.MustCompile(`Code 200.*`)
