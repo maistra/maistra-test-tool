@@ -56,7 +56,7 @@ func TestCitadelHealthCheck(t *testing.T) {
 
 		log.Info("Redeploy Citadel")
 		util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"security\":{\"citadelHealthCheck\":true}}}}'", meshNamespace, smcpName)
-		time.Sleep(time.Duration(waitTime*10) * time.Second)
+		time.Sleep(time.Duration(waitTime*15) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=citadel", kubeconfig)
 
 		log.Info("Verify that health checking works")
