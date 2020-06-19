@@ -1,8 +1,8 @@
 # Maistra OpenShift Test Tool
 
-[![](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat)](https://github.com/Maistra/maistra-test-tool/blob/master/LICENSE)
-![](https://img.shields.io/github/repo-size/Maistra/maistra-test-tool.svg?style=flat)
-[![](https://goreportcard.com/badge/github.com/Maistra/maistra-test-tool)](https://goreportcard.com/report/github.com/Maistra/maistra-test-tool)
+[![](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat)](https://github.com/maistra/maistra-test-tool/blob/development/LICENSE)
+![](https://img.shields.io/github/repo-size/maistra/maistra-test-tool.svg?style=flat)
+[![](https://goreportcard.com/badge/github.com/maistra/maistra-test-tool)](https://goreportcard.com/report/github.com/maistra/maistra-test-tool)
 
 
 A testing tool for running Maistra tasks on AWS OpenShift 4.x cluster.
@@ -11,7 +11,7 @@ A testing tool for running Maistra tasks on AWS OpenShift 4.x cluster.
 
 This project aims to automate the running Maistra tasks on an AWS OpenShift 4.x Cluster.
 
-The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/) and [Maistra Doc](https://maistra-1-1.maistra.io/).
+The testing follows [Istio Doc Tasks](https://istio.io/v1.4/docs/tasks/) and [Maistra Doc](https://maistra-1-1.maistra.io/).
 
 
 ## Versions
@@ -51,4 +51,4 @@ The testing follows [Istio Doc Tasks](https://istio.io/docs/tasks/) and [Maistra
 
 ## License
 
-[Maistra OpenShift Test Tool](https://github.com/Maistra/maistra-test-tool) is [Apache 2.0 licensed](https://github.com/Maistra/maistra-test-tool/blob/master/LICENSE)
+[Maistra OpenShift Test Tool](https://github.com/maistra/maistra-test-tool) is [Apache 2.0 licensed](https://github.com/maistra/maistra-test-tool/blob/development/LICENSE)
