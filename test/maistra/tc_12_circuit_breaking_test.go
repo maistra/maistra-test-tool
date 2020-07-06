@@ -22,8 +22,9 @@ import (
 	"testing"
 	"time"
 
-	"istio.io/istio/pkg/log"
 	"maistra/util"
+
+	"istio.io/istio/pkg/log"
 )
 
 func cleanup12(namespace, kubeconfig string) {
@@ -69,8 +70,8 @@ func Test12(t *testing.T) {
 		// trip breaker
 		pod, err := util.GetPodName(testNamespace, "app=fortio", kubeconfigFile)
 		util.Inspect(err, "failed to get fortio pod", "", t)
-		command := "load -curl  http://httpbin:8000/get"
-		msg, err := util.PodExec(testNamespace, pod, "fortio /usr/bin/fortio", command, false, kubeconfigFile)
+		command := "/usr/bin/fortio load -curl  http://httpbin:8000/get"
+		msg, err := util.PodExec(testNamespace, pod, "fortio", command, false, kubeconfigFile)
 		util.Inspect(err, "failed to get response", "", t)
 		if strings.Contains(msg, "200 OK") {
 			log.Infof("Success. Get correct response")
@@ -83,8 +84,8 @@ func Test12(t *testing.T) {
 		reqCount := 40
 		tolerance := 0.45
 
-		command = fmt.Sprintf("load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount)
-		msg, err = util.PodExec(testNamespace, pod, "fortio /usr/bin/fortio", command, false, kubeconfigFile)
+		command = fmt.Sprintf("/usr/bin/fortio load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount)
+		msg, err = util.PodExec(testNamespace, pod, "fortio", command, false, kubeconfigFile)
 		util.Inspect(err, "failed to get response", "", t)
 
 		re := regexp.MustCompile(`Code 200.*`)
