@@ -15,6 +15,7 @@
 package tests
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -28,16 +29,8 @@ func cleanupTCPShifting(namespace string) {
 	log.Info("# Cleanup ...")
 	util.KubeDelete(namespace, echoAllv1Yaml, kubeconfig)
 	cleanEcho(namespace)
+	cleanSleep(namespace)
 	time.Sleep(time.Duration(waitTime*2) * time.Second)
-}
-
-func checkEcho(ingressHost, ingressTCPPort string) (string, error) {
-	msg, err := util.ShellSilent("docker run -e INGRESS_HOST=%s -e INGRESS_PORT=%s --rm busybox sh -c \"(date; sleep 1) | nc %s %s\"",
-		ingressHost, ingressTCPPort, ingressHost, ingressTCPPort)
-	if err != nil {
-		return "", err
-	}
-	return msg, nil
 }
 
 func TestTCPShifting(t *testing.T) {
@@ -46,54 +39,42 @@ func TestTCPShifting(t *testing.T) {
 	defer recoverPanic(t)
 
 	log.Infof("# TestTCPShifting")
-	tcpPort, _ := util.GetTCPIngressPort(meshNamespace, "istio-ingressgateway", kubeconfig)
 
+	deploySleep(testNamespace)
 	deployEcho(testNamespace)
 
 	t.Run("TrafficManagement_100_percent_v1_tcp_shift_test", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("# Shifting all TCP traffic to v1")
-		if err := util.KubeApply(testNamespace, echoAllv1Yaml, kubeconfig); err != nil {
+		util.KubeApply(testNamespace, echoAllv1Yaml, kubeconfig)
+
+		if err := util.KubeApplyContents(testNamespace, tcpEchoAllv1, kubeconfig); err != nil {
 			t.Errorf("Failed to shift traffic to all v1")
 			log.Errorf("Failed to shift traffic to all v1")
 		}
 		time.Sleep(time.Duration(waitTime*2) * time.Second)
 
-		tolerance := 0.1
-		totalShot := 10
-		versionCount := 0
-
-		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot*1)
-
-		for i := 0; i < totalShot; i++ {
-			time.Sleep(time.Duration(1) * time.Second)
-			msg, err := checkEcho(gatewayHTTP, tcpPort)
-			if err != nil {
-				msg, err = checkEcho(gatewayHTTP, tcpPort)
-			}
-			util.Inspect(err, "Faild to get date", "", t)
-			if strings.Contains(msg, "one") {
-				versionCount++
+		sleepPod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfig)
+		util.Inspect(err, "Failed to get sleep pod name", "", t)
+		cmd := fmt.Sprintf("sh -c \"(date; sleep 1) | nc %s %s\"", "tcp-echo", "9000")
+		for i := 0; i < 20; i++ {
+			msg, err := util.PodExec(testNamespace, sleepPod, "sleep", cmd, true, kubeconfig)
+			util.Inspect(err, "Failed to get response", "", t)
+			if !strings.Contains(msg, "one") {
+				t.Errorf("echo one; Got response: %s", msg)
+				log.Errorf("echo one; Got response: %s", msg)
 			} else {
-				log.Errorf("Unexpected echo version: %s", msg)
+				log.Infof("%s", msg)
 			}
-		}
-
-		if isWithinPercentage(versionCount, totalShot, 1, tolerance) {
-			log.Info("Success. TCP Traffic shifting acts as expected for 100 percent.")
-		} else {
-			t.Errorf(
-				"Failed traffic shifting test for 100 percent. "+
-					"Expected version hit %d", versionCount)
 		}
 	})
 
 	t.Run("TrafficManagement_20_percent_v2_tcp_shift_test", func(t *testing.T) {
 		defer recoverPanic(t)
 
-		log.Info("# Shifting 20% TCP traffic to v2 tolerance 10% ")
-		if err := util.KubeApply(testNamespace, echo20v2Yaml, kubeconfig); err != nil {
+		log.Info("# Shifting 20% TCP traffic to v2 tolerance 15% ")
+		if err := util.KubeApplyContents(testNamespace, tcpEcho20v2, kubeconfig); err != nil {
 			t.Errorf("Failed to shift traffic to 20 percent v2")
 			log.Errorf("Failed to shift traffic to 20 percent v2")
 		}
@@ -103,15 +84,13 @@ func TestTCPShifting(t *testing.T) {
 		totalShot := 60
 		c1, c2 := 0, 0
 
-		log.Infof("Waiting for checking echo dates. Sleep %d seconds...", totalShot*2)
+		sleepPod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfig)
+		util.Inspect(err, "Failed to get sleep pod name", "", t)
+		cmd := fmt.Sprintf("sh -c \"(date; sleep 1) | nc %s %s\"", "tcp-echo", "9000")
 
 		for i := 0; i < totalShot; i++ {
-			time.Sleep(time.Duration(2) * time.Second)
-			msg, err := checkEcho(gatewayHTTP, tcpPort)
-			if err != nil {
-				msg, err = checkEcho(gatewayHTTP, tcpPort)
-			}
-			util.Inspect(err, "Failed to get date", "", t)
+			msg, err := util.PodExec(testNamespace, sleepPod, "sleep", cmd, true, kubeconfig)
+			util.Inspect(err, "Failed to get response", "", t)
 			if strings.Contains(msg, "one") {
 				c1++
 			} else if strings.Contains(msg, "two") {
