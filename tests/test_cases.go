@@ -30,12 +30,10 @@ var testCases = []testing.InternalTest{
 		Name: "03",
 		F:    TestTrafficShifting,
 	},
-	/*
-		testing.InternalTest {
-			Name: "04",
-			F: TestTCPShifting,
-		},
-	*/
+	testing.InternalTest{
+		Name: "04",
+		F:    TestTCPShifting,
+	},
 	testing.InternalTest{
 		Name: "05",
 		F:    TestRequestTimeouts,

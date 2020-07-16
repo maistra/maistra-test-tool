@@ -1949,4 +1949,45 @@ spec:
   - name: :path
     values: [ '"/status/418"' ]
 `
+
+	tcpEchoAllv1 = `
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: tcp-echo
+spec:
+  hosts:
+  - tcp-echo
+  tcp:
+  - route:
+    - destination:
+        host: tcp-echo
+        port:
+          number: 9000
+        subset: v1
+`
+
+	tcpEcho20v2 = `
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: tcp-echo
+spec:
+  hosts:
+  - tcp-echo
+  tcp:
+  - route:
+    - destination:
+        host: tcp-echo
+        port:
+          number: 9000
+        subset: v1
+      weight: 80
+    - destination:
+        host: tcp-echo
+        port:
+          number: 9000
+        subset: v2
+      weight: 20
+`
 )
