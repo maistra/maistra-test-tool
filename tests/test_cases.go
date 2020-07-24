@@ -140,4 +140,8 @@ var testCases = []testing.InternalTest{
 		Name: "30",
 		F:    TestGrafanaMetrics,
 	},
+	testing.InternalTest{
+		Name: "31",
+		F:    TestTLSVersionSMCP,
+	},
 }
