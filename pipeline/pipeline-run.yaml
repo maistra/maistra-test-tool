@@ -1,8 +1,0 @@
-apiVersion: tekton.dev/v1beta1
-kind: PipelineRun
-metadata:
-  generateName: acc-tests-run
-spec:
-  serviceAccountName: pipeline
-  pipelineRef:
-    name: acc-tests-pipeline
