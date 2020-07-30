@@ -1,0 +1,34 @@
+apiVersion: tekton.dev/v1beta1
+kind: ClusterTask
+metadata:
+  name: run-all-acc-tests
+  namespace: maistra-pipelines
+spec:
+  steps:
+  - name: run-all-test-cases
+    image: quay.io/maistra/maistra-test-tool:latest
+    workingDir: /opt/tests
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: acc-tests-pipeline
+  namespace: maistra-pipelines
+spec:
+  tasks:
+  - name: run-maistra-acc-tests
+    taskRef:
+      name: run-all-acc-tests
+      kind: ClusterTask
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: acc-tests-run
+  namespace: maistra-pipelines
+spec:
+  serviceAccountName: pipeline
+  pipelineRef:
+    name: acc-tests-pipeline
