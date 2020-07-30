@@ -9,3 +9,7 @@ RUN microdnf install python3 golang tar gzip \
     && microdnf update \
     && microdnf clean all
 
+COPY tests /bin/tests
+WORKDIR /bin/tests
+
+ENTRYPOINT main.sh
