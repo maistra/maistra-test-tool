@@ -144,4 +144,8 @@ var testCases = []testing.InternalTest{
 		Name: "31",
 		F:    TestTLSVersionSMCP,
 	},
+	testing.InternalTest{
+		Name: "32",
+		F:    TestSSL,
+	},
 }

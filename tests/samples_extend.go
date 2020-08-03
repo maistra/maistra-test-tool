@@ -1990,4 +1990,25 @@ spec:
         subset: v2
       weight: 20
 `
+
+	testSSLDeployment = `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testssl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: testssl
+  template:
+    metadata:
+      labels:
+        app: testssl
+    spec:
+      containers:
+      - name: testssl
+        image: quay.io/maistra/testssl:latest
+        imagePullPolicy: Always
+`
 )
