@@ -12,11 +12,16 @@ properties([
             description: 'OCP Server URL'
         ),
         string(
-            name: 'IKE_USER',
+            name: 'ADMIN_USER',
             defaultValue: '',
             description: 'OCP login user'
         ),
-        password(name: 'IKE_PWD', description: 'User password')
+        string(
+            name: 'BUILD_NAME',
+            defaultValue: "${env.BUILD_NUMBER}",
+            description: 'currentBuild displayName such as ocp4_4_ossm_1_1_7'
+        ),
+        password(name: 'ADMIN_PWD', description: 'User password')
     ])
 ])
 
@@ -28,7 +33,7 @@ if (util.getWhoBuild() == "[]") {
 
     echo "Nothing to do!"
 
-} else if (OCP_SERVER == "" | IKE_USER == "" | IKE_PWD == ""){
+} else if (OCP_SERVER == "" | ADMIN_USER == "" | ADMIN_PWD == ""){
       // Define the build name and informations about it
       currentBuild.displayName = "Not Applicable"
       currentBuild.description = "Need more info"
@@ -39,7 +44,7 @@ if (util.getWhoBuild() == "[]") {
 
     node('master'){
         // Define the build name and informations about it
-        currentBuild.displayName = "${env.BUILD_NUMBER}"
+        currentBuild.displayName = "${params.BUILD_NAME}"
         currentBuild.description = util.htmlDescription(util.whoBuild(util.getWhoBuild()))
 
         try {
@@ -47,10 +52,10 @@ if (util.getWhoBuild() == "[]") {
             gitSteps()
             stage("Login and Create New Project"){
                 // Will print the masked value of the KEY, replaced with ****
-                wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: 'IKE_PWD', password: IKE_PWD]], varMaskRegexes: []]) {
+                wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: 'ADMIN_PWD', password: ADMIN_PWD]], varMaskRegexes: []]) {
                     sh """
                         #!/bin/bash
-                        oc login -u ${params.IKE_USER} -p ${IKE_PWD} --server="${params.OCP_SERVER}" --insecure-skip-tls-verify=true
+                        oc login -u ${params.ADMIN_USER} -p ${ADMIN_PWD} --server="${params.OCP_SERVER}" --insecure-skip-tls-verify=true
                         oc new-project maistra-pipelines || true
                     """
                 }
@@ -94,6 +99,9 @@ if (util.getWhoBuild() == "[]") {
                 sh """
                     oc cp maistra-pipelines/${podName}:test.log ${WORKSPACE}/tests/test.log -c step-run-all-test-cases
                     oc cp maistra-pipelines/${podName}:results.xml ${WORKSPACE}/tests/results.xml -c step-run-all-test-cases
+
+                    cd pipeline
+                    oc delete -f pipeline-run-acc-tests.yaml
                 """
             }
 
