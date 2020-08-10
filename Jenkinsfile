@@ -8,15 +8,15 @@ properties([
     parameters([
         string(
             name: 'OCP_SERVER',
-            defaultValue: 'https://api.yuaxu-maistra-daily.devcluster.openshift.com:6443',
-            description: 'OCP Server that will be used'
+            defaultValue: '',
+            description: 'OCP Server URL'
         ),
         string(
             name: 'IKE_USER',
-            defaultValue: 'ike',
-            description: 'OCP Server that will be used'
+            defaultValue: '',
+            description: 'OCP login user'
         ),
-        password(name: 'IKE_PWD', description: 'Encryption key')
+        password(name: 'IKE_PWD', description: 'User password')
     ])
 ])
 
@@ -45,7 +45,7 @@ if (util.getWhoBuild() == "[]") {
         try {
             // Workspace cleanup and git checkout
             gitSteps()
-            stage("Create New Project"){
+            stage("Login and Create New Project"){
                 // Will print the masked value of the KEY, replaced with ****
                 wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: 'IKE_PWD', password: IKE_PWD]], varMaskRegexes: []]) {
                     sh """
@@ -60,9 +60,40 @@ if (util.getWhoBuild() == "[]") {
                     #!/bin/bash
                     cd pipeline
                     oc apply -f openshift-pipeline-subscription.yaml
+                    sleep 40
                     oc apply -f pipeline-cluster-role-binding.yaml
-                    oc apply -f pipeline-run-acc-tests.yaml
                 """
+            }
+            stage("Start running all tests"){
+                sh """
+                    #!/bin/bash
+                    oc apply -f pipeline-run-acc-tests.yaml
+                    sleep 10
+                    podName=$(oc get pods -n maistra-pipelines -l tekton.dev/task=run-all-acc-tests -o jsonpath="{.items[0].metadata.name}")
+                """
+            }
+            stage("check test completed"){
+                sh """
+                    #!/bin/bash
+                    oc logs -n maistra-pipelines ${podName} -c step-run-all-test-cases | grep "#Acc Tests completed#"
+                    while [ $? -ne 0 ]; do
+                        sleep 60;
+                        oc logs -n maistra-pipelines ${podName} -c step-run-all-test-cases | grep "#Acc Tests completed#"
+                    done
+                """
+            }
+            stage("collect logs"){
+                sh """
+                    #!/bin/bash
+                    oc cp maistra-pipelines/${podName}:test.log ${WORKSPACE}/tests/test.log -c step-run-all-test-cases
+                    oc cp maistra-pipelines/${podName}:results.xml ${WORKSPACE}/tests/results.xml -c step-run-all-test-cases
+                """
+            }
+
+            post {
+                always {
+                    archiveArtifacts artifacts: 'tests/results.xml,tests/test.log'
+                }
             }
         } catch(e) {
             currentBuild.result = "FAILED"
