@@ -30,5 +30,6 @@ metadata:
   namespace: maistra-pipelines
 spec:
   serviceAccountName: pipeline
+  timeout: 3h
   pipelineRef:
     name: acc-tests-pipeline

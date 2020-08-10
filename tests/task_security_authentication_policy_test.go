@@ -410,9 +410,9 @@ func TestAuthPolicy(t *testing.T) {
 
 		log.Info("Install python package jwcrypto using /usr/bin/python")
 		util.Shell("/usr/bin/python -m pip install --user jwcrypto")
-		util.Shell("wget %s", jwtGen)
+		util.Shell("curl -Lo ./gen-jwt.py %s", jwtGen)
 		util.Shell("chmod +x gen-jwt.py")
-		util.Shell("wget %s", jwtKey)
+		util.Shell("curl -Lo ./key.pem %s", jwtKey)
 
 		log.Info("Check curls return severl 200s and then severl 401s")
 		token, err = util.ShellMuteOutput("/usr/bin/python gen-jwt.py key.pem --expire 5")
