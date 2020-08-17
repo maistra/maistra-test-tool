@@ -118,10 +118,10 @@ if (util.getWhoBuild() == "[]") {
                     def moreInfo = "- Executed by: *${executedBy}*"
 
                     // Slack message to who ran the job
-                    slackMessage(currentBuild.result,moreInfo)
+                    slackMessage(currentBuild.result,moreInfo,currentBuild.displayName)
 
                     // Send email to notify
-                    emailMessage(currentBuild.result,"istio-test@redhat.com", "tests/results.xml,tests/test.log","maistra-test-tool")
+                    emailMessage(currentBuild.result,"istio-test@redhat.com", "tests/results.xml,tests/test.log",currentBuild.displayName)
                 }
             } 
         }
