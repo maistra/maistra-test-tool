@@ -24,14 +24,14 @@ Prepare the initial configuration for the mesh. This creates a root key and cert
 that will sign intermediate certs for each cluster.
 
 ```bash
-./setup-mesh.sh prep
+./setup-mesh.sh prep_mesh
 ```
 
 Add clusters to mesh and apply the configuration to build the multicluster
 
 ```bash
 # add clusters to the mesh following the example in the topology file.
-# Clusters are identifed by the context name as defined by the kubeconfig
+# Clusters are identified by the context name as defined by the kubeconfig
 # file.
 ${EDITOR} ${WORKDIR}/topology.yaml
 

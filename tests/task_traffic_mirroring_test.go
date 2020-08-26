@@ -77,7 +77,7 @@ func TestMirroring(t *testing.T) {
 
 		sleepPod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfig)
 		util.Inspect(err, "Failed to get sleep pod name", "", t)
-		_, err = util.PodExec(testNamespace, sleepPod, "sleep", "sh -c 'curl  http://httpbin:8080/headers' | python -m json.tool", true, kubeconfig)
+		_, err = util.PodExec(testNamespace, sleepPod, "sleep", "sh -c 'curl  http://httpbin:8000/headers' | python -m json.tool", true, kubeconfig)
 		util.Inspect(err, "Failed to get sleep curl response", "", t)
 
 		// check httpbin v1 logs
@@ -109,7 +109,7 @@ func TestMirroring(t *testing.T) {
 
 		sleepPod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfig)
 		util.Inspect(err, "Failed to get sleep pod name", "", t)
-		_, err = util.PodExec(testNamespace, sleepPod, "sleep", "sh -c 'curl  http://httpbin:8080/headers' | python -m json.tool", true, kubeconfig)
+		_, err = util.PodExec(testNamespace, sleepPod, "sleep", "sh -c 'curl  http://httpbin:8000/headers' | python -m json.tool", true, kubeconfig)
 		util.Inspect(err, "Failed to get sleep curl response", "", t)
 
 		// check httpbin v1 logs

@@ -74,7 +74,7 @@ spec:
       serviceAccountName: bookinfo-details
       containers:
       - name: details
-        image: maistra/examples-bookinfo-details-v1:1.1.0
+        image: maistra/examples-bookinfo-details-v1:1.2.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9080
@@ -127,7 +127,7 @@ spec:
       serviceAccountName: bookinfo-ratings
       containers:
       - name: ratings
-        image: maistra/examples-bookinfo-ratings-v1:1.1.0
+        image: maistra/examples-bookinfo-ratings-v1:1.2.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9080
@@ -180,10 +180,23 @@ spec:
       serviceAccountName: bookinfo-reviews
       containers:
       - name: reviews
-        image: maistra/examples-bookinfo-reviews-v1:1.1.0
+        image: maistra/examples-bookinfo-reviews-v1:1.2.0
         imagePullPolicy: IfNotPresent
+        env:
+        - name: LOG_DIR
+          value: "/tmp/logs"
         ports:
         - containerPort: 9080
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: wlp-output
+          mountPath: /opt/ibm/wlp/output
+      volumes:
+      - name: wlp-output
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -209,10 +222,23 @@ spec:
       serviceAccountName: bookinfo-reviews
       containers:
       - name: reviews
-        image: maistra/examples-bookinfo-reviews-v2:1.1.0
+        image: maistra/examples-bookinfo-reviews-v2:1.2.0
         imagePullPolicy: IfNotPresent
+        env:
+        - name: LOG_DIR
+          value: "/tmp/logs"
         ports:
         - containerPort: 9080
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: wlp-output
+          mountPath: /opt/ibm/wlp/output
+      volumes:
+      - name: wlp-output
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -238,10 +264,23 @@ spec:
       serviceAccountName: bookinfo-reviews
       containers:
       - name: reviews
-        image: maistra/examples-bookinfo-reviews-v3:1.1.0
+        image: maistra/examples-bookinfo-reviews-v3:1.2.0
         imagePullPolicy: IfNotPresent
+        env:
+        - name: LOG_DIR
+          value: "/tmp/logs"
         ports:
         - containerPort: 9080
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: wlp-output
+          mountPath: /opt/ibm/wlp/output
+      volumes:
+      - name: wlp-output
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}
 ---
 ##################################################################################################
 # Productpage services
@@ -291,8 +330,14 @@ spec:
       serviceAccountName: bookinfo-productpage
       containers:
       - name: productpage
-        image: maistra/examples-bookinfo-productpage-v1:1.1.0
+        image: maistra/examples-bookinfo-productpage-v1:1.2.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9080
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
 ---

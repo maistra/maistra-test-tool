@@ -27,13 +27,15 @@ spec:
       version: v2-mysql
   template:
     metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
       labels:
         app: ratings
         version: v2-mysql
     spec:
       containers:
       - name: ratings
-        image: maistra/examples-bookinfo-ratings-v2:1.1.0
+        image: maistra/examples-bookinfo-ratings-v2:1.2.0
         imagePullPolicy: IfNotPresent
         env:
           # ratings-v2 will use mongodb as the default db backend.

@@ -131,9 +131,9 @@ spec:
       - image: docker.io/kennethreitz/httpbin
         imagePullPolicy: IfNotPresent
         name: httpbin
-        command: ["gunicorn", "--access-logfile", "-", "-b", "0.0.0.0:8080", "httpbin:app"]
+        command: ["gunicorn", "--access-logfile", "-", "-b", "0.0.0.0:80", "httpbin:app"]
         ports:
-        - containerPort: 8080
+        - containerPort: 80
 `
 
 	httpbinv2 = `
@@ -159,9 +159,9 @@ spec:
       - image: docker.io/kennethreitz/httpbin
         imagePullPolicy: IfNotPresent
         name: httpbin
-        command: ["gunicorn", "--access-logfile", "-", "-b", "0.0.0.0:8080", "httpbin:app"]
+        command: ["gunicorn", "--access-logfile", "-", "-b", "0.0.0.0:80", "httpbin:app"]
         ports:
-        - containerPort: 8080
+        - containerPort: 80
 `
 
 	httpbinService = `
@@ -174,7 +174,8 @@ metadata:
 spec:
   ports:
   - name: http
-    port: 8080
+    port: 8000
+    targetPort: 80
   selector:
     app: httpbin
 `
@@ -259,6 +260,7 @@ spec:
     mirror:
       host: httpbin
       subset: v2
+    mirror_percent: 100
 `
 
 	httpbinGateway1 = `
