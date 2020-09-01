@@ -32,43 +32,46 @@ const (
 
 	bookinfoDBYaml = "samples/bookinfo/platform/kube/bookinfo-db.yaml"
 
-	bookinfoServerCert    = "certs/bookinfo.com/bookinfo.com.crt"
-	bookinfoServerCertKey = "certs/bookinfo.com/bookinfo.com.key"
-	bookinfoSampleCACert  = "certs/bookinfo.com/example.com.crt"
+	bookinfoServerCert    = "sampleCerts/bookinfo.com/bookinfo.com.crt"
+	bookinfoServerCertKey = "sampleCerts/bookinfo.com/bookinfo.com.key"
+	bookinfoSampleCACert  = "sampleCerts/bookinfo.com/example.com.crt"
 
 	bookinfoMetrics = "samples/bookinfo/telemetry/metrics.yaml"
 
 	httpbinYaml       = "samples/httpbin/httpbin.yaml"
 	httpbinFortioYaml = "samples/httpbin/sample-client/fortio-deploy.yaml"
-	httpbinLegacyYaml = "samples/httpbin/httpbin-1.1-legacy.yaml"
+	httpbinLegacyYaml = "samples_legacy/httpbin.yaml"
 
-	httpbinSampleServerCertKey = "certs/httpbin.example.com/httpbin.example.com.key"
-	httpbinSampleServerCert    = "certs/httpbin.example.com/httpbin.example.com.crt"
-	httpbinSampleCACert        = "certs/httpbin.example.com/example.com.crt"
-	httpbinSampleClientCert    = "certs/httpbin.example.com/httpbin-client.example.com.crt"
-	httpbinSampleClientCertKey = "certs/httpbin.example.com/httpbin-client.example.com.key"
+	httpbinSampleServerCertKey = "sampleCerts/httpbin.example.com/httpbin.example.com.key"
+	httpbinSampleServerCert    = "sampleCerts/httpbin.example.com/httpbin.example.com.crt"
+	httpbinSampleCACert        = "sampleCerts/httpbin.example.com/example.com.crt"
+	httpbinSampleClientCert    = "sampleCerts/httpbin.example.com/httpbin-client.example.com.crt"
+	httpbinSampleClientCertKey = "sampleCerts/httpbin.example.com/httpbin-client.example.com.key"
+
+	helloworldServerCertKey = "sampleCerts/helloworldv1/helloworld-v1.example.com.key"
+	helloworldServerCert    = "sampleCerts/helloworldv1/helloworld-v1.example.com.crt"
 
 	echoYaml      = "samples/tcp-echo/tcp-echo-services.yaml"
 	echoAllv1Yaml = "samples/tcp-echo/tcp-echo-all-v1.yaml"
 	echo20v2Yaml  = "samples/tcp-echo/tcp-echo-20-v2.yaml"
 
 	sleepYaml       = "samples/sleep/sleep.yaml"
-	sleepLegacyYaml = "samples/sleep/sleep-legacy.yaml"
+	sleepLegacyYaml = "samples_legacy/sleep.yaml"
 
 	nginxYaml          = "samples/https/nginx-app.yaml"
-	nginxNoSidecarYaml = "samples/https/nginx-app-without-sidecar.yaml"
+	nginxNoSidecarYaml = "samples_legacy/nginx-app.yaml"
 	nginxDefaultConfig = "samples/https/default.conf"
 
-	nginxServerCertKey = "certs/nginx.example.com/3_application/private/nginx.example.com.key.pem"
-	nginxServerCert    = "certs/nginx.example.com/3_application/certs/nginx.example.com.cert.pem"
-	nginxServerCACert  = "certs/nginx.example.com/2_intermediate/certs/ca-chain.cert.pem"
-	nginxClientCertKey = "certs/nginx.example.com/4_client/private/nginx.example.com.key.pem"
-	nginxClientCert    = "certs/nginx.example.com/4_client/certs/nginx.example.com.cert.pem"
+	nginxServerCertKey = "sampleCerts/nginx.example.com/3_application/private/nginx.example.com.key.pem"
+	nginxServerCert    = "sampleCerts/nginx.example.com/3_application/certs/nginx.example.com.cert.pem"
+	nginxServerCACert  = "sampleCerts/nginx.example.com/2_intermediate/certs/ca-chain.cert.pem"
+	nginxClientCertKey = "sampleCerts/nginx.example.com/4_client/private/nginx.example.com.key.pem"
+	nginxClientCert    = "sampleCerts/nginx.example.com/4_client/certs/nginx.example.com.cert.pem"
 
-	caCert      = "certs/ca-cert.pem"
-	caCertKey   = "certs/ca-key.pem"
-	caRootCert  = "certs/root-cert.pem"
-	caCertChain = "certs/cert-chain.pem"
+	caCert      = "sampleCerts/ca-cert.pem"
+	caCertKey   = "sampleCerts/ca-key.pem"
+	caRootCert  = "sampleCerts/root-cert.pem"
+	caCertChain = "sampleCerts/cert-chain.pem"
 
 	keyvaltemplate = "samples/httpbin/policy/keyval-template.yaml"
 	keyvalYaml     = "samples/httpbin/policy/keyval.yaml"

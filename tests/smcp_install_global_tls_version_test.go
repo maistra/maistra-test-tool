@@ -33,7 +33,7 @@ func cleanupTestTLSVersionSMCP() {
 
 func TestTLSVersionSMCP(t *testing.T) {
 	defer cleanupTestTLSVersionSMCP()
-	
+
 	t.Run("Operator_test_smcp_global_tls_minVersion_TLSv1_0", func(t *testing.T) {
 		defer recoverPanic(t)
 

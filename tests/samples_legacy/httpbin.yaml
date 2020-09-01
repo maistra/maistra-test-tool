@@ -16,6 +16,11 @@
 # httpbin service
 ##################################################################################################
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: httpbin
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: httpbin
@@ -25,6 +30,7 @@ spec:
   ports:
   - name: http
     port: 8000
+    targetPort: 80
   selector:
     app: httpbin
 ---
@@ -44,9 +50,10 @@ spec:
         app: httpbin
         version: v1
     spec:
+      serviceAccountName: httpbin
       containers:
-      - image: docker.io/citizenstig/httpbin
+      - image: docker.io/kennethreitz/httpbin
         imagePullPolicy: IfNotPresent
         name: httpbin
         ports:
-        - containerPort: 8000
+        - containerPort: 80
