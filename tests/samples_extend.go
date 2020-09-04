@@ -431,6 +431,47 @@ spec:
         host: httpbin
 `
 
+	httpbinTLSGatewayHTTPS = `
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: mygateway
+spec:
+  selector:
+    istio: ingressgateway # use istio default ingress gateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: httpbin-credential # must be the same as secret
+    hosts:
+    - httpbin.example.com
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: httpbin
+spec:
+  hosts:
+  - "httpbin.example.com"
+  gateways:
+  - mygateway
+  http:
+  - match:
+    - uri:
+        prefix: /status
+    - uri:
+        prefix: /delay
+    route:
+    - destination:
+        port:
+          number: 8000
+        host: httpbin
+`
+
 	httpbinOCPRouteHTTPS = `
 apiVersion: route.openshift.io/v1
 kind: Route
@@ -529,6 +570,26 @@ spec:
       caCertificates: /etc/istio/ingressgateway-ca-certs/example.com.crt
     hosts:
     - "httpbin.example.com"
+`
+
+	httpbinTLSGatewayMTLS = `
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+ name: mygateway
+spec:
+ selector:
+   istio: ingressgateway # use istio default ingress gateway
+ servers:
+ - port:
+     number: 443
+     name: https
+     protocol: HTTPS
+   tls:
+     mode: MUTUAL
+     credentialName: httpbin-credential # must be the same as secret
+   hosts:
+   - httpbin.example.com
 `
 
 	gatewayPatchJSON = `

@@ -50,109 +50,103 @@ var testCases = []testing.InternalTest{
 		Name: "08",
 		F:    TestIngressGateways,
 	},
-	/*
-		testing.InternalTest{
-			Name: "09",
-			F:    TestIngressK8s,
-		},
-	*/
 	testing.InternalTest{
-		Name: "10",
-		F:    TestIngressGatewaysFileMount,
+		Name: "09",
+		F:    TestIngressTLSGateways,
 	},
 	testing.InternalTest{
-		Name: "11",
+		Name: "10",
 		F:    TestIngressWithOutTLS,
 	},
 	testing.InternalTest{
-		Name: "12",
+		Name: "11",
 		F:    TestAccessExternalServices,
 	},
 	testing.InternalTest{
-		Name: "13",
+		Name: "12",
 		F:    TestEgressTLSOrigination,
 	},
 	testing.InternalTest{
-		Name: "14",
+		Name: "13",
 		F:    TestEgressGateways,
 	},
 	testing.InternalTest{
-		Name: "15",
+		Name: "14",
 		F:    TestEgressGatewaysTLSOrigination,
 	},
 	testing.InternalTest{
-		Name: "16",
+		Name: "15",
 		F:    TestExternalCert,
 	},
 	testing.InternalTest{
-		Name: "17",
+		Name: "16",
 		F:    TestAuthPolicy,
 	},
 	testing.InternalTest{
-		Name: "18",
+		Name: "17",
 		F:    TestAuthMTLSMigration,
 	},
 	testing.InternalTest{
-		Name: "19",
+		Name: "18",
 		F:    TestAuthMTLS,
 	},
 	testing.InternalTest{
-		Name: "20",
+		Name: "19",
 		F:    TestAuthMTLSHTTPS,
 	},
 	testing.InternalTest{
-		Name: "21",
+		Name: "20",
 		F:    TestCitadelHealthCheck,
 	},
 	testing.InternalTest{
-		Name: "22",
+		Name: "21",
 		F:    TestCitadelSecretGeneration,
 	},
 	testing.InternalTest{
-		Name: "23",
+		Name: "22",
 		F:    TestAuthorizationHTTP,
 	},
 	/*
 		testing.InternalTest{
-			Name: "24",
+			Name: "23",
 			F:    TestAuthorizationTCP,
 		},
 	*/
 	// Deprecated
 	testing.InternalTest{
-		Name: "25",
+		Name: "24",
 		F:    TestEnablePolicyEnforcement,
 	},
 	testing.InternalTest{
-		Name: "26",
+		Name: "25",
 		F:    TestRateLimits,
 	},
 	testing.InternalTest{
-		Name: "27",
+		Name: "26",
 		F:    TestControlHeadersRouting,
 	},
 	testing.InternalTest{
-		Name: "28",
+		Name: "27",
 		F:    TestDenials,
 	},
 	testing.InternalTest{
-		Name: "29",
+		Name: "28",
 		F:    TestJaegerTracing,
 	},
 	testing.InternalTest{
-		Name: "30",
+		Name: "29",
 		F:    TestPrometheusMetrics,
 	},
 	testing.InternalTest{
-		Name: "31",
+		Name: "30",
 		F:    TestGrafanaMetrics,
 	},
 	testing.InternalTest{
-		Name: "32",
+		Name: "31",
 		F:    TestTLSVersionSMCP,
 	},
 	testing.InternalTest{
-		Name: "33",
+		Name: "32",
 		F:    TestSSL,
 	},
 }

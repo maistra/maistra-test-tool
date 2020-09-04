@@ -46,7 +46,6 @@ func TestSSL(t *testing.T) {
 		log.Info("Update SMCP mtls to true")
 		util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace, smcpName)
 		time.Sleep(time.Duration(waitTime*4) * time.Second)
-		util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
 
 		log.Info("Update SMCP spec.istio.global.tls")
 
