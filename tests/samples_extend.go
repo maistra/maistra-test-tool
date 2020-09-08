@@ -2216,4 +2216,14 @@ spec:
         port:
           number: 5000
 `
+
+	PeerAuthPolicy = `
+apiVersion: "security.istio.io/v1beta1"
+kind: "PeerAuthentication"
+metadata:
+  name: "default"
+spec:
+  mtls:
+    mode: STRICT
+`
 )

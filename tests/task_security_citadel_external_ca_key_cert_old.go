@@ -30,10 +30,10 @@ func cleanupExternalCert(namespace string) {
 	log.Info("# Cleanup ...")
 	util.Shell("kubectl delete secret cacerts -n %s", meshNamespace)
 	cleanBookinfo(namespace)
-	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"security\":{\"selfSigned\":true}}}}'", meshNamespace, smcpName)
+	util.ShellMuteOutput("kubectl patch -n %s servicemeshcontrolplanes.v1.maistra.io/%s --type merge -p '{\"spec\":{\"istio\":{\"security\":{\"selfSigned\":true}}}}'", meshNamespace, smcpName)
 	time.Sleep(time.Duration(waitTime*10) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=citadel", kubeconfig)
-	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
+	util.ShellMuteOutput("kubectl patch -n %s servicemeshcontrolplanes.v1.maistra.io/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
 	time.Sleep(time.Duration(waitTime*10) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=pilot", kubeconfig)
 	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
@@ -97,10 +97,8 @@ func TestExternalCert(t *testing.T) {
 
 	// update mtls to true
 	log.Info("Update SMCP mtls to true")
-	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace, smcpName)
+	util.ShellMuteOutput("kubectl patch -n %s servicemeshcontrolplanes.v1.maistra.io/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace, smcpName)
 	time.Sleep(time.Duration(waitTime*10) * time.Second)
-	util.CheckPodRunning(meshNamespace, "istio=pilot", kubeconfig)
-	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
 	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
 

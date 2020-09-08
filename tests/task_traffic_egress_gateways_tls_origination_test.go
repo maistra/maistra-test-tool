@@ -43,10 +43,10 @@ func TestEgressGatewaysTLSOrigination(t *testing.T) {
 
 	log.Info("# TestEgressGatewaysTLSOrigination")
 	log.Info("Enable Envoy's access logging")
-	util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"proxy\":{\"accessLogFile\":\"/dev/stdout\"}}}}}'", meshNamespace, smcpName)
+	util.Shell("kubectl patch -n %s servicemeshcontrolplanes.v1.maistra.io/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"proxy\":{\"accessLogFile\":\"/dev/stdout\"}}}}}'", meshNamespace, smcpName)
 
 	log.Info("Enable istio-ingressgateway ior")
-	util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"gateways\":{\"istio-ingressgateway\":{\"ior_enabled\":\"true\"}}}}}'", meshNamespace, smcpName)
+	util.Shell("kubectl patch -n %s servicemeshcontrolplanes.v1.maistra.io/%s --type merge -p '{\"spec\":{\"istio\":{\"gateways\":{\"istio-ingressgateway\":{\"ior_enabled\":\"true\"}}}}}'", meshNamespace, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
