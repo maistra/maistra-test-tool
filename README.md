@@ -20,6 +20,9 @@ The testing follows [Istio Doc Tasks](https://istio.io/v1.4/docs/tasks/) and [Ma
 | --        | --            |
 | OS        | Fedora 28+    |
 | Golang    | 1.13+         |
+| Python    | 3.7+          |
+
+The host machine which triggers test scripts must have Golang and Python installed before running go tests.
 
 
 ## Testing Prerequisite
