@@ -17,6 +17,7 @@ package tests
 import (
 	"fmt"
 	"io/ioutil"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -91,7 +92,9 @@ func TestControlHeadersRouting(t *testing.T) {
 		util.Inspect(err, "Failed to get HTTP Response", "", t)
 		body, err := ioutil.ReadAll(resp.Body)
 		util.Inspect(err, "Failed to read response body", "", t)
-		if strings.Contains(string(body), "\"User-Group\": \"admin\"") {
+
+		_, err = regexp.MatchString(`"User-Group":*"admin"`, string(body))
+		if err == nil {
 			log.Infof("Get expected headers: %s", string(body))
 		} else {
 			t.Errorf("Missing User-Group: admin headers: %s", string(body))
