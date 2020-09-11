@@ -21,9 +21,12 @@ The testing follows [Istio Doc Tasks](https://istio.io/v1.4/docs/tasks/) and [Ma
 | OS        | Fedora 28+    |
 | Golang    | 1.13+         |
 | Python    | 3.7+          |
+| python3-pip |             |
+
 
 The host machine which triggers test scripts must have Golang and Python installed before running go tests.
 
+python3-pip is required for testing Security_authentication_end-user_JWT
 
 ## Testing Prerequisite
 
