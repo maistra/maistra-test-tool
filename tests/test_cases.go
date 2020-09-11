@@ -76,10 +76,12 @@ var testCases = []testing.InternalTest{
 		Name: "14",
 		F:    TestEgressGatewaysTLSOrigination,
 	},
-	testing.InternalTest{
-		Name: "15",
-		F:    TestExternalCert,
-	},
+	/*
+		testing.InternalTest{
+			Name: "15",
+			F:    TestExternalCert,
+		},
+	*/
 	testing.InternalTest{
 		Name: "16",
 		F:    TestAuthPolicy,

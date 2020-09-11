@@ -55,22 +55,7 @@ func prepareOCPConfig() {
 	time.Sleep(time.Duration(waitTime) * time.Second)
 
 	// if testing in mtls disable mode, update mtls to false
-	util.ShellSilent("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
-	// enable ior
-	util.ShellSilent("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"gateways\":{\"istio-ingressgateway\":{\"ior_enabled\":\"true\"}}}}}'", meshNamespace, smcpName)
-	time.Sleep(time.Duration(waitTime*4) * time.Second)
-	// TBD: path smcp ingressgateway loadbalancer
-
-	// add anyuid
-	// 10/TrafficManagement_ingress_configure_ingress_gateway_without_TLS_Termination
-	// 14/TestEgressGatewaysTLSOrigination
-	// 17/Mutual TLS over HTTPS
-	// nginx requires default sa anyuid scc
-	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z default -n %s", testNamespace)
-
-	// 23/TestAuthorizationTCP
-	util.ShellSilent("oc adm policy add-scc-to-user anyuid -z bookinfo-ratings-v2 -n %s", testNamespace)
-	time.Sleep(time.Duration(waitTime) * time.Second)
+	util.ShellSilent("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"mutualTLS\":{\"enable\":false,\"controlPlane\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
 }
 
 func curlWithCA(url, ingressHost, secureIngressPort, host, cacertFile string) (*http.Response, error) {

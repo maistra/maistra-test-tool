@@ -29,7 +29,7 @@ func cleanupAccessExternalServices(namespace string) {
 	util.KubeDeleteContents(testNamespace, httpbinextTimeout, kubeconfig)
 	util.KubeDeleteContents(namespace, googleextServiceEntry, kubeconfig)
 	util.KubeDeleteContents(namespace, httbinextServiceEntry, kubeconfig)
-	util.Shell("kubectl get configmap istio -n %s -o yaml | sed 's/mode: REGISTRY_ONLY/mode: ALLOW_ANY/g' | kubectl replace -n %s -f -", meshNamespace, meshNamespace)
+	util.Shell("kubectl get configmap istio-%s -n %s -o yaml | sed 's/mode: REGISTRY_ONLY/mode: ALLOW_ANY/g' | kubectl replace -n %s -f -", smcpName, meshNamespace, meshNamespace)
 	cleanSleep(namespace)
 	time.Sleep(time.Duration(waitTime*2) * time.Second)
 }
@@ -46,7 +46,7 @@ func TestAccessExternalServices(t *testing.T) {
 	t.Run("TrafficManagement_egress_envoy_passthrough_to_external_services", func(t *testing.T) {
 		defer recoverPanic(t)
 		log.Info("check the sidecar outboundTrafficPolicy mode")
-		util.Shell("kubectl get configmap istio -n %s -o yaml | grep -o \"mode: ALLOW_ANY\"", meshNamespace)
+		util.Shell("kubectl get configmap istio-%s -n %s -o yaml | grep -o \"mode: ALLOW_ANY\"", smcpName, meshNamespace)
 
 		log.Info("make requests to external https services")
 		command := "curl -I https://www.google.com | grep  \"HTTP/\""
@@ -64,7 +64,7 @@ func TestAccessExternalServices(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("update global.outboundTrafficPolicy.mode")
-		util.Shell("kubectl get configmap istio -n %s -o yaml | sed 's/mode: ALLOW_ANY/mode: REGISTRY_ONLY/g' | kubectl replace -n %s -f -", meshNamespace, meshNamespace)
+		util.Shell("kubectl get configmap istio-%s -n %s -o yaml | sed 's/mode: ALLOW_ANY/mode: REGISTRY_ONLY/g' | kubectl replace -n %s -f -", smcpName, meshNamespace, meshNamespace)
 		time.Sleep(time.Duration(waitTime*2) * time.Second)
 		command := "curl -I https://www.google.com | grep  \"HTTP/\""
 		_, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
