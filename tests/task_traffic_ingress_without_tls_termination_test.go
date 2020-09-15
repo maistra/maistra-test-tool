@@ -33,7 +33,8 @@ func cleanupIngressWithOutTLS(namespace string) {
 	util.KubeDeleteContents(namespace, nginxServer, kubeconfig)
 	util.ShellMuteOutput("kubectl delete secret nginx-server-certs -n %s", namespace)
 	util.ShellMuteOutput("kubectl delete configmap nginx-configmap -n %s", namespace)
-
+	util.Shell("kubectl get secret -n %s", namespace)
+	util.Shell("kubectl get configmap -n %s", namespace)
 	time.Sleep(time.Duration(waitTime*2) * time.Second)
 
 }

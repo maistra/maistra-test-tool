@@ -27,13 +27,15 @@ import (
 func cleanupEgressGatewaysTLSOrigination(namespace string) {
 	log.Info("# Cleanup ...")
 	util.KubeDeleteContents(namespace, sleepNginx, kubeconfig)
-	util.Shell("kubectl delete -n %s secret tls nginx-client-certs", namespace)
+	util.Shell("kubectl delete -n %s secret nginx-client-certs", namespace)
 	util.KubeDeleteContents(namespace, nginxSSLServer, kubeconfig)
 	util.Shell("kubectl delete configmap nginx-configmap -n %s", namespace)
-	util.Shell("kubectl delete -n %s secret tls nginx-server-certs", namespace)
-	util.Shell("kubectl delete -n %s secret generic nginx-ca-certs", namespace)
+	util.Shell("kubectl delete -n %s secret nginx-server-certs", namespace)
+	util.Shell("kubectl delete -n %s secret nginx-ca-certs", namespace)
 	util.KubeDeleteContents(namespace, cnnextGatewayTLSOrigination, kubeconfig)
 	cleanSleep(namespace)
+	util.Shell("kubectl get secret -n %s", namespace)
+	util.Shell("kubectl get configmap -n %s", namespace)
 	time.Sleep(time.Duration(waitTime*2) * time.Second)
 }
 

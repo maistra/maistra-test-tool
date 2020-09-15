@@ -60,7 +60,7 @@ func TestRateLimits(t *testing.T) {
 			t.Errorf("Failed to apply mixer rule")
 			log.Errorf("Failed to apply mixer rule")
 		}
-		time.Sleep(time.Duration(waitTime*4) * time.Second)
+		time.Sleep(time.Duration(waitTime*8) * time.Second)
 
 		log.Info("productpage permits 2 requests every 5 seconds. Verify 'Quota is exhausted' message")
 		i := 1
@@ -76,6 +76,7 @@ func TestRateLimits(t *testing.T) {
 				break
 			}
 			util.CloseResponseBody(resp)
+			time.Sleep(time.Duration(waitTime) * time.Second)
 		}
 		if i > 3 {
 			t.Errorf("Failed. Requests passed: %v times in 5 seconds", i)
@@ -93,7 +94,7 @@ func TestRateLimits(t *testing.T) {
 			t.Errorf("Failed to apply mixer rule")
 			log.Errorf("Failed to apply mixer rule")
 		}
-		time.Sleep(time.Duration(waitTime*4) * time.Second)
+		time.Sleep(time.Duration(waitTime*8) * time.Second)
 
 		log.Info("Login user jason should not see quota message")
 		for i := 0; i < 10; i++ {
@@ -107,6 +108,7 @@ func TestRateLimits(t *testing.T) {
 				log.Info("Success. Login user got expected all v1 response.")
 			}
 			util.CloseResponseBody(resp)
+			time.Sleep(time.Duration(waitTime*2) * time.Second)
 		}
 
 		log.Info("Logout user jason")
