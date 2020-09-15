@@ -36,7 +36,7 @@ func cleanupIngressTLSGateways(namespace string) {
 	util.ShellMuteOutput("kubectl delete secret %s -n %s", "httpbin-credential", meshNamespace)
 	util.ShellMuteOutput("kubectl delete secret %s -n %s", "helloworld-credential", meshNamespace)
 	cleanHttpbin(namespace)
-	time.Sleep(time.Duration(waitTime*4) * time.Second)
+	time.Sleep(time.Duration(waitTime*6) * time.Second)
 }
 
 func TestIngressTLSGateways(t *testing.T) {
