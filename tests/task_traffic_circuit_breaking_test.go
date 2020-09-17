@@ -72,7 +72,7 @@ func TestCircuitBreaking(t *testing.T) {
 		}
 
 		log.Info("# Tripping the circuit breaker")
-		connection := 3
+		connection := 2
 		reqCount := 50
 		tolerance := 0.45
 
