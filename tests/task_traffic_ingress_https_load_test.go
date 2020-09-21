@@ -1,0 +1,100 @@
+// Copyright 2020 Red Hat, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package tests
+
+import (
+	"io/ioutil"
+	"regexp"
+	"strings"
+	"testing"
+	"time"
+
+	"maistra/util"
+
+	"istio.io/pkg/log"
+)
+
+func cleanupIngressLoadTest(namespace string) {
+	log.Info("# Cleanup ...")
+	util.KubeDeleteContents(namespace, httpbinGatewayHTTPS, kubeconfig)
+	util.ShellMuteOutput("kubectl delete secret %s -n %s", "istio-ingressgateway-certs", meshNamespace)
+	util.ShellMuteOutput("sudo sed '/httpbin\\.example\\.com/d' -i /etc/hosts")
+
+	cleanHttpbin(namespace)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
+}
+
+func TestIngressLoad(t *testing.T) {
+	defer cleanupIngressLoadTest(testNamespace)
+	defer recoverPanic(t)
+	log.Infof("# TestIngressHttpsLoad")
+	deployHttpbin(testNamespace)
+
+	if _, err := util.CreateTLSSecret("istio-ingressgateway-certs", meshNamespace, httpbinSampleServerCertKey, httpbinSampleServerCert, kubeconfig); err != nil {
+		t.Errorf("Failed to create secret %s\n", "istio-ingressgateway-certs")
+		log.Infof("Failed to create secret %s\n", "istio-ingressgateway-certs")
+	}
+
+	// check cert
+	pod, err := util.GetPodName(meshNamespace, "istio=ingressgateway", kubeconfig)
+	msg, err := util.ShellSilent("kubectl exec --kubeconfig=%s -i -n %s %s -- %s ",
+		kubeconfig, meshNamespace, pod, "ls -al /etc/istio/ingressgateway-certs | grep tls.crt")
+	for err != nil {
+		msg, err = util.ShellSilent("kubectl exec --kubeconfig=%s -i -n %s %s -- %s ",
+			kubeconfig, meshNamespace, pod, "ls -al /etc/istio/ingressgateway-certs | grep tls.crt")
+		time.Sleep(time.Duration(waitTime*2) * time.Second)
+	}
+	log.Infof("Secret %s created: %s\n", "istio-ingressgateway-certs", msg)
+
+	// config https gateway
+	if err := util.KubeApplyContents(testNamespace, httpbinGatewayHTTPS, kubeconfig); err != nil {
+		t.Errorf("Failed to configure Gateway")
+		log.Errorf("Failed to configure Gateway")
+	}
+
+	t.Run("TrafficManagement_ingress_https_load_test", func(t *testing.T) {
+		defer recoverPanic(t)
+
+		// download Jmeter
+		util.ShellMuteOutput("curl -Lo ./apache-jmeter-5.3.tgz %s", jmeterURL)
+		util.ShellMuteOutput("tar -xzvf apache-jmeter-5.3.tgz")
+
+		// append hosts DNS
+		destIP, _ := util.ShellMuteOutput("dig +short $(oc get console.config.openshift.io cluster -o jsonpath='{.status.consoleURL}') | head -n 1 | tr -d '\n'")
+		util.ShellMuteOutput("echo \"%s httpbin.example.com\" | sudo tee -a /etc/hosts", destIP)
+
+		// check headers
+		url := "https://httpbin.example.com/headers"
+		resp, _ := util.ShellMuteOutput("curl -k -v %s", url)
+		if strings.Contains(resp, "headers") {
+			log.Info(string(resp))
+		} else {
+			t.Errorf("Failed to get headers: %v", string(resp))
+		}
+
+		// Run Load test
+		log.Infof("Start load testing. Wait 1 min...")
+		util.Shell("apache-jmeter-5.3/bin/jmeter -n -t config/AuthHTTPRequest.jmx.httpbin.xml | tee jmeter-report.out")
+
+		body, _ := ioutil.ReadFile("jmeter-report.out")
+		r, _ := regexp.Compile("[1-9]+(\\.[1-9]+)?%")
+		if r.MatchString(string(body)) {
+			log.Infof("Failed. Err rate is not zero.")
+			t.Errorf("Failed. Err rate is not zero.")
+		} else {
+			log.Infof("Load Test Pass.")
+		}
+	})
+}

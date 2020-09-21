@@ -422,6 +422,8 @@ spec:
         prefix: /status
     - uri:
         prefix: /delay
+    - uri:
+        prefix: /headers
     route:
     - destination:
         port:

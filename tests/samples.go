@@ -85,6 +85,8 @@ const (
 	// KIND
 	//gatewayHTTP 			= "localhost:8001/api/v1/namespaces/istio-system/services/istio-ingressgateway:80/proxy"
 
+	jmeterURL = "https://mirrors.ocf.berkeley.edu/apache//jmeter/binaries/apache-jmeter-5.3.tgz"
+
 	meshNamespace = "istio-system"
 	smcpName      = "basic-install"
 )

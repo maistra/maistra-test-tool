@@ -22,3 +22,9 @@
 reports
 results.xml
 test.log
+
+## Jmeter
+tests/apache-jmeter-5.3.tgz
+tests/apache-jmeter-5.3
+tests/jmeter-report.out
+tests/jmeter.log

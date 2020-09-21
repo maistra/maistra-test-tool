@@ -148,4 +148,8 @@ var testCases = []testing.InternalTest{
 		Name: "32",
 		F:    TestSSL,
 	},
+	testing.InternalTest{
+		Name: "33",
+		F:    TestIngressLoad,
+	},
 }
