@@ -98,64 +98,20 @@ var testCases = []testing.InternalTest{
 		Name: "19",
 		F:    TestAuthMTLSHTTPS,
 	},
-	// Deprecated
-	/*
-		testing.InternalTest{
-			Name: "20",
-			F:    TestCitadelHealthCheck,
-		},
-		testing.InternalTest{
-			Name: "21",
-			F:    TestCitadelSecretGeneration,
-		},
-	*/
 	testing.InternalTest{
 		Name: "20",
 		F:    TestAuthorizationHTTP,
 	},
-	/*
-		testing.InternalTest{
-			Name: "23",
-			F:    TestAuthorizationTCP,
-		},
-	*/
-	// Deprecated
-	/*
-		testing.InternalTest{
-			Name: "24",
-			F:    TestEnablePolicyEnforcement,
-		},
-		testing.InternalTest{
-			Name: "25",
-			F:    TestRateLimits,
-		},
-		testing.InternalTest{
-			Name: "26",
-			F:    TestControlHeadersRouting,
-		},
-		testing.InternalTest{
-			Name: "27",
-			F:    TestDenials,
-		},
-		testing.InternalTest{
-			Name: "28",
-			F:    TestJaegerTracing,
-		},
-		testing.InternalTest{
-			Name: "29",
-			F:    TestPrometheusMetrics,
-		},
-		testing.InternalTest{
-			Name: "30",
-			F:    TestGrafanaMetrics,
-		},
-	*/
 	testing.InternalTest{
-		Name: "31",
+		Name: "21",
 		F:    TestTLSVersionSMCP,
 	},
 	testing.InternalTest{
-		Name: "32",
+		Name: "22",
 		F:    TestSSL,
+	},
+	testing.InternalTest{
+		Name: "23",
+		F:    TestIngressLoad,
 	},
 }
