@@ -64,54 +64,14 @@ var testCases = []testing.InternalTest{
 	},
 	testing.InternalTest{
 		Name: "12",
-		F:    TestEgressTLSOrigination,
-	},
-	// require ior
-	testing.InternalTest{
-		Name: "13",
-		F:    TestEgressGateways,
-	},
-	// require ior
-	testing.InternalTest{
-		Name: "14",
-		F:    TestEgressGatewaysTLSOrigination,
-	},
-	/*
-		testing.InternalTest{
-			Name: "15",
-			F:    TestExternalCert,
-		},
-	*/
-	testing.InternalTest{
-		Name: "16",
-		F:    TestAuthPolicy,
-	},
-	testing.InternalTest{
-		Name: "17",
-		F:    TestAuthMTLSMigration,
-	},
-	testing.InternalTest{
-		Name: "18",
-		F:    TestAuthMTLS,
-	},
-	testing.InternalTest{
-		Name: "19",
-		F:    TestAuthMTLSHTTPS,
-	},
-	testing.InternalTest{
-		Name: "20",
-		F:    TestAuthorizationHTTP,
-	},
-	testing.InternalTest{
-		Name: "21",
 		F:    TestTLSVersionSMCP,
 	},
 	testing.InternalTest{
-		Name: "22",
+		Name: "13",
 		F:    TestSSL,
 	},
 	testing.InternalTest{
-		Name: "23",
+		Name: "14",
 		F:    TestIngressLoad,
 	},
 }

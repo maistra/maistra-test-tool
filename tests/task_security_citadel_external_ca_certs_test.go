@@ -30,6 +30,7 @@ func cleanupExternalCert(namespace string) {
 	log.Info("# Cleanup ...")
 	cleanSleep("foo")
 	cleanHttpbin("foo")
+	util.KubeApplyContents(meshNamespace, PeerAuthPolicyPermissive, kubeconfig)
 	util.Shell("kubectl delete secret cacerts -n %s", meshNamespace)
 
 }
@@ -106,7 +107,7 @@ func TestExternalCert(t *testing.T) {
 	deployHttpbin("foo")
 	deploySleep("foo")
 
-	util.KubeApplyContents("foo", PeerAuthPolicy, kubeconfig)
+	util.KubeApplyContents(meshNamespace, PeerAuthPolicyStrict, kubeconfig)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 	t.Run("Security_citadel_plugging_external_cert_test", func(t *testing.T) {

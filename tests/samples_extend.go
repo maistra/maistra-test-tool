@@ -1587,14 +1587,14 @@ spec:
 `
 
 	fooPolicy = `
-apiVersion: "authentication.istio.io/v1alpha1"
-kind: "Policy"
+apiVersion: "security.istio.io/v1beta1"
+kind: "PeerAuthentication"
 metadata:
   name: "default"
   namespace: "foo"
 spec:
-  peers:
-  - mtls: {}
+  mtls:
+    mode: STRICT
 `
 
 	fooRule = `
@@ -1611,16 +1611,17 @@ spec:
 `
 
 	barPolicy = `
-apiVersion: "authentication.istio.io/v1alpha1"
-kind: "Policy"
+apiVersion: "security.istio.io/v1beta1"
+kind: "PeerAuthentication"
 metadata:
   name: "httpbin"
   namespace: "bar"
 spec:
-  targets:
-  - name: httpbin
-  peers:
-  - mtls: {}
+  selector:
+    matchLabels:
+      app: httpbin
+  mtls:
+    mode: STRICT
 `
 
 	barRule = `
@@ -1637,18 +1638,20 @@ spec:
 `
 
 	barPortPolicy = `
-apiVersion: "authentication.istio.io/v1alpha1"
-kind: "Policy"
+apiVersion: "security.istio.io/v1beta1"
+kind: "PeerAuthentication"
 metadata:
   name: "httpbin"
   namespace: "bar"
 spec:
-  targets:
-  - name: httpbin
-    ports:
-    - number: 1234
-  peers:
-  - mtls: {}
+  selector:
+    matchLabels:
+      app: httpbin
+  mtls:
+    mode: STRICT
+  portLevelMtls:
+    80:
+      mode: DISABLE
 `
 
 	barPortRule = `
@@ -1656,28 +1659,30 @@ apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
 metadata:
   name: "httpbin"
-  namespace: "bar"
 spec:
   host: httpbin.bar.svc.cluster.local
   trafficPolicy:
     tls:
-      mode: DISABLE
+      mode: ISTIO_MUTUAL
     portLevelSettings:
     - port:
-        number: 1234
+        number: 8000
       tls:
-        mode: ISTIO_MUTUAL
+        mode: DISABLE
 `
 
 	fooPolicyOverwrite = `
-apiVersion: "authentication.istio.io/v1alpha1"
-kind: "Policy"
+apiVersion: "security.istio.io/v1beta1"
+kind: "PeerAuthentication"
 metadata:
   name: "overwrite-example"
   namespace: "foo"
 spec:
-  targets:
-  - name: httpbin
+  selector:
+    matchLabels:
+      app: httpbin
+  mtls:
+    mode: DISABLE
 `
 
 	fooRuleOverwrite = `
@@ -1731,19 +1736,38 @@ spec:
 `
 
 	fooJWTPolicy = `
-apiVersion: "authentication.istio.io/v1alpha1"
-kind: "Policy"
+apiVersion: "security.istio.io/v1beta1"
+kind: "RequestAuthentication"
 metadata:
   name: "jwt-example"
-  namespace: "foo"
+  namespace: istio-system
 spec:
-  targets:
-  - name: httpbin
-  origins:
-  - jwt:
-      issuer: "testing@secure.istio.io"
-      jwksUri: "https://raw.githubusercontent.com/istio/istio/release-1.4/security/tools/jwt/samples/jwks.json"
-  principalBinding: USE_ORIGIN
+  selector:
+    matchLabels:
+      istio: ingressgateway
+  jwtRules:
+  - issuer: "testing@secure.istio.io"
+    jwksUri: "https://raw.githubusercontent.com/istio/istio/release-1.6/security/tools/jwt/samples/jwks.json"
+`
+
+	fooJWTPathPolicy = `
+apiVersion: "security.istio.io/v1beta1"
+kind: "AuthorizationPolicy"
+metadata:
+  name: "frontend-ingress"
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notRequestPrincipals: ["*"]
+    to:
+    - operation:
+        paths: ["/headers"]
 `
 
 	fooJWTUserAgentPolicy = `
@@ -2221,7 +2245,7 @@ spec:
           number: 5000
 `
 
-	PeerAuthPolicy = `
+	PeerAuthPolicyStrict = `
 apiVersion: "security.istio.io/v1beta1"
 kind: "PeerAuthentication"
 metadata:
@@ -2229,5 +2253,15 @@ metadata:
 spec:
   mtls:
     mode: STRICT
+`
+
+	PeerAuthPolicyPermissive = `
+apiVersion: "security.istio.io/v1beta1"
+kind: "PeerAuthentication"
+metadata:
+  name: "default"
+spec:
+  mtls:
+    mode: PERMISSIVE
 `
 )

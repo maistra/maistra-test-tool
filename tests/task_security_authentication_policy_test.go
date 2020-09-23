@@ -31,7 +31,7 @@ func cleanupAuthPolicy() {
 	util.KubeDeleteContents("foo", fooMTLSRule, kubeconfig)
 	util.Shell("rm -f gen-jwt.py")
 	util.Shell("rm -f key.pem")
-	util.KubeDeleteContents("foo", fooJWTPolicy, kubeconfig)
+	util.KubeDeleteContents(meshNamespace, fooJWTPolicy, kubeconfig)
 	util.KubeDeleteContents("foo", fooGateway, kubeconfig)
 	util.KubeDeleteContents("foo", fooVS, kubeconfig)
 
@@ -45,8 +45,7 @@ func cleanupAuthPolicy() {
 	util.KubeDeleteContents("foo", fooRule, kubeconfig)
 
 	util.KubeDeleteContents("legacy", legacyRule, kubeconfig)
-	util.KubeDeleteContents(meshNamespace, clientRule, kubeconfig)
-	util.Shell("kubectl patch -n %s servicemeshpolicy/%s --type merge -p '{\"spec\":{\"peers\":[{\"mtls\":{\"mode\": \"PERMISSIVE\"}}]}}'", meshNamespace, "default")
+	util.KubeApplyContents(meshNamespace, PeerAuthPolicyPermissive, kubeconfig)
 
 	namespaces := []string{"foo", "bar", "legacy"}
 	for _, ns := range namespaces {
@@ -62,7 +61,7 @@ func TestAuthPolicy(t *testing.T) {
 
 	log.Infof("# Authentication Policy")
 	// setup
-	namespaces := []string{"foo", "bar", "legacy"}
+	namespaces := []string{"foo", "bar"}
 
 	deployHttpbin("foo")
 	deployHttpbin("bar")
@@ -91,117 +90,58 @@ func TestAuthPolicy(t *testing.T) {
 		}
 	}
 
+	log.Info("Verify peer authentication policy")
+	util.Shell("kubectl get peerauthentication --all-namespaces")
+	log.Info("Verify destination rules")
+	util.Shell("kubectl get destinationrules.networking.istio.io --all-namespaces -o yaml | grep \"host:\"")
+
+	t.Run("Security_authentication_auto_mTLS", func(t *testing.T) {
+		defer recoverPanic(t)
+
+		log.Info("Auto mutual TLS")
+		out, _ := util.Shell("kubectl exec $(kubectl get pod -l app=sleep -n foo -o jsonpath={.items..metadata.name}) -c sleep -n foo -- curl http://httpbin.foo:8000/headers -s | grep X-Forwarded-Client-Cert")
+		if !strings.Contains(out, "X-Forwarded-Client-Cert") {
+			t.Errorf("Auto mTLS failed to get X-Forwarded-Client-Cert")
+			log.Info("Auto mTLS failed to get X-Forwarded-Client-Cert")
+		}
+
+		out, _ = util.ShellMuteOutput("kubectl exec $(kubectl get pod -l app=sleep -n foo -o jsonpath={.items..metadata.name}) -c sleep -n foo -- curl http://httpbin.legacy:8000/headers -s | grep X-Forwarded-Client-Cert")
+		if strings.Contains(out, "X-Forwarded-Client-Cert") {
+			t.Errorf("Auto mTLS legacy should not get X-Forwarded-Client-Cert")
+			log.Info("Auto mTLS legacy should not to get X-Forwarded-Client-Cert")
+		}
+	})
+
 	t.Run("Security_authentication_enable_global_mTLS", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Globally enabling Istio mutual TLS")
-		util.Shell("kubectl patch -n %s servicemeshpolicy/%s --type merge -p '{\"spec\":{\"peers\":[{\"mtls\":{}}]}}'", meshNamespace, "default")
+		util.KubeApplyContents(meshNamespace, PeerAuthPolicyStrict, kubeconfig)
 		log.Info("Waiting for rules to propagate. Sleep 50 seconds...")
 		time.Sleep(time.Duration(waitTime*10) * time.Second)
 
-		ns := []string{"foo", "bar"}
-		for _, from := range ns {
-			for _, to := range ns {
-				sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfig)
-				util.Inspect(err, "Failed to get sleep pod name", "", t)
-				cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
-					to, from, to)
-				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfig)
-				util.Inspect(err, "Failed to get response", "", t)
-				if !strings.Contains(msg, "503") {
-					t.Errorf("Global mTLS expected: 503; Got response code: %s", msg)
-					log.Errorf("Global mTLS expected: 503; Got response code: %s", msg)
-				} else {
-					log.Infof("Response 503 as expected: %s", msg)
-				}
-			}
-		}
-
-		util.KubeApplyContents(meshNamespace, clientRule, kubeconfig)
-		log.Info("Waiting for rules to propagate. Sleep 30 seconds...")
-		time.Sleep(time.Duration(waitTime*6) * time.Second)
-		for _, from := range ns {
-			for _, to := range ns {
-				sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfig)
-				util.Inspect(err, "Failed to get sleep pod name", "", t)
-				cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
-					to, from, to)
-				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfig)
-				util.Inspect(err, "Failed to get response", "", t)
-				if !strings.Contains(msg, "200") {
-					t.Errorf("Global mTLS expected: 200; Got response code: %s", msg)
-					log.Errorf("Global mTLS expected: 200; Got response code: %s", msg)
-				} else {
-					log.Infof("Success. Get expected response: %s", msg)
-				}
-			}
-		}
-	})
-
-	t.Run("Security_authentication_request_non-istio_to_istio_services", func(t *testing.T) {
-		defer recoverPanic(t)
-
-		ns := []string{"foo", "bar"}
 		from := "legacy"
+		ns := []string{"foo", "bar"}
+
 		for _, to := range ns {
 			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfig)
 			util.Inspect(err, "Failed to get sleep pod name", "", t)
 			cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
 				to, from, to)
 			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfig)
-			if err != nil {
-				log.Infof("Response failed as expected: %s", msg)
-			} else {
-				t.Errorf("Unexpected request from non-istio to istio services: %s", msg)
-				log.Errorf("Unexpected request from non-istio to istio services: %s", msg)
-			}
-		}
-	})
-
-	t.Run("Security_authentication_request_istio_to_non-istio_services", func(t *testing.T) {
-		defer recoverPanic(t)
-
-		ns := []string{"foo", "bar"}
-		to := "legacy"
-		for _, from := range ns {
-			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfig)
-			util.Inspect(err, "Failed to get sleep pod name", "", t)
-			cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
-				to, from, to)
-			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfig)
+			util.Inspect(err, "Failed to get response", "", t)
 			if !strings.Contains(msg, "503") {
-				t.Errorf("Request from istio to non-istio expected: 503; Got response code: %s", msg)
-				log.Errorf("Request from istio to non-istio expected: 503; Got response code: %s", msg)
+				t.Errorf("Global mTLS expected: 503; Got response code: %s", msg)
+				log.Errorf("Global mTLS expected: 503; Got response code: %s", msg)
 			} else {
 				log.Infof("Response 503 as expected: %s", msg)
 			}
 		}
-
-		log.Info("Add a destination rule for httpbin.legacy")
-		util.KubeApplyContents("legacy", legacyRule, kubeconfig)
-		time.Sleep(time.Duration(waitTime*2) * time.Second)
-
-		for _, from := range ns {
-			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfig)
-			util.Inspect(err, "Failed to get sleep pod name", "", t)
-			cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"",
-				to, from, to)
-			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfig)
-			if !strings.Contains(msg, "200") {
-				t.Errorf("Request from istio to non-istio expected: 200; Got response code: %s", msg)
-				log.Errorf("Request from istio to non-istio expected: 200; Got response code: %s", msg)
-			} else {
-				log.Infof("Response 200 as expected: %s", msg)
-			}
-		}
 	})
-
-	// istio_to_k8s_api_test
 
 	// cleanup part 1
 	util.KubeDeleteContents("legacy", legacyRule, kubeconfig)
-	util.KubeDeleteContents(meshNamespace, clientRule, kubeconfig)
-	util.Shell("kubectl patch -n %s servicemeshpolicy/%s --type merge -p '{\"spec\":{\"peers\":[{\"mtls\":{\"mode\": \"PERMISSIVE\"}}]}}'", meshNamespace, "default")
+	util.KubeApplyContents(meshNamespace, PeerAuthPolicyPermissive, kubeconfig)
 	log.Info("Waiting for rules to propagate. Sleep 50 seconds...")
 	time.Sleep(time.Duration(waitTime*10) * time.Second)
 
@@ -210,7 +150,7 @@ func TestAuthPolicy(t *testing.T) {
 
 		log.Info("Enable mutual TLS per namespace")
 		util.KubeApplyContents("foo", fooPolicy, kubeconfig)
-		util.KubeApplyContents("foo", fooRule, kubeconfig)
+		//util.KubeApplyContents("foo", fooRule, kubeconfig)
 		time.Sleep(time.Duration(waitTime) * time.Second)
 
 		namespaces := []string{"foo", "bar", "legacy"}
@@ -222,7 +162,7 @@ func TestAuthPolicy(t *testing.T) {
 					to, from, to)
 				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfig)
 
-				if from == "legacy" && to == "foo" {
+				if from == "legacy" && (to == "foo" || to == "bar") {
 					if err != nil {
 						log.Infof("Expected fail from sleep.legacy to httpbin.foo: %v", err)
 					} else {
@@ -242,13 +182,13 @@ func TestAuthPolicy(t *testing.T) {
 			}
 		}
 		util.KubeDeleteContents("foo", fooPolicy, kubeconfig)
-		util.KubeDeleteContents("foo", fooRule, kubeconfig)
+		//util.KubeDeleteContents("foo", fooRule, kubeconfig)
 	})
 
-	t.Run("Security_authentication_service_policy_mtls", func(t *testing.T) {
+	t.Run("Security_authentication_workload_policy_mtls", func(t *testing.T) {
 		defer recoverPanic(t)
 
-		log.Info("Enable mutual TLS per service")
+		log.Info("Enable mutual TLS per workload")
 		util.KubeApplyContents("bar", barPolicy, kubeconfig)
 		util.KubeApplyContents("bar", barRule, kubeconfig)
 		time.Sleep(time.Duration(waitTime) * time.Second)
@@ -374,7 +314,7 @@ func TestAuthPolicy(t *testing.T) {
 		log.Info("check existing policy in foo")
 		util.Shell("kubectl get policies.authentication.istio.io -n foo")
 
-		util.KubeApplyContents("foo", fooJWTPolicy, kubeconfig)
+		util.KubeApplyContents(meshNamespace, fooJWTPolicy, kubeconfig)
 		log.Info("Waiting for rules to propagate. Sleep 50 seconds...")
 		time.Sleep(time.Duration(waitTime*10) * time.Second)
 
@@ -389,7 +329,7 @@ func TestAuthPolicy(t *testing.T) {
 		util.CloseResponseBody(resp)
 
 		log.Info("Attaching the valid token")
-		jwtURL := "https://raw.githubusercontent.com/istio/istio/release-1.4/security/tools/jwt/samples/demo.jwt"
+		jwtURL := "https://raw.githubusercontent.com/istio/istio/release-1.6/security/tools/jwt/samples/demo.jwt"
 		token, err := util.ShellSilent("curl %s -s", jwtURL)
 		token = strings.Trim(token, "\n")
 		util.Inspect(err, "Failed to get JWT token", "", t)
@@ -405,8 +345,8 @@ func TestAuthPolicy(t *testing.T) {
 		util.CloseResponseBody(resp)
 
 		log.Info("Test JWT expires in 5 seconds")
-		jwtGen := "https://raw.githubusercontent.com/istio/istio/release-1.4/security/tools/jwt/samples/gen-jwt.py"
-		jwtKey := "https://raw.githubusercontent.com/istio/istio/release-1.4/security/tools/jwt/samples/key.pem"
+		jwtGen := "https://raw.githubusercontent.com/istio/istio/release-1.6/security/tools/jwt/samples/gen-jwt.py"
+		jwtKey := "https://raw.githubusercontent.com/istio/istio/release-1.6/security/tools/jwt/samples/key.pem"
 
 		log.Info("Install python package jwcrypto using /usr/bin/python")
 		util.Shell("/usr/bin/python -m pip install --user jwcrypto")
@@ -440,65 +380,28 @@ func TestAuthPolicy(t *testing.T) {
 		log.Info("End-user authentication with per-path requirements")
 
 		log.Info("Disable End-user authentication for specific paths")
-		util.KubeApplyContents("foo", fooJWTUserAgentPolicy, kubeconfig)
+		util.KubeApplyContents(meshNamespace, fooJWTPathPolicy, kubeconfig)
 		log.Info("Waiting for rules to propagate. Sleep 50 seconds...")
 		time.Sleep(time.Duration(waitTime*10) * time.Second)
 
-		url := fmt.Sprintf("http://%s/user-agent", gatewayHTTP)
+		url := fmt.Sprintf("http://%s/headers", gatewayHTTP)
 		resp, _, err := util.GetHTTPResponse(url, nil)
-		util.Inspect(err, "Failed to get httpbin user-agent response", "", t)
-		if resp.StatusCode != 200 {
-			t.Errorf("Expected: 200; Got unexpected response code: %d", resp.StatusCode)
-			log.Errorf("Expected: 200; Got unexpected response code: %d", resp.StatusCode)
-		} else {
-			log.Infof("Success. Get httpbin user-agent response: %d", resp.StatusCode)
-		}
-		util.CloseResponseBody(resp)
-
-		url = fmt.Sprintf("http://%s/headers", gatewayHTTP)
-		resp, _, err = util.GetHTTPResponse(url, nil)
 		util.Inspect(err, "Failed to get httpbin header response", "", t)
-		if resp.StatusCode != 401 {
-			t.Errorf("Expected: 401; Got unexpected response code: %d", resp.StatusCode)
-			log.Errorf("Expected: 401; Got unexpected response code: %d", resp.StatusCode)
+		if resp.StatusCode != 403 {
+			t.Errorf("Expected: 403; Got unexpected response code: %d", resp.StatusCode)
+			log.Errorf("Expected: 403; Got unexpected response code: %d", resp.StatusCode)
 		} else {
 			log.Infof("Success. Get httpbin header response: %d", resp.StatusCode)
 		}
 		util.CloseResponseBody(resp)
 
-		log.Info("Enable End-user authentication for specific paths")
-		util.KubeApplyContents("foo", fooJWTIPPolicy, kubeconfig)
-		log.Info("Waiting for rules to propagate. Sleep 50 seconds...")
-		time.Sleep(time.Duration(waitTime*10) * time.Second)
-
-		url = fmt.Sprintf("http://%s/user-agent", gatewayHTTP)
-		resp, _, err = util.GetHTTPResponse(url, nil)
-		util.Inspect(err, "Failed to get httpbin user-agent response", "", t)
-		if resp.StatusCode != 200 {
-			t.Errorf("Expected: 200; Got unexpected response code: %d", resp.StatusCode)
-			log.Errorf("Expected: 200; Got unexpected response code: %d", resp.StatusCode)
-		} else {
-			log.Infof("Success. Get httpbin user-agent response: %d", resp.StatusCode)
-		}
-		util.CloseResponseBody(resp)
-
-		url = fmt.Sprintf("http://%s/ip", gatewayHTTP)
-		resp, _, err = util.GetHTTPResponse(url, nil)
-		util.Inspect(err, "Failed to get httpbin ip response", "", t)
-		if resp.StatusCode != 401 {
-			t.Errorf("Expected: 401; Got unexpected response code: %d", resp.StatusCode)
-			log.Errorf("Expected: 401; Got unexpected response code: %d", resp.StatusCode)
-		} else {
-			log.Infof("Success. Get httpbin ip response: %d", resp.StatusCode)
-		}
-		util.CloseResponseBody(resp)
-
 		log.Info("Attaching the valid token")
-		jwtURL := "https://raw.githubusercontent.com/istio/istio/release-1.4/security/tools/jwt/samples/demo.jwt"
+		jwtURL := "https://raw.githubusercontent.com/istio/istio/release-1.6/security/tools/jwt/samples/demo.jwt"
 		token, err := util.ShellSilent("curl %s -s", jwtURL)
 		token = strings.Trim(token, "\n")
 		util.Inspect(err, "Failed to get JWT token", "", t)
 
+		url = fmt.Sprintf("http://%s/ip", gatewayHTTP)
 		resp, err = util.GetWithJWT(url, token, "")
 		util.Inspect(err, "Failed to get httpbin ip response", "", t)
 		if resp.StatusCode != 200 {
@@ -509,44 +412,4 @@ func TestAuthPolicy(t *testing.T) {
 		}
 		util.CloseResponseBody(resp)
 	})
-
-	t.Run("Security_authentication_end-user_MTLS_JWT", func(t *testing.T) {
-		defer recoverPanic(t)
-
-		log.Info("End-user authentication with mutual TLS")
-		util.KubeApplyContents("foo", fooJWTMTLSPolicy, kubeconfig)
-		util.KubeApplyContents("foo", fooMTLSRule, kubeconfig)
-		log.Info("Waiting for rules to propagate. Sleep 50 seconds...")
-		time.Sleep(time.Duration(waitTime*10) * time.Second)
-
-		log.Info("Check request from istio services")
-		jwtURL := "https://raw.githubusercontent.com/istio/istio/release-1.4/security/tools/jwt/samples/demo.jwt"
-		token, err := util.ShellSilent("curl %s -s", jwtURL)
-		token = strings.Trim(token, "\n")
-		util.Inspect(err, "Failed to get JWT token", "", t)
-
-		sleepPod, err := util.GetPodName("foo", "app=sleep", kubeconfig)
-		util.Inspect(err, "Failed to get sleep pod name", "", t)
-		cmd := fmt.Sprintf("curl http://httpbin.foo:8000/ip -s -o /dev/null -w \"%%{http_code}\" --header \"Authorization: Bearer %s\"", token)
-		msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfig)
-		util.Inspect(err, "Failed to get response", "", t)
-		if !strings.Contains(msg, "200") {
-			t.Errorf("Expected: 200; Got unexpected response code: %s", msg)
-			log.Errorf("Expected: 200; Got unexpected response code: %s", msg)
-		} else {
-			log.Infof("Success. Get expected response: %s", msg)
-		}
-
-		log.Info("Check request from non-istio services")
-		sleepPod, err = util.GetPodName("legacy", "app=sleep", kubeconfig)
-		util.Inspect(err, "Failed to get sleep pod name", "", t)
-		msg, err = util.PodExec("legacy", sleepPod, "sleep", cmd, true, kubeconfig)
-		if err != nil {
-			log.Infof("Expected failed request from non-istio services: %v", err)
-		} else {
-			t.Errorf("Expecte failed request; Got unexpected response: %s", msg)
-			log.Errorf("Expecte failed request; Got unexpected response: %s", msg)
-		}
-	})
-
 }
