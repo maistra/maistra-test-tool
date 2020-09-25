@@ -28,7 +28,7 @@ func cleanupEgressGateways(namespace string) {
 	log.Info("# Cleanup ...")
 	util.KubeDeleteContents(namespace, cnnextGatewayHTTPS, kubeconfig)
 	cleanSleep(namespace)
-	time.Sleep(time.Duration(waitTime*2) * time.Second)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
 }
 
 func TestEgressGateways(t *testing.T) {

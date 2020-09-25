@@ -67,14 +67,14 @@ func TestEgressGatewaysTLSOrigination(t *testing.T) {
 		command := "curl -sL -o /dev/null -D - http://edition.cnn.com/politics"
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "301") {
-			log.Infof("Error response: %s", msg)
-			t.Errorf("Error response: %s", msg)
-		} else {
+		if strings.Contains(msg, "HTTP/1.1 200 OK") {
 			log.Infof("Success. Get http://edition.cnn.com/politics response: %s", msg)
 
+		} else {
+			log.Infof("Error response: %s", msg)
+			t.Errorf("Error response: %s", msg)
 		}
-		time.Sleep(time.Duration(waitTime*2) * time.Second)
+		time.Sleep(time.Duration(waitTime*4) * time.Second)
 		log.Info("check istio-proxy log")
 		msg, err = util.Shell("kubectl logs -l istio=egressgateway -c istio-proxy -n %s | tail", meshNamespace)
 		if strings.Contains(msg, "edition.cnn.com") {
@@ -85,7 +85,7 @@ func TestEgressGatewaysTLSOrigination(t *testing.T) {
 		}
 		util.KubeDeleteContents(testNamespace, cnnextGatewayTLSOrigination, kubeconfig)
 		cleanSleep(testNamespace)
-		time.Sleep(time.Duration(waitTime*2) * time.Second)
+		time.Sleep(time.Duration(waitTime*4) * time.Second)
 	})
 
 	t.Run("TrafficManagement_egress_gateway_perform_MTLS_origination", func(t *testing.T) {
@@ -104,7 +104,7 @@ func TestEgressGatewaysTLSOrigination(t *testing.T) {
 		//util.Shell("kubectl create -n %s secret generic nginx-ca-certs --from-file=%s", testNamespace, nginxServerCACert)
 		util.KubeApplyContents(testNamespace, sleepNginx, kubeconfig)
 		util.CheckPodRunning(testNamespace, "app=sleep", kubeconfig)
-		time.Sleep(time.Duration(waitTime) * time.Second)
+		time.Sleep(time.Duration(waitTime*2) * time.Second)
 
 		sleepPod, err = util.GetPodName(testNamespace, "app=sleep", kubeconfig)
 		util.Inspect(err, "Failed to get sleep pod name", "", t)
