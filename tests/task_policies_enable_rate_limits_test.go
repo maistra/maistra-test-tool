@@ -60,7 +60,7 @@ func TestRateLimits(t *testing.T) {
 			t.Errorf("Failed to apply mixer rule")
 			log.Errorf("Failed to apply mixer rule")
 		}
-		time.Sleep(time.Duration(waitTime*8) * time.Second)
+		time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 		log.Info("productpage permits 2 requests every 5 seconds. Verify 'Quota is exhausted' message")
 		i := 1
@@ -94,7 +94,7 @@ func TestRateLimits(t *testing.T) {
 			t.Errorf("Failed to apply mixer rule")
 			log.Errorf("Failed to apply mixer rule")
 		}
-		time.Sleep(time.Duration(waitTime*8) * time.Second)
+		time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 		log.Info("Login user jason should not see quota message")
 		for i := 0; i < 10; i++ {
