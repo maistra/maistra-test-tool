@@ -30,7 +30,14 @@ func cleanupIngressLoadTest(namespace string) {
 	log.Info("# Cleanup ...")
 	util.KubeDeleteContents(namespace, httpbinGatewayHTTPS, kubeconfig)
 	util.ShellMuteOutput("kubectl delete secret %s -n %s", "istio-ingressgateway-certs", meshNamespace)
-	util.ShellMuteOutput("sudo sed '/httpbin\\.example\\.com/d' -i /etc/hosts")
+	_, err := util.ShellMuteOutput("sudo sed '/httpbin\\.example\\.com/d' -i /etc/hosts")
+	if err != nil {
+		// error when running inside a container, e.g. sed: cannot rename /etc/seddyBxcL: Device or resource busy
+		util.ShellMuteOutput("sudo cp /etc/hosts hosts.new")
+		util.ShellMuteOutput("sed '$d' -i hosts.new")
+		util.ShellMuteOutput("sudo cp -f hosts.new /etc/hosts")
+		util.ShellMuteOutput("rm -f hosts.new")
+	}
 
 	cleanHttpbin(namespace)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
