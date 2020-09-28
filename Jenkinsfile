@@ -102,6 +102,13 @@ if (util.getWhoBuild() == "[]") {
 
                     cd pipeline
                     oc delete -f pipeline-run-acc-tests.yaml
+
+                    set +ex
+                    cat ${WORKSPACE}/tests/test.log | grep "FAIL	github.com/Maistra/maistra-test-tool"
+                    if [ \$? -eq 0 ]; then
+                        currentBuild.result = "FAILED"
+                    fi
+                    set -ex
                 """
             }
 
