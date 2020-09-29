@@ -2264,4 +2264,19 @@ spec:
   mtls:
     mode: PERMISSIVE
 `
+
+	httpbinServiceMeshExtension = `
+apiVersion: extensions.maistra.io/v1alpha1
+kind: ServiceMeshExtension
+metadata:
+  name: header-append
+spec:
+  config: test
+  image: quay.io/maistra-dev/header-append-filter:latest
+  phase: PostAuthZ
+  priority: 1000
+  workloadSelector:
+    labels:
+      app: httpbin
+`
 )
