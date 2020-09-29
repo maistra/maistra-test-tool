@@ -64,18 +64,22 @@ var testCases = []testing.InternalTest{
 	},
 	testing.InternalTest{
 		Name: "12",
-		F:    TestTLSVersionSMCP,
+		F:    TestAuthMTLSMigration,
 	},
 	testing.InternalTest{
 		Name: "13",
-		F:    TestSSL,
+		F:    TestTLSVersionSMCP,
 	},
 	testing.InternalTest{
 		Name: "14",
-		F:    TestIngressLoad,
+		F:    TestSSL,
 	},
 	testing.InternalTest{
 		Name: "15",
+		F:    TestIngressLoad,
+	},
+	testing.InternalTest{
+		Name: "16",
 		F:    TestExtensionInstall,
 	},
 }

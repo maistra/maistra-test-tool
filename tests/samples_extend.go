@@ -1853,17 +1853,14 @@ spec:
 `
 
 	httpbinStrictPolicy = `
-apiVersion: "authentication.istio.io/v1alpha1"
-kind: "Policy"
+apiVersion: "security.istio.io/v1beta1"
+kind: "PeerAuthentication"
 metadata:
-  name: "example-httpbin-strict"
+  name: "default"
   namespace: "foo"
 spec:
-  targets:
-  - name: httpbin
-  peers:
-  - mtls:
-      mode: STRICT
+  mtls:
+    mode: STRICT
 `
 
 	globalMTLSRule = `
