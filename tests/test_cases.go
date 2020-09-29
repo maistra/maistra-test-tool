@@ -74,4 +74,8 @@ var testCases = []testing.InternalTest{
 		Name: "14",
 		F:    TestIngressLoad,
 	},
+	testing.InternalTest{
+		Name: "15",
+		F:    TestExtensionInstall,
+	},
 }
