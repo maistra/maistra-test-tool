@@ -28,8 +28,8 @@ func cleanupTestSSL(namespace string) {
 	util.KubeDeleteContents(namespace, testSSLDeployment, kubeconfig)
 	cleanBookinfo(namespace)
 
-	util.Shell("kubectl patch -n %s smcp/%s --type=json -p='[{\"op\": \"remove\", \"path\": \"/spec/istio/global/tls\"}]'", meshNamespace, smcpName)
-	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
+	util.Shell("kubectl patch -n %s smcp/%s --type=json -p='[{\"op\": \"remove\", \"path\": \"/spec/security/controlPlane/tls\"}]'", meshNamespace, smcpName)
+	util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"mtls\":{\"enabled\":false}},\"controlPlane\":{\"mtls\":false}}}'", meshNamespace, smcpName)
 	time.Sleep(time.Duration(waitTime*8) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
@@ -44,18 +44,18 @@ func TestSSL(t *testing.T) {
 
 		// update mtls to true
 		log.Info("Update SMCP mtls to true")
-		util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace, smcpName)
+		util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"mtls\":{\"enabled\":true}},\"controlPlane\":{\"mtls\":true}}}'", meshNamespace, smcpName)
 		time.Sleep(time.Duration(waitTime*4) * time.Second)
 
-		log.Info("Update SMCP spec.istio.global.tls")
+		log.Info("Update SMCP spec.security.controlPlane.tls")
 
 		util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{%s:{%s,%s,%s,%s}}}}}'",
 			meshNamespace, smcpName,
-			"\"spec\":{\"istio\":{\"global\":{\"tls\"",
+			"\"spec\":{\"security\":{\"controlPlane\":{\"tls\"",
 			"\"minProtocolVersion\":\"TLSv1_2\"",
 			"\"maxProtocolVersion\":\"TLSv1_2\"",
-			"\"cipherSuites\":\"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256\"",
-			"\"ecdhCurves\":\"CurveP256, CurveP384\"")
+			"\"cipherSuites\":[\"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256\"]",
+			"\"ecdhCurves\":[\"CurveP256\", \"CurveP384\"]")
 
 		time.Sleep(time.Duration(waitTime*8) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)

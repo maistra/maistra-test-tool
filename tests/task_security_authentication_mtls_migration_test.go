@@ -35,7 +35,7 @@ func cleanupAuthMTLSMigration(namespace string) {
 		util.KubeDelete(ns, sleepYaml, kubeconfig)
 		util.KubeDelete(ns, httpbinYaml, kubeconfig)
 	}
-	util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"mutualTLS\":{\"enable\":false,\"controlPlane\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
+	util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"mtls\":{\"enabled\":false}},\"controlPlane\":{\"mtls\":false}}}'", meshNamespace, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 }
 
@@ -45,7 +45,7 @@ func TestAuthMTLSMigration(t *testing.T) {
 
 	log.Info("Mutual TLS Migration")
 
-	util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"mutualTLS\":{\"enable\":false,\"controlPlane\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
+	util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"mtls\":{\"enabled\":false}},\"controlPlane\":{\"mtls\":false}}}'", meshNamespace, smcpName)
 	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 	time.Sleep(time.Duration(waitTime*2) * time.Second)
 
