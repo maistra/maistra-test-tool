@@ -18,6 +18,7 @@ do
 				#grep -r "image=$VALUE" ./*/*
 
 
+				grep -rl "image: \"$KEY\"" . |  xargs sed -i "s|$KEY|$VALUE|g"
 				grep -rl "image: $KEY" . |  xargs sed -i "s|$KEY|$VALUE|g"
 				grep -rl "image=$KEY" . |  xargs sed -i "s|$KEY|$VALUE|g"
 

@@ -405,7 +405,7 @@ spec:
               readOnly: true
 
         - name: prometheus-server
-          image: "prom/prometheus:v2.16.0"
+          image: "quay.io/maistra/prometheus-rhel8:1.1.7-ibm"
           imagePullPolicy: "IfNotPresent"
           args:
             - --storage.tsdb.retention.time=15d

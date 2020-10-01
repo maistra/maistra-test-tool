@@ -131,7 +131,7 @@ spec:
         runAsUser: 472
       containers:
         - name: grafana
-          image: "grafana/grafana:6.7.4"
+          image: "quay.io/masitra/grafana-rhel8:0.0-ibm-z"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
