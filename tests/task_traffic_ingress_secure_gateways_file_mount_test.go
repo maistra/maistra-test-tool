@@ -36,7 +36,7 @@ func cleanupIngressGatewaysFileMount(namespace string) {
 	//util.ShellMuteOutput("kubectl delete secret %s -n %s", "istio-ingressgateway-bookinfo-certs", meshNamespace)
 	//cleanBookinfo(namespace)
 	cleanHttpbin(namespace)
-	time.Sleep(time.Duration(waitTime*6) * time.Second)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 }
 

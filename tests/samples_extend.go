@@ -1888,7 +1888,7 @@ metadata:
   namespace: istio-system
 spec:
   # quota only applies if you are not logged in.
-  match: match(request.headers["Cookie"], "session=*") == false
+  match: match(request.headers["cookie"], "session=*") == false
   actions:
   - handler: quotahandler
     instances:

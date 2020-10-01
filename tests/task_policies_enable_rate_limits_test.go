@@ -76,7 +76,6 @@ func TestRateLimits(t *testing.T) {
 				break
 			}
 			util.CloseResponseBody(resp)
-			time.Sleep(time.Duration(waitTime) * time.Second)
 		}
 		if i > 3 {
 			t.Errorf("Failed. Requests passed: %v times in 5 seconds", i)
@@ -108,7 +107,6 @@ func TestRateLimits(t *testing.T) {
 				log.Info("Success. Login user got expected all v1 response.")
 			}
 			util.CloseResponseBody(resp)
-			time.Sleep(time.Duration(waitTime*2) * time.Second)
 		}
 
 		log.Info("Logout user jason")
