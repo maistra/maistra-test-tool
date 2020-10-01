@@ -54,6 +54,10 @@ python3-pip is required for testing Security_authentication_end-user_JWT
 - All case numbers are mapped in the `test_cases.go` file. Users can run a single test with the `-run [case number]` flag, e.g. `go -test -run 15 -timeout 1h -v`.
 - The testdata `samples` and `samples_extend` are pulling from [Istio 1.4.6](https://github.com/istio/istio/releases/tag/1.4.6) and [Istio 1.4 Doc](https://archive.istio.io/v1.4/docs/tasks/).
 
+## A note on multiarch development
+All image references need to point to a valid s390x/ppc64le image. In the case of new images added to maistra test tool, or to change image registry locations, use this template to make the latest maistra-1.1-Z or maistra-1.1-P branches. Edit the imageSourceList file to resolve the images to the correct source for your architecture column 1 is for x86 image locations, column 2 is for the alternate architecture location. After your image sources are added to imageSourceList run ./changeImageSources.sh. This will sed through the various yaml files replacing the sources in column 1 with column 2. Use revertImageSourceList.sh to move the other way.
+
+
 
 ## License
 
