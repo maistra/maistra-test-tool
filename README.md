@@ -11,7 +11,7 @@ A testing tool for running Maistra tasks on AWS OpenShift 4.x cluster.
 
 This project aims to automate the running Maistra tasks on an AWS OpenShift 4.x Cluster.
 
-The testing follows [Istio Doc Tasks](https://istio.io/v1.4/docs/tasks/) and [Maistra Doc](https://maistra-1-1.maistra.io/).
+The testing follows [Istio Doc Tasks](https://istio.io/v1.6/docs/tasks/) and [Maistra Doc](https://maistra-1-1.maistra.io/).
 
 
 ## Versions
@@ -52,7 +52,7 @@ python3-pip is required for testing Security_authentication_end-user_JWT
     $ go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
     ```
 - All case numbers are mapped in the `test_cases.go` file. Users can run a single test with the `-run [case number]` flag, e.g. `go test -run 15 -timeout 1h -v`.
-- The testdata `samples` and `samples_extend` are pulling from [Istio 1.4.6](https://github.com/istio/istio/releases/tag/1.4.6) and [Istio 1.4 Doc](https://archive.istio.io/v1.4/docs/tasks/).
+- The testdata `samples` and `samples_extend` are pulling from [Istio 1.6.1](https://github.com/istio/istio/releases/tag/1.6.1) and [Istio 1.6 Doc](https://archive.istio.io/v1.6/docs/tasks/).
 
 
 ## License
