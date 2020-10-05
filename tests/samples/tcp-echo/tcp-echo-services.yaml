@@ -45,7 +45,7 @@ spec:
     spec:
       containers:
       - name: tcp-echo
-        image: docker.io/istio/tcp-echo-server:1.1
+        image: quay.io/maistra/tcp-echo-server:0.0-ibm-p
         imagePullPolicy: IfNotPresent
         args: [ "9000", "one" ]
         ports:
@@ -71,7 +71,7 @@ spec:
     spec:
       containers:
       - name: tcp-echo
-        image: docker.io/istio/tcp-echo-server:1.1
+        image: quay.io/maistra/tcp-echo-server:0.0-ibm-p
         imagePullPolicy: IfNotPresent
         args: [ "9000", "two" ]
         ports:

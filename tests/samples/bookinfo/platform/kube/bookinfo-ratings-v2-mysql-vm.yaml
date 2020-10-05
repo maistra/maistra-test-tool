@@ -33,7 +33,7 @@ spec:
     spec:
       containers:
       - name: ratings
-        image: maistra/examples-bookinfo-ratings-v2:1.1.0
+        image: quay.io/maistra/examples-bookinfo-ratings-v2:1.15.0-ibm-p
         imagePullPolicy: IfNotPresent
         env:
           # This assumes you registered your mysql vm as

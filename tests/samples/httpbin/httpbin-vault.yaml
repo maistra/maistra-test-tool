@@ -47,7 +47,7 @@ spec:
     spec:
       serviceAccountName: vault-citadel-sa    
       containers:
-      - image: docker.io/kennethreitz/httpbin
+      - image: quay.io/maistra/kennethreitz-httpbin:0.0-ibm-p
         imagePullPolicy: IfNotPresent
         name: httpbin
         ports:

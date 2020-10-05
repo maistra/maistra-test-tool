@@ -33,7 +33,7 @@ spec:
     spec:
       containers:
       - name: fortio
-        image: fortio/fortio:latest_release
+        image: quay.io/maistra/fortio.test:0.0-ibm-p
         imagePullPolicy: Always
         ports:
         - containerPort: 8080

@@ -45,7 +45,7 @@ spec:
         version: v1
     spec:
       containers:
-      - image: docker.io/citizenstig/httpbin
+      - image: quay.io/maistra/citizenstig-httpbin:0.0-ibm-p
         imagePullPolicy: IfNotPresent
         name: httpbin
         ports:
