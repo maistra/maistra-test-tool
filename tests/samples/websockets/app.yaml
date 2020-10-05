@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
       - name: tornado
-        image: hiroakis/tornado-websocket-example
+        image: quay.io/maistra/tornado-websocket-example:0.0-ibm-p
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8888

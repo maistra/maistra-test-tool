@@ -34,7 +34,7 @@ spec:
           name: nginxconfigmap
       containers:
       - name: nginxhttps
-        image: ymqytw/nginxhttps:1.5
+        image: quay.io/maistra/nginxhttps:0.0-ibm-p
         command: ["/home/auto-reload-nginx.sh"]
         ports:
         - containerPort: 443

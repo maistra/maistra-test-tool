@@ -13,46 +13,42 @@
 #   limitations under the License.
 
 ##################################################################################################
-# Ratings service
+# httpbin service
 ##################################################################################################
 apiVersion: v1
 kind: Service
 metadata:
-  name: ratings
+  name: httpbin
   labels:
-    app: ratings
+    app: httpbin
 spec:
   ports:
-  - port: 9080
-    name: http
+  - name: http
+    port: 8000
   selector:
-    app: ratings
+    app: httpbin
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ratings-v1
-  labels:
-    app: ratings
-    version: v1
+  name: httpbin
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ratings
+      app: httpbin
       version: v1
   template:
     metadata:
       annotations:
         sidecar.istio.io/inject: "true"
       labels:
-        app: ratings
+        app: httpbin
         version: v1
     spec:
       containers:
-      - name: ratings
-        image: quay.io/maistra/examples-bookinfo-ratings-v1:1.15.0-ibm-p
+      - image: quay.io/maistra/citizenstig-httpbin:0.0-ibm-p
         imagePullPolicy: IfNotPresent
+        name: httpbin
         ports:
-        - containerPort: 9080
----
+        - containerPort: 8000

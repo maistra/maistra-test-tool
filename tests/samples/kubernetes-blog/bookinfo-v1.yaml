@@ -46,7 +46,7 @@ spec:
     spec:
       containers:
       - name: details
-        image: istio/examples-bookinfo-details-v1:0.2.3
+        image: quay.io/maistra/examples-bookinfo-details-v1:1.15.0-ibm-p
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9080
@@ -85,7 +85,7 @@ spec:
     spec:
       containers:
       - name: reviews
-        image: docker.io/istio/examples-bookinfo-reviews-v1:0.2.3
+        image: quay.io/maistra/examples-bookinfo-reviews-v1:1.15.0-ibm-p
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9080
@@ -124,7 +124,7 @@ spec:
     spec:
       containers:
       - name: productpage
-        image: docker.io/istio/examples-bookinfo-productpage-v1:0.2.3
+        image: quay.io/maistra/examples-bookinfo-productpage-v1:1.15.0-ibm-p
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9080
