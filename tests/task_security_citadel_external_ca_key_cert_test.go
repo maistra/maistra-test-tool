@@ -30,10 +30,10 @@ func cleanupExternalCert(namespace string) {
 	log.Info("# Cleanup ...")
 	util.Shell("kubectl delete secret cacerts -n %s", meshNamespace)
 	cleanBookinfo(namespace)
-	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"security\":{\"selfSigned\":true}}}}'", meshNamespace, smcpName)
+	util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"security\":{\"selfSigned\":true}}}}'", meshNamespace, smcpAPI, smcpName)
 	time.Sleep(time.Duration(waitTime*10) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=citadel", kubeconfig)
-	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
+	util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpAPI, smcpName)
 	time.Sleep(time.Duration(waitTime*10) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=pilot", kubeconfig)
 	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
@@ -97,7 +97,7 @@ func TestExternalCert(t *testing.T) {
 
 	// update mtls to true
 	log.Info("Update SMCP mtls to true")
-	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace, smcpName)
+	util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace, smcpAPI, smcpName)
 	time.Sleep(time.Duration(waitTime*10) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=pilot", kubeconfig)
 	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
@@ -124,7 +124,7 @@ func TestExternalCert(t *testing.T) {
 		time.Sleep(time.Duration(waitTime*2) * time.Second)
 
 		log.Info("Redeploy Citadel")
-		util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"security\":{\"selfSigned\":false}}}}'", meshNamespace, smcpName)
+		util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"security\":{\"selfSigned\":false}}}}'", meshNamespace, smcpAPI, smcpName)
 		time.Sleep(time.Duration(waitTime*10) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=citadel", kubeconfig)
 

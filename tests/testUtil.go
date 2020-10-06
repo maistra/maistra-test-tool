@@ -55,9 +55,9 @@ func prepareOCPConfig() {
 	time.Sleep(time.Duration(waitTime) * time.Second)
 
 	// if testing in mtls disable mode, update mtls to false
-	util.ShellSilent("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
+	util.ShellSilent("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpAPI, smcpName)
 	// enable ior
-	util.ShellSilent("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"gateways\":{\"istio-ingressgateway\":{\"ior_enabled\":\"true\"}}}}}'", meshNamespace, smcpName)
+	util.ShellSilent("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"gateways\":{\"istio-ingressgateway\":{\"ior_enabled\":true}}}}}'", meshNamespace, smcpAPI, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 	// TBD: path smcp ingressgateway loadbalancer
 

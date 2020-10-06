@@ -28,8 +28,8 @@ func cleanupTestSSL(namespace string) {
 	util.KubeDeleteContents(namespace, testSSLDeployment, kubeconfig)
 	cleanBookinfo(namespace)
 
-	util.Shell("kubectl patch -n %s smcp/%s --type=json -p='[{\"op\": \"remove\", \"path\": \"/spec/istio/global/tls\"}]'", meshNamespace, smcpName)
-	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
+	util.Shell("kubectl patch -n %s %s/%s --type=json -p='[{\"op\": \"remove\", \"path\": \"/spec/istio/global/tls\"}]'", meshNamespace, smcpAPI, smcpName)
+	util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpAPI, smcpName)
 	time.Sleep(time.Duration(waitTime*8) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
@@ -44,14 +44,14 @@ func TestSSL(t *testing.T) {
 
 		// update mtls to true
 		log.Info("Update SMCP mtls to true")
-		util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace, smcpName)
+		util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace, smcpAPI, smcpName)
 		time.Sleep(time.Duration(waitTime*4) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
 
 		log.Info("Update SMCP spec.istio.global.tls")
 
-		util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{%s:{%s,%s,%s,%s}}}}}'",
-			meshNamespace, smcpName,
+		util.Shell("kubectl patch -n %s %s/%s --type merge -p '{%s:{%s,%s,%s,%s}}}}}'",
+			meshNamespace, smcpAPI, smcpName,
 			"\"spec\":{\"istio\":{\"global\":{\"tls\"",
 			"\"minProtocolVersion\":\"TLSv1_2\"",
 			"\"maxProtocolVersion\":\"TLSv1_2\"",

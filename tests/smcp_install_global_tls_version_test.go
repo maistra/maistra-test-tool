@@ -16,7 +16,6 @@ package tests
 
 import (
 	"maistra/util"
-	"strings"
 	"testing"
 	"time"
 
@@ -25,7 +24,7 @@ import (
 
 func cleanupTestTLSVersionSMCP() {
 	log.Info("# Cleanup ...")
-	util.Shell("kubectl patch -n %s smcp/%s --type=json -p='[{\"op\": \"remove\", \"path\": \"/spec/istio/global/tls\"}]'", meshNamespace, smcpName)
+	util.Shell("kubectl patch -n %s %s/%s --type=json -p='[{\"op\": \"remove\", \"path\": \"/spec/istio/global/tls\"}]'", meshNamespace, smcpAPI, smcpName)
 	time.Sleep(time.Duration(waitTime*8) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
@@ -38,49 +37,37 @@ func TestTLSVersionSMCP(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Update SMCP spec.istio.global.tls.minProtocolVersion: TLSv1_0")
-		util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"tls\":{\"minProtocolVersion\":\"TLSv1_0\"}}}}}'", meshNamespace, smcpName)
+		_, err := util.Shell("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"tls\":{\"minProtocolVersion\":\"TLSv1_0\"}}}}}'", meshNamespace, smcpAPI, smcpName)
 		time.Sleep(time.Duration(waitTime*8) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 		util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
-
-		msg, _ := util.Shell("kubectl get -n %s smcp/%s", meshNamespace, smcpName)
-		if strings.Contains(msg, "UpdateSuccessful") {
-			log.Info(msg)
-		} else {
-			t.Errorf("Failed to update SMCP with spec.istio.global.tls.minProtocolVersion: TLSv1_0")
+		if err != nil {
+			t.Errorf("Failed to update SMCP with spec.istio.global.tls.maxProtocolVersion: TLSv1_0")
 		}
 	})
 
 	t.Run("Operator_test_smcp_global_tls_minVersion_TLSv1_1", func(t *testing.T) {
 		defer recoverPanic(t)
 
-		log.Info("Update SMCP spec.istio.global.tls.minProtocolVersion: TLSv1_0")
-		util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"tls\":{\"minProtocolVersion\":\"TLSv1_1\"}}}}}'", meshNamespace, smcpName)
+		log.Info("Update SMCP spec.istio.global.tls.minProtocolVersion: TLSv1_1")
+		_, err := util.Shell("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"tls\":{\"minProtocolVersion\":\"TLSv1_1\"}}}}}'", meshNamespace, smcpAPI, smcpName)
 		time.Sleep(time.Duration(waitTime*8) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 		util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
-
-		msg, _ := util.Shell("kubectl get -n %s smcp/%s", meshNamespace, smcpName)
-		if strings.Contains(msg, "UpdateSuccessful") {
-			log.Info(msg)
-		} else {
-			t.Errorf("Failed to update SMCP with spec.istio.global.tls.minProtocolVersion: TLSv1_1")
+		if err != nil {
+			t.Errorf("Failed to update SMCP with spec.istio.global.tls.maxProtocolVersion: TLSv1_1")
 		}
 	})
 
 	t.Run("Operator_test_smcp_global_tls_maxVersion_TLSv1_3", func(t *testing.T) {
 		defer recoverPanic(t)
 
-		log.Info("Update SMCP spec.istio.global.tls.minProtocolVersion: TLSv1_0")
-		util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"tls\":{\"maxProtocolVersion\":\"TLSv1_3\"}}}}}'", meshNamespace, smcpName)
+		log.Info("Update SMCP spec.istio.global.tls.minProtocolVersion: TLSv1_3")
+		_, err := util.Shell("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"tls\":{\"maxProtocolVersion\":\"TLSv1_3\"}}}}}'", meshNamespace, smcpAPI, smcpName)
 		time.Sleep(time.Duration(waitTime*8) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 		util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
-
-		msg, _ := util.Shell("kubectl get -n %s smcp/%s", meshNamespace, smcpName)
-		if strings.Contains(msg, "UpdateSuccessful") {
-			log.Info(msg)
-		} else {
+		if err != nil {
 			t.Errorf("Failed to update SMCP with spec.istio.global.tls.maxProtocolVersion: TLSv1_3")
 		}
 	})

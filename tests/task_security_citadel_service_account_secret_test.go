@@ -28,10 +28,10 @@ func cleanupCitadelSecretGeneration(namespace string) {
 	log.Info("# Cleanup ...")
 
 	util.Shell("kubectl delete project foo")
-	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"security\":{\"enableNamespacesByDefault\":true}}}}'", meshNamespace, smcpName)
+	util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"security\":{\"enableNamespacesByDefault\":true}}}}'", meshNamespace, smcpAPI, smcpName)
 	time.Sleep(time.Duration(waitTime*10) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=citadel", kubeconfig)
-	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
+	util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpAPI, smcpName)
 	time.Sleep(time.Duration(waitTime*10) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
 	util.Shell("oc new-project foo")
@@ -44,7 +44,7 @@ func TestCitadelSecretGeneration(t *testing.T) {
 	log.Info("Configure Citadel Service Account Secret Generation")
 	// update mtls to true
 	log.Info("Update SMCP mtls to true")
-	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace, smcpName)
+	util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace, smcpAPI, smcpName)
 	time.Sleep(time.Duration(waitTime*10) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
 
@@ -77,7 +77,7 @@ func TestCitadelSecretGeneration(t *testing.T) {
 
 		util.Shell("kubectl delete project foo")
 		log.Info("Redeploy Citadel")
-		util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"security\":{\"enableNamespacesByDefault\":false}}}}'", meshNamespace, smcpName)
+		util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"security\":{\"enableNamespacesByDefault\":false}}}}'", meshNamespace, smcpAPI, smcpName)
 		time.Sleep(time.Duration(waitTime*10) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=citadel", kubeconfig)
 
