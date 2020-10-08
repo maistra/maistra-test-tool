@@ -96,60 +96,46 @@ var testCases = []testing.InternalTest{
 	},
 	testing.InternalTest{
 		Name: "20",
-		F:    TestCitadelHealthCheck,
+		F:    TestAuthorizationHTTP,
 	},
 	testing.InternalTest{
 		Name: "21",
-		F:    TestCitadelSecretGeneration,
-	},
-	testing.InternalTest{
-		Name: "22",
-		F:    TestAuthorizationHTTP,
-	},
-	/*
-		testing.InternalTest{
-			Name: "23",
-			F:    TestAuthorizationTCP,
-		},
-	*/
-	testing.InternalTest{
-		Name: "24",
 		F:    TestEnablePolicyEnforcement,
 	},
 	testing.InternalTest{
-		Name: "25",
+		Name: "22",
 		F:    TestRateLimits,
 	},
 	testing.InternalTest{
-		Name: "26",
+		Name: "23",
 		F:    TestControlHeadersRouting,
 	},
 	testing.InternalTest{
-		Name: "27",
+		Name: "24",
 		F:    TestDenials,
 	},
 	testing.InternalTest{
-		Name: "28",
+		Name: "25",
 		F:    TestJaegerTracing,
 	},
 	testing.InternalTest{
-		Name: "29",
+		Name: "26",
 		F:    TestPrometheusMetrics,
 	},
 	testing.InternalTest{
-		Name: "30",
+		Name: "27",
 		F:    TestGrafanaMetrics,
 	},
 	testing.InternalTest{
-		Name: "31",
+		Name: "28",
 		F:    TestTLSVersionSMCP,
 	},
 	testing.InternalTest{
-		Name: "32",
+		Name: "29",
 		F:    TestSSL,
 	},
 	testing.InternalTest{
-		Name: "33",
+		Name: "30",
 		F:    TestIngressLoad,
 	},
 }

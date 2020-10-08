@@ -27,14 +27,12 @@ import (
 func cleanupCitadelSecretGeneration(namespace string) {
 	log.Info("# Cleanup ...")
 
-	util.Shell("kubectl delete project foo")
 	util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"security\":{\"enableNamespacesByDefault\":true}}}}'", meshNamespace, smcpAPI, smcpName)
 	time.Sleep(time.Duration(waitTime*10) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=citadel", kubeconfig)
 	util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpAPI, smcpName)
 	time.Sleep(time.Duration(waitTime*10) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
-	util.Shell("oc new-project foo")
 }
 
 func TestCitadelSecretGeneration(t *testing.T) {
@@ -75,13 +73,11 @@ func TestCitadelSecretGeneration(t *testing.T) {
 	t.Run("Security_citadel_opt-in_secret_generation", func(t *testing.T) {
 		defer recoverPanic(t)
 
-		util.Shell("kubectl delete project foo")
 		log.Info("Redeploy Citadel")
 		util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"security\":{\"enableNamespacesByDefault\":false}}}}'", meshNamespace, smcpAPI, smcpName)
 		time.Sleep(time.Duration(waitTime*10) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=citadel", kubeconfig)
 
-		util.Shell("oc new-project foo")
 		time.Sleep(time.Duration(waitTime*2) * time.Second)
 
 		msg, err := util.Shell("kubectl get secrets -n foo | grep istio.io")
