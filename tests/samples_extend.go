@@ -2010,7 +2010,7 @@ spec:
     spec:
       containers:
       - name: testssl
-        image: quay.io/maistra/testssl:latest
+        image: quay.io/maistra/testssl:0.0-ibm-p
         imagePullPolicy: Always
 `
 )
