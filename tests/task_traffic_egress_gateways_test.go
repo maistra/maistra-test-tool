@@ -65,7 +65,7 @@ func TestEgressGateways(t *testing.T) {
 			log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		}
-		time.Sleep(time.Duration(waitTime*4) * time.Second)
+		time.Sleep(time.Duration(waitTime*8) * time.Second)
 
 		log.Info("check istio-proxy log")
 		msg, err = util.ShellMuteOutput("kubectl logs -l istio=egressgateway -c istio-proxy -n %s", meshNamespace)
@@ -95,7 +95,7 @@ func TestEgressGateways(t *testing.T) {
 			log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		}
-		time.Sleep(time.Duration(waitTime*2) * time.Second)
+		time.Sleep(time.Duration(waitTime*8) * time.Second)
 
 		log.Info("check istio-proxy log")
 		msg, err = util.ShellMuteOutput("kubectl logs -l istio=egressgateway -c istio-proxy -n %s", meshNamespace)
