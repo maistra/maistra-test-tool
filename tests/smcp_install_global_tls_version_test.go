@@ -41,6 +41,7 @@ func TestTLSVersionSMCP(t *testing.T) {
 		time.Sleep(time.Duration(waitTime*8) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 		util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
+		time.Sleep(time.Duration(waitTime*30) * time.Second)
 		if err != nil {
 			t.Errorf("Failed to update SMCP with tls.maxProtocolVersion: TLSv1_0")
 		}
@@ -54,6 +55,7 @@ func TestTLSVersionSMCP(t *testing.T) {
 		time.Sleep(time.Duration(waitTime*8) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 		util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
+		time.Sleep(time.Duration(waitTime*30) * time.Second)
 		if err != nil {
 			t.Errorf("Failed to update SMCP with tls.maxProtocolVersion: TLSv1_1")
 		}
@@ -67,6 +69,7 @@ func TestTLSVersionSMCP(t *testing.T) {
 		time.Sleep(time.Duration(waitTime*8) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 		util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
+		time.Sleep(time.Duration(waitTime*30) * time.Second)
 		if err != nil {
 			t.Errorf("Failed to update SMCP with tls.maxProtocolVersion: TLSv1_3")
 		}
