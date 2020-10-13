@@ -27,10 +27,10 @@ import (
 func cleanupCitadelHealthCheck(namespace string) {
 	log.Info("# Cleanup ...")
 	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"security\":{\"citadelHealthCheck\":false}}}}'", meshNamespace, smcpName)
-	time.Sleep(time.Duration(waitTime*10) * time.Second)
+	time.Sleep(time.Duration(waitTime*40) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=citadel", kubeconfig)
 	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
-	time.Sleep(time.Duration(waitTime*10) * time.Second)
+	time.Sleep(time.Duration(waitTime*40) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=pilot", kubeconfig)
 	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
 	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
@@ -45,7 +45,7 @@ func TestCitadelHealthCheck(t *testing.T) {
 	// update mtls to true
 	log.Info("Update SMCP mtls to true")
 	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace, smcpName)
-	time.Sleep(time.Duration(waitTime*10) * time.Second)
+	time.Sleep(time.Duration(waitTime*40) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=pilot", kubeconfig)
 	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
 	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
@@ -56,7 +56,7 @@ func TestCitadelHealthCheck(t *testing.T) {
 
 		log.Info("Redeploy Citadel")
 		util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"security\":{\"citadelHealthCheck\":true}}}}'", meshNamespace, smcpName)
-		time.Sleep(time.Duration(waitTime*15) * time.Second)
+		time.Sleep(time.Duration(waitTime*45) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=citadel", kubeconfig)
 
 		log.Info("Verify that health checking works")

@@ -42,6 +42,7 @@ func TestTLSVersionSMCP(t *testing.T) {
 		time.Sleep(time.Duration(waitTime*8) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 		util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
+		time.Sleep(time.Duration(waitTime*30) * time.Second)
 
 		msg, _ := util.Shell("kubectl get -n %s smcp/%s", meshNamespace, smcpName)
 		if strings.Contains(msg, "UpdateSuccessful") {
@@ -59,6 +60,7 @@ func TestTLSVersionSMCP(t *testing.T) {
 		time.Sleep(time.Duration(waitTime*8) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 		util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
+		time.Sleep(time.Duration(waitTime*30) * time.Second)
 
 		msg, _ := util.Shell("kubectl get -n %s smcp/%s", meshNamespace, smcpName)
 		if strings.Contains(msg, "UpdateSuccessful") {
@@ -76,6 +78,7 @@ func TestTLSVersionSMCP(t *testing.T) {
 		time.Sleep(time.Duration(waitTime*8) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 		util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
+		time.Sleep(time.Duration(waitTime*30) * time.Second)
 
 		msg, _ := util.Shell("kubectl get -n %s smcp/%s", meshNamespace, smcpName)
 		if strings.Contains(msg, "UpdateSuccessful") {
