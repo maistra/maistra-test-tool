@@ -42,77 +42,51 @@ if (util.getWhoBuild() == "[]") {
 
 } else {
 
-    node('master'){
+    node('centos'){
         // Define the build name and informations about it
         currentBuild.displayName = "${params.BUILD_NAME}"
         currentBuild.description = util.htmlDescription(util.whoBuild(util.getWhoBuild()))
 
-        try {
             // Workspace cleanup and git checkout
             gitSteps()
-            stage("Login and Create New Project"){
+            stage("Login"){
                 // Will print the masked value of the KEY, replaced with ****
                 wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: 'ADMIN_PWD', password: ADMIN_PWD]], varMaskRegexes: []]) {
                     sh """
                         #!/bin/bash
-                        oc login -u ${params.ADMIN_USER} -p ${ADMIN_PWD} --server="${params.OCP_SERVER}" --insecure-skip-tls-verify=true
-                        oc new-project maistra-pipelines || true
+                        oc login -u ${params.ADMIN_USER} -p ${params.ADMIN_PWD} --server="${params.OCP_SERVER}" --insecure-skip-tls-verify=true
                     """
                 }
             }
-            stage("Apply Pipelines"){
-                sh """
-                    #!/bin/bash
-                    cd pipeline
-                    oc apply -f openshift-pipeline-subscription.yaml
-                    sleep 40
-                    oc apply -f pipeline-cluster-role-binding.yaml
-                """
-            }
             stage("Start running all tests"){
-                sh """
-                    #!/bin/bash
-                    cd pipeline
-                    set +ex
-                    oc apply -f pipeline-run-acc-tests.yaml
-                    sleep 40
-                    set -ex
-                """
+                sh "cd tests; go test -run 01 -v"
+                sh "cd tests; go test -run 02 -v"
+                sh "cd tests; go test -run 03 -v"
+                sh "cd tests; go test -run 05 -v"
+                sh "cd tests; go test -run 06 -v"
+                sh "cd tests; go test -run 07 -v"
+                sh "cd tests; go test -run 08 -v"
+                sh "cd tests; go test -run 09 -v"
+                sh "cd tests; go test -run 10 -v"
+                sh "cd tests; go test -run 11 -v"
+                sh "cd tests; go test -run 12 -v"
+                sh "cd tests; go test -run 13 -v"
+                sh "cd tests; go test -run 14 -v"
+                sh "cd tests; go test -run 15 -v"
+                sh "cd tests; go test -run 16 -v"
+                sh "cd tests; go test -run 17 -v"
+                sh "cd tests; go test -run 18 -v"
+                sh "cd tests; go test -run 19 -v"
+                sh "cd tests; go test -run 21 -v"
+                sh "cd tests; go test -run 22 -v"
+                sh "cd tests; go test -run 24 -v"
+                sh "cd tests; go test -run 25 -v"
+                sh "cd tests; go test -run 26 -v"
+                sh "cd tests; go test -run 27 -v"
+                sh "cd tests; go test -run 28 -v"
+                sh "cd tests; go test -run 29 -v"
+                sh "cd tests; go test -run 30 -v"
             }
-        } catch(e) {
-            currentBuild.result = "FAILED"
-            throw e
-        } finally {
-            def podName = sh(script: 'oc get pods -n maistra-pipelines -l tekton.dev/task=run-all-acc-tests -o jsonpath="{.items[0].metadata.name}"', returnStdout: true).trim()
-            stage("Check test completed"){
-                sh """
-                    set +ex
-                    oc logs -n maistra-pipelines ${podName} -c step-run-all-test-cases | grep "#Acc Tests completed#"
-                    while [ \$? -ne 0 ]; do
-                        sleep 60;
-                        oc logs -n maistra-pipelines ${podName} -c step-run-all-test-cases | grep "#Acc Tests completed#"
-                    done
-                    set -ex
-                """
-            }
-            stage("Collect logs"){
-                sh """
-                    oc cp maistra-pipelines/${podName}:test.log ${WORKSPACE}/tests/test.log -c step-run-all-test-cases
-                    oc cp maistra-pipelines/${podName}:results.xml ${WORKSPACE}/tests/results.xml -c step-run-all-test-cases
-
-                    cd pipeline
-                    oc delete -f pipeline-run-acc-tests.yaml
-
-                    set +ex
-                    cat ${WORKSPACE}/tests/test.log | grep "FAIL	github.com/Maistra/maistra-test-tool"
-                    if [ \$? -eq 0 ]; then
-                        currentBuild.result = "FAILED"
-                    fi
-                    set -ex
-                """
-            }
-
-            archiveArtifacts artifacts: 'tests/results.xml,tests/test.log'
 
             stage("Notify Results"){
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {            
@@ -130,7 +104,6 @@ if (util.getWhoBuild() == "[]") {
                     // Send email to notify
                     emailMessage(currentBuild.result,"istio-test@redhat.com", "tests/results.xml,tests/test.log",currentBuild.displayName)
                 }
-            } 
-        }
+            }
     }  
 }
