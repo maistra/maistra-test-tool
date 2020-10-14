@@ -54,7 +54,7 @@ if (util.getWhoBuild() == "[]") {
                 wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: 'ADMIN_PWD', password: ADMIN_PWD]], varMaskRegexes: []]) {
                     sh """
                         #!/bin/bash
-                        oc login -u ${params.ADMIN_USER} -p ${ADMIN_PWD} --server="${params.OCP_SERVER}" --ish "nsecure-skip-tls-v"erify=true
+                        oc login -u ${params.ADMIN_USER} -p ${ADMIN_PWD} --server="${params.OCP_SERVER}" --insecure-skip-tls-verify=true
                     """
                 }
             }
