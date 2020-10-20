@@ -37,6 +37,8 @@ func cleanupAuthMTLSMigration(namespace string) {
 	}
 	util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"mtls\":{\"enabled\":false}},\"controlPlane\":{\"mtls\":false}}}'", meshNamespace, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
+	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
+	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
 }
 
 func TestAuthMTLSMigration(t *testing.T) {
@@ -48,6 +50,8 @@ func TestAuthMTLSMigration(t *testing.T) {
 	util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"mtls\":{\"enabled\":false}},\"controlPlane\":{\"mtls\":false}}}'", meshNamespace, smcpName)
 	log.Info("Waiting for rules to propagate. Sleep 10 seconds...")
 	time.Sleep(time.Duration(waitTime*2) * time.Second)
+	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
+	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
 
 	deployHttpbin("foo")
 	deployHttpbin("bar")

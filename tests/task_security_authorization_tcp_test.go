@@ -15,17 +15,157 @@
 package tests
 
 import (
+	"fmt"
+	"strings"
 	"testing"
+	"time"
+
+	"maistra/util"
 
 	"istio.io/pkg/log"
 )
 
-func cleanupAuthorizationTCP(namespace string) {
+func cleanupAuthorizationTCP() {
 	log.Info("# Cleanup ...")
+
+	util.KubeDeleteContents("foo", tcpPolicyAllow, kubeconfig)
+	cleanEchoWithProxy("foo")
+	cleanSleep("foo")
+	util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"mtls\":{\"enabled\":false,\"controlPlane\":{\"mtls\":false}}}}}'", meshNamespace, smcpName)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
+	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
+	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
 }
 
 func TestAuthorizationTCP(t *testing.T) {
-	defer cleanupAuthorizationTCP(testNamespace)
+	defer cleanupAuthorizationTCP()
 	defer recoverPanic(t)
 
+	log.Info("Authorization for TCP traffic")
+
+	// update mtls to true
+	log.Info("Update SMCP mtls to true")
+	util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"mtls\":{\"enabled\":true,\"controlPlane\":{\"mtls\":true}}}}}'", meshNamespace, smcpName)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
+	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
+	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
+
+	deploySleep("foo")
+	deployEchoWithProxy("foo")
+
+	log.Info("Verify echo hello port")
+	sleepPod, err := util.GetPodName("foo", "app=sleep", kubeconfig)
+	util.Inspect(err, "Failed to get sleep pod name", "", t)
+
+	ports := []string{"9000", "9001", "9002"}
+	for _, port := range ports {
+		if port == "9000" || port == "9001" {
+			cmd := fmt.Sprintf(`sh -c 'echo "port %s" | nc tcp-echo %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`, port, port)
+			msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfig)
+			util.Inspect(err, "Failed to get response", "", t)
+			if !strings.Contains(msg, "connection succeeded") {
+				log.Errorf("Verify setup Unexpected response: %s", msg)
+				t.Errorf("Verify setup Unexpected response: %s", msg)
+			} else {
+				log.Infof("Success. Get expected response: %s", msg)
+			}
+		} else {
+			tcpEchoPod, err := util.GetPodName("foo", "app=tcp-echo", kubeconfig)
+			podIP, err := util.Shell(`kubectl get pod %s -n foo -o jsonpath="{.status.podIP}"`, tcpEchoPod)
+			cmd := fmt.Sprintf(`sh -c 'echo "port %s" | nc %s %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`, port, podIP, port)
+			msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfig)
+			util.Inspect(err, "Failed to get response", "", t)
+			if !strings.Contains(msg, "connection succeeded") {
+				log.Errorf("Verify setup Unexpected response: %s", msg)
+				t.Errorf("Verify setup Unexpected response: %s", msg)
+			} else {
+				log.Infof("Success. Get expected response: %s", msg)
+			}
+		}
+	}
+
+	t.Run("Security_authorization_rbac_allow_GET_tcp", func(t *testing.T) {
+		defer recoverPanic(t)
+
+		util.KubeApplyContents("foo", tcpPolicyAllow, kubeconfig)
+		time.Sleep(time.Duration(waitTime*2) * time.Second)
+
+		ports := []string{"9000", "9001", "9002"}
+		for _, port := range ports {
+			if port == "9000" || port == "9001" {
+				cmd := fmt.Sprintf(`sh -c 'echo "port %s" | nc tcp-echo %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`, port, port)
+				msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfig)
+				util.Inspect(err, "Failed to get response", "", t)
+				if !strings.Contains(msg, "connection succeeded") {
+					log.Errorf("Verify allow GET Unexpected response: %s", msg)
+					t.Errorf("Verify allow GET Unexpected response: %s", msg)
+				} else {
+					log.Infof("Success. Get expected response: %s", msg)
+				}
+			} else {
+				tcpEchoPod, err := util.GetPodName("foo", "app=tcp-echo", kubeconfig)
+				podIP, err := util.Shell(`kubectl get pod %s -n foo -o jsonpath="{.status.podIP}"`, tcpEchoPod)
+				cmd := fmt.Sprintf(`sh -c 'echo "port %s" | nc %s %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`, port, podIP, port)
+				msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfig)
+				util.Inspect(err, "Failed to get response", "", t)
+				if !strings.Contains(msg, "connection rejected") {
+					log.Errorf("Verify allow GET Unexpected response: %s", msg)
+					//t.Errorf("Verify allow GET Unexpected response: %s", msg)
+				} else {
+					log.Infof("Success. Get expected response: %s", msg)
+				}
+			}
+		}
+	})
+
+	t.Run("Security_authorization_rbac_invalid_policy_tcp", func(t *testing.T) {
+		defer recoverPanic(t)
+
+		util.KubeApplyContents("foo", tcpPolicyInvalid, kubeconfig)
+		time.Sleep(time.Duration(waitTime*2) * time.Second)
+
+		ports := []string{"9000", "9001"}
+		for _, port := range ports {
+			cmd := fmt.Sprintf(`sh -c 'echo "port %s" | nc tcp-echo %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`, port, port)
+			msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfig)
+			util.Inspect(err, "Failed to get response", "", t)
+			if !strings.Contains(msg, "connection rejected") {
+				log.Errorf("Verify invalid rule Unexpected response: %s", msg)
+				t.Errorf("Verify invalid rule Unexpected response: %s", msg)
+			} else {
+				log.Infof("Success. Get expected response: %s", msg)
+			}
+		}
+	})
+
+	t.Run("Security_authorization_rbac_deny_GET_tcp", func(t *testing.T) {
+		defer recoverPanic(t)
+
+		util.KubeApplyContents("foo", tcpPolicyDeny, kubeconfig)
+		time.Sleep(time.Duration(waitTime*2) * time.Second)
+
+		ports := []string{"9000", "9001"}
+		for _, port := range ports {
+			cmd := fmt.Sprintf(`sh -c 'echo "port %s" | nc tcp-echo %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`, port, port)
+			msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfig)
+			util.Inspect(err, "Failed to get response", "", t)
+
+			if port == "9000" {
+				if !strings.Contains(msg, "connection rejected") {
+					log.Errorf("Verify DENY rule Unexpected response: %s", msg)
+					t.Errorf("Verify DENY rule Unexpected response: %s", msg)
+				} else {
+					log.Infof("Success. Get expected response: %s", msg)
+				}
+			}
+			if port == "9001" {
+				if !strings.Contains(msg, "connection succeeded") {
+					log.Errorf("Verify DENY rule Unexpected response: %s", msg)
+					t.Errorf("Verify DENY rule Unexpected response: %s", msg)
+				} else {
+					log.Infof("Success. Get expected response: %s", msg)
+				}
+			}
+		}
+	})
 }

@@ -107,6 +107,23 @@ func cleanEcho(namespace string) {
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 }
 
+func deployEchoWithProxy(namespace string) {
+	log.Info("* Deploy tcp-echo")
+
+	util.KubeApply(namespace, echoWithProxy, kubeconfig)
+	log.Info("Waiting deployments complete...")
+	time.Sleep(time.Duration(waitTime) * time.Second)
+	util.CheckPodRunning(namespace, "app=tcp-echo,version=v1", kubeconfig)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
+}
+
+func cleanEchoWithProxy(namespace string) {
+	log.Info("* Cleanup tcp-echo")
+
+	util.KubeDelete(namespace, echoWithProxy, kubeconfig)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
+}
+
 func deploySleep(namespace string) {
 	log.Info("* Deploy Sleep")
 

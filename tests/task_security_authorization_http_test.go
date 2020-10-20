@@ -34,9 +34,10 @@ func cleanupAuthorizationHTTP(namespace string) {
 	util.KubeDeleteContents(namespace, productpageGETPolicy, kubeconfig)
 	util.KubeDeleteContents(namespace, denyAllPolicy, kubeconfig)
 	cleanBookinfo(namespace)
-	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpName)
+	util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"mtls\":{\"enabled\":false,\"controlPlane\":{\"mtls\":false}}}}}'", meshNamespace, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
-	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
+	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
+	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
 }
 
 func TestAuthorizationHTTP(t *testing.T) {
@@ -47,9 +48,10 @@ func TestAuthorizationHTTP(t *testing.T) {
 
 	// update mtls to true
 	log.Info("Update SMCP mtls to true")
-	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace, smcpName)
+	util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"mtls\":{\"enabled\":true,\"controlPlane\":{\"mtls\":true}}}}}'", meshNamespace, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
-	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
+	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
+	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
 
 	deployBookinfo(testNamespace, true)
 	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)

@@ -54,6 +54,7 @@ const (
 	echoYaml      = "samples/tcp-echo/tcp-echo-services.yaml"
 	echoAllv1Yaml = "samples/tcp-echo/tcp-echo-all-v1.yaml"
 	echo20v2Yaml  = "samples/tcp-echo/tcp-echo-20-v2.yaml"
+	echoWithProxy = "samples/tcp-echo/tcp-echo.yaml"
 
 	sleepYaml       = "samples/sleep/sleep.yaml"
 	sleepLegacyYaml = "samples_legacy/sleep.yaml"
