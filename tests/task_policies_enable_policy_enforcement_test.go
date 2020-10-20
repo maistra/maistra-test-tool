@@ -31,7 +31,7 @@ func TestEnablePolicyEnforcement(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Enabling Policy Enforcement")
-		util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"disablePolicyChecks\":false}}}}'", meshNamespace, smcpName)
+		util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"disablePolicyChecks\":false}}}}'", meshNamespace, smcpv1API, smcpName)
 		time.Sleep(time.Duration(waitTime*4) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
 

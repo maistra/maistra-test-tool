@@ -37,10 +37,10 @@ func TestEgressGateways(t *testing.T) {
 
 	log.Info("# TestEgressGateways")
 	log.Info("Enable Envoy's access logging")
-	util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"proxy\":{\"accessLogFile\":\"/dev/stdout\"}}}}}'", meshNamespace, smcpName)
+	util.Shell("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"proxy\":{\"accessLogFile\":\"/dev/stdout\"}}}}}'", meshNamespace, smcpv1API, smcpName)
 
 	log.Info("Enable istio-ingressgateway ior")
-	util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"gateways\":{\"istio-ingressgateway\":{\"ior_enabled\":\"true\"}}}}}'", meshNamespace, smcpName)
+	util.Shell("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"gateways\":{\"istio-ingressgateway\":{\"ior_enabled\":\"true\"}}}}}'", meshNamespace, smcpv1API, smcpName)
 	time.Sleep(time.Duration(waitTime*6) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)

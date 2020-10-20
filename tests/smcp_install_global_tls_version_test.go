@@ -16,7 +16,6 @@ package tests
 
 import (
 	"maistra/util"
-	"strings"
 	"testing"
 	"time"
 
@@ -38,16 +37,12 @@ func TestTLSVersionSMCP(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_0")
-		util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"controlPlane\":{\"tls\":{\"minProtocolVersion\":\"TLSv1_0\"}}}}}'", meshNamespace, smcpName)
+		_, err := util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"controlPlane\":{\"tls\":{\"minProtocolVersion\":\"TLSv1_0\"}}}}}'", meshNamespace, smcpName)
 		time.Sleep(time.Duration(waitTime*8) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 		util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
-
-		msg, _ := util.Shell("kubectl get -n %s smcp/%s", meshNamespace, smcpName)
-		if strings.Contains(msg, "ComponentsReady") {
-			log.Info(msg)
-		} else {
-			t.Errorf("Failed to update SMCP with spec.security.controlPlane.tls.minProtocolVersion: TLSv1_0")
+		if err != nil {
+			t.Errorf("Failed to update SMCP with tls.maxProtocolVersion: TLSv1_0")
 		}
 	})
 
@@ -55,16 +50,12 @@ func TestTLSVersionSMCP(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_1")
-		util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"controlPlane\":{\"tls\":{\"minProtocolVersion\":\"TLSv1_1\"}}}}}'", meshNamespace, smcpName)
+		_, err := util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"controlPlane\":{\"tls\":{\"minProtocolVersion\":\"TLSv1_1\"}}}}}'", meshNamespace, smcpName)
 		time.Sleep(time.Duration(waitTime*8) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 		util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
-
-		msg, _ := util.Shell("kubectl get -n %s smcp/%s", meshNamespace, smcpName)
-		if strings.Contains(msg, "ComponentsReady") {
-			log.Info(msg)
-		} else {
-			t.Errorf("Failed to update SMCP with spec.security.controlPlane.tls.minProtocolVersion: TLSv1_1")
+		if err != nil {
+			t.Errorf("Failed to update SMCP with tls.maxProtocolVersion: TLSv1_1")
 		}
 	})
 
@@ -72,16 +63,12 @@ func TestTLSVersionSMCP(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_3")
-		util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"controlPlane\":{\"tls\":{\"maxProtocolVersion\":\"TLSv1_3\"}}}}}'", meshNamespace, smcpName)
+		_, err := util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"controlPlane\":{\"tls\":{\"maxProtocolVersion\":\"TLSv1_3\"}}}}}'", meshNamespace, smcpName)
 		time.Sleep(time.Duration(waitTime*8) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 		util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
-
-		msg, _ := util.Shell("kubectl get -n %s smcp/%s", meshNamespace, smcpName)
-		if strings.Contains(msg, "ComponentsReady") {
-			log.Info(msg)
-		} else {
-			t.Errorf("Failed to update SMCP with spec.security.controlPlane.tls.maxProtocolVersion: TLSv1_3")
+		if err != nil {
+			t.Errorf("Failed to update SMCP with tls.maxProtocolVersion: TLSv1_3")
 		}
 	})
 }

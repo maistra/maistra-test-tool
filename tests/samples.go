@@ -91,6 +91,7 @@ const (
 
 	meshNamespace = "istio-system"
 	smcpName      = "basic-install"
+	smcpv1API     = "servicemeshcontrolplanes.v1.maistra.io"
 )
 
 var (

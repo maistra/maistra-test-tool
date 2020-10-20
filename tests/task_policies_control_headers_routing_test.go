@@ -48,7 +48,7 @@ func TestControlHeadersRouting(t *testing.T) {
 
 	log.Info("Control Headers and Routing")
 	log.Info("Enabling Policy Enforcement")
-	util.ShellMuteOutput("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"disablePolicyChecks\":false}}}}'", meshNamespace, smcpName)
+	util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"disablePolicyChecks\":false}}}}'", meshNamespace, smcpv1API, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
 
