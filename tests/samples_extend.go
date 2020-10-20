@@ -2263,7 +2263,7 @@ spec:
 `
 
 	httpbinServiceMeshExtension = `
-apiVersion: extensions.maistra.io/v1alpha1
+apiVersion: maistra.io/v1alpha1
 kind: ServiceMeshExtension
 metadata:
   name: header-append
