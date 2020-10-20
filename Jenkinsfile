@@ -75,7 +75,7 @@ if (util.getWhoBuild() == "[]") {
                     cd pipeline
                     set +ex
                     oc apply -f pipeline-run-acc-tests.yaml
-                    sleep 40
+                    sleep 60
                     set -ex
                 """
             }
