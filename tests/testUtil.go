@@ -55,7 +55,7 @@ func prepareOCPConfig() {
 	time.Sleep(time.Duration(waitTime) * time.Second)
 
 	// if testing in mtls disable mode, update mtls to false
-	util.ShellSilent("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"mtls\":{\"enabled\":false}},\"controlPlane\":{\"mtls\":false}}}'", meshNamespace, smcpName)
+	util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":false},"controlPlane":{"mtls":false}}}}'`, meshNamespace, smcpName)
 }
 
 func curlWithCA(url, ingressHost, secureIngressPort, host, cacertFile string) (*http.Response, error) {

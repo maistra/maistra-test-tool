@@ -24,7 +24,7 @@ import (
 
 func cleanupTestTLSVersionSMCP() {
 	log.Info("# Cleanup ...")
-	util.Shell("kubectl patch -n %s smcp/%s --type=json -p='[{\"op\": \"remove\", \"path\": \"/spec/security/controlPlane/tls\"}]'", meshNamespace, smcpName)
+	util.Shell(`kubectl patch -n %s smcp/%s --type=json -p='[{"op": "remove", "path": "/spec/security/controlPlane/tls"}]'`, meshNamespace, smcpName)
 	time.Sleep(time.Duration(waitTime*8) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
@@ -37,7 +37,7 @@ func TestTLSVersionSMCP(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_0")
-		_, err := util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"controlPlane\":{\"tls\":{\"minProtocolVersion\":\"TLSv1_0\"}}}}}'", meshNamespace, smcpName)
+		_, err := util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"controlPlane":{"tls":{"minProtocolVersion":"TLSv1_0"}}}}}'`, meshNamespace, smcpName)
 		time.Sleep(time.Duration(waitTime*8) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 		util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
@@ -50,7 +50,7 @@ func TestTLSVersionSMCP(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_1")
-		_, err := util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"controlPlane\":{\"tls\":{\"minProtocolVersion\":\"TLSv1_1\"}}}}}'", meshNamespace, smcpName)
+		_, err := util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"controlPlane":{"tls":{"minProtocolVersion":"TLSv1_1"}}}}}'`, meshNamespace, smcpName)
 		time.Sleep(time.Duration(waitTime*8) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 		util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
@@ -63,7 +63,7 @@ func TestTLSVersionSMCP(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_3")
-		_, err := util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{\"spec\":{\"security\":{\"controlPlane\":{\"tls\":{\"maxProtocolVersion\":\"TLSv1_3\"}}}}}'", meshNamespace, smcpName)
+		_, err := util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"controlPlane":{"tls":{"maxProtocolVersion":"TLSv1_3"}}}}}'`, meshNamespace, smcpName)
 		time.Sleep(time.Duration(waitTime*8) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
 		util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
