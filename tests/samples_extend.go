@@ -1826,6 +1826,58 @@ spec:
   principalBinding: USE_ORIGIN
 `
 
+	jwtExampleRules = `
+apiVersion: "security.istio.io/v1beta1"
+kind: "RequestAuthentication"
+metadata:
+  name: jwt-example
+  namespace: foo
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  jwtRules:
+  - issuer: "testing@secure.istio.io"
+    jwksUri: "https://raw.githubusercontent.com/istio/istio/release-1.6/security/tools/jwt/samples/jwks.json"
+`
+
+	jwtRequestPrincipal = `
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: require-jwt
+  namespace: foo
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+       requestPrincipals: ["testing@secure.istio.io/testing@secure.istio.io"]
+`
+
+	jwtClaimsGroup = `
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: require-jwt
+  namespace: foo
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+       requestPrincipals: ["testing@secure.istio.io/testing@secure.istio.io"]
+    when:
+    - key: request.auth.claims[groups]
+      values: ["group1"]
+`
+
 	fooMTLSRule = `
 apiVersion: "networking.istio.io/v1alpha3"
 kind: "DestinationRule"
@@ -2328,5 +2380,59 @@ spec:
     - operation:
         methods: ["GET"]
         ports: ["9000"]
+`
+
+	GetPolicyDeny = `
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-method-get
+  namespace: foo
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  action: DENY
+  rules:
+  - to:
+    - operation:
+        methods: ["GET"]
+`
+
+	headerValuePolicyDeny = `
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-method-get
+  namespace: foo
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  action: DENY
+  rules:
+  - to:
+    - operation:
+        methods: ["GET"]
+    when:
+    - key: request.headers[x-token]
+      notValues: ["admin"]
+`
+
+	allowPathPolicy = `
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-path-ip
+  namespace: foo
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  action: ALLOW
+  rules:
+  - to:
+    - operation:
+        paths: ["/ip"]
 `
 )

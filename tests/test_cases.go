@@ -63,31 +63,39 @@ var testCases = []testing.InternalTest{
 		F:    TestAccessExternalServices,
 	},
 	testing.InternalTest{
-		Name: "15",
+		Name: "18",
 		F:    TestAuthMTLSMigration,
 	},
 	testing.InternalTest{
-		Name: "16",
+		Name: "19",
 		F:    TestAuthorizationHTTP,
 	},
 	testing.InternalTest{
-		Name: "17",
+		Name: "20",
 		F:    TestAuthorizationTCP,
 	},
 	testing.InternalTest{
 		Name: "21",
-		F:    TestTLSVersionSMCP,
+		F:    TestAuthorizationJWT,
 	},
 	testing.InternalTest{
 		Name: "22",
+		F:    TestAuthorizationDeny,
+	},
+	testing.InternalTest{
+		Name: "25",
+		F:    TestTLSVersionSMCP,
+	},
+	testing.InternalTest{
+		Name: "26",
 		F:    TestSSL,
 	},
 	testing.InternalTest{
-		Name: "23",
+		Name: "27",
 		F:    TestIngressLoad,
 	},
 	testing.InternalTest{
-		Name: "24",
+		Name: "28",
 		F:    TestExtensionInstall,
 	},
 }

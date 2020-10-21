@@ -29,12 +29,9 @@ func cleanupAuthorizationTCP() {
 	log.Info("# Cleanup ...")
 
 	util.KubeDeleteContents("foo", tcpPolicyAllow, kubeconfig)
+	time.Sleep(time.Duration(waitTime*2) * time.Second)
 	cleanEchoWithProxy("foo")
 	cleanSleep("foo")
-	util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":false},"controlPlane":{"mtls":false}}}}'`, meshNamespace, smcpName)
-	time.Sleep(time.Duration(waitTime*4) * time.Second)
-	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
-	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
 }
 
 func TestAuthorizationTCP(t *testing.T) {
@@ -42,13 +39,6 @@ func TestAuthorizationTCP(t *testing.T) {
 	defer recoverPanic(t)
 
 	log.Info("Authorization for TCP traffic")
-
-	// update mtls to true
-	log.Info("Update SMCP mtls to true")
-	util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}'`, meshNamespace, smcpName)
-	time.Sleep(time.Duration(waitTime*4) * time.Second)
-	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
-	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
 
 	deploySleep("foo")
 	deployEchoWithProxy("foo")
@@ -110,7 +100,7 @@ func TestAuthorizationTCP(t *testing.T) {
 				util.Inspect(err, "Failed to get response", "", t)
 				if !strings.Contains(msg, "connection rejected") {
 					log.Errorf("Verify allow GET Unexpected response: %s", msg)
-					//t.Errorf("Verify allow GET Unexpected response: %s", msg)
+					t.Errorf("Verify allow GET Unexpected response: %s", msg)
 				} else {
 					log.Infof("Success. Get expected response: %s", msg)
 				}
