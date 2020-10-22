@@ -47,46 +47,52 @@ if (util.getWhoBuild() == "[]") {
         currentBuild.displayName = "${params.BUILD_NAME}"
         currentBuild.description = util.htmlDescription(util.whoBuild(util.getWhoBuild()))
 
+        withEnv(["GOPATH=${HOME}/go"]) {
+
             // Workspace cleanup and git checkout
             gitSteps()
+
             stage("Login"){
                 // Will print the masked value of the KEY, replaced with ****
                 wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: 'ADMIN_PWD', password: ADMIN_PWD]], varMaskRegexes: []]) {
                     sh """
                         #!/bin/bash
                         oc login -u ${params.ADMIN_USER} -p ${params.ADMIN_PWD} --server="${params.OCP_SERVER}" --insecure-skip-tls-verify=true
+
+                        oc adm policy add-scc-to-user anyuid -z default -n bookinfo
+                        oc adm policy add-scc-to-user anyuid -z bookinfo-ratings-v2 -n bookinfo
+                        oc adm policy add-scc-to-user anyuid -z httpbin -n bookinfo
+                        oc adm policy add-scc-to-user anyuid -z httpbin -n foo
+                        oc adm policy add-scc-to-user anyuid -z httpbin -n bar
+                        oc adm policy add-scc-to-user anyuid -z httpbin -n legacy
+
+                        mkdir -p ${HOME}/go
+                        go get -u github.com/jstemmer/go-junit-report
                     """
                 }
             }
+        }
+
+        withEnv(["GOPATH=${HOME}/go"]) {
             stage("Start running all tests"){
-                sh "cd tests; go test -run 01 -v"
-                sh "cd tests; go test -run 02 -v"
-                sh "cd tests; go test -run 03 -v"
-                sh "cd tests; go test -run 05 -v"
-                sh "cd tests; go test -run 06 -v"
-                sh "cd tests; go test -run 07 -v"
-                sh "cd tests; go test -run 08 -v"
-                sh "cd tests; go test -run 09 -v"
-                sh "cd tests; go test -run 10 -v"
-                sh "cd tests; go test -run 11 -v"
-                sh "cd tests; go test -run 12 -v"
-                sh "cd tests; go test -run 13 -v"
-                sh "cd tests; go test -run 14 -v"
-                sh "cd tests; go test -run 15 -v"
-                sh "cd tests; go test -run 16 -v"
-                sh "cd tests; go test -run 17 -v"
-                sh "cd tests; go test -run 18 -v"
-                sh "cd tests; go test -run 19 -v"
-                sh "cd tests; go test -run 21 -v"
-                sh "cd tests; go test -run 22 -v"
-                sh "cd tests; go test -run 24 -v"
-                sh "cd tests; go test -run 25 -v"
-                sh "cd tests; go test -run 26 -v"
-                sh "cd tests; go test -run 27 -v"
-                sh "cd tests; go test -run 28 -v"
-                sh "cd tests; go test -run 29 -v"
-                sh "cd tests; go test -run 30 -v"
+                sh """
+                    #!/bin/bash
+
+                    oc login -u ${params.ADMIN_USER} -p ${params.ADMIN_PWD} --server="${params.OCP_SERVER}" --insecure-skip-tls-verify=true
+
+                    cd tests; go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
+                    set +ex
+                    cat ${WORKSPACE}/tests/test.log | grep "FAIL	github.com/Maistra/maistra-test-tool"
+                    if [ \$? -eq 0 ]; then
+                        currentBuild.result = "FAILED"
+                    fi
+                    set -ex
+                """
+
             }
+        }
+
+            archiveArtifacts artifacts: 'tests/results.xml,tests/test.log'
 
             stage("Notify Results"){
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {            
