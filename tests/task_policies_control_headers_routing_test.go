@@ -47,10 +47,15 @@ func TestControlHeadersRouting(t *testing.T) {
 	defer recoverPanic(t)
 
 	log.Info("Control Headers and Routing")
-	log.Info("Enabling Policy Enforcement")
-	util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"disablePolicyChecks\":false}}}}'", meshNamespace, smcpv1API, smcpName)
+
+	log.Info("Enabling Mixer Plugins")
+	util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{%s}'`,
+		meshNamespace, smcpName,
+		`"spec":{"policy":{"type": "Mixer"}}`)
+
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
-	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
+	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
+	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
 
 	deployHttpbin(testNamespace)
 	if err := util.KubeApplyContents(testNamespace, httpbinGateway3, kubeconfig); err != nil {
@@ -59,7 +64,7 @@ func TestControlHeadersRouting(t *testing.T) {
 	}
 
 	log.Info("Output Producing Adapters")
-	util.Shell("kubectl run keyval --generator=run-pod/v1 --image=gcr.io/istio-testing/keyval:release-1.1 --namespace %s --port 9070 --expose", meshNamespace)
+	util.Shell("kubectl run keyval --generator=run-pod/v1 --image=%s --namespace %s --port 9070 --expose", keyvalImage, meshNamespace)
 	util.CheckPodRunning(meshNamespace, "run=keyval", kubeconfig)
 	util.KubeApply(meshNamespace, keyvaltemplate, kubeconfig)
 	util.KubeApply(meshNamespace, keyvalYaml, kubeconfig)
@@ -87,7 +92,7 @@ func TestControlHeadersRouting(t *testing.T) {
 		log.Info("Waiting for rules to propagate. Sleep 70 seconds...")
 		time.Sleep(time.Duration(waitTime*15) * time.Second)
 
-		log.Info("Verify that user:json has \"User-Group\": \"admin\" header")
+		log.Info(`Verify that user:json has "User-Group": "admin" header`)
 		resp, err := checkUserGroup(fmt.Sprintf("http://%s:%s/headers", gatewayHTTP, ingressHTTPPort), gatewayHTTP, ingressHTTPPort, "jason")
 		util.Inspect(err, "Failed to get HTTP Response", "", t)
 		body, err := ioutil.ReadAll(resp.Body)
@@ -107,7 +112,7 @@ func TestControlHeadersRouting(t *testing.T) {
 		defer recoverPanic(t)
 
 		util.KubeApplyContents(meshNamespace, keyvalRule418, kubeconfig)
-		time.Sleep(time.Duration(waitTime*10) * time.Second)
+		time.Sleep(time.Duration(waitTime*15) * time.Second)
 
 		log.Info("Verify response 418 teapot")
 		resp, err := checkUserGroup(fmt.Sprintf("http://%s:%s/headers", gatewayHTTP, ingressHTTPPort), gatewayHTTP, ingressHTTPPort, "jason")

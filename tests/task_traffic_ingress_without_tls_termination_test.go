@@ -63,7 +63,7 @@ func TestIngressWithOutTLS(t *testing.T) {
 
 	log.Info("Verify NGINX server")
 	pod, err := util.GetPodName(testNamespace, "run=my-nginx", kubeconfig)
-	cmd := fmt.Sprintf("curl -v -k --resolve nginx.example.com:443:127.0.0.1 https://nginx.example.com | grep \"Welcome to nginx\"")
+	cmd := fmt.Sprintf(`curl -v -k --resolve nginx.example.com:443:127.0.0.1 https://nginx.example.com | grep "Welcome to nginx"`)
 	msg, err := util.PodExec(testNamespace, pod, "istio-proxy", cmd, true, kubeconfig)
 	util.Inspect(err, "failed to get response", "", t)
 	if !strings.Contains(msg, "Welcome to nginx") {

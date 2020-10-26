@@ -51,8 +51,8 @@ python3-pip is required for testing Security_authentication_end-user_JWT
     $ go get -u github.com/jstemmer/go-junit-report
     $ go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
     ```
-- All case numbers are mapped in the `test_cases.go` file. Users can run a single test with the `-run [case number]` flag, e.g. `go test -run 15 -timeout 1h -v`.
-- The testdata `samples` and `samples_extend` are pulling from [Istio 1.6.1](https://github.com/istio/istio/releases/tag/1.6.1) and [Istio 1.6 Doc](https://archive.istio.io/v1.6/docs/tasks/).
+- All case numbers are mapped in the `test_cases.go` file. Users can run a single test with the `-run [case number]` flag, e.g. `go test -run 17 -timeout 1h -v`.
+- The testdata `samples` and `samples_extend` are pulling from [Istio 1.6.5](https://github.com/istio/istio/releases/tag/1.6.5) and [Istio 1.6 Doc](https://archive.istio.io/v1.6/docs/tasks/).
 
 
 ## License

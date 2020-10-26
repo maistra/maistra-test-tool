@@ -44,15 +44,6 @@ func TestEgressGatewaysTLSOrigination(t *testing.T) {
 	defer recoverPanic(t)
 
 	log.Info("# TestEgressGatewaysTLSOrigination")
-	log.Info("Enable Envoy's access logging")
-	util.Shell("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"proxy\":{\"accessLogFile\":\"/dev/stdout\"}}}}}'", meshNamespace, smcpv1API, smcpName)
-
-	log.Info("Enable istio-ingressgateway ior")
-	util.Shell("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"gateways\":{\"istio-ingressgateway\":{\"ior_enabled\":\"true\"}}}}}'", meshNamespace, smcpv1API, smcpName)
-	time.Sleep(time.Duration(waitTime*4) * time.Second)
-	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
-	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
-
 	deploySleep(testNamespace)
 	sleepPod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfig)
 	util.Inspect(err, "Failed to get sleep pod name", "", t)
@@ -74,15 +65,7 @@ func TestEgressGatewaysTLSOrigination(t *testing.T) {
 			log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		}
-		time.Sleep(time.Duration(waitTime*4) * time.Second)
-		log.Info("check istio-proxy log")
-		msg, err = util.Shell("kubectl logs -l istio=egressgateway -c istio-proxy -n %s | tail", meshNamespace)
-		if strings.Contains(msg, "edition.cnn.com") {
-			log.Infof("Success. Get egressgateway istio-proxy log: %s", msg)
-		} else {
-			log.Infof("Error response: %s", msg)
-			t.Errorf("Error response: %s", msg)
-		}
+
 		util.KubeDeleteContents(testNamespace, cnnextGatewayTLSOrigination, kubeconfig)
 		cleanSleep(testNamespace)
 		time.Sleep(time.Duration(waitTime*4) * time.Second)
@@ -112,7 +95,7 @@ func TestEgressGatewaysTLSOrigination(t *testing.T) {
 		command := "curl -v --resolve nginx.example.com:443:1.1.1.1 --cacert /etc/nginx-ca-certs/ca-chain.cert.pem --cert /etc/nginx-client-certs/tls.crt --key /etc/nginx-client-certs/tls.key https://nginx.example.com"
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "200") {
+		if strings.Contains(msg, "200 OK") {
 			log.Infof("Success. Get https://nginx.example.com response: %s", msg)
 		} else {
 			log.Infof("Error response: %s", msg)

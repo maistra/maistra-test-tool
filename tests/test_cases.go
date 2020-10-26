@@ -63,6 +63,22 @@ var testCases = []testing.InternalTest{
 		F:    TestAccessExternalServices,
 	},
 	testing.InternalTest{
+		Name: "12",
+		F:    TestEgressTLSOrigination,
+	},
+	testing.InternalTest{
+		Name: "13",
+		F:    TestEgressGateways,
+	},
+	testing.InternalTest{
+		Name: "14",
+		F:    TestEgressGatewaysTLSOrigination,
+	},
+	testing.InternalTest{
+		Name: "17",
+		F:    TestAuthPolicy,
+	},
+	testing.InternalTest{
 		Name: "18",
 		F:    TestAuthMTLSMigration,
 	},
@@ -83,19 +99,31 @@ var testCases = []testing.InternalTest{
 		F:    TestAuthorizationDeny,
 	},
 	testing.InternalTest{
+		Name: "24",
+		F:    TestRateLimits,
+	},
+	testing.InternalTest{
 		Name: "25",
-		F:    TestTLSVersionSMCP,
+		F:    TestControlHeadersRouting,
 	},
 	testing.InternalTest{
 		Name: "26",
-		F:    TestSSL,
+		F:    TestDenials,
 	},
 	testing.InternalTest{
 		Name: "27",
-		F:    TestIngressLoad,
+		F:    TestTLSVersionSMCP,
 	},
 	testing.InternalTest{
 		Name: "28",
+		F:    TestSSL,
+	},
+	testing.InternalTest{
+		Name: "29",
+		F:    TestIngressLoad,
+	},
+	testing.InternalTest{
+		Name: "30",
 		F:    TestExtensionInstall,
 	},
 }

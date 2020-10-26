@@ -76,6 +76,7 @@ const (
 
 	keyvaltemplate = "samples/httpbin/policy/keyval-template.yaml"
 	keyvalYaml     = "samples/httpbin/policy/keyval.yaml"
+	keyvalImage    = "gcr.io/istio-testing/keyval:release-1.1"
 
 	mixerRuleProductpageRateLimit = "samples/bookinfo/policy/mixer-rule-productpage-ratelimit.yaml"
 	mixerRuleDenyLabel            = "samples/bookinfo/policy/mixer-rule-deny-label.yaml"
@@ -96,7 +97,7 @@ const (
 
 var (
 	// OCP4.x
-	gatewayHTTP, _       = util.ShellSilent("kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'", meshNamespace)
-	ingressHTTPPort, _   = util.ShellSilent("kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"http2\")].port}'", meshNamespace, "istio-ingressgateway")
-	secureIngressPort, _ = util.ShellSilent("kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name==\"https\")].port}'", meshNamespace, "istio-ingressgateway")
+	gatewayHTTP, _       = util.ShellSilent(`kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'`, meshNamespace)
+	ingressHTTPPort, _   = util.ShellSilent(`kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name=="http2")].port}'`, meshNamespace, "istio-ingressgateway")
+	secureIngressPort, _ = util.ShellSilent(`kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name=="https")].port}'`, meshNamespace, "istio-ingressgateway")
 )

@@ -31,12 +31,12 @@ func TestEnablePolicyEnforcement(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Enabling Policy Enforcement")
-		util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"disablePolicyChecks\":false}}}}'", meshNamespace, smcpv1API, smcpName)
+		util.ShellMuteOutput(`kubectl patch -n %s %s/%s --type merge -p '{"spec":{"istio":{"global":{"disablePolicyChecks":false}}}}'`, meshNamespace, smcpv1API, smcpName)
 		time.Sleep(time.Duration(waitTime*4) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
 
 		log.Info("Validate the policy enforcement")
-		msg, _ := util.Shell("kubectl -n %s get cm istio -o jsonpath=\"{@.data.mesh}\" | grep disablePolicyChecks", meshNamespace)
+		msg, _ := util.Shell(`kubectl -n %s get cm istio -o jsonpath="{@.data.mesh}" | grep disablePolicyChecks`, meshNamespace)
 		if strings.Contains(msg, "false") {
 			log.Info("Success.")
 		} else {

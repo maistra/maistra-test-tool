@@ -31,7 +31,7 @@ func cleanupAuthMTLSHTTPS(namespace string) {
 	cleanSleep(namespace)
 	util.ShellMuteOutput("kubectl delete configmap nginxconfigmap -n %s", namespace)
 	util.ShellMuteOutput("kubectl delete secret nginxsecret -n %s", namespace)
-	util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpv1API, smcpName)
+	util.ShellMuteOutput(`kubectl patch -n %s %s/%s --type merge -p '{"spec":{"istio":{"global":{"controlPlaneSecurityEnabled":false,"mtls":{"enabled":false}}}}}'`, meshNamespace, smcpv1API, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
 }
@@ -44,7 +44,7 @@ func TestAuthMTLSHTTPS(t *testing.T) {
 	log.Info("Generate certificates and configmap")
 
 	// generate secrets
-	util.ShellMuteOutput("openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /tmp/nginx.key -out /tmp/nginx.crt -subj \"/CN=my-nginx/O=my-nginx\"")
+	util.ShellMuteOutput(`openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /tmp/nginx.key -out /tmp/nginx.crt -subj "/CN=my-nginx/O=my-nginx"`)
 	util.CreateTLSSecret("nginxsecret", testNamespace, "/tmp/nginx.key", "/tmp/nginx.crt", kubeconfig)
 	util.ShellMuteOutput("kubectl create configmap -n %s nginxconfigmap --from-file=%s", testNamespace, nginxDefaultConfig)
 
@@ -57,7 +57,7 @@ func TestAuthMTLSHTTPS(t *testing.T) {
 
 		deployNginx(false, testNamespace)
 
-		cmd := fmt.Sprintf("curl https://my-nginx -k | grep \"Welcome to nginx\"")
+		cmd := fmt.Sprintf(`curl https://my-nginx -k | grep "Welcome to nginx"`)
 		msg, err := util.PodExec(testNamespace, sleepPod, "istio-proxy", cmd, true, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
 		if !strings.Contains(msg, "Welcome to nginx") {
@@ -75,7 +75,7 @@ func TestAuthMTLSHTTPS(t *testing.T) {
 
 		deployNginx(true, testNamespace)
 
-		cmd := fmt.Sprintf("curl https://my-nginx -k | grep \"Welcome to nginx\"")
+		cmd := fmt.Sprintf(`curl https://my-nginx -k | grep "Welcome to nginx"`)
 		msg, err := util.PodExec(testNamespace, sleepPod, "istio-proxy", cmd, true, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
 		if !strings.Contains(msg, "Welcome to nginx") {
@@ -94,7 +94,7 @@ func TestAuthMTLSHTTPS(t *testing.T) {
 
 		// update mtls to true
 		log.Info("Update SMCP mtls to true")
-		util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace, smcpv1API, smcpName)
+		util.ShellMuteOutput(`kubectl patch -n %s %s/%s --type merge -p '{"spec":{"istio":{"global":{"controlPlaneSecurityEnabled":true,"mtls":{"enabled":true}}}}}'`, meshNamespace, smcpv1API, smcpName)
 		time.Sleep(time.Duration(waitTime*4) * time.Second)
 		util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
 
@@ -103,7 +103,7 @@ func TestAuthMTLSHTTPS(t *testing.T) {
 		util.Inspect(err, "Failed to get sleep pod name", "", t)
 		deployNginx(true, testNamespace)
 
-		cmd := fmt.Sprintf("curl https://my-nginx -k | grep \"Welcome to nginx\"")
+		cmd := fmt.Sprintf(`curl https://my-nginx -k | grep "Welcome to nginx"`)
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", cmd, true, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
 		if !strings.Contains(msg, "Welcome to nginx") {

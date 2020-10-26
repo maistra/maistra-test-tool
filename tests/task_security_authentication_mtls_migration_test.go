@@ -66,7 +66,7 @@ func TestAuthMTLSMigration(t *testing.T) {
 		for _, to := range []string{"foo", "bar"} {
 			sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfig)
 			util.Inspect(err, "Failed to get sleep pod name", "", t)
-			cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"", to, from, to)
+			cmd := fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%{http_code}"`, to, from, to)
 			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfig)
 			util.Inspect(err, "Failed to get response", "", t)
 			if !strings.Contains(msg, "200") {
@@ -94,7 +94,7 @@ func TestAuthMTLSMigration(t *testing.T) {
 			for _, to := range []string{"foo", "bar"} {
 				sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfig)
 				util.Inspect(err, "Failed to get sleep pod name", "", t)
-				cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"", to, from, to)
+				cmd := fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%{http_code}"`, to, from, to)
 				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfig)
 
 				if from == "legacy" && to == "foo" {
@@ -134,7 +134,7 @@ func TestAuthMTLSMigration(t *testing.T) {
 
 				sleepPod, err := util.GetPodName(from, "app=sleep", kubeconfig)
 				util.Inspect(err, "Failed to get sleep pod name", "", t)
-				cmd := fmt.Sprintf("curl http://httpbin.%s:8000/ip -s -o /dev/null -w \"sleep.%s to httpbin.%s: %%{http_code}\"", to, from, to)
+				cmd := fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%{http_code}"`, to, from, to)
 				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true, kubeconfig)
 
 				if from == "legacy" && to == "foo" {

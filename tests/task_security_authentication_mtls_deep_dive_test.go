@@ -29,7 +29,7 @@ func cleanupAuthMTLS(namespace string) {
 	log.Info("# Cleanup ...")
 	util.KubeDelete("foo", sleepYaml, kubeconfig)
 	util.KubeDelete("foo", httpbinYaml, kubeconfig)
-	util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":false,\"mtls\":{\"enabled\":false}}}}}'", meshNamespace, smcpv1API, smcpName)
+	util.ShellMuteOutput(`kubectl patch -n %s %s/%s --type merge -p '{"spec":{"istio":{"global":{"controlPlaneSecurityEnabled":false,"mtls":{"enabled":false}}}}}'`, meshNamespace, smcpv1API, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
 }
@@ -42,7 +42,7 @@ func TestAuthMTLS(t *testing.T) {
 
 	// update mtls to true
 	log.Info("Update SMCP mtls to true")
-	util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"controlPlaneSecurityEnabled\":true,\"mtls\":{\"enabled\":true}}}}}'", meshNamespace, smcpv1API, smcpName)
+	util.ShellMuteOutput(`kubectl patch -n %s %s/%s --type merge -p '{"spec":{"istio":{"global":{"controlPlaneSecurityEnabled":true,"mtls":{"enabled":true}}}}}'`, meshNamespace, smcpv1API, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
 

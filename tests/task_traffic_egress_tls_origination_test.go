@@ -51,7 +51,7 @@ func TestEgressTLSOrigination(t *testing.T) {
 		command := "curl -sL -o /dev/null -D - http://edition.cnn.com/politics"
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "301") {
+		if strings.Contains(msg, "301 Moved Permanently") {
 			log.Infof("Success. Get http://edition.cnn.com/politics response: %s", msg)
 		} else {
 			log.Infof("Error response: %s", msg)
@@ -69,21 +69,21 @@ func TestEgressTLSOrigination(t *testing.T) {
 		command := "curl -sL -o /dev/null -D - http://edition.cnn.com/politics"
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "200") {
-			log.Infof("Success. Get http://edition.cnn.com/politics response: %s", msg)
-		} else {
+		if strings.Contains(msg, "301 Moved Permanently") {
 			log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
+		} else {
+			log.Infof("Success. Get http://edition.cnn.com/politics response: %s", msg)
 		}
 
 		command = "curl -sL -o /dev/null -D - https://edition.cnn.com/politics"
 		msg, err = util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "200") {
-			log.Infof("Success. Get https://edition.cnn.com/politics response: %s", msg)
-		} else {
+		if strings.Contains(msg, "301 Moved Permanently") {
 			log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
+		} else {
+			log.Infof("Success. Get https://edition.cnn.com/politics response: %s", msg)
 		}
 	})
 }

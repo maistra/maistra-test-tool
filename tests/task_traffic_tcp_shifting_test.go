@@ -57,7 +57,7 @@ func TestTCPShifting(t *testing.T) {
 
 		sleepPod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfig)
 		util.Inspect(err, "Failed to get sleep pod name", "", t)
-		cmd := fmt.Sprintf("sh -c \"(date; sleep 1) | nc %s %s\"", "tcp-echo", "9000")
+		cmd := fmt.Sprintf(`sh -c "(date; sleep 1) | nc %s %s"`, "tcp-echo", "9000")
 		for i := 0; i < 20; i++ {
 			msg, err := util.PodExec(testNamespace, sleepPod, "sleep", cmd, true, kubeconfig)
 			util.Inspect(err, "Failed to get response", "", t)
@@ -86,7 +86,7 @@ func TestTCPShifting(t *testing.T) {
 
 		sleepPod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfig)
 		util.Inspect(err, "Failed to get sleep pod name", "", t)
-		cmd := fmt.Sprintf("sh -c \"(date; sleep 1) | nc %s %s\"", "tcp-echo", "9000")
+		cmd := fmt.Sprintf(`sh -c "(date; sleep 1) | nc %s %s"`, "tcp-echo", "9000")
 
 		for i := 0; i < totalShot; i++ {
 			msg, err := util.PodExec(testNamespace, sleepPod, "sleep", cmd, true, kubeconfig)

@@ -36,14 +36,6 @@ func TestEgressGateways(t *testing.T) {
 	defer recoverPanic(t)
 
 	log.Info("# TestEgressGateways")
-	log.Info("Enable Envoy's access logging")
-	util.Shell("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"proxy\":{\"accessLogFile\":\"/dev/stdout\"}}}}}'", meshNamespace, smcpv1API, smcpName)
-
-	log.Info("Enable istio-ingressgateway ior")
-	util.Shell("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"gateways\":{\"istio-ingressgateway\":{\"ior_enabled\":\"true\"}}}}}'", meshNamespace, smcpv1API, smcpName)
-	time.Sleep(time.Duration(waitTime*6) * time.Second)
-	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
-	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
 
 	deploySleep(testNamespace)
 	sleepPod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfig)
@@ -59,22 +51,13 @@ func TestEgressGateways(t *testing.T) {
 		command := "curl -sL -o /dev/null -D - http://edition.cnn.com/politics"
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "301") {
+		if strings.Contains(msg, "301 Moved Permanently") {
 			log.Infof("Success. Get http://edition.cnn.com/politics response: %s", msg)
 		} else {
 			log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		}
-		time.Sleep(time.Duration(waitTime*8) * time.Second)
 
-		log.Info("check istio-proxy log")
-		msg, err = util.ShellMuteOutput("kubectl logs -l istio=egressgateway -c istio-proxy -n %s", meshNamespace)
-		if strings.Contains(msg, "edition.cnn.com") {
-			log.Infof("Success. Get egressgateway istio-proxy log: %s", msg)
-		} else {
-			log.Infof("Error response: %s", msg)
-			t.Errorf("Error response: %s", msg)
-		}
 		util.KubeDeleteContents(testNamespace, cnnextGateway, kubeconfig)
 		time.Sleep(time.Duration(waitTime*2) * time.Second)
 	})
@@ -89,18 +72,8 @@ func TestEgressGateways(t *testing.T) {
 		command := "curl -sL -o /dev/null -D - https://edition.cnn.com/politics"
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "200") {
+		if strings.Contains(msg, "HTTP/2 200") {
 			log.Infof("Success. Get https://edition.cnn.com/politics response: %s", msg)
-		} else {
-			log.Infof("Error response: %s", msg)
-			t.Errorf("Error response: %s", msg)
-		}
-		time.Sleep(time.Duration(waitTime*8) * time.Second)
-
-		log.Info("check istio-proxy log")
-		msg, err = util.ShellMuteOutput("kubectl logs -l istio=egressgateway -c istio-proxy -n %s", meshNamespace)
-		if strings.Contains(msg, "443||edition.cnn.com") {
-			log.Infof("Success. Get egressgateway istio-proxy log: %s", msg)
 		} else {
 			log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)

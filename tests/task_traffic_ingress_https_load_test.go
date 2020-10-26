@@ -69,7 +69,7 @@ func TestIngressLoad(t *testing.T) {
 
 		// append hosts DNS
 		destIP, _ := util.ShellMuteOutput("dig +short $(oc get console.config.openshift.io cluster -o jsonpath='{.status.consoleURL}') | head -n 1 | tr -d '\n'")
-		util.ShellMuteOutput("echo \"%s httpbin.example.com\" | sudo tee -a /etc/hosts", destIP)
+		util.ShellMuteOutput(`echo "%s httpbin.example.com" | sudo tee -a /etc/hosts`, destIP)
 
 		// check headers
 		url := "https://httpbin.example.com/headers"

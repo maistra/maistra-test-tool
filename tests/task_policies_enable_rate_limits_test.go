@@ -40,10 +40,15 @@ func TestRateLimits(t *testing.T) {
 	defer recoverPanic(t)
 
 	log.Info("Enabling Rate Limits")
-	log.Info("Enabling Policy Enforcement")
-	util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"disablePolicyChecks\":false}}}}'", meshNamespace, smcpv1API, smcpName)
+
+	log.Info("Enabling Mixer Plugins")
+	util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{%s}'`,
+		meshNamespace, smcpName,
+		`"spec":{"policy":{"type": "Mixer"}}`)
+
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
-	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
+	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
+	util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
 
 	deployBookinfo(testNamespace, false)
 	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)

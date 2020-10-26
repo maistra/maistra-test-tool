@@ -29,7 +29,7 @@ func cleanUpTestExtensionInstall(namespace string) {
 	cleanSleep(testNamespace)
 	util.KubeDeleteContents(testNamespace, httpbinServiceMeshExtension, kubeconfig)
 
-	util.Shell("kubectl patch -n %s smcp/%s --type=json -p='[{\"op\": \"remove\", \"path\": \"/spec/techPreview\"}]'", meshNamespace, smcpName)
+	util.Shell(`kubectl patch -n %s smcp/%s --type=json -p='[{"op": "remove", "path": "/spec/techPreview"}]'`, meshNamespace, smcpName)
 	time.Sleep(time.Duration(waitTime) * time.Second)
 }
 
@@ -41,10 +41,10 @@ func TestExtensionInstall(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Enable Extension support")
-		util.Shell("kubectl patch -n %s smcp/%s --type merge -p '{%s:{%s}}}}'",
+		util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{%s:{%s}}}}'`,
 			meshNamespace, smcpName,
-			"\"spec\":{\"techPreview\":{\"wasmExtensions\"",
-			"\"enabled\": true")
+			`"spec":{"techPreview":{"wasmExtensions"`,
+			`"enabled": true`)
 
 		time.Sleep(time.Duration(waitTime) * time.Second)
 		util.CheckPodRunning(meshNamespace, "app=wasm-cacher", kubeconfig)

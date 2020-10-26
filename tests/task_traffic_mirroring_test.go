@@ -90,7 +90,7 @@ func TestMirroring(t *testing.T) {
 		util.Inspect(err, "Failed to get httpbin v2 pod name", "", t)
 		v2msg, err := util.Shell("kubectl logs -n %s --follow=false %s -c %s", testNamespace, v2Pod, "httpbin")
 		util.Inspect(err, "Failed to get httpbin v2 log", "", t)
-		if strings.Contains(v1msg, "\"GET /headers HTTP/1.1\" 200") && !strings.Contains(v2msg, "\"GET /headers HTTP/1.1\" 200") {
+		if strings.Contains(v1msg, `"GET /headers HTTP/1.1" 200`) && !strings.Contains(v2msg, `"GET /headers HTTP/1.1" 200`) {
 			log.Info("Success. v1 an v2 logs are expected")
 		} else {
 			t.Errorf("Error. v1 log: %s\n v2 log: %s", v1msg, v2msg)
@@ -122,7 +122,7 @@ func TestMirroring(t *testing.T) {
 		util.Inspect(err, "Failed to get httpbin v2 pod name", "", t)
 		v2msg, err := util.Shell("kubectl logs -n %s --follow=false %s -c %s", testNamespace, v2Pod, "httpbin")
 		util.Inspect(err, "Failed to get httpbin v2 log", "", t)
-		if strings.Contains(v1msg, "\"GET /headers HTTP/1.1\" 200") && strings.Contains(v2msg, "\"GET /headers HTTP/1.1\" 200") {
+		if strings.Contains(v1msg, `"GET /headers HTTP/1.1" 200`) && strings.Contains(v2msg, `"GET /headers HTTP/1.1" 200`) {
 			log.Info("Success. v1 an v2 logs are expected")
 		} else {
 			t.Errorf("Error. v1 log: %s\n v2 log: %s", v1msg, v2msg)
