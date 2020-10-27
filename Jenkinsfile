@@ -65,7 +65,7 @@ if (util.getWhoBuild() == "[]") {
                     #!/bin/bash
                     cd pipeline
                     oc apply -f openshift-pipeline-subscription.yaml
-                    sleep 40
+                    sleep 180
                     oc apply -f pipeline-cluster-role-binding.yaml
                 """
             }
@@ -75,7 +75,7 @@ if (util.getWhoBuild() == "[]") {
                     cd pipeline
                     set +ex
                     oc apply -f pipeline-run-acc-tests.yaml
-                    sleep 60
+                    sleep 180
                     set -ex
                 """
             }
@@ -103,12 +103,12 @@ if (util.getWhoBuild() == "[]") {
                     cd pipeline
                     oc delete -f pipeline-run-acc-tests.yaml
 
-                    set +ex
-                    cat ${WORKSPACE}/tests/test.log | grep "FAIL	github.com/Maistra/maistra-test-tool"
-                    if [ \$? -eq 0 ]; then
-                        currentBuild.result = "FAILED"
+                    if grep -Fxq "FAIL" ${WORKSPACE}/tests/test.log;
+                    then
+                      currentBuild.result = "FAILED";
+                    else
+                      echo "Acc Test Run PASS";
                     fi
-                    set -ex
                 """
             }
 
