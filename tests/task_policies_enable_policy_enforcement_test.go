@@ -30,13 +30,20 @@ func TestEnablePolicyEnforcement(t *testing.T) {
 	t.Run("Policies_enable_policy_enforcement", func(t *testing.T) {
 		defer recoverPanic(t)
 
-		log.Info("Enabling Policy Enforcement")
-		util.ShellMuteOutput(`kubectl patch -n %s %s/%s --type merge -p '{"spec":{"istio":{"global":{"disablePolicyChecks":false}}}}'`, meshNamespace, smcpv1API, smcpName)
-		time.Sleep(time.Duration(waitTime*4) * time.Second)
-		util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
+		log.Info("Enabling Mixer Plugins")
+		util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{%s}'`,
+			meshNamespace, smcpName,
+			`"spec":{"policy":{"type": "Mixer", "mixer":{"enableChecks":true}}}`)
+
+		time.Sleep(time.Duration(waitTime*8) * time.Second)
+		util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
+		util.CheckPodRunning(meshNamespace, "istio=egressgateway", kubeconfig)
 
 		log.Info("Validate the policy enforcement")
-		msg, _ := util.Shell(`kubectl -n %s get cm istio -o jsonpath="{@.data.mesh}" | grep disablePolicyChecks`, meshNamespace)
+		msg, err := util.Shell(`kubectl -n %s get cm istio -o jsonpath="{@.data.mesh}" | grep disablePolicyChecks`, meshNamespace)
+		if err != nil {
+			msg, _ = util.Shell(`kubectl -n %s get cm istio-%s -o jsonpath="{@.data.mesh}" | grep disablePolicyChecks`, meshNamespace, smcpName)
+		}
 		if strings.Contains(msg, "false") {
 			log.Info("Success.")
 		} else {

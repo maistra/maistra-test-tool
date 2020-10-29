@@ -99,6 +99,10 @@ var testCases = []testing.InternalTest{
 		F:    TestAuthorizationDeny,
 	},
 	testing.InternalTest{
+		Name: "23",
+		F:    TestEnablePolicyEnforcement,
+	},
+	testing.InternalTest{
 		Name: "24",
 		F:    TestRateLimits,
 	},

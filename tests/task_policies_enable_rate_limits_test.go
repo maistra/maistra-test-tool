@@ -44,7 +44,7 @@ func TestRateLimits(t *testing.T) {
 	log.Info("Enabling Mixer Plugins")
 	util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{%s}'`,
 		meshNamespace, smcpName,
-		`"spec":{"policy":{"type": "Mixer"}}`)
+		`"spec":{"policy":{"type": "Mixer", "mixer":{"enableChecks":true}}}`)
 
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=ingressgateway", kubeconfig)
