@@ -421,7 +421,7 @@ func TestAuthPolicy(t *testing.T) {
 		resp, err = util.GetWithJWT(url, token, "")
 		log.Infof("Success. Get response: %d", resp.StatusCode)
 
-		time.Sleep(time.Duration(7) * time.Second)
+		time.Sleep(time.Duration(17) * time.Second)
 		resp, err = util.GetWithJWT(url, token, "")
 		util.Inspect(err, "Failed to get httpbin header response", "", t)
 		if resp.StatusCode != 401 {
