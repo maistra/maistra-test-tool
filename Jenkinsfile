@@ -79,10 +79,6 @@ if (util.getWhoBuild() == "[]") {
                     set -ex
                 """
             }
-        } catch(e) {
-            currentBuild.result = "FAILED"
-            throw e
-        } finally {
             def podName = sh(script: 'oc get pods -n maistra-pipelines -l tekton.dev/task=run-all-acc-tests -o jsonpath="{.items[0].metadata.name}"', returnStdout: true).trim()
             stage("Check test completed"){
                 sh """
@@ -105,13 +101,16 @@ if (util.getWhoBuild() == "[]") {
 
                     if grep -Fxq "FAIL" ${WORKSPACE}/tests/test.log;
                     then
-                      currentBuild.result = "FAILED";
+                      exit 1;
                     else
                       echo "Acc Test Run PASS";
                     fi
                 """
             }
-
+        } catch(e) {
+            currentBuild.result = "FAILED"
+            throw e
+        } finally {
             archiveArtifacts artifacts: 'tests/results.xml,tests/test.log'
 
             stage("Notify Results"){
