@@ -1,0 +1,78 @@
+apiVersion: maistra.io/v1
+kind: ServiceMeshControlPlane
+metadata:
+  name: basic-install
+spec:
+  istio:
+    gateways:
+      istio-ingressgateway:
+        autoscaleEnabled: false
+        externalTrafficPolicy: Local
+        ior_enabled: false
+        nodeSelector:
+          tier: istio
+        ports:
+          - name: status-port
+            nodePort: 30158
+            port: 15020
+            protocol: TCP
+            targetPort: 15020
+          - name: http2
+            nodePort: 32520
+            port: 80
+            protocol: TCP
+            targetPort: 8082
+          - name: https
+            nodePort: 32731
+            port: 443
+            protocol: TCP
+            targetPort: 8443
+          - name: tls
+            nodePort: 30462
+            port: 15443
+            protocol: TCP
+            targetPort: 15443
+        replicaCount: 5
+        sds:
+          enabled: true
+          image: 'istio/node-agent-k8s:1.5.9'
+        type: NodePort
+    global:
+      controlPlaneSecurityEnabled: true
+      disablePolicyChecks: false
+      logging:
+        level: default:info
+      mtls:
+       enabled: true
+      outboundTrafficPolicy:
+        mode: REGISTRY_ONLY
+      policyCheckFailOpen: false
+      proxy:
+        accessLogFile: /dev/stdout
+      tls:
+        minProtocolVersion: TLSv1_2
+    grafana:
+      enabled: true
+    kiali:
+      enabled: true
+    mixer:
+      policy:
+        autoscaleEnabled: false
+      telemetry:
+        autoscaleEnabled: false
+    pilot:
+      autoscaleEnabled: false
+      traceSampling: 100
+    tracing:
+      enabled: true
+      jaeger:
+        elasticsearch:
+          esIndexCleaner:
+            enabled: true
+            numberOfDays: 60
+            schedule: 55 23 * * *
+          nodeCount: 3
+          redundancyPolicy: 
+        template: production-elasticsearch
+  template: default
+  version: v1.1

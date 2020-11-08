@@ -59,6 +59,13 @@ func OcApply(namespace, yamlFileName string, kubeconfig string) error {
 	return err
 }
 
+// OcWait from resource
+func OcWaitSMCP(namespace, resourceName string, kubeconfig string) error {
+	_, err := Shell("oc wait smcp %s -n %s --for=condition=Ready --timeout=600s --kubeconfig=%s",
+		resourceName, namespace, kubeconfig)
+	return err
+}
+
 // OcDelete oc delete from file
 func OcDelete(namespace, yamlFileName string, kubeconfig string) error {
 	_, err := Shell(ocCommand("delete", namespace, yamlFileName, kubeconfig))

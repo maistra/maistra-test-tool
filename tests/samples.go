@@ -90,9 +90,10 @@ const (
 
 	jmeterURL = "https://mirrors.ocf.berkeley.edu/apache//jmeter/binaries/apache-jmeter-5.3.tgz"
 
-	meshNamespace = "istio-system"
-	smcpName      = "basic-install"
-	smcpv1API     = "servicemeshcontrolplanes.v1.maistra.io"
+	meshNamespace     = "istio-system"
+	smcpName          = "basic-install"
+	smcpv1API         = "servicemeshcontrolplanes.v1.maistra.io"
+	invalidSMCPFields = "config/smcp-invalid-fields/smcp.yaml"
 )
 
 var (
