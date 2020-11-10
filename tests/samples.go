@@ -89,7 +89,7 @@ const (
 
 	meshNamespace = "istio-system"
 	smcpName      = "basic-install"
-	smcpAPI       = "servicemeshcontrolplanes.v1.maistra.io"
+	smcpAPI       = "smcp.v1.maistra.io"
 )
 
 var (
