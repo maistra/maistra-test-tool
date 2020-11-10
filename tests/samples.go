@@ -92,7 +92,7 @@ const (
 
 	meshNamespace     = "istio-system"
 	smcpName          = "basic-install"
-	smcpv1API         = "servicemeshcontrolplanes.v1.maistra.io"
+	smcpv1API         = "smcp.v1.maistra.io"
 	invalidSMCPFields = "config/smcp-invalid-fields/smcp.yaml"
 )
 
