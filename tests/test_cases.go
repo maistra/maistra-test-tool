@@ -115,18 +115,6 @@ var testCases = []testing.InternalTest{
 		F:    TestDenials,
 	},
 	testing.InternalTest{
-		Name: "25",
-		F:    TestJaegerTracing,
-	},
-	testing.InternalTest{
-		Name: "26",
-		F:    TestPrometheusMetrics,
-	},
-	testing.InternalTest{
-		Name: "27",
-		F:    TestGrafanaMetrics,
-	},
-	testing.InternalTest{
 		Name: "28",
 		F:    TestTLSVersionSMCP,
 	},
