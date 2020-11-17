@@ -42,7 +42,7 @@ if (util.getWhoBuild() == "[]") {
 
 } else {
 
-    node('master'){
+    node('centos'){
         // Define the build name and informations about it
         currentBuild.displayName = "${params.BUILD_NAME}"
         currentBuild.description = util.htmlDescription(util.whoBuild(util.getWhoBuild()))
