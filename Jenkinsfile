@@ -59,7 +59,7 @@ if (util.getWhoBuild() == "[]") {
                         #!/bin/bash
                         oc login -u ${params.ADMIN_USER} -p ${params.ADMIN_PWD} --server="${params.OCP_SERVER}" --insecure-skip-tls-verify=true
                         # Create python 3.x symbolic link
-			ln -sf /usr/bin/python3 /usr/bin/python
+			ls /usr/bin/ | grep python
 
                         oc adm policy add-scc-to-user anyuid -z default -n bookinfo
                         oc adm policy add-scc-to-user anyuid -z bookinfo-ratings-v2 -n bookinfo
@@ -82,7 +82,7 @@ if (util.getWhoBuild() == "[]") {
 
                     oc login -u ${params.ADMIN_USER} -p ${params.ADMIN_PWD} --server="${params.OCP_SERVER}" --insecure-skip-tls-verify=true
                     # Create python 3.x symbolic link
-		    ln -sf /usr/bin/python3 /usr/bin/python
+		    ls /usr/bin/ | grep python
 
                     cd tests; go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
                     set +ex
