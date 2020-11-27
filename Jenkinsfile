@@ -58,7 +58,7 @@ if (util.getWhoBuild() == "[]") {
                     sh """
                         #!/bin/bash
                         oc login -u ${params.ADMIN_USER} -p ${params.ADMIN_PWD} --server="${params.OCP_SERVER}" --insecure-skip-tls-verify=true
-
+                        python --version
                         oc adm policy add-scc-to-user anyuid -z default -n bookinfo
                         oc adm policy add-scc-to-user anyuid -z bookinfo-ratings-v2 -n bookinfo
                         oc adm policy add-scc-to-user anyuid -z httpbin -n bookinfo
@@ -79,7 +79,7 @@ if (util.getWhoBuild() == "[]") {
                     #!/bin/bash
 
                     oc login -u ${params.ADMIN_USER} -p ${params.ADMIN_PWD} --server="${params.OCP_SERVER}" --insecure-skip-tls-verify=true
-
+                    python --version
                     cd tests; go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
                     set +ex
                     cat ${WORKSPACE}/tests/test.log | grep "FAIL	github.com/Maistra/maistra-test-tool"
