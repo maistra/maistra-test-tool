@@ -15,21 +15,55 @@
 package tests
 
 import (
-	"maistra/util"
+	"path/filepath"
+	"strings"
 	"testing"
+	"time"
+
+	"maistra/util"
 
 	"istio.io/pkg/log"
 )
 
+func cleanupMustGatherTest(namespace string) {
+	log.Info("# Cleanup ...")
+	util.ShellMuteOutput("rm -rf ./debug")
+	cleanBookinfo(namespace)
+	time.Sleep(time.Duration(waitTime*2) * time.Second)
+}
+
 func TestMustGather(t *testing.T) {
+	defer cleanupMustGatherTest(testNamespace)
 	defer recoverPanic(t)
 
+	log.Info("Deploy bookinfo in bookinfo ns")
+	deployBookinfo(testNamespace, false)
+
 	log.Info("Test must-gather log collection")
-	util.ShellMuteOutput("pushd debug")
-	msg, err := util.Shell("oc adm must-gather --image=%s", mustGatherImage)
-	if err != nil {
+	msg, err := util.Shell("mkdir -p debug; oc adm must-gather --dest-dir=./debug --image=%s", mustGatherImage)
+	log.Info("Check CLI output message")
+	if err != nil || strings.Contains(msg, "error") {
 		log.Errorf("must-gather command error: %s", msg)
 		t.Errorf("must-gather command error: %s", msg)
 	}
-	util.ShellMuteOutput("popd")
+
+	log.Info("Check cluster-scoped openshift-operators.servicemesh-resources.maistra.io.yaml")
+	pattern := "debug/*must-gather*/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/openshift-operators.servicemesh-resources.maistra.io.yaml"
+	matches, err := filepath.Glob(pattern)
+	if err != nil || len(matches) == 0 {
+		log.Errorf("openshift-operators.servicemesh-resources.maistra.io.yaml file not found: %s", matches)
+		t.Errorf("openshift-operators.servicemesh-resources.maistra.io.yaml file not found: %s", matches)
+	} else {
+		log.Infof("file exists: %s", matches)
+	}
+
+	log.Info("Check namespaces bookinfo bookinfo.yaml")
+	pattern = "debug/*must-gather*/namespaces/bookinfo/bookinfo.yaml"
+	matches, err = filepath.Glob(pattern)
+	if err != nil || len(matches) == 0 {
+		log.Errorf("bookinfo.yaml file not found: %s", matches)
+		t.Errorf("bookinfo.yaml file not found: %s", matches)
+	} else {
+		log.Infof("file exists: %s", matches)
+	}
 }
