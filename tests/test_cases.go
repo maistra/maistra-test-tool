@@ -75,6 +75,10 @@ var testCases = []testing.InternalTest{
 		F:    TestEgressGatewaysTLSOrigination,
 	},
 	testing.InternalTest{
+		Name: "15",
+		F:    TestEgressWildcards,
+	},
+	testing.InternalTest{
 		Name: "17",
 		F:    TestAuthPolicy,
 	},
