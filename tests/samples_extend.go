@@ -2435,4 +2435,18 @@ spec:
     - operation:
         paths: ["/ip"]
 `
+
+	egressWildcardGateway = `
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+name: wikipedia
+spec:
+hosts:
+- "*.wikipedia.org"
+ports:
+- number: 443
+  name: https
+  protocol: HTTPS
+`
 )
