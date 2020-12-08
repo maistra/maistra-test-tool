@@ -24,7 +24,7 @@ import (
 	"istio.io/pkg/log"
 )
 
-func cleanupEgressGateways(namespace string) {
+func cleanupEgressWildcards(namespace string) {
 	log.Info("# Cleanup ...")
 	util.KubeDeleteContents(namespace, egressWildcardGateway, kubeconfig)
 	cleanSleep(namespace)
@@ -32,7 +32,7 @@ func cleanupEgressGateways(namespace string) {
 }
 
 func TestEgressWildcards(t *testing.T) {
-	defer cleanupEgressGateways(testNamespace)
+	defer cleanupEgressWildcards(testNamespace)
 	defer recoverPanic(t)
 
 	log.Info("# TestEgressWildcards")
@@ -52,7 +52,7 @@ func TestEgressWildcards(t *testing.T) {
 
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "<title>Wikipedia, the free encyclopedia</title><title>Wikipedia – Die freie Enzyklopädie</title>") {
+		if strings.Contains(msg, "<title>Wikipedia, the free encyclopedia</title>\n<title>Wikipedia – Die freie Enzyklopädie</title>") {
 			log.Infof("Success. Got Wikipedia response: %s", msg)
 		} else {
 			log.Infof("Error response: %s", msg)
