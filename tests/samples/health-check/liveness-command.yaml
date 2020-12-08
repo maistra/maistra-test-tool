@@ -43,7 +43,7 @@ spec:
     spec:
       containers:
       - name: liveness
-        image: ppc64le/busybox
+        image: s390x/busybox
         args:
         - /bin/sh
         - -c

@@ -128,7 +128,7 @@ spec:
         version: v1
     spec:
       containers:
-      - image: quay.io/maistra/kennethreitz-httpbin:0.0-ibm-p
+      - image: quay.io/maistra/kennethreitz-httpbin:0.0-ibm-z
         imagePullPolicy: IfNotPresent
         name: httpbin
         command: ["gunicorn", "--access-logfile", "-", "-b", "0.0.0.0:80", "httpbin:app"]
@@ -156,7 +156,7 @@ spec:
         version: v2
     spec:
       containers:
-      - image: quay.io/maistra/kennethreitz-httpbin:0.0-ibm-p
+      - image: quay.io/maistra/kennethreitz-httpbin:0.0-ibm-z
         imagePullPolicy: IfNotPresent
         name: httpbin
         command: ["gunicorn", "--access-logfile", "-", "-b", "0.0.0.0:80", "httpbin:app"]
@@ -643,7 +643,7 @@ spec:
     spec:
       containers:
       - name: sleep
-        image: quay.io/maistra/tutum-curl:0.0-ibm-p
+        image: quay.io/maistra/tutum-curl:0.0-ibm-z
         command: ["/bin/sleep","infinity"]
         imagePullPolicy: IfNotPresent
 `
@@ -680,7 +680,7 @@ spec:
     spec:
       containers:
       - name: sleep
-        image: quay.io/maistra/tutum-curl:0.0-ibm-p
+        image: quay.io/maistra/tutum-curl:0.0-ibm-z
         command: ["/bin/sleep","infinity"]
         imagePullPolicy: IfNotPresent
         volumeMounts:
@@ -2148,7 +2148,7 @@ spec:
     spec:
       containers:
       - name: testssl
-        image: quay.io/maistra/testssl:0.0-ibm-p
+        image: quay.io/maistra/testssl:0.0-ibm-z
         imagePullPolicy: Always
 `
 

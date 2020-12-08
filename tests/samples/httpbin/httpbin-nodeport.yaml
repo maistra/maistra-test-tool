@@ -47,7 +47,7 @@ spec:
         version: v1
     spec:
       containers:
-      - image: quay.io/maistra/kennethreitz-httpbin:0.0-ibm-p
+      - image: quay.io/maistra/kennethreitz-httpbin:0.0-ibm-z
         imagePullPolicy: IfNotPresent
         name: httpbin
         ports:

@@ -76,7 +76,7 @@ const (
 
 	keyvaltemplate = "samples/httpbin/policy/keyval-template.yaml"
 	keyvalYaml     = "samples/httpbin/policy/keyval.yaml"
-	keyvalImage    = "quay.io/maistra/keyval:0.0-ibm-p"
+	keyvalImage    = "quay.io/maistra/keyval:0.0-ibm-z"
 
 	mixerRuleProductpageRateLimit = "samples/bookinfo/policy/mixer-rule-productpage-ratelimit.yaml"
 	mixerRuleDenyLabel            = "samples/bookinfo/policy/mixer-rule-deny-label.yaml"

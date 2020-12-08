@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
       - name: liveness-http
-        image: quay.io/maistra/health:0.0-ibm-p
+        image: quay.io/maistra/health:0.0-ibm-z
         ports:
         - containerPort: 8001
         livenessProbe:
