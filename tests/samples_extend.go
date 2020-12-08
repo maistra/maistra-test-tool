@@ -2440,13 +2440,13 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
-name: wikipedia
+  name: wikipedia
 spec:
-hosts:
-- "*.wikipedia.org"
-ports:
-- number: 443
-  name: https
-  protocol: HTTPS
+  hosts:
+  - "*.wikipedia.org"
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
 `
 )
