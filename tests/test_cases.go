@@ -134,8 +134,8 @@ var testCases = []testing.InternalTest{
 		Name: "34",
 		F:    TestInvalidSMCPFields,
 	},
-	/*testing.InternalTest{
-		Name: "35",
-		F:    TestMustGather,
-	},*/
+	testing.InternalTest{
+		Name: "36",
+		F:    TestSMMROVN,
+	},
 }
