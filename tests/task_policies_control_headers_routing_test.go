@@ -76,7 +76,7 @@ func TestControlHeadersRouting(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Request header operations")
-		resp, _, err := util.GetHTTPResponse(fmt.Sprintf("http://%s:%s/headers", gatewayHTTP, ingressHTTPPort), nil)
+		resp, _, err := util.GetHTTPResponse(fmt.Sprintf("http://%s/headers", gatewayHTTP), nil)
 		util.Inspect(err, "Failed to get HTTP Response", "", t)
 		util.Inspect(util.CheckHTTPResponse200(resp), "Failed to get HTTP 200", resp.Status, t)
 		body, err := ioutil.ReadAll(resp.Body)
@@ -93,7 +93,7 @@ func TestControlHeadersRouting(t *testing.T) {
 		time.Sleep(time.Duration(waitTime*15) * time.Second)
 
 		log.Info(`Verify that user:json has "User-Group": "admin" header`)
-		resp, err := checkUserGroup(fmt.Sprintf("http://%s:%s/headers", gatewayHTTP, ingressHTTPPort), gatewayHTTP, ingressHTTPPort, "jason")
+		resp, err := checkUserGroup(fmt.Sprintf("http://%s/headers", gatewayHTTP), gatewayHTTP, ingressHTTPPort, "jason")
 		util.Inspect(err, "Failed to get HTTP Response", "", t)
 		body, err := ioutil.ReadAll(resp.Body)
 		util.Inspect(err, "Failed to read response body", "", t)
@@ -115,7 +115,7 @@ func TestControlHeadersRouting(t *testing.T) {
 		time.Sleep(time.Duration(waitTime*15) * time.Second)
 
 		log.Info("Verify response 418 teapot")
-		resp, err := checkUserGroup(fmt.Sprintf("http://%s:%s/headers", gatewayHTTP, ingressHTTPPort), gatewayHTTP, ingressHTTPPort, "jason")
+		resp, err := checkUserGroup(fmt.Sprintf("http://%s/headers", gatewayHTTP), gatewayHTTP, ingressHTTPPort, "jason")
 		util.Inspect(err, "Failed to get HTTP Response", "", t)
 		body, err := ioutil.ReadAll(resp.Body)
 		util.Inspect(err, "Failed to read response body", "", t)

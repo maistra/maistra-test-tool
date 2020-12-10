@@ -128,7 +128,7 @@ spec:
         version: v1
     spec:
       containers:
-      - image: quay.io/maistra/kennethreitz-httpbin:0.0-ibm-z
+      - image: quay.io/maistra/httpbin:0.0-ibm-z
         imagePullPolicy: IfNotPresent
         name: httpbin
         command: ["gunicorn", "--access-logfile", "-", "-b", "0.0.0.0:80", "httpbin:app"]
@@ -156,7 +156,7 @@ spec:
         version: v2
     spec:
       containers:
-      - image: quay.io/maistra/kennethreitz-httpbin:0.0-ibm-z
+      - image: quay.io/maistra/httpbin:0.0-ibm-z
         imagePullPolicy: IfNotPresent
         name: httpbin
         command: ["gunicorn", "--access-logfile", "-", "-b", "0.0.0.0:80", "httpbin:app"]
