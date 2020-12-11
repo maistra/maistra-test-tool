@@ -26,7 +26,6 @@ import (
 
 func cleanupEgressWildcards(namespace string) {
 	log.Info("# Cleanup ...")
-	util.KubeDeleteContents(namespace, egressWildcardGateway, kubeconfig)
 	cleanSleep(namespace)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 }
@@ -62,5 +61,25 @@ func TestEgressWildcards(t *testing.T) {
 		util.KubeDeleteContents(testNamespace, egressWildcardGateway, kubeconfig)
 		time.Sleep(time.Duration(waitTime*2) * time.Second)
 	})
+	t.Run("TrafficManagment_egress_wildcard_ a single hosting server", func(t *testing.T) {
+		defer recoverPanic(t)
+		log.Info("create a Gateway to external wikipedia.org")
+		util.KubeApplyContents(testNamespace, egressWildcardGatewaySingleGateway, kubeconfig)
+		// OCP Route created by ior
+		time.Sleep(time.Duration(waitTime) * time.Second)
+		command := `curl -sL -o /dev/null -D - curl -s https://en.wikipedia.org/wiki/Main_Page | grep -o "<title>.*</title>"; curl -s https://de.wikipedia.org/wiki/Wikipedia:Hauptseite | grep -o "<title>.*</title>"`
 
+		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
+		util.Inspect(err, "Failed to get response", "", t)
+		if strings.Contains(msg, "<title>Wikipedia, the free encyclopedia</title>\n<title>Wikipedia – Die freie Enzyklopädie</title>") {
+			log.Infof("Success. Got Wikipedia response: %s", msg)
+		} else {
+			log.Infof("Error response: %s", msg)
+			t.Errorf("Error response: %s", msg)
+		}
+
+		util.KubeDeleteContents(testNamespace, egressWildcardGatewaySingleGateway, kubeconfig)
+		time.Sleep(time.Duration(waitTime*2) * time.Second)
+
+	})
 }
