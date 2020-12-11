@@ -2440,13 +2440,109 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
-name: wikipedia
+  name: wikipedia
 spec:
-hosts:
-- "*.wikipedia.org"
-ports:
-- number: 443
-  name: https
-  protocol: HTTPS
+  hosts:
+  - "*.wikipedia.org"
+  ports:
+  - number: 443
+    name: tls
+    protocol: TLS
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: wikipedia
+spec:
+  hosts:
+  - "*.wikipedia.org"
+  tls:
+  - match:
+    - port: 443
+      sniHosts:
+      - "*.wikipedia.org"
+    route:
+    - destination:
+        host: "*.wikipedia.org"
+        port:
+          number: 443
+`
+
+	egressWildcardGatewaySingleGateway = `
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: istio-egressgateway
+spec:
+  selector:
+    istio: egressgateway
+  servers:
+  - port:
+      number: 443
+      name: tls
+      protocol: TLS
+    hosts:
+    - "*.wikipedia.org"
+    tls:
+      mode: PASSTHROUGH
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: egressgateway-for-wikipedia
+spec:
+  host: istio-egressgateway.istio-system.svc.cluster.local
+  subsets:
+    - name: wikipedia
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: direct-wikipedia-through-egress-gateway
+spec:
+  hosts:
+  - "*.wikipedia.org"
+  gateways:
+  - mesh
+  - istio-egressgateway
+  tls:
+  - match:
+    - gateways:
+      - mesh
+      port: 443
+      sniHosts:
+      - "*.wikipedia.org"
+    route:
+    - destination:
+        host: istio-egressgateway.istio-system.svc.cluster.local
+        subset: wikipedia
+        port:
+          number: 443
+      weight: 100
+  - match:
+    - gateways:
+      - istio-egressgateway
+      port: 443
+      sniHosts:
+      - "*.wikipedia.org"
+    route:
+    - destination:
+        host: www.wikipedia.org
+        port:
+          number: 443
+      weight: 100
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: www-wikipedia
+spec:
+  hosts:
+  - www.wikipedia.org
+  ports:
+  - number: 443
+    name: tls
+    protocol: TLS
+  resolution: DNS
 `
 )
