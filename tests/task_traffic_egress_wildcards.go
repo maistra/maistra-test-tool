@@ -26,8 +26,9 @@ import (
 
 func cleanupEgressWildcards(namespace string) {
 	log.Info("# Cleanup ...")
-	util.KubeDeleteContents(namespace, egressWildcardGateway, kubeconfig)
 	cleanSleep(namespace)
+	util.KubeDeleteContents(namespace, egressWildcardGateway, kubeconfig)
+	util.KubeDeleteContents(namespace, egressWildcardGatewaySingleGateway, kubeconfig)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 }
 
@@ -63,4 +64,37 @@ func TestEgressWildcards(t *testing.T) {
 		time.Sleep(time.Duration(waitTime*2) * time.Second)
 	})
 
+	t.Run("TrafficManagment_egress_wildcard_a_single_hosting_server", func(t *testing.T) {
+		defer recoverPanic(t)
+		log.Info("create a Gateway to external wikipedia.org")
+		util.KubeApplyContents(testNamespace, egressWildcardGatewaySingleGateway, kubeconfig)
+		// OCP Route created by ior
+		time.Sleep(time.Duration(waitTime) * time.Second)
+		command := `curl -sL -o /dev/null -D - curl -s https://en.wikipedia.org/wiki/Main_Page | grep -o "<title>.*</title>"; curl -s https://de.wikipedia.org/wiki/Wikipedia:Hauptseite | grep -o "<title>.*</title>"`
+
+		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
+		util.Inspect(err, "Failed to get response", "", t)
+		if strings.Contains(msg, "<title>Wikipedia, the free encyclopedia</title>\n<title>Wikipedia – Die freie Enzyklopädie</title>") {
+			log.Infof("Success. Got Wikipedia response: %s", msg)
+		} else {
+			log.Infof("Error response: %s", msg)
+			t.Errorf("Error response: %s", msg)
+		}
+
+		log.Info("Check the statistics of the egress gateway’s proxy")
+		egressPod, err := util.GetPodName(meshNamespace, "istio=egressgateway", kubeconfig)
+		command = `pilot-agent request GET clusters | grep '^outbound|443||www.wikipedia.org.*cx_total:'`
+
+		msg, err = util.PodExec(meshNamespace, egressPod, "istio-proxy", command, false, kubeconfig)
+		util.Inspect(err, "Failed to get response", "", t)
+		if strings.Contains(msg, "outbound|443||www.wikipedia.org") {
+			log.Infof("Success. Got Wikipedia proxy log: %s", msg)
+		} else {
+			log.Infof("missing proxy outbound log: %s", msg)
+			t.Errorf("missing proxy outbound log: %s", msg)
+		}
+
+		util.KubeDeleteContents(testNamespace, egressWildcardGatewaySingleGateway, kubeconfig)
+		time.Sleep(time.Duration(waitTime*2) * time.Second)
+	})
 }
