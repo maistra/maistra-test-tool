@@ -2446,12 +2446,29 @@ spec:
   - "*.wikipedia.org"
   ports:
   - number: 443
-    name: https
-    protocol: HTTPS
+    name: tls
+    protocol: TLS
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: wikipedia
+spec:
+  hosts:
+  - "*.wikipedia.org"
+  tls:
+  - match:
+    - port: 443
+      sniHosts:
+      - "*.wikipedia.org"
+    route:
+    - destination:
+        host: "*.wikipedia.org"
+        port:
+          number: 443
 `
-)
 
-  egressWildcardGatewaySingleGateway = `
+	egressWildcardGatewaySingleGateway = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -2462,8 +2479,8 @@ spec:
   servers:
   - port:
       number: 443
-      name: https
-      protocol: HTTPS
+      name: tls
+      protocol: TLS
     hosts:
     - "*.wikipedia.org"
     tls:
@@ -2524,8 +2541,8 @@ spec:
   - www.wikipedia.org
   ports:
   - number: 443
-    name: https
-    protocol: HTTPS
+    name: tls
+    protocol: TLS
   resolution: DNS
 `
 )
