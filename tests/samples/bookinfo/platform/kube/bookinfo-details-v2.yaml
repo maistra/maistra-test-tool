@@ -38,7 +38,7 @@ spec:
     spec:
       containers:
       - name: details
-        image: quay.io/maistra/examples-bookinfo-details-v2:1.15.0-ibm-p
+        image: quay.io/maistra/examples-bookinfo-details-v2:2.0.0-ibm-p
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9080

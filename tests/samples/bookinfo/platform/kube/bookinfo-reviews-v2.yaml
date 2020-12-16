@@ -38,7 +38,7 @@ spec:
     spec:
       containers:
       - name: reviews
-        image: quay.io/maistra/examples-bookinfo-reviews-v2:1.15.0-ibm-p
+        image: quay.io/maistra/examples-bookinfo-reviews-v2:2.0.0-ibm-p
         imagePullPolicy: IfNotPresent
         env:
         - name: LOG_DIR
