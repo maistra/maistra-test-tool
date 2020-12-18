@@ -53,7 +53,8 @@ spec:
       - name: tcp-echo
         image: quay.io/maistra/tcp-echo-server:0.0-ibm-z
         imagePullPolicy: IfNotPresent
-        args: [ "9000,9001,9002", "hello" ]
+        #args: [ "9000,9001,9002", "hello" ]
+        args: [ "9000", "hello" ]
         ports:
         - containerPort: 9000
-        - containerPort: 9001
+        #- containerPort: 9001
