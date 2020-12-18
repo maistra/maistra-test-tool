@@ -22,9 +22,9 @@ spec:
   ports:
   - name: tcp
     port: 9000
-  - name: tcp-other
-    port: 9001
-  # Port 9002 is omitted intentionally for testing the pass through filter chain.
+  #- name: tcp-other
+  #  port: 9001
+  ## Port 9002 is omitted intentionally for testing the pass through filter chain.
   selector:
     app: tcp-echo
 ---
@@ -48,10 +48,11 @@ spec:
       - name: tcp-echo
         image: quay.io/maistra/tcp-echo-server:0.0-ibm-p
         imagePullPolicy: IfNotPresent
-        args: [ "9000,9001,9002", "one" ]
+        #args: [ "9000,9001,9002", "one" ]
+        args: [ "9000", "one" ]
         ports:
         - containerPort: 9000
-        - containerPort: 9001
+        #- containerPort: 9001
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -73,7 +74,8 @@ spec:
       - name: tcp-echo
         image: quay.io/maistra/tcp-echo-server:0.0-ibm-p
         imagePullPolicy: IfNotPresent
-        args: [ "9000,9001,9002", "two" ]
+        #args: [ "9000,9001,9002", "two" ]
+        args: [ "9000", "two" ]
         ports:
         - containerPort: 9000
-        - containerPort: 9001
+        #- containerPort: 9001
