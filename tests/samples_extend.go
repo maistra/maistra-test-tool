@@ -2220,7 +2220,7 @@ spec:
     spec:
       containers:
       - name: helloworld
-        image: quay.io/maistra/helloworld-v1:0.0-ibm-p
+        image: quay.io/maistra/helloworld-v1:0.0-ibm-z
         resources:
           requests:
             cpu: "100m"
