@@ -50,63 +50,46 @@ if (util.getWhoBuild() == "[]") {
         try {
             // Workspace cleanup and git checkout
             gitSteps()
-            stage("Login and Create New Project"){
-                // Will print the masked value of the KEY, replaced with ****
-                wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: 'ADMIN_PWD', password: ADMIN_PWD]], varMaskRegexes: []]) {
-                    sh """
-                        #!/bin/bash
-                        oc login -u ${params.ADMIN_USER} -p ${ADMIN_PWD} --server="${params.OCP_SERVER}" --insecure-skip-tls-verify=true
-                        oc new-project maistra-pipelines || true
-                    """
+            
+            withEnv(["GOPATH=${HOME}/go"]) {
+                stage("Login"){
+                    // Will print the masked value of the KEY, replaced with ****
+                    wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: 'ADMIN_PWD', password: ADMIN_PWD]], varMaskRegexes: []]) {
+                        sh """
+                            #!/bin/bash
+                            oc login -u ${params.ADMIN_USER} -p ${params.ADMIN_PWD} --server="${params.OCP_SERVER}" --insecure-skip-tls-verify=true
+                            # Create python 3.x symbolic link
+                            ls /usr/bin/ | grep python
+                            oc adm policy add-scc-to-user anyuid -z default -n bookinfo
+                            oc adm policy add-scc-to-user anyuid -z bookinfo-ratings-v2 -n bookinfo
+                            oc adm policy add-scc-to-user anyuid -z httpbin -n bookinfo
+                            oc adm policy add-scc-to-user anyuid -z httpbin -n foo
+                            oc adm policy add-scc-to-user anyuid -z httpbin -n bar
+                            oc adm policy add-scc-to-user anyuid -z httpbin -n legacy
+                            mkdir -p ${HOME}/go
+                            go get -u github.com/jstemmer/go-junit-report
+                        """
+                    }
                 }
-            }
-            stage("Apply Pipelines"){
+                
+                stage("Start running all tests"){
                 sh """
                     #!/bin/bash
-                    cd pipeline
-                    oc apply -f openshift-pipeline-subscription.yaml
-                    sleep 180
-                    oc apply -f pipeline-cluster-role-binding.yaml
-                """
-            }
-            stage("Start running all tests"){
-                sh """
-                    #!/bin/bash
-                    cd pipeline
+                    oc login -u ${params.ADMIN_USER} -p ${params.ADMIN_PWD} --server="${params.OCP_SERVER}" --insecure-skip-tls-verify=true
+                    # Create python 3.x symbolic link
+		            ls /usr/bin/ | grep python
+                    cd tests; go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
                     set +ex
-                    oc apply -f pipeline-run-acc-tests.yaml
-                    sleep 180
-                    set -ex
-                """
-            }
-            def podName = sh(script: 'oc get pods -n maistra-pipelines -l tekton.dev/task=run-all-acc-tests -o jsonpath="{.items[0].metadata.name}"', returnStdout: true).trim()
-            stage("Check test completed"){
-                sh """
-                    set +ex
-                    oc logs -n maistra-pipelines ${podName} -c step-run-all-test-cases | grep "#Acc Tests completed#"
-                    while [ \$? -ne 0 ]; do
-                        sleep 60;
-                        oc logs -n maistra-pipelines ${podName} -c step-run-all-test-cases | grep "#Acc Tests completed#"
-                    done
-                    set -ex
-                """
-            }
-            stage("Collect logs"){
-                sh """
-                    oc cp maistra-pipelines/${podName}:test.log ${WORKSPACE}/tests/test.log -c step-run-all-test-cases
-                    oc cp maistra-pipelines/${podName}:results.xml ${WORKSPACE}/tests/results.xml -c step-run-all-test-cases
-
-                    cd pipeline
-                    oc delete -f pipeline-run-acc-tests.yaml
-
-                    if grep -Fxq "FAIL" ${WORKSPACE}/tests/test.log;
-                    then
-                      exit 1;
-                    else
-                      echo "Acc Test Run PASS";
+                    cat ${WORKSPACE}/tests/test.log | grep "FAIL	github.com/Maistra/maistra-test-tool"
+                    if [ \$? -eq 0 ]; then
+                        currentBuild.result = "FAILED"
                     fi
+                    set -ex
                 """
-            }
+
+                }
+            } 
+            
         } catch(e) {
             currentBuild.result = "FAILED"
             throw e
