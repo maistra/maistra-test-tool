@@ -47,7 +47,7 @@ func TestAuthorizationTCP(t *testing.T) {
 	sleepPod, err := util.GetPodName("foo", "app=sleep", kubeconfig)
 	util.Inspect(err, "Failed to get sleep pod name", "", t)
 
-	ports := []string{"9000", "9001", "9002"}
+	ports := []string{"9000", "9001"}
 	for _, port := range ports {
 		if port == "9000" || port == "9001" {
 			cmd := fmt.Sprintf(`sh -c 'echo "port %s" | nc tcp-echo %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`, port, port)
