@@ -69,6 +69,7 @@ func TestRateLimits(t *testing.T) {
 
 		log.Info("productpage permits 2 requests every 5 seconds. Verify 'Quota is exhausted' message")
 		i := 1
+		
 		startT := time.Now()
 		for ; i < 10; i++ {
 			resp, _, err := util.GetHTTPResponse(productpageURL, nil)
