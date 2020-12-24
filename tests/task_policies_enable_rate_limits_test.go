@@ -68,8 +68,8 @@ func TestRateLimits(t *testing.T) {
 		time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 		log.Info("productpage permits 2 requests every 5 seconds. Verify 'Quota is exhausted' message")
-		i := 1
-		
+		i := 0
+		duration := 0		
 		startT := time.Now()
 		for ; i < 10; i++ {
 			resp, _, err := util.GetHTTPResponse(productpageURL, nil)
@@ -77,16 +77,18 @@ func TestRateLimits(t *testing.T) {
 			body, err := ioutil.ReadAll(resp.Body)
 			util.Inspect(err, "Failed to read response body", "", t)
 			if strings.Contains(string(body), "RESOURCE_EXHAUSTED:Quota is exhausted") {
-				duration := int(time.Since(startT) / time.Second)
+				duration = int(time.Since(startT) / time.Second)
 				log.Infof("Response matches expected %s. Requests sent: %v times in %v seconds", string(body), i, duration)
 				break
 			}
 			util.CloseResponseBody(resp)
-			time.Sleep(time.Duration(waitTime) * time.Second)
+			time.Sleep(time.Duration(2) * time.Second)
 		}
-		if i > 3 {
-			t.Errorf("Failed. Requests passed: %v times in 5 seconds", i)
-			log.Errorf("Failed. Requests passed: %v times in 5 seconds", i)
+		if((i/2)*5 >= duration  || i<=3 )       {
+                        log.Infof("Permissible Duration: %v seconds, Total Duration: %v seconds, Requests: %v", (i/2)*5, duration, i)
+                }   else {
+			t.Errorf("Failed. Requests passed: %v times in %v seconds", i, duration)
+			log.Errorf("Failed. Requests passed: %v times in %v seconds", i, duration)
 		}
 	})
 
