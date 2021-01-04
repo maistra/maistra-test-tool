@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
       - name: mongodb 
-        image: quay.io/maistra/examples-bookinfo-mongodb:1.15.0-ibm-z
+        image: quay.io/maistra/examples-bookinfo-mongodb:2.0.0-ibm-z
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 27017
