@@ -13,7 +13,8 @@
 #   limitations under the License.
 
 FROM python:3.7.4-slim
-
+# special for s390x: Need to install gcc to build s390x python packages
+RUN apt update && apt install gcc
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 

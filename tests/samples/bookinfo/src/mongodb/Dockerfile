@@ -12,7 +12,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-FROM mongo:4.0.12-xenial
+# for x86 mongo:4.0.12-xenial is used, no s390x compatible image instead use
+FROM mongo:4.4.2-bionic
 WORKDIR /app/data/
 COPY ratings_data.json /app/data/
 COPY script.sh /docker-entrypoint-initdb.d/
