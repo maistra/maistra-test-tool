@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 # for x86 mongo:4.0.12-xenial is used, no s390x compatible image instead use
-FROM mongo:4.4.2-bionic
+FROM docker.io/mongo:4.4.2-bionic
 WORKDIR /app/data/
 COPY ratings_data.json /app/data/
 COPY script.sh /docker-entrypoint-initdb.d/
