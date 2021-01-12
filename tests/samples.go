@@ -94,7 +94,7 @@ const (
 	smcpName          = "basic-install"
 	smcpv1API         = "smcp.v1.maistra.io"
 	invalidSMCPFields = "config/smcp-invalid-fields/smcp.yaml"
-	mustGatherImage   = "quay.io/maistra/istio-must-gather-rhel7:latest-2.0-qe"
+	mustGatherImage   = "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel7"
 	smmrTest          = "config/smmrTest.yaml"
 )
 
