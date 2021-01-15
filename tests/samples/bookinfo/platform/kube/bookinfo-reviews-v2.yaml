@@ -39,7 +39,7 @@ spec:
       containers:
       - name: reviews
         image: quay.io/maistra/examples-bookinfo-reviews-v2:2.0.0-ibm-z
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         env:
         - name: LOG_DIR
           value: "/tmp/logs"
