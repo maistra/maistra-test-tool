@@ -180,8 +180,8 @@ spec:
       serviceAccountName: bookinfo-reviews
       containers:
       - name: reviews
-        image: quay.io/maistra/examples-bookinfo-reviews-v1:2.0.0-ibm-p
-        imagePullPolicy: Always
+        image: quay.io/maistra/examples-bookinfo-reviews-v1:2.0.0-ibm-p-test
+        imagePullPolicy: IfNotPresent
         env:
         - name: LOG_DIR
           value: "/tmp/logs"
@@ -222,8 +222,8 @@ spec:
       serviceAccountName: bookinfo-reviews
       containers:
       - name: reviews
-        image: quay.io/maistra/examples-bookinfo-reviews-v2:2.0.0-ibm-p
-        imagePullPolicy: Always
+        image: quay.io/maistra/examples-bookinfo-reviews-v2:2.0.0-ibm-p-test
+        imagePullPolicy: IfNotPresent
         env:
         - name: LOG_DIR
           value: "/tmp/logs"
@@ -264,8 +264,8 @@ spec:
       serviceAccountName: bookinfo-reviews
       containers:
       - name: reviews
-        image: quay.io/maistra/examples-bookinfo-reviews-v3:2.0.0-ibm-p
-        imagePullPolicy: Always
+        image: quay.io/maistra/examples-bookinfo-reviews-v3:2.0.0-ibm-p-test
+        imagePullPolicy: IfNotPresent
         env:
         - name: LOG_DIR
           value: "/tmp/logs"
