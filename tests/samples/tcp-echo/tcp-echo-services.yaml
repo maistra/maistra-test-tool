@@ -46,7 +46,7 @@ spec:
     spec:
       containers:
       - name: tcp-echo
-        image: quay.io/maistra/tcp-echo-server:0.0-ibm-z
+        image: quay.io/maistra/tcp-echo-server:2.0-ibm-z
         imagePullPolicy: IfNotPresent
         #args: [ "9000,9001,9002", "one" ]
         args: [ "9000", "one" ]
@@ -72,7 +72,7 @@ spec:
     spec:
       containers:
       - name: tcp-echo
-        image: quay.io/maistra/tcp-echo-server:0.0-ibm-z
+        image: quay.io/maistra/tcp-echo-server:2.0-ibm-z
         imagePullPolicy: IfNotPresent
         #args: [ "9000,9001,9002", "two" ]
         args: [ "9000", "two" ]
