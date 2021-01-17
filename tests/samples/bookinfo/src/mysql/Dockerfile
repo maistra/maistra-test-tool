@@ -13,7 +13,8 @@
 #   limitations under the License.
 
 # x86 uses mysql:8.0.17 but no s390x compatible image instead use
-FROM docker.io/ibmcom/mysql-s390x:8.0.13
+# Need to instead build s390x compatible mysql image from source https://github.com/linux-on-ibm-z/dockerfile-examples/tree/master/MySQL/8.x
+FROM localhost/mysql-s390x:8.0
 # MYSQL_ROOT_PASSWORD must be supplied as an env var
 
 COPY ./mysqldb-init.sql /docker-entrypoint-initdb.d
