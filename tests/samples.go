@@ -88,7 +88,7 @@ const (
 	jmeterURL = "https://mirrors.ocf.berkeley.edu/apache//jmeter/binaries/apache-jmeter-5.3.tgz"
 
 	meshNamespace = "istio-system"
-	smcpName      = "basic-install"
+	smcpName      = "basic"
 	smcpAPI       = "smcp.v1.maistra.io"
 )
 
