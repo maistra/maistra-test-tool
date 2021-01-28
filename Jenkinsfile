@@ -21,6 +21,11 @@ properties([
             defaultValue: "${env.BUILD_NUMBER}",
             description: 'currentBuild displayName such as ocp4_4_ossm_1_1_7'
         ),
+        string(
+            name: 'TESTCASE',
+            defaultValue: 'All',
+            description: 'Test case number, e.g. 01, default value All'
+        ),
         password(name: 'ADMIN_PWD', description: 'User password')
     ])
 ])
@@ -78,7 +83,14 @@ if (util.getWhoBuild() == "[]") {
                     oc login -u ${params.ADMIN_USER} -p ${params.ADMIN_PWD} --server="${params.OCP_SERVER}" --insecure-skip-tls-verify=true
                     # Create python 3.x symbolic link
 		            ls /usr/bin/ | grep python
-                    cd tests; go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
+
+                    if [ ${params.TESTCASE} == 'All' ];
+                    then
+                        cd tests; go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
+                    else
+                        cd tests; go test -run ${params.TESTCASE} -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
+                    fi
+
                     set +ex
                     cat ${WORKSPACE}/tests/test.log | grep "FAIL	github.com/Maistra/maistra-test-tool"
                     if [ \$? -eq 0 ]; then
