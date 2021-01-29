@@ -1,5 +1,7 @@
 # Bookinfo Sample
 
+* Note: bookinfo image references in this branch have been changed to s390x compatible images.
+
 See <https://istio.io/docs/examples/bookinfo/>
 
 ## Build docker images without pushing
