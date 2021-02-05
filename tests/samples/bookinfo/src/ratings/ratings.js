@@ -145,7 +145,7 @@ dispatcher.onGet(/^\/ratings\/[0-9]*/, function (req, res) {
           res.end(JSON.stringify({error: 'could not connect to ratings database'}))
         } else {
           db.collection('ratings').find({}).toArray(function (err, data) {
-            if (err) || (typeof data === undefined){
+            if ((err) || (typeof data === undefined)){
               res.writeHead(500, {'Content-type': 'application/json'})
               res.end(JSON.stringify({error: 'could not load ratings from database'}))
             } else {
