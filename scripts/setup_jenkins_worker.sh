@@ -48,9 +48,9 @@ chmod 600 ~/.ssh/authorized_keys
 
 mkdir -p $HOME/bin
 
-wget https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz
-tar -C $HOME/bin -xzf go1.12.5.linux-amd64.tar.gz
-rm go1.12.5.linux-amd64.tar.gz
+wget https://dl.google.com/go/go1.15.8.linux-amd64.tar.gz
+tar -C $HOME/bin -xzf go1.15.8.linux-amd64.tar.gz
+rm go1.15.8.linux-amd64.tar.gz
 
 echo 'export PATH="$PATH:$HOME/.local/bin:$HOME/bin"' >> $HOME/.bashrc
 echo 'export GOPATH=$HOME/go' >> $HOME/.bashrc

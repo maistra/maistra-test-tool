@@ -1,13 +1,13 @@
 module github.com/Maistra/maistra-test-tool/util
 
 require (
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/pmezard/go-difflib v1.0.0
-	golang.org/x/net v0.0.0-20190424112056-4829fb13d2c6
-	istio.io/istio v0.0.0-20190425185518-e0a807d18fd9
-	k8s.io/api v0.0.0-20190425012535-181e1f9c52c1
-	k8s.io/apimachinery v0.0.0-20190425132440-17f84483f500
-	k8s.io/client-go v11.0.0+incompatible
+	golang.org/x/net v0.0.0-20200904194848-62affa334b73
+	istio.io/pkg v0.0.0-20201112235759-c861803834b2
+	k8s.io/api v0.19.3
+	k8s.io/apimachinery v0.19.3
+	k8s.io/client-go v0.19.3
 )
 
-go 1.13
+go 1.15
