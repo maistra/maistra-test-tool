@@ -323,8 +323,8 @@ func TestAuthPolicy(t *testing.T) {
                 log.Info("Wait 10 secs")
                 time.Sleep(time.Duration(10) * time.Second)
 
-		msg, err = util.Shell(`curl --header "Authorization: Bearer %s" %s/headers -s -o /dev/null -w "%%{http_code}\n"`, token, gatewayHTTP)
-		log.Infof("Success. Get response: %s", msg)
+		//msg, err = util.Shell(`curl --header "Authorization: Bearer %s" %s/headers -s -o /dev/null -w "%%{http_code}\n"`, token, gatewayHTTP)
+		//log.Infof("Success. Get response: %s", msg)
 
 		time.Sleep(time.Duration(300) * time.Second)
 		msg, err = util.Shell(`curl --header "Authorization: Bearer %s" %s/headers -s -o /dev/null -w "%%{http_code}\n"`, token, gatewayHTTP)
