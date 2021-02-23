@@ -326,7 +326,7 @@ func TestAuthPolicy(t *testing.T) {
 		//msg, err = util.Shell(`curl --header "Authorization: Bearer %s" %s/headers -s -o /dev/null -w "%%{http_code}\n"`, token, gatewayHTTP)
 		//log.Infof("Success. Get response: %s", msg)
 
-		time.Sleep(time.Duration(300) * time.Second)
+		time.Sleep(time.Duration(7) * time.Second)
 		msg, err = util.Shell(`curl --header "Authorization: Bearer %s" %s/headers -s -o /dev/null -w "%%{http_code}\n"`, token, gatewayHTTP)
 		util.Inspect(err, "Failed to get httpbin header response", "", t)
 		if !strings.Contains(msg, "401") {
