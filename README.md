@@ -48,6 +48,7 @@ python3-pip is required for testing Security_authentication_end-user_JWT
 - In order to save results in a junit report, we can run a go test command with "github.com/jstemmer/go-junit-report", e.g.
     ```
     $ cd tests
+    $ export GODEBUG=x509ignoreCN=0
     $ go get -u github.com/jstemmer/go-junit-report
     $ go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
     ```
