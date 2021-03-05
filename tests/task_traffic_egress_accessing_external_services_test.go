@@ -29,9 +29,9 @@ func cleanupAccessExternalServices(namespace string) {
 	util.KubeDeleteContents(testNamespace, httpbinextTimeout, kubeconfig)
 	util.KubeDeleteContents(namespace, redhatextServiceEntry, kubeconfig)
 	util.KubeDeleteContents(namespace, httbinextServiceEntry, kubeconfig)
-	util.Shell("kubectl get configmap istio-%s -n %s -o yaml | sed 's/mode: REGISTRY_ONLY/mode: ALLOW_ANY/g' | kubectl replace -n %s -f -", smcpName, meshNamespace, meshNamespace)
+	util.Shell(`kubectl get configmap istio-%s -n %s -o yaml | sed 's/mode: REGISTRY_ONLY/mode: ALLOW_ANY/g' | kubectl replace --force -n %s -f -`, smcpName, meshNamespace, meshNamespace)
 	cleanSleep(namespace)
-	time.Sleep(time.Duration(waitTime*2) * time.Second)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
 }
 
 func TestAccessExternalServices(t *testing.T) {
@@ -64,21 +64,22 @@ func TestAccessExternalServices(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("update global.outboundTrafficPolicy.mode")
-		util.Shell("kubectl get configmap istio-%s -n %s -o yaml | sed 's/mode: ALLOW_ANY/mode: REGISTRY_ONLY/g' | kubectl replace -n %s -f -", smcpName, meshNamespace, meshNamespace)
-		time.Sleep(time.Duration(waitTime*2) * time.Second)
+		util.Shell(`kubectl get configmap istio-%s -n %s -o yaml | sed 's/mode: ALLOW_ANY/mode: REGISTRY_ONLY/g' | kubectl replace --force -n %s -f -`, smcpName, meshNamespace, meshNamespace)
+		time.Sleep(time.Duration(waitTime*6) * time.Second)
 		command := `curl -I https://www.redhat.com/en | grep  "HTTP/"`
-		_, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
+		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		if err != nil {
 			log.Infof("Expected requests to external services are blocked")
 		} else {
-			time.Sleep(time.Duration(waitTime*2) * time.Second)
+			log.Infof("Error response: %s", msg)
+			t.Errorf("Error response: %s", msg)
 		}
 
 		log.Info("create a ServiceEntry to external httpbin")
 		util.KubeApplyContents(testNamespace, httbinextServiceEntry, kubeconfig)
 		time.Sleep(time.Duration(waitTime) * time.Second)
 		command = "curl http://httpbin.org/headers"
-		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
+		msg, err = util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		if err != nil {
 			log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
