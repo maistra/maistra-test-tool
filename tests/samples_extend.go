@@ -852,14 +852,14 @@ spec:
   location: MESH_EXTERNAL
 `
 
-	googleextServiceEntry = `
+	redhatextServiceEntry = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
-  name: google
+  name: redhat
 spec:
   hosts:
-  - www.google.com
+  - www.redhat.com
   ports:
   - number: 443
     name: https
