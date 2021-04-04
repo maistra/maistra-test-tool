@@ -94,6 +94,8 @@ const (
 	smcpName          = "basic"
 	smcpv1API         = "smcp.v1.maistra.io"
 	invalidSMCPFields = "config/smcp-invalid-fields/smcp.yaml"
+	excludeOutboundPortsAnnotation = "config/excludeOutboundPortsAnnotation/app-v2.yaml"
+
 	mustGatherImage   = "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel7"
 	smmrTest          = "config/smmrTest.yaml"
 )

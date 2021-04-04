@@ -142,4 +142,8 @@ var testCases = []testing.InternalTest{
 		Name: "36",
 		F:    TestSMMROVN,
 	},
+	testing.InternalTest{
+		Name: "37",
+		F:    TestExcludeOutboundPortsAnnotation,
+	},
 }
