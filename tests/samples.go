@@ -59,11 +59,11 @@ const (
 	nginxNoSidecarYaml = "samples/https/nginx-app-without-sidecar.yaml"
 	nginxDefaultConfig = "samples/https/default.conf"
 
-	nginxServerCertKey = "samples/certs/nginx.example.com/3_application/private/nginx.example.com.key.pem"
-	nginxServerCert    = "samples/certs/nginx.example.com/3_application/certs/nginx.example.com.cert.pem"
-	nginxServerCACert  = "samples/certs/nginx.example.com/2_intermediate/certs/ca-chain.cert.pem"
-	nginxClientCertKey = "samples/certs/nginx.example.com/4_client/private/nginx.example.com.key.pem"
-	nginxClientCert    = "samples/certs/nginx.example.com/4_client/certs/nginx.example.com.cert.pem"
+	nginxServerCertKey = "samples/certs/nginx.example.com/nginx.example.com.key"
+	nginxServerCert    = "samples/certs/nginx.example.com/nginx.example.com.crt"
+	nginxServerCACert  = "samples/certs/nginx.example.com/example.com.crt"
+	nginxClientCertKey = "samples/certs/nginx.example.com/nginx-client.example.com.key"
+	nginxClientCert    = "samples/certs/nginx.example.com/nginx-client.example.com.crt"
 
 	caCert      = "samples/certs/ca-cert.pem"
 	caCertKey   = "samples/certs/ca-key.pem"

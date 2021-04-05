@@ -109,7 +109,7 @@ func TestEgressGatewaysTLSOrigination(t *testing.T) {
 		sleepPod, err = util.GetPodName(testNamespace, "app=sleep", kubeconfig)
 		util.Inspect(err, "Failed to get sleep pod name", "", t)
 
-		command := "curl -v --resolve nginx.example.com:443:1.1.1.1 --cacert /etc/nginx-ca-certs/ca-chain.cert.pem --cert /etc/nginx-client-certs/tls.crt --key /etc/nginx-client-certs/tls.key https://nginx.example.com"
+		command := "curl -v --resolve nginx.example.com:443:1.1.1.1 --cacert /etc/nginx-ca-certs/example.com.crt --cert /etc/nginx-client-certs/tls.crt --key /etc/nginx-client-certs/tls.key https://nginx.example.com"
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "200") {
