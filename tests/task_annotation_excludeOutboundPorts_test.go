@@ -41,8 +41,9 @@ func TestExcludeOutboundPortsAnnotation(t *testing.T) {
 		if err := util.KubeApply("exclude-outboundports-annotation", excludeOutboundPortsAnnotation, kubeconfig); err != nil {
 			t.Errorf("Failed to deploy HTTP bin with traffic.sidecar.istio.io/excludeOutboundPorts annotation")
 		}
-		util.CheckPodRunning("exclude-outboundports-annotation", "app=httpbin", kubeconfig)
-
+		if err := util.CheckPodRunning("exclude-outboundports-annotation", "app=httpbin", kubeconfig); err != nil {
+			t.Errorf("Failed to deploy HTTP bin with traffic.sidecar.istio.io/excludeOutboundPorts annotation")
+		}
 
 		time.Sleep(time.Duration(waitTime*2) * time.Second)
 
