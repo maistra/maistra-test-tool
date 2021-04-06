@@ -1,4 +1,4 @@
-// Copyright Istio Authors.
+// Copyright Istio Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,22 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package test
+package resource
 
-import (
-	"testing"
-)
-
-var _ Failer = &testing.T{}
-
-// Failer is an interface to be provided to test functions of the form XXXOrFail. This is a
-// substitute for testing.TB, which cannot be implemented outside of the testing
-// package.
-type Failer interface {
-	Fail()
-	FailNow()
-	Fatal(args ...interface{})
-	Fatalf(format string, args ...interface{})
-	Helper()
-	Cleanup(func())
-}
