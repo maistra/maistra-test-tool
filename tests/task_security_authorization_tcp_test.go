@@ -49,11 +49,23 @@ func TestAuthorizationTCP(t *testing.T) {
 
 	ports := []string{"9000", "9001"}
 	for _, port := range ports {
-		if port == "9000" || port == "9001" {
+		if port == "9000" {
 			cmd := fmt.Sprintf(`sh -c 'echo "port %s" | nc tcp-echo %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`, port, port)
+			print(cmd)
 			msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfig)
 			util.Inspect(err, "Failed to get response", "", t)
 			if !strings.Contains(msg, "connection succeeded") {
+				log.Errorf("Verify setup Unexpected response: %s", msg)
+				t.Errorf("Verify setup Unexpected response: %s", msg)
+			} else {
+				log.Infof("Success. Get expected response: %s", msg)
+			}
+		} else if port == "9001" {
+			cmd := fmt.Sprintf(`sh -c 'echo "port %s" | nc tcp-echo %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`, port, port)
+			print(cmd)
+			msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfig)
+			util.Inspect(err, "Failed to get response", "", t)
+			if !strings.Contains(msg, "connection rejected") {
 				log.Errorf("Verify setup Unexpected response: %s", msg)
 				t.Errorf("Verify setup Unexpected response: %s", msg)
 			} else {
@@ -74,6 +86,7 @@ func TestAuthorizationTCP(t *testing.T) {
 		}
 	}
 
+	time.Sleep(time.Duration(waitTime*10) * time.Second)
 	t.Run("Security_authorization_rbac_allow_GET_tcp", func(t *testing.T) {
 		defer recoverPanic(t)
 
@@ -82,11 +95,23 @@ func TestAuthorizationTCP(t *testing.T) {
 
 		ports := []string{"9000", "9001", "9002"}
 		for _, port := range ports {
-			if port == "9000" || port == "9001" {
+			if port == "9000" {
 				cmd := fmt.Sprintf(`sh -c 'echo "port %s" | nc tcp-echo %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`, port, port)
+				print(cmd)
 				msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfig)
 				util.Inspect(err, "Failed to get response", "", t)
 				if !strings.Contains(msg, "connection succeeded") {
+					log.Errorf("Verify allow GET Unexpected response: %s", msg)
+					t.Errorf("Verify allow GET Unexpected response: %s", msg)
+				} else {
+					log.Infof("Success. Get expected response: %s", msg)
+				}
+			} else if port == "9001" {
+				cmd := fmt.Sprintf(`sh -c 'echo "port %s" | nc tcp-echo %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`, port, port)
+				print(cmd)
+				msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true, kubeconfig)
+				util.Inspect(err, "Failed to get response", "", t)
+				if !strings.Contains(msg, "connection rejected") {
 					log.Errorf("Verify allow GET Unexpected response: %s", msg)
 					t.Errorf("Verify allow GET Unexpected response: %s", msg)
 				} else {
@@ -107,6 +132,7 @@ func TestAuthorizationTCP(t *testing.T) {
 			}
 		}
 	})
+	time.Sleep(time.Duration(waitTime*10) * time.Second)
 
 	t.Run("Security_authorization_rbac_invalid_policy_tcp", func(t *testing.T) {
 		defer recoverPanic(t)
@@ -127,6 +153,7 @@ func TestAuthorizationTCP(t *testing.T) {
 			}
 		}
 	})
+	time.Sleep(time.Duration(waitTime*10) * time.Second)
 
 	t.Run("Security_authorization_rbac_deny_GET_tcp", func(t *testing.T) {
 		defer recoverPanic(t)
