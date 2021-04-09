@@ -130,4 +130,8 @@ var testCases = []testing.InternalTest{
 		Name: "31",
 		F:    TestRecursiveLock,
 	},
+	testing.InternalTest{
+		Name: "32",
+		F:    TestIndefinitelyLock,
+	},
 }
