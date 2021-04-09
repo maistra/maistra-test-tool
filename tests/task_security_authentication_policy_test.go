@@ -315,8 +315,8 @@ func TestAuthPolicy(t *testing.T) {
 
 		msg, err = util.Shell(`curl --header "Authorization: Bearer %s" %s/headers -s -o /dev/null -w "%%{http_code}\n"`, token, gatewayHTTP)
                 log.Infof("Success. Get response: %s", msg)
-                log.Info("Wait 30 secs")
-                time.Sleep(time.Duration(30) * time.Second)
+                log.Info("Added Wait 60 secs for clock sync issue")
+                time.Sleep(time.Duration(60) * time.Second)
 
                 msg, err = util.Shell(`curl --header "Authorization: Bearer %s" %s/headers -s -o /dev/null -w "%%{http_code}\n"`, token, gatewayHTTP)
                 log.Infof("Success. Get response: %s", msg)
@@ -326,7 +326,7 @@ func TestAuthPolicy(t *testing.T) {
 		//msg, err = util.Shell(`curl --header "Authorization: Bearer %s" %s/headers -s -o /dev/null -w "%%{http_code}\n"`, token, gatewayHTTP)
 		//log.Infof("Success. Get response: %s", msg)
 
-		time.Sleep(time.Duration(7) * time.Second)
+		//time.Sleep(time.Duration(7) * time.Second)
 		msg, err = util.Shell(`curl --header "Authorization: Bearer %s" %s/headers -s -o /dev/null -w "%%{http_code}\n"`, token, gatewayHTTP)
 		util.Inspect(err, "Failed to get httpbin header response", "", t)
 		if !strings.Contains(msg, "401") {
