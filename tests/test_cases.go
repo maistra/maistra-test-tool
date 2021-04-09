@@ -126,4 +126,8 @@ var testCases = []testing.InternalTest{
 		Name: "30",
 		F:    TestIngressLoad,
 	},
+	testing.InternalTest{
+		Name: "31",
+		F:    TestRecursiveLock,
+	},
 }
