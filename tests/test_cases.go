@@ -131,10 +131,6 @@ var testCases = []testing.InternalTest{
 		F:    TestIngressLoad,
 	},
 	testing.InternalTest{
-		Name: "30",
-		F:    TestExtensionInstall,
-	},
-	testing.InternalTest{
 		Name: "34",
 		F:    TestInvalidSMCPFields,
 	},
