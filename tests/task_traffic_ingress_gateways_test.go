@@ -26,7 +26,6 @@ import (
 
 func cleanupIngressGateways(namespace string) {
 	log.Info("# Cleanup ...")
-	util.KubeDeleteContents(meshNamespace, httpbinOCPRoute, kubeconfig)
 	util.KubeDeleteContents(namespace, httpbinGateway1, kubeconfig)
 	cleanHttpbin(namespace)
 	time.Sleep(time.Duration(waitTime*2) * time.Second)
@@ -44,10 +43,7 @@ func TestIngressGateways(t *testing.T) {
 		t.Errorf("Failed to configure Gateway")
 		log.Errorf("Failed to configure Gateway")
 	}
-
-	// OCP4 Route
-	util.KubeApplyContents(meshNamespace, httpbinOCPRoute, kubeconfig)
-	time.Sleep(time.Duration(waitTime*4) * time.Second)
+	time.Sleep(time.Duration(waitTime) * time.Second)
 
 	t.Run("TrafficManagement_ingress_status_200_test", func(t *testing.T) {
 		defer recoverPanic(t)
