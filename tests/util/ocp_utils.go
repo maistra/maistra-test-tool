@@ -46,8 +46,6 @@ func CreateOCPNamespace(n string, kubeconfig string) error {
 	return nil
 }
 
-
-
 // DeleteOCPNamespace create a kubernetes namespace
 func DeleteOCPNamespace(n string, kubeconfig string) error {
 	if _, err := ShellMuteOutput("oc delete project %s", n); err != nil {
