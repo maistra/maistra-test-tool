@@ -28,7 +28,6 @@ import (
 
 func cleanupIngressWithOutTLS(namespace string) {
 	log.Info("# Cleanup ...")
-	util.KubeDeleteContents(meshNamespace, nginxOCPRouteHTTPS, kubeconfig)
 	util.KubeDeleteContents(namespace, nginxIngressGateway, kubeconfig)
 	util.KubeDeleteContents(namespace, nginxServer, kubeconfig)
 	util.ShellMuteOutput("kubectl delete secret nginx-server-certs -n %s", namespace)
@@ -81,9 +80,7 @@ func TestIngressWithOutTLS(t *testing.T) {
 			t.Errorf("Failed to configure NGINX ingress gateway")
 			log.Errorf("Failed to configure NGINX ingress gateway")
 		}
-		// OCP4 Route
-		util.KubeApplyContents(meshNamespace, nginxOCPRouteHTTPS, kubeconfig)
-		time.Sleep(time.Duration(waitTime*4) * time.Second)
+		time.Sleep(time.Duration(waitTime) * time.Second)
 
 		url := "https://nginx.example.com:" + secureIngressPort
 		resp, err := curlWithCA(url, gatewayHTTP, secureIngressPort, "nginx.example.com", nginxServerCACert)

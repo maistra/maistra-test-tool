@@ -27,11 +27,9 @@ import (
 
 func cleanupIngressTLSGateways(namespace string) {
 	log.Info("# Cleanup ...")
-	util.KubeDeleteContents(meshNamespace, httpbinTLSGatewayMTLS, kubeconfig)
-	util.KubeDeleteContents(meshNamespace, multiHostsGateway, kubeconfig)
-	util.KubeDeleteContents(meshNamespace, helloworldv1OCPRouteHTTPS, kubeconfig)
-	util.KubeDeleteContents(meshNamespace, helloworldv1, kubeconfig)
-	util.KubeDeleteContents(meshNamespace, httpbinOCPRouteHTTPS, kubeconfig)
+	util.KubeDeleteContents(namespace, httpbinTLSGatewayMTLS, kubeconfig)
+	util.KubeDeleteContents(namespace, multiHostsGateway, kubeconfig)
+	util.KubeDeleteContents(namespace, helloworldv1, kubeconfig)
 	util.KubeDeleteContents(namespace, httpbinTLSGatewayHTTPS, kubeconfig)
 	util.ShellMuteOutput("kubectl delete secret %s -n %s", "httpbin-credential", meshNamespace)
 	util.ShellMuteOutput("kubectl delete secret %s -n %s", "helloworld-credential", meshNamespace)
@@ -56,10 +54,7 @@ func TestIngressTLSGateways(t *testing.T) {
 		t.Errorf("Failed to configure Gateway")
 		log.Errorf("Failed to configure Gateway")
 	}
-
-	// OCP4 Route
-	util.KubeApplyContents(meshNamespace, httpbinOCPRouteHTTPS, kubeconfig)
-	time.Sleep(time.Duration(waitTime*4) * time.Second)
+	time.Sleep(time.Duration(waitTime) * time.Second)
 
 	t.Run("TrafficManagement_ingress_general_tls_test", func(t *testing.T) {
 		defer recoverPanic(t)
@@ -84,32 +79,22 @@ func TestIngressTLSGateways(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Configure multiple hosts Gateway")
-		util.ShellMuteOutput("kubectl delete secret %s -n %s", "httpbin-credential", meshNamespace)
-		if _, err := util.CreateTLSSecret("httpbin-credential", meshNamespace, httpbinSampleServerCertKey, httpbinSampleServerCert, kubeconfig); err != nil {
-			t.Errorf("Failed to create secret %s\n", "httpbin-credential")
-			log.Infof("Failed to create secret %s\n", "httpbin-credential")
-		}
-		util.KubeApplyContents(meshNamespace, helloworldv1, kubeconfig)
-		// OCP4 Route
-		util.KubeApplyContents(meshNamespace, helloworldv1OCPRouteHTTPS, kubeconfig)
-		time.Sleep(time.Duration(waitTime*4) * time.Second)
+		util.CreateTLSSecret("httpbin-credential", meshNamespace, httpbinSampleServerCertKey, httpbinSampleServerCert, kubeconfig)
 
 		if _, err := util.CreateTLSSecret("helloworld-credential", meshNamespace, helloworldServerCertKey, helloworldServerCert, kubeconfig); err != nil {
 			t.Errorf("Failed to create secret %s\n", "helloworld-credential ")
 			log.Infof("Failed to create secret %s\n", "helloworld-credential ")
 		}
+		util.KubeApplyContents(testNamespace, helloworldv1, kubeconfig)
+		util.CheckPodRunning(testNamespace, "app=helloworld-v1", kubeconfig)
+		time.Sleep(time.Duration(waitTime) * time.Second)
 
-		util.KubeApplyContents(meshNamespace, multiHostsGateway, kubeconfig)
-		time.Sleep(time.Duration(waitTime*4) * time.Second)
+		util.KubeApplyContents(testNamespace, multiHostsGateway, kubeconfig)
+		time.Sleep(time.Duration(waitTime*2) * time.Second)
 
-		url := "https://helloworld-v1.example.com:" + secureIngressPort + "/hello"
-		resp, err := curlWithCA(url, gatewayHTTP, secureIngressPort, "helloworld-v1.example.com", httpbinSampleCACert)
-		defer util.CloseResponseBody(resp)
-		util.Inspect(util.CheckHTTPResponse200(resp), "Failed to get HTTP 200", resp.Status, t)
-
-		// check teapot
-		url = "https://httpbin.example.com:" + secureIngressPort + "/status/418"
-		resp, err = curlWithCA(url, gatewayHTTP, secureIngressPort, "httpbin.example.com", httpbinSampleCACert)
+		log.Info("Check teapot")
+		url := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
+		resp, err := curlWithCA(url, gatewayHTTP, secureIngressPort, "httpbin.example.com", httpbinSampleCACert)
 		defer util.CloseResponseBody(resp)
 		util.Inspect(err, "Failed to get response", "", t)
 
@@ -121,6 +106,13 @@ func TestIngressTLSGateways(t *testing.T) {
 		} else {
 			t.Errorf("Failed to get teapot: %v", string(bodyByte))
 		}
+
+		log.Info("Check helloworld")
+		url = "https://helloworld-v1.example.com:" + secureIngressPort + "/hello"
+		resp, err = curlWithCA(url, gatewayHTTP, secureIngressPort, "helloworld-v1.example.com", httpbinSampleCACert)
+		defer util.CloseResponseBody(resp)
+		util.Inspect(err, "Failed to get response", "", t)
+		util.Inspect(util.CheckHTTPResponse200(resp), "Failed to get HTTP 200", resp.Status, t)
 	})
 
 	t.Run("TrafficManagement_ingress_mutual_tls_test", func(t *testing.T) {
@@ -135,13 +127,14 @@ func TestIngressTLSGateways(t *testing.T) {
 			log.Infof("Failed to create secret %s\n", "httpbin-credential")
 			t.Errorf("Failed to create secret %s\n", "httpbin-credential")
 		}
+		time.Sleep(time.Duration(waitTime*2) * time.Second)
 
 		// config mutual tls
 		if err := util.KubeApplyContents(testNamespace, httpbinTLSGatewayMTLS, kubeconfig); err != nil {
 			t.Errorf("Failed to configure Gateway")
 			log.Errorf("Failed to configure Gateway")
 		}
-		time.Sleep(time.Duration(waitTime) * time.Second)
+		time.Sleep(time.Duration(waitTime*2) * time.Second)
 
 		log.Info("Check SSL handshake failure as expected")
 		url := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
