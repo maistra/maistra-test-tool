@@ -9,6 +9,9 @@ metadata:
 spec:
   members:
     - bookinfo
+    - foo
+    - bar
+    - legacy
 EOF
 
 oc apply -f ServiceMeshMemberRoll.yaml -n istio-system
