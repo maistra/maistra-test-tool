@@ -32,7 +32,7 @@ func cleanupIngressTLSGateways(namespace string) {
 	util.KubeDeleteContents(meshNamespace, helloworldv1OCPRouteHTTPS, kubeconfig)
 	util.KubeDeleteContents(meshNamespace, helloworldv1, kubeconfig)
 	util.KubeDeleteContents(meshNamespace, httpbinOCPRouteHTTPS, kubeconfig)
-	util.KubeDeleteContents(namespace, httpbinGatewayHTTPS, kubeconfig)
+	util.KubeDeleteContents(namespace, httpbinTLSGatewayHTTPS, kubeconfig)
 	util.ShellMuteOutput("kubectl delete secret %s -n %s", "httpbin-credential", meshNamespace)
 	util.ShellMuteOutput("kubectl delete secret %s -n %s", "helloworld-credential", meshNamespace)
 	cleanHttpbin(namespace)
