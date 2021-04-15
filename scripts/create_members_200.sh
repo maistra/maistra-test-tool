@@ -11,6 +11,9 @@ metadata:
 spec:
   members:
     - bookinfo
+    - foo
+    - bar
+    - legacy
 EOF
 
 for i in {1..200}
