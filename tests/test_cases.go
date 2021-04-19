@@ -131,15 +131,15 @@ var testCases = []testing.InternalTest{
 		F:    TestIngressLoad,
 	},
 	testing.InternalTest{
-		Name: "30",
-		F:    TestExtensionInstall,
-	},
-	testing.InternalTest{
 		Name: "34",
 		F:    TestInvalidSMCPFields,
 	},
 	testing.InternalTest{
 		Name: "36",
 		F:    TestSMMROVN,
+	},
+	testing.InternalTest{
+		Name: "37",
+		F:    TestExcludeOutboundPortsAnnotation,
 	},
 }

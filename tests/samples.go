@@ -90,12 +90,14 @@ const (
 
 	jmeterURL = "https://mirrors.ocf.berkeley.edu/apache//jmeter/binaries/apache-jmeter-5.3.tgz"
 
-	meshNamespace     = "istio-system"
-	smcpName          = "basic-install"
-	smcpv1API         = "smcp.v1.maistra.io"
-	invalidSMCPFields = "config/smcp-invalid-fields/smcp.yaml"
-	mustGatherImage   = "quay.io/maistra/istio-must-gather-rhel7:latest-2.0-qe"
-	smmrTest          = "config/smmrTest.yaml"
+	meshNamespace                  = "istio-system"
+	smcpName                       = "basic"
+	smcpv1API                      = "smcp.v1.maistra.io"
+	invalidSMCPFields              = "config/smcp-invalid-fields/smcp.yaml"
+	excludeOutboundPortsAnnotation = "config/excludeOutboundPortsAnnotation/app-v2.yaml"
+
+	mustGatherImage = "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel7"
+	smmrTest        = "config/smmrTest.yaml"
 )
 
 var (

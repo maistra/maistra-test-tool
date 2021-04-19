@@ -46,6 +46,17 @@ func CreateOCPNamespace(n string, kubeconfig string) error {
 	return nil
 }
 
+// DeleteOCPNamespace create a kubernetes namespace
+func DeleteOCPNamespace(n string, kubeconfig string) error {
+	if _, err := ShellMuteOutput("oc delete project %s", n); err != nil {
+		if !strings.Contains(err.Error(), "NotFound") {
+			return err
+		}
+	}
+	log.Infof("namespace %s deleted\n", n)
+	return nil
+}
+
 // OcGrantPermission OCP cluster specific requirements for deploying an application with sidecar.
 // This is a temporary permission config
 func OcGrantPermission(account, namespace, kubeconfig string) {
