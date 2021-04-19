@@ -36,7 +36,7 @@ spec:
           - "-c"
           - "oc version"
       containers:
-      - image: quay.io/maistra/httpbin
+      - image: quay.io/maistra/kennethreitz-httpbin:0.0-ibm-p
         imagePullPolicy: IfNotPresent
         name: httpbin
         ports:
