@@ -30,6 +30,7 @@ python3-pip is required for testing Security_authentication_end-user_JWT
 
 ## Testing Prerequisite
 
+0. For z and p builds, need to build a number of containerized test workloads (see list) 
 1. Maistra has been installed on an OpenShift OCP4 cluster.
 2. Several test cases require nginx or mongoDB running on OCP4 and we need to configure additional scc permission for them after login as a cluster admin user.
    ```
