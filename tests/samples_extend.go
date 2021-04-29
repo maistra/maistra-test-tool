@@ -666,7 +666,7 @@ spec:
     spec:
       containers:
       - name: my-nginx
-        image: nginx
+        image: docker.io/nginx
         ports:
         - containerPort: 443
         volumeMounts:
@@ -717,7 +717,7 @@ spec:
     spec:
       containers:
       - name: my-nginx
-        image: nginx
+        image: docker.io/nginx
         ports:
         - containerPort: 443
         volumeMounts:
