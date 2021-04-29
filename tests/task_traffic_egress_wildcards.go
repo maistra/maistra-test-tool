@@ -48,7 +48,7 @@ func TestEgressWildcards(t *testing.T) {
 		log.Info("create a Gateway to external wikipedia.org")
 		util.KubeApplyContents(testNamespace, egressWildcardGateway, kubeconfig)
 		// OCP Route created by ior
-		time.Sleep(time.Duration(waitTime) * time.Second)
+		time.Sleep(time.Duration(waitTime*4) * time.Second)
 		command := `curl -sL -o /dev/null -D - curl -s https://en.wikipedia.org/wiki/Main_Page | grep -o "<title>.*</title>"; curl -s https://de.wikipedia.org/wiki/Wikipedia:Hauptseite | grep -o "<title>.*</title>"`
 
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
@@ -69,7 +69,7 @@ func TestEgressWildcards(t *testing.T) {
 		log.Info("create a Gateway to external wikipedia.org")
 		util.KubeApplyContents(testNamespace, egressWildcardGatewaySingleGateway, kubeconfig)
 		// OCP Route created by ior
-		time.Sleep(time.Duration(waitTime) * time.Second)
+		time.Sleep(time.Duration(waitTime*4) * time.Second)
 		command := `curl -sL -o /dev/null -D - curl -s https://en.wikipedia.org/wiki/Main_Page | grep -o "<title>.*</title>"; curl -s https://de.wikipedia.org/wiki/Wikipedia:Hauptseite | grep -o "<title>.*</title>"`
 
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)

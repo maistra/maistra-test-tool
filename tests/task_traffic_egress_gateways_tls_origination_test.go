@@ -36,7 +36,7 @@ func cleanupEgressGatewaysTLSOrigination(namespace string) {
 	cleanSleep(namespace)
 	util.Shell("kubectl get secret -n %s", namespace)
 	util.Shell("kubectl get configmap -n %s", namespace)
-	time.Sleep(time.Duration(waitTime*2) * time.Second)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
 }
 
 func TestEgressGatewaysTLSOrigination(t *testing.T) {
@@ -54,7 +54,7 @@ func TestEgressGatewaysTLSOrigination(t *testing.T) {
 		log.Info("Perform TLS origination with an egress gateway")
 		util.KubeApplyContents(testNamespace, cnnextGatewayTLSOrigination, kubeconfig)
 		// OCP Route created by ior
-		time.Sleep(time.Duration(waitTime) * time.Second)
+		time.Sleep(time.Duration(waitTime*4) * time.Second)
 		command := "curl -sL -o /dev/null -D - http://edition.cnn.com/politics"
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
