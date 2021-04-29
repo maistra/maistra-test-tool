@@ -34,7 +34,7 @@ func cleanupIngressWithOutTLS(namespace string) {
 	util.ShellMuteOutput("kubectl delete configmap nginx-configmap -n %s", namespace)
 	util.Shell("kubectl get secret -n %s", namespace)
 	util.Shell("kubectl get configmap -n %s", namespace)
-	time.Sleep(time.Duration(waitTime*2) * time.Second)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 }
 
@@ -80,7 +80,7 @@ func TestIngressWithOutTLS(t *testing.T) {
 			t.Errorf("Failed to configure NGINX ingress gateway")
 			log.Errorf("Failed to configure NGINX ingress gateway")
 		}
-		time.Sleep(time.Duration(waitTime) * time.Second)
+		time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 		url := "https://nginx.example.com:" + secureIngressPort
 		resp, err := curlWithCA(url, gatewayHTTP, secureIngressPort, "nginx.example.com", nginxServerCACert)
