@@ -91,10 +91,6 @@ var testCases = []testing.InternalTest{
 		F:    TestAuthMTLSMigration,
 	},
 	testing.InternalTest{
-		Name: "19",
-		F:    TestExternalCert,
-	},
-	testing.InternalTest{
 		Name: "20",
 		F:    TestAuthorizationHTTP,
 	},
@@ -105,10 +101,6 @@ var testCases = []testing.InternalTest{
 	testing.InternalTest{
 		Name: "22",
 		F:    TestRateLimits,
-	},
-	testing.InternalTest{
-		Name: "23",
-		F:    TestControlHeadersRouting,
 	},
 	testing.InternalTest{
 		Name: "24",

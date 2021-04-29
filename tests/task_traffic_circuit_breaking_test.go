@@ -32,7 +32,7 @@ func cleanupCircuitBreaking(namespace string) {
 	cleanFortio(namespace)
 	util.KubeDeleteContents(namespace, httpbinCircuitBreaker, kubeconfig)
 	cleanHttpbin(namespace)
-	time.Sleep(time.Duration(waitTime*2) * time.Second)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
 }
 
 func TestCircuitBreaking(t *testing.T) {
@@ -55,7 +55,7 @@ func TestCircuitBreaking(t *testing.T) {
 			t.Errorf("Failed to configure circuit breaker")
 			log.Errorf("Failed to configure circuit breaker")
 		}
-		time.Sleep(time.Duration(waitTime*2) * time.Second)
+		time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 		// trip breaker
 		pod, err := util.GetPodName(testNamespace, "app=fortio", kubeconfig)

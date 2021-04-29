@@ -29,7 +29,7 @@ func cleanupIngressGateways(namespace string) {
 	util.KubeDeleteContents(meshNamespace, httpbinOCPRoute, kubeconfig)
 	util.KubeDeleteContents(namespace, httpbinGateway1, kubeconfig)
 	cleanHttpbin(namespace)
-	time.Sleep(time.Duration(waitTime*2) * time.Second)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 }
 
@@ -65,7 +65,7 @@ func TestIngressGateways(t *testing.T) {
 			t.Errorf("Failed to configure Gateway")
 			log.Errorf("Failed to configure Gateway")
 		}
-		time.Sleep(time.Duration(waitTime) * time.Second)
+		time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 		resp, duration, err := util.GetHTTPResponse(fmt.Sprintf("http://%s/headers", gatewayHTTP), nil)
 		defer util.CloseResponseBody(resp)

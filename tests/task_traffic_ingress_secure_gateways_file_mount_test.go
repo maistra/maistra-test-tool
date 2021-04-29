@@ -119,7 +119,7 @@ func TestIngressGatewaysFileMount(t *testing.T) {
 			t.Errorf("Failed to configure Gateway")
 			log.Errorf("Failed to configure Gateway")
 		}
-		time.Sleep(time.Duration(waitTime) * time.Second)
+		time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 		log.Info("Check SSL handshake failure as expected")
 		url := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
