@@ -47,7 +47,7 @@ func TestEgressGateways(t *testing.T) {
 		log.Info("create a Gateway to external edition.cnn.com")
 		util.KubeApplyContents(testNamespace, cnnextGateway, kubeconfig)
 		// OCP Route created by ior
-		time.Sleep(time.Duration(waitTime) * time.Second)
+		time.Sleep(time.Duration(waitTime*4) * time.Second)
 		command := "curl -sL -o /dev/null -D - http://edition.cnn.com/politics"
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
