@@ -59,6 +59,7 @@ func TestIngressLoad(t *testing.T) {
 		t.Errorf("Failed to configure Gateway")
 		log.Errorf("Failed to configure Gateway")
 	}
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 	t.Run("TrafficManagement_ingress_https_load_test", func(t *testing.T) {
 		defer recoverPanic(t)
