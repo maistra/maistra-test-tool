@@ -2545,4 +2545,38 @@ spec:
     protocol: TLS
   resolution: DNS
 `
+
+	DuplicateEntryService = `
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello
+  namespace: bookinfo
+spec:
+  externalName: hello.example.com
+  ports:
+  - name: http2
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  sessionAffinity: None
+  type: ExternalName
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: hello-mesh
+  namespace: bookinfo
+spec:
+  gateways:
+  - mesh
+  hosts:
+  - hello.bookinfo
+  http:
+  - route:
+    - destination:
+        host: some-host
+        port:
+          number: 80
+`
 )
