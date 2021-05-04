@@ -142,4 +142,12 @@ var testCases = []testing.InternalTest{
 		Name: "37",
 		F:    TestExcludeOutboundPortsAnnotation,
 	},
+	testing.InternalTest{
+		Name: "38",
+		F:    TestGoldPandaSMCP,
+	},
+	testing.InternalTest{
+		Name: "39",
+		F:    TestDuplicateEntryService,
+	},
 }
