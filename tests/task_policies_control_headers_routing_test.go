@@ -64,7 +64,7 @@ func TestControlHeadersRouting(t *testing.T) {
 	}
 
 	log.Info("Output Producing Adapters")
-	util.Shell("kubectl run keyval --generator=run-pod/v1 --image=%s --namespace %s --port 9070 --expose", keyvalImage, meshNamespace)
+	util.Shell("kubectl run keyval --image=%s --namespace %s --port 9070 --expose", keyvalImage, meshNamespace)
 	util.CheckPodRunning(meshNamespace, "run=keyval", kubeconfig)
 	util.KubeApply(meshNamespace, keyvaltemplate, kubeconfig)
 	util.KubeApply(meshNamespace, keyvalYaml, kubeconfig)
