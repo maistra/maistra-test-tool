@@ -59,7 +59,7 @@ if (util.getWhoBuild() == "[]") {
                             #!/bin/bash
                             oc login -u ${params.ADMIN_USER} -p ${params.ADMIN_PWD} --server="${params.OCP_SERVER}" --insecure-skip-tls-verify=true
                             # Create python 3.x symbolic link
-                            ls /usr/bin/ | grep python
+                            #ls /usr/bin/ | grep python
                             oc adm policy add-scc-to-user anyuid -z default -n bookinfo
                             oc adm policy add-scc-to-user anyuid -z bookinfo-ratings-v2 -n bookinfo
                             oc adm policy add-scc-to-user anyuid -z httpbin -n bookinfo
