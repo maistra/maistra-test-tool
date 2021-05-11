@@ -98,6 +98,7 @@ const (
 
 	mustGatherImage = "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel7"
 	smmrTest        = "config/smmrTest.yaml"
+	smmDefault      = "config/smmDefault.yaml"
 )
 
 var (

@@ -136,7 +136,7 @@ var testCases = []testing.InternalTest{
 	},
 	testing.InternalTest{
 		Name: "36",
-		F:    TestSMMROVN,
+		F:    TestServiceMember,
 	},
 	testing.InternalTest{
 		Name: "37",
