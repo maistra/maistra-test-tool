@@ -1,0 +1,27 @@
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+ name: httpbin
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  jwtRules:
+  - issuer: "issuer-foo"
+    jwksUri: https://example.com/.well-known/jwks.json
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+ name: httpbin
+spec:
+ selector:
+   matchLabels:
+     app: httpbin
+ rules:
+ - from:
+   - source:
+       requestPrincipals: ["*"]
+ - to:
+   - operation:
+       notPaths: ["/status"]
