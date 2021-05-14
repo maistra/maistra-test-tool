@@ -48,6 +48,7 @@ func prepareOCPConfig() {
 	util.ShellSilent("oc new-project foo")
 	util.ShellSilent("oc new-project bar")
 	util.ShellSilent("oc new-project legacy")
+	util.ShellSilent(`oc new-project exclude-outboundports-annotation`)
 	time.Sleep(time.Duration(waitTime) * time.Second)
 
 	// update smmr
