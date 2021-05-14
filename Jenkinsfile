@@ -77,7 +77,8 @@ if (util.getWhoBuild() == "[]") {
                     #!/bin/bash
                     oc login -u ${params.ADMIN_USER} -p ${params.ADMIN_PWD} --server="${params.OCP_SERVER}" --insecure-skip-tls-verify=true
                     cd tests
-		    go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
+		    #go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
+		    go test -timeout 3h -v 2>&1 | tee > test.log
                     set +ex
                     cat ${WORKSPACE}/tests/test.log | grep "FAIL	github.com/Maistra/maistra-test-tool"
                     if [ \$? -eq 0 ]; then
