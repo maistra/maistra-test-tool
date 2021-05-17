@@ -42,8 +42,8 @@ func TestDuplicateEntryService(t *testing.T) {
 	pod, err := util.GetPodName(meshNamespace, "app=istiod", kubeconfig)
 	util.Inspect(err, "failed to get istiod pod", "", t)
 	msg, _ := util.ShellMuteOutput(`kubectl -n istio-system logs %s`, pod)
-	if strings.Contains(msg, "ACK ERROR") || strings.Contains(msg, "Duplicate entry of domain") {
-		t.Errorf("istiod log ERROR after applying VirtualService")
-		util.Shell(`kubectl -n istio-system logs %s | grep "ACK ERROR"`, pod)
+	if strings.Contains(msg, "Duplicate entry of domain") {
+		t.Errorf("istiod log Duplicate entry of domain ERROR after applying VirtualService")
+		util.Shell(`kubectl -n istio-system logs %s | grep "Duplicate entry of domain"`, pod)
 	}
 }
