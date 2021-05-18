@@ -7,8 +7,8 @@ spec:
     matchLabels:
       app: httpbin
   jwtRules:
-  - issuer: "issuer-foo"
-    jwksUri: https://example.com/.well-known/jwks.json
+  - issuer: "testing@secure.istio.io"
+    jwksUri: "https://raw.githubusercontent.com/istio/istio/release-1.6/security/tools/jwt/samples/jwks.json"
 ---
 apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
@@ -21,7 +21,7 @@ spec:
  rules:
  - from:
    - source:
-       requestPrincipals: ["*"]
+       requestPrincipals: ["testing@secure.istio.io/testing@secure.istio.io"]
  - to:
    - operation:
        notPaths: ["/status"]

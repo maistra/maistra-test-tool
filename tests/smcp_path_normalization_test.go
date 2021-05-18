@@ -25,8 +25,9 @@ import (
 	"istio.io/pkg/log"
 )
 
-func cleanupGoldPandaSMCP() {
+func cleanupPathNormalizationSMCP() {
 	log.Info("# Cleanup ...")
+	util.KubeDelete("foo", httpbinPathResource, kubeconfig)
 	cleanHttpbin("foo")
 	cleanSleep("foo")
 	util.Shell(`kubectl patch -n %s smcp/%s --type=json -p='[{"op": "remove", "path": "/spec/techPreview"}]'`, meshNamespace, smcpName)
@@ -34,10 +35,10 @@ func cleanupGoldPandaSMCP() {
 	// avoid namespace recreation for downstream service account settings
 }
 
-func TestGoldPandaSMCP(t *testing.T) {
-	defer cleanupGoldPandaSMCP()
+func TestPathNormalizationSMCP(t *testing.T) {
+	defer cleanupPathNormalizationSMCP()
 
-	t.Run("Operator_test_smcp_gold_panda", func(t *testing.T) {
+	t.Run("Operator_test_smcp_path_normalization", func(t *testing.T) {
 		defer recoverPanic(t)
 
 		log.Info("Update SMCP pathNormalization")
@@ -48,7 +49,7 @@ func TestGoldPandaSMCP(t *testing.T) {
 		deploySleep("foo")
 
 		util.CheckPodRunning("foo", "app=httpbin", kubeconfig)
-		util.KubeApply("foo", goldPandaResource, kubeconfig)
+		util.KubeApply("foo", httpbinPathResource, kubeconfig)
 
 		log.Info("Verify setup")
 
