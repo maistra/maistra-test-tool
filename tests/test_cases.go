@@ -144,7 +144,7 @@ var testCases = []testing.InternalTest{
 	},
 	testing.InternalTest{
 		Name: "38",
-		F:    TestGoldPandaSMCP,
+		F:    TestPathNormalizationSMCP,
 	},
 	testing.InternalTest{
 		Name: "39",
