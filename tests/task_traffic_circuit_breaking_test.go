@@ -74,7 +74,7 @@ func TestCircuitBreaking(t *testing.T) {
 		log.Info("# Tripping the circuit breaker")
 		connection := 2
 		reqCount := 50
-		tolerance := 0.45
+		tolerance := 0.55
 
 		command = fmt.Sprintf("/usr/bin/fortio load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount)
 		msg, err = util.PodExec(testNamespace, pod, "fortio", command, false, kubeconfig)
