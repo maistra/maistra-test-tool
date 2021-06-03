@@ -150,4 +150,9 @@ var testCases = []testing.InternalTest{
 		Name: "39",
 		F:    TestDuplicateEntryService,
 	},
+
+	testing.InternalTest{
+		Name: "40",
+		F:    TestInvalidLogging,
+	},
 }

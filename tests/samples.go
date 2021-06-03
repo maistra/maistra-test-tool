@@ -94,6 +94,7 @@ const (
 	smcpName            = "basic"
 	smcpv1API           = "smcp.v1.maistra.io"
 	invalidSMCPFields   = "config/smcp-invalid-fields/smcp.yaml"
+	invalidLogging   =    "config/smcp-invalid-logging/smcp.yaml"
 	httpbinPathResource = "config/httpbin/path_resource.yaml"
 
 	excludeOutboundPortsAnnotation = "config/excludeOutboundPortsAnnotation/app-v2.yaml"
