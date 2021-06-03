@@ -1,0 +1,38 @@
+apiVersion: maistra.io/v1
+kind: ServiceMeshControlPlane
+metadata:
+  name: test
+spec:
+  istio:
+    global:
+      controlPlaneSecurityEnabled: true
+      disablePolicyChecks: false
+      logging:
+        level: default:info
+      mtls:
+       enabled: true
+      outboundTrafficPolicy:
+        mode: REGISTRY_ONLY
+      policyCheckFailOpen: false
+      proxy:
+        accessLogFile: /dev/stdout
+      tls:
+        minProtocolVersion: TLSv1_2
+    grafana:
+      enabled: true
+    kiali:
+      enabled: true
+    mixer:
+      policy:
+        autoscaleEnabled: false
+      telemetry:
+        autoscaleEnabled: false
+    pilot:
+      autoscaleEnabled: false
+      traceSampling: 100
+    tracing:
+      enabled: true
+      jaeger:
+        template: all-in-one
+  template: default
+  version: v1.1
