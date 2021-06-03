@@ -90,6 +90,8 @@ const (
 	meshNamespace = "istio-system"
 	smcpName      = "basic"
 	smcpAPI       = "smcp.v1.maistra.io"
+
+	invalidLogging = "config/smcp-invalid-logging/smcp.yaml"
 )
 
 var (
