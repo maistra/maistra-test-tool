@@ -44,6 +44,7 @@ func TestRateLimits(t *testing.T) {
 	util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"disablePolicyChecks\":false}}}}'", meshNamespace, smcpAPI, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
+	util.Shell("kubectl -n %s get cm istio -o jsonpath=\"{@.data.mesh}\" | grep disablePolicyChecks", meshNamespace)
 
 	deployBookinfo(testNamespace, false)
 	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
@@ -79,10 +80,10 @@ func TestRateLimits(t *testing.T) {
 			time.Sleep(time.Duration(waitTime) * time.Second)
 		}
 		/*
-		if i > 3 {
-			t.Errorf("Failed. Requests passed: %v times in 5 seconds", i)
-			log.Errorf("Failed. Requests passed: %v times in 5 seconds", i)
-		}
+			if i > 3 {
+				t.Errorf("Failed. Requests passed: %v times in 5 seconds", i)
+				log.Errorf("Failed. Requests passed: %v times in 5 seconds", i)
+			}
 		*/
 	})
 
@@ -133,10 +134,10 @@ func TestRateLimits(t *testing.T) {
 			util.CloseResponseBody(resp)
 		}
 		/*
-		if i > 3 {
-			t.Errorf("Failed. Requests passed: %v times in 5 seconds", i)
-			log.Errorf("Failed. Requests passed: %v times in 5 seconds", i)
-		}
+			if i > 3 {
+				t.Errorf("Failed. Requests passed: %v times in 5 seconds", i)
+				log.Errorf("Failed. Requests passed: %v times in 5 seconds", i)
+			}
 		*/
 	})
 }

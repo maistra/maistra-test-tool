@@ -51,6 +51,7 @@ func TestControlHeadersRouting(t *testing.T) {
 	util.ShellMuteOutput("kubectl patch -n %s %s/%s --type merge -p '{\"spec\":{\"istio\":{\"global\":{\"disablePolicyChecks\":false}}}}'", meshNamespace, smcpAPI, smcpName)
 	time.Sleep(time.Duration(waitTime*4) * time.Second)
 	util.CheckPodRunning(meshNamespace, "istio=galley", kubeconfig)
+	util.Shell("kubectl -n %s get cm istio -o jsonpath=\"{@.data.mesh}\" | grep disablePolicyChecks", meshNamespace)
 
 	deployHttpbin(testNamespace)
 	if err := util.KubeApplyContents(testNamespace, httpbinGateway3, kubeconfig); err != nil {

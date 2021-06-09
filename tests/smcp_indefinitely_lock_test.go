@@ -15,17 +15,16 @@
 package tests
 
 import (
+	"istio.io/pkg/log"
 	"maistra/util"
 	"testing"
-	"istio.io/pkg/log"
 )
 
 func testPilotLockIndefinitelyLock() {
-	if _ , err := util.Shell("oc rsh -n istio-system -c discovery $(oc get pods -n istio-system -l app=pilot --no-headers | awk '{print $1}') curl -v http://localhost:8080/debug/cdsz") ; err != nil {
+	if _, err := util.Shell("oc rsh -n istio-system -c discovery $(oc get pods -n istio-system -l app=pilot --no-headers | awk '{print $1}') curl -v http://localhost:8080/debug/cdsz"); err != nil {
 		t.Errorf("Pilot is Locked")
 	}
 }
-
 
 func disableJaegerCollector() {
 	util.Shell("oc rsh -n istio-system -c discovery $(oc get pods -n istio-system -l app=pilot --no-headers | awk '{print $1}') curl -v http://localhost:8080/debug/config_distribution?resource=policy/istio-system/disable-mtls-jaeger-collector")
@@ -35,15 +34,14 @@ func rolloutIngressGatewayIndefinitelyLock() {
 	util.Shell("oc rollout -n istio-system restart deployment istio-ingressgateway")
 }
 
-
 func TestIndefinitelyLock(t *testing.T) {
 
 	log.Info("Automation for MAISTRA-2101")
 
-	testPilotLockIndefinitelyLock() 
+	testPilotLockIndefinitelyLock()
 	go disableJaegerCollector()
 
 	go rolloutIngressGatewayIndefinitelyLock()
-	
+
 	testPilotLockIndefinitelyLock()
 }
