@@ -50,14 +50,14 @@ func TestTrafficShifting(t *testing.T) {
 	t.Run("TrafficManagement_shift_50_percent_v3_traffic", func(t *testing.T) {
 		defer recoverPanic(t)
 
-		log.Info("# Traffic shifting 50 percent v1 and 50 percent v3, tolerance 10 percent")
+		log.Info("# Traffic shifting 50 percent v1 and 50 percent v3, tolerance 20 percent")
 		if err := util.KubeApply(testNamespace, bookinfoReview50V3Yaml, kubeconfig); err != nil {
 			t.Errorf("Failed to route 50%% traffic to v3")
 			log.Errorf("Failed to route 50%% traffic to v3")
 		}
 		time.Sleep(time.Duration(waitTime) * time.Second)
 
-		tolerance := 0.10
+		tolerance := 0.20
 		totalShot := 100
 		once := sync.Once{}
 		c1, cVersionToMigrate := 0, 0
