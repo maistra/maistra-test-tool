@@ -2321,7 +2321,7 @@ metadata:
   name: header-append
 spec:
   config: test
-  image: quay.io/maistra-dev/header-append-filter:latest
+  image: quay.io/maistra-dev/header-append-filter:2.0
   phase: PostAuthZ
   priority: 1000
   workloadSelector:
