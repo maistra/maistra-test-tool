@@ -15,6 +15,8 @@
 package tests
 
 import (
+	"context"
+	"fmt"
 	"maistra/util"
 	"strings"
 	"testing"
@@ -40,13 +42,6 @@ func TestExtensionInstall(t *testing.T) {
 
 		defer recoverPanic(t)
 
-		log.Info("Enable Extension support")
-		util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{%s:{%s}}}}'`,
-			meshNamespace, smcpName,
-			`"spec":{"techPreview":{"wasmExtensions"`,
-			`"enabled": true`)
-
-		time.Sleep(time.Duration(waitTime) * time.Second)
 		util.CheckPodRunning(meshNamespace, "app=wasm-cacher", kubeconfig)
 
 		log.Info("Creating ServiceMeshExtension")
@@ -62,11 +57,48 @@ func TestExtensionInstall(t *testing.T) {
 		pod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfig)
 		util.Inspect(err, "failed to get sleep pod", "", t)
 
-		command := "curl -i httpbin:8000/headers"
+		if err := checkSMEReady(testNamespace, "header-append", kubeconfig); err != nil {
+			t.Fatalf("error checking for SME header-append: %v", err)
+		}
+
+		command := "curl -I httpbin:8000/headers"
 		msg, err := util.PodExec(testNamespace, pod, "sleep", command, false, kubeconfig)
-		if !strings.Contains(msg, "custom-header: test") {
-			t.Errorf("custom-header not present: Expected value 'test'")
-			log.Errorf("custom-header not present: Expected value 'test'")
+		if err != nil {
+			t.Fatalf("error running command %q in pod %q: %v", command, pod, err)
+		}
+		if !strings.Contains(msg, "maistra: rocks") {
+			t.Fatalf("custom header not present: Expected value 'maistra: rocks'")
 		}
 	})
+}
+
+func checkSMEReady(n, name string, kubeconfig string) error {
+	retry := util.Retrier{
+		BaseDelay: 30 * time.Second,
+		MaxDelay:  30 * time.Second,
+		Retries:   6,
+	}
+
+	retryFn := func(_ context.Context, i int) error {
+		ready, err := isSMEReady(n, "header-append", kubeconfig)
+		if err != nil {
+			return err
+		}
+		if ready != "true" {
+			return fmt.Errorf("sme is not ready")
+		}
+		return nil
+	}
+
+	ctx := context.Background()
+	_, err := retry.Retry(ctx, retryFn)
+	return err
+}
+
+func isSMEReady(ns, name, kubeconfig string) (string, error) {
+	res, err := util.Shell("kubectl -n %s get sme %s -o jsonpath='{.status.deployment.ready}' --kubeconfig=%s", ns, name, kubeconfig)
+	if err != nil {
+		return "", fmt.Errorf("failed to get SME status for %s/%s: %v", ns, name, err)
+	}
+	return strings.Trim(res, "'"), nil
 }

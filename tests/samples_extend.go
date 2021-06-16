@@ -2315,13 +2315,14 @@ spec:
 `
 
 	httpbinServiceMeshExtension = `
-apiVersion: maistra.io/v1alpha1
+apiVersion: maistra.io/v1
 kind: ServiceMeshExtension
 metadata:
   name: header-append
 spec:
-  config: test
-  image: quay.io/maistra-dev/header-append-filter:latest
+  config:
+    maistra: rocks
+  image: quay.io/maistra-dev/header-append-filter:2.1
   phase: PostAuthZ
   priority: 1000
   workloadSelector:
