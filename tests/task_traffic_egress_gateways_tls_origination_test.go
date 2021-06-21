@@ -95,7 +95,7 @@ func TestEgressGatewaysTLSOrigination(t *testing.T) {
 		util.Shell("kubectl create -n %s secret tls nginx-server-certs --key %s --cert %s", testNamespace, nginxServerCertKey, nginxServerCert)
 		util.Shell("kubectl create -n %s secret generic nginx-ca-certs --from-file=%s", testNamespace, nginxServerCACert)
 		util.Shell("kubectl create configmap nginx-configmap -n %s --from-file=nginx.conf=%s", testNamespace, "config/nginx_ssl.conf")
-		time.Sleep(time.Duration(waitTime) * time.Second)
+		time.Sleep(time.Duration(waitTime*2) * time.Second)
 		util.KubeApplyContents(testNamespace, nginxSSLServer, kubeconfig)
 		util.CheckPodRunning(testNamespace, "run=my-nginx", kubeconfig)
 
