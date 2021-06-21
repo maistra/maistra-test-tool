@@ -88,7 +88,7 @@ const (
 	testUsername  = "jason"
 	waitTime      = 5
 
-	jmeterURL = "https://mirrors.ocf.berkeley.edu/apache//jmeter/binaries/apache-jmeter-5.3.tgz"
+	jmeterURL = "https://apache.osuosl.org//jmeter/binaries/apache-jmeter-5.3.tgz"
 
 	meshNamespace       = "istio-system"
 	smcpName            = "basic"
