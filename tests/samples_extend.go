@@ -131,9 +131,9 @@ spec:
       - image: docker.io/kennethreitz/httpbin
         imagePullPolicy: IfNotPresent
         name: httpbin
-        command: ["gunicorn", "--access-logfile", "-", "-b", "0.0.0.0:80", "httpbin:app"]
+        command: ["gunicorn", "--access-logfile", "-", "-b", "0.0.0.0:8000", "httpbin:app"]
         ports:
-        - containerPort: 80
+        - containerPort: 8000
 `
 
 	httpbinv2 = `
@@ -159,9 +159,9 @@ spec:
       - image: docker.io/kennethreitz/httpbin
         imagePullPolicy: IfNotPresent
         name: httpbin
-        command: ["gunicorn", "--access-logfile", "-", "-b", "0.0.0.0:80", "httpbin:app"]
+        command: ["gunicorn", "--access-logfile", "-", "-b", "0.0.0.0:8000", "httpbin:app"]
         ports:
-        - containerPort: 80
+        - containerPort: 8000
 `
 
 	httpbinService = `
@@ -175,7 +175,7 @@ spec:
   ports:
   - name: http
     port: 8000
-    targetPort: 80
+    targetPort: 8000
   selector:
     app: httpbin
 `
