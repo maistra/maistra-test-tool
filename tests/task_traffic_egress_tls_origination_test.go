@@ -48,7 +48,7 @@ func TestEgressTLSOrigination(t *testing.T) {
 		util.KubeApplyContents(testNamespace, cnnextServiceEntry, kubeconfig)
 		time.Sleep(time.Duration(waitTime) * time.Second)
 
-		command := "curl -sL -o /dev/null -D - http://edition.cnn.com/politics"
+		command := powervsproxy + "curl -sL -o /dev/null -D - http://edition.cnn.com/politics"
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "301 Moved Permanently") {
@@ -66,24 +66,26 @@ func TestEgressTLSOrigination(t *testing.T) {
 		util.KubeApplyContents(testNamespace, cnnextServiceEntryTLS, kubeconfig)
 		time.Sleep(time.Duration(waitTime) * time.Second)
 
-		command := "curl -sL -o /dev/null -D - http://edition.cnn.com/politics"
+		command := powervsproxy + "curl -sL -o /dev/null -D - http://edition.cnn.com/politics"
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "301 Moved Permanently") {
-			log.Infof("Error response: %s", msg)
-			t.Errorf("Error response: %s", msg)
-		} else {
-			log.Infof("Success. Get http://edition.cnn.com/politics response: %s", msg)
-		}
+		if strings.Contains(msg, "HTTP/2 200") {
+                        log.Infof("Success. Get https://edition.cnn.com/politics response: %s", msg)
+                } else if strings.Contains(msg, "HTTP/1.1 200") {
+                        log.Infof("Success. Get https://edition.cnn.com/politics response: %s", msg)
+                } else {
+                        log.Infof("Error response: %s", msg)
+                        t.Errorf("Error response: %s", msg)
+                }
 
-		command = "curl -sL -o /dev/null -D - https://edition.cnn.com/politics"
+		command = powervsproxy + "curl -sL -o /dev/null -D - https://edition.cnn.com/politics"
 		msg, err = util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "301 Moved Permanently") {
-			log.Infof("Error response: %s", msg)
-			t.Errorf("Error response: %s", msg)
-		} else {
-			log.Infof("Success. Get https://edition.cnn.com/politics response: %s", msg)
-		}
+		if strings.Contains(msg, "HTTP/2 200") {
+                        log.Infof("Success. Get https://edition.cnn.com/politics response: %s", msg)
+                } else {
+                        log.Infof("Error response: %s", msg)
+                        t.Errorf("Error response: %s", msg)
+                }
 	})
 }
