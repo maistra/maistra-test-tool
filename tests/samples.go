@@ -87,6 +87,7 @@ const (
 	testNamespace = "bookinfo"
 	testUsername  = "jason"
 	waitTime      = 5
+	powervsproxy = ""
 
 	jmeterURL = "https://apache.osuosl.org//jmeter/binaries/apache-jmeter-5.3.tgz"
 
