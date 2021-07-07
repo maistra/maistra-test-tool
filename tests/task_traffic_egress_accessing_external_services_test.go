@@ -49,7 +49,7 @@ func TestAccessExternalServices(t *testing.T) {
 		util.Shell(`kubectl get configmap istio-%s -n %s -o yaml | grep -o "mode: ALLOW_ANY"`, smcpName, meshNamespace)
 
 		log.Info("make requests to external https services")
-		command := `curl -I https://www.google.com/search?q=test | grep  "HTTP/"`
+		command := powervsproxy + `curl -I https://www.google.com/search?q=test | grep  "HTTP/"`
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "200") {
@@ -66,7 +66,7 @@ func TestAccessExternalServices(t *testing.T) {
 		log.Info("update global.outboundTrafficPolicy.mode")
 		util.Shell("kubectl get configmap istio-%s -n %s -o yaml | sed 's/mode: ALLOW_ANY/mode: REGISTRY_ONLY/g' | kubectl replace -n %s -f -", smcpName, meshNamespace, meshNamespace)
 		time.Sleep(time.Duration(waitTime*2) * time.Second)
-		command := `curl -I https://www.google.com/search?q=test | grep  "HTTP/"`
+		command := powervsproxy + `curl -I https://www.google.com/search?q=test | grep  "HTTP/"`
 		_, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		if err != nil {
 			log.Infof("Expected requests to external services are blocked")
@@ -93,7 +93,7 @@ func TestAccessExternalServices(t *testing.T) {
 		log.Info("create a ServiceEntry to external https google.com")
 		util.KubeApplyContents(testNamespace, googleextServiceEntry, kubeconfig)
 		time.Sleep(time.Duration(waitTime) * time.Second)
-		command := `curl -I https://www.google.com/search?q=test | grep  "HTTP/"`
+		command := powervsproxy + `curl -I https://www.google.com/search?q=test | grep  "HTTP/"`
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "200") {
