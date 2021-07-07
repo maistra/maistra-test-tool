@@ -48,7 +48,7 @@ func TestEgressGateways(t *testing.T) {
 		util.KubeApplyContents(testNamespace, cnnextGateway, kubeconfig)
 		// OCP Route created by ior
 		time.Sleep(time.Duration(waitTime*4) * time.Second)
-		command := "curl -sL -o /dev/null -D - http://edition.cnn.com/politics"
+		command := powervsproxy + "curl -sL -o /dev/null -D - http://edition.cnn.com/politics"
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "301 Moved Permanently") {
@@ -69,7 +69,7 @@ func TestEgressGateways(t *testing.T) {
 		util.KubeApplyContents(testNamespace, cnnextGatewayHTTPS, kubeconfig)
 		// OCP Route created by ior
 		time.Sleep(time.Duration(waitTime*2) * time.Second)
-		command := "curl -sL -o /dev/null -D - https://edition.cnn.com/politics"
+		command := powervsproxy + "curl -sL -o /dev/null -D - https://edition.cnn.com/politics"
 		msg, err := util.PodExec(testNamespace, sleepPod, "sleep", command, false, kubeconfig)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "HTTP/2 200") {
