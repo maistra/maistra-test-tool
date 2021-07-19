@@ -1,4 +1,4 @@
-// Copyright 2020 Red Hat, Inc.
+// Copyright 2021 Red Hat, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,144 +14,40 @@
 
 package tests
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic"
+)
 
 var t = &testing.T{}
 var testCases = []testing.InternalTest{
 	testing.InternalTest{
 		Name: "01",
-		F:    TestRequestRouting,
+		F:    traffic.TestRequestRouting,
 	},
 	testing.InternalTest{
 		Name: "02",
-		F:    TestFaultInjection,
+		F:    traffic.TestFaultInjection,
 	},
 	testing.InternalTest{
 		Name: "03",
-		F:    TestTrafficShifting,
+		F:    traffic.TestTrafficShifting,
 	},
 	testing.InternalTest{
 		Name: "04",
-		F:    TestTCPShifting,
+		F:    traffic.TestTCPShifting,
 	},
 	testing.InternalTest{
 		Name: "05",
-		F:    TestRequestTimeouts,
+		F:    traffic.TestRequestTimeouts,
 	},
 	testing.InternalTest{
 		Name: "06",
-		F:    TestCircuitBreaking,
+		F:    traffic.TestCircuitBreaking,
 	},
 	testing.InternalTest{
 		Name: "07",
-		F:    TestMirroring,
-	},
-	testing.InternalTest{
-		Name: "08",
-		F:    TestIngressGateways,
-	},
-	testing.InternalTest{
-		Name: "09",
-		F:    TestIngressTLSGateways,
-	},
-	testing.InternalTest{
-		Name: "10",
-		F:    TestIngressWithOutTLS,
-	},
-	testing.InternalTest{
-		Name: "11",
-		F:    TestAccessExternalServices,
-	},
-	testing.InternalTest{
-		Name: "12",
-		F:    TestEgressTLSOrigination,
-	},
-	testing.InternalTest{
-		Name: "13",
-		F:    TestEgressGateways,
-	},
-	testing.InternalTest{
-		Name: "14",
-		F:    TestEgressGatewaysTLSOrigination,
-	},
-	testing.InternalTest{
-		Name: "15",
-		F:    TestEgressWildcards,
-	},
-	testing.InternalTest{
-		Name: "17",
-		F:    TestAuthPolicy,
-	},
-	testing.InternalTest{
-		Name: "18",
-		F:    TestAuthMTLSMigration,
-	},
-	testing.InternalTest{
-		Name: "19",
-		F:    TestAuthorizationHTTP,
-	},
-	testing.InternalTest{
-		Name: "20",
-		F:    TestAuthorizationTCP,
-	},
-	testing.InternalTest{
-		Name: "21",
-		F:    TestAuthorizationJWT,
-	},
-	testing.InternalTest{
-		Name: "22",
-		F:    TestAuthorizationDeny,
-	},
-	testing.InternalTest{
-		Name: "23",
-		F:    TestEnablePolicyEnforcement,
-	},
-	testing.InternalTest{
-		Name: "24",
-		F:    TestRateLimits,
-	},
-	testing.InternalTest{
-		Name: "25",
-		F:    TestControlHeadersRouting,
-	},
-	testing.InternalTest{
-		Name: "26",
-		F:    TestDenials,
-	},
-	testing.InternalTest{
-		Name: "27",
-		F:    TestTLSVersionSMCP,
-	},
-	testing.InternalTest{
-		Name: "28",
-		F:    TestSSL,
-	},
-	testing.InternalTest{
-		Name: "29",
-		F:    TestIngressLoad,
-	},
-	testing.InternalTest{
-		Name: "34",
-		F:    TestInvalidSMCPFields,
-	},
-	testing.InternalTest{
-		Name: "36",
-		F:    TestServiceMember,
-	},
-	testing.InternalTest{
-		Name: "37",
-		F:    TestExcludeOutboundPortsAnnotation,
-	},
-	testing.InternalTest{
-		Name: "38",
-		F:    TestPathNormalizationSMCP,
-	},
-	testing.InternalTest{
-		Name: "39",
-		F:    TestDuplicateEntryService,
-	},
-	testing.InternalTest{
-		Name: "40",
-		F:    TestExtensionInstall,
+		F:    traffic.TestMirroring,
 	},
 }

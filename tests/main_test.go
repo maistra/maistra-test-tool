@@ -1,4 +1,4 @@
-// Copyright 2020 Red Hat, Inc.
+// Copyright 2021 Red Hat, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@ package tests
 
 import (
 	"testing"
+
+	_ "github.com/maistra/maistra-test-tool/pkg/config"
 )
 
 func matchString(a, b string) (bool, error) {
@@ -23,11 +25,8 @@ func matchString(a, b string) (bool, error) {
 }
 
 func TestMain(m *testing.M) {
-
-	// prepare configuration for OCP4 environment
-	prepareOCPConfig()
+	//config.Setup("istio-system")
 
 	// test runs
 	testing.Main(matchString, testCases, nil, nil)
-
 }
