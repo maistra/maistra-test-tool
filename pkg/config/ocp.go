@@ -44,7 +44,7 @@ func CreateNamespace(ns string) {
 	util.Shell(`oc new-project %s`, ns)
 }
 
-// Setup: creates testing namespaces and create a SMMR in a CP namespace
+// Setup: creates testing namespaces and create a SMMR in a CP namespace 
 func Setup(cpns string) {
 	// Create namespaces
 	util.ShellSilent(`oc new-project bookinfo`)

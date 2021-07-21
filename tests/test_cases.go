@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic"
+	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic/ingress"
 )
 
 var t = &testing.T{}
@@ -49,5 +50,17 @@ var testCases = []testing.InternalTest{
 	testing.InternalTest{
 		Name: "07",
 		F:    traffic.TestMirroring,
+	},
+	testing.InternalTest{
+		Name: "08",
+		F:    ingress.TestIngressGateways,
+	},
+	testing.InternalTest{
+		Name: "09",
+		F:    ingress.TestSecureGateways,
+	},
+	testing.InternalTest{
+		Name: "10",
+		F:    ingress.TestIngressWithoutTLS,
 	},
 }

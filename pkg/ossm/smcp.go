@@ -24,29 +24,29 @@ const (
 	CRv21 = "../samples/ossm/cr_2.1_default.yaml"
 	CRv20 = "../samples/ossm/cr_2.0_default.yaml"
 	CRv11 = "../samples/ossm/cr_1.1_default.yaml"
-	SMMR  = "../samples/ossm/smmr_default.yaml"
+	SMMR = "../samples/ossm/smmr_default.yaml"
 )
 
 // ControlPlane contains CP namespace, version and memebers from SMMR
 type ControlPlane struct {
 	// Name 		string `json:"name,omitempty"`
-	Namespace string `json:"namespace,omitempty"`
-	Version   string `json:"version,omitempty"`
-	Members   []string
+	Namespace 	string `json:"namespace,omitempty"`
+	Version  	string `json:"version,omitempty"`
+	Members		[]string
 }
 
 func (cp *ControlPlane) Install(CR string) {
 	util.Log.Info("Create SMCP namespace")
 	config.CreateNamespace(cp.Namespace)
 
-	for _, member := range cp.Members {
+	for _, member := range(cp.Members) {
 		config.CreateNamespace(member)
 	}
 
 	util.Log.Info("Create SMCP")
 	util.Shell(`oc create -n %s -f %s`, cp.Namespace, CR)
 	util.Shell(`oc create -n %s -f %s`, cp.Namespace, SMMR)
-
+	
 	util.Log.Info("Waiting for mesh installation to complete")
 	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, cp.Namespace)
 }
