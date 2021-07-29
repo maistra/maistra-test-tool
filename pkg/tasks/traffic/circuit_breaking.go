@@ -33,7 +33,7 @@ func cleanupCircuitBreaking() {
 	httpbin := examples.Httpbin{"bookinfo"}
 	fortio.Uninstall()
 	httpbin.Uninstall()
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func TestCircuitBreaking(t *testing.T) {

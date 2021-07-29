@@ -28,7 +28,7 @@ func cleanupIngressGateways() {
 	httpbin := examples.Httpbin{"bookinfo"}
 	util.KubeDeleteContents("bookinfo", httpbinGateway1)
 	httpbin.Uninstall()
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func TestIngressGateways(t *testing.T) {

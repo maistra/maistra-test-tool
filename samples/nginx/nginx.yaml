@@ -40,6 +40,9 @@ spec:
         - name: nginx-server-certs
           mountPath: /etc/nginx-server-certs
           readOnly: true
+        - name: nginx-ca-certs
+          mountPath: /etc/nginx-ca-certs
+          readOnly: true
       volumes:
       - name: nginx-config
         configMap:
@@ -47,3 +50,6 @@ spec:
       - name: nginx-server-certs
         secret:
           secretName: nginx-server-certs
+      - name: nginx-ca-certs
+        secret:
+          secretName: nginx-ca-certs

@@ -31,7 +31,7 @@ func cleanupTCPShifting() {
 	util.KubeDelete("bookinfo", echoAllv1Yaml)
 	echo.Uninstall()
 	sleep.Uninstall()
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func TestTCPShifting(t *testing.T) {

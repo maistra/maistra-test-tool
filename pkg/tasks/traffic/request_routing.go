@@ -29,7 +29,7 @@ func cleanupRequestRouting() {
 	app := examples.Bookinfo{"bookinfo"}
 	util.KubeDelete("bookinfo", bookinfoAllv1Yaml)
 	app.Uninstall()
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func TestRequestRouting(t *testing.T) {

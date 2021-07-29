@@ -31,7 +31,7 @@ func cleanupMirroring() {
 	httpbin.UninstallV1()
 	httpbin.UninstallV2()
 	sleep.Uninstall()
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func TestMirroring(t *testing.T) {

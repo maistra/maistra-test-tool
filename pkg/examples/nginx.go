@@ -23,6 +23,7 @@ import (
 const (
 	nginxServerCertKey = "../sampleCerts/nginx.example.com/nginx.example.com.key"
 	nginxServerCert    = "../sampleCerts/nginx.example.com/nginx.example.com.crt"
+	nginxServerCACert  = "../sampleCerts/nginx.example.com/example.com.crt"
 	nginxConf          = "../samples/nginx/nginx.conf"
 	nginxYaml          = "../samples/nginx/nginx.yaml"
 )
@@ -31,12 +32,13 @@ type Nginx struct {
 	Namespace string `json:"namespace,omitempty"`
 }
 
-func (n *Nginx) Install() {
+func (n *Nginx) Install(config string) {
 	util.Log.Info("Create Secret")
 	util.CreateTLSSecret("nginx-server-certs", n.Namespace, nginxServerCertKey, nginxServerCert)
+	util.Shell(`kubectl create -n %s secret generic nginx-ca-certs --from-file=%s`, n.Namespace, nginxServerCACert)
 
 	util.Log.Info("Create ConfigMap")
-	util.Shell(`kubectl create configmap nginx-configmap --from-file=nginx.conf=%s -n %s`, nginxConf, n.Namespace)
+	util.Shell(`kubectl create configmap nginx-configmap --from-file=nginx.conf=%s -n %s`, config, n.Namespace)
 	time.Sleep(time.Duration(5) * time.Second)
 
 	util.Log.Info("Deploy Nginx")
@@ -51,5 +53,6 @@ func (n *Nginx) Uninstall() {
 	util.KubeDelete(n.Namespace, nginxYaml)
 	util.Shell(`kubectl delete configmap nginx-configmap -n %s`, n.Namespace)
 	util.Shell(`kubectl delete secret nginx-server-certs -n %s`, n.Namespace)
+	util.Shell(`kubectl delete secret nginx-ca-certs -n %s`, n.Namespace)
 	time.Sleep(time.Duration(10) * time.Second)
 }

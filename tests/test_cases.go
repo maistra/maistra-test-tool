@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic"
+	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic/egress"
 	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic/ingress"
 )
 
@@ -62,5 +63,21 @@ var testCases = []testing.InternalTest{
 	testing.InternalTest{
 		Name: "10",
 		F:    ingress.TestIngressWithoutTLS,
+	},
+	testing.InternalTest{
+		Name: "11",
+		F:    egress.TestAccessExternalServices,
+	},
+	testing.InternalTest{
+		Name: "12",
+		F:    egress.TestEgressTLSOrigination,
+	},
+	testing.InternalTest{
+		Name: "13",
+		F:    egress.TestEgressGateways,
+	},
+	testing.InternalTest{
+		Name: "15",
+		F:    egress.TestTLSOriginationFileMount,
 	},
 }

@@ -34,7 +34,7 @@ func cleanupSecureGateways() {
 	util.ShellMuteOutput(`kubectl delete secret %s -n %s`, "helloworld-credential", meshNamespace)
 	util.KubeDeleteContents("bookinfo", helloworldv1)
 	httpbin.Uninstall()
-	time.Sleep(time.Duration(10) * time.Second)
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func TestSecureGateways(t *testing.T) {
