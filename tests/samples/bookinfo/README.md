@@ -4,6 +4,10 @@
 
 See <https://istio.io/docs/examples/bookinfo/>
 
+## Prerequisites
+
+podman version >= 3
+
 ## Build docker images without pushing
 
 ```bash
