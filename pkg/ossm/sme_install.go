@@ -33,6 +33,7 @@ func cleanUpTestExtensionInstall() {
 	sleep.Uninstall()
 	util.KubeDeleteContents("bookinfo", httpbinServiceMeshExtension)
 	util.Shell(`kubectl patch -n %s smcp/basic --type=json -p='[{"op": "remove", "path": "/spec/techPreview"}]'`, "istio-system")
+	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
 	time.Sleep(time.Duration(20) * time.Second)
 }
 
@@ -49,7 +50,7 @@ func TestExtensionInstall(t *testing.T) {
 
 	t.Run("Operator_test_sme_install", func(t *testing.T) {
 		defer util.RecoverPanic(t)
-		util.CheckPodRunning("bookinfo", "app=wasm-cacher")
+		util.CheckPodRunning("istio-system", "app=wasm-cacher")
 
 		util.Log.Info("Creating ServiceMeshExtension")
 		util.KubeApplyContents("bookinfo", httpbinServiceMeshExtension)
