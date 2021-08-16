@@ -163,9 +163,9 @@ func SaveHTTPResponse(body []byte, dst string) error {
 
 // CompareHTTPResponse compares a HTTP Response body with a model HTML file
 // modelFile is the file name. Not the file path.
-// resources directory is github.com/maistra/maistra-test-tool/samples/resources
+// resources directory is github.com/maistra/maistra-test-tool/testdata/resources
 func CompareHTTPResponse(body []byte, modelFile string) error {
-	modelPath := filepath.Join("../samples/resources/html", modelFile)
+	modelPath := filepath.Join("../testdata/resources/html", modelFile)
 	if err := CompareToFile(body, modelPath); err != nil {
 		ioutil.WriteFile("/tmp/diffbody", body, 0644)
 		return err

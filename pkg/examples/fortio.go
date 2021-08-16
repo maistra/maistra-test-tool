@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	fortioYaml = "../samples/httpbin/sample-client/fortio-deploy.yaml"
+	fortioYaml = "../testdata/examples/x86/httpbin/sample-client/fortio-deploy.yaml"
 )
 
 type Fortio struct {

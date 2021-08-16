@@ -20,6 +20,8 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic"
 	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic/egress"
 	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic/ingress"
+
+	"github.com/maistra/maistra-test-tool/pkg/ossm"
 )
 
 var t = &testing.T{}
@@ -77,7 +79,24 @@ var testCases = []testing.InternalTest{
 		F:    egress.TestEgressGateways,
 	},
 	testing.InternalTest{
+		Name: "14",
+		F:    egress.TestTLSOriginationSDS,
+	},
+	testing.InternalTest{
 		Name: "15",
 		F:    egress.TestTLSOriginationFileMount,
+	},
+
+	testing.InternalTest{
+		Name: "31",
+		F:    ossm.TestExtensionInstall,
+	},
+	testing.InternalTest{
+		Name: "32",
+		F:    ossm.TestTLSVersionSMCP,
+	},
+	testing.InternalTest{
+		Name: "33",
+		F:    ossm.TestSSL,
 	},
 }

@@ -21,8 +21,8 @@ import (
 )
 
 const (
-	echoYaml      = "../samples/tcp-echo/tcp-echo-services.yaml"
-	echoWithProxy = "../samples/tcp-echo/tcp-echo.yaml"
+	echoYaml      = "../testdata/examples/x86/tcp-echo/tcp-echo-services.yaml"
+	echoWithProxy = "../testdata/examples/x86/tcp-echo/tcp-echo.yaml"
 )
 
 type Echo struct {

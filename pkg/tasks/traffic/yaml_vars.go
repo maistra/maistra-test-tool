@@ -19,16 +19,16 @@ import (
 )
 
 const (
-	bookinfoAllv1Yaml       = "../samples/bookinfo/virtual-service-all-v1.yaml"
-	bookinfoReviewV2Yaml    = "../samples/bookinfo/virtual-service-reviews-test-v2.yaml"
-	bookinfoRatingDelayYaml = "../samples/bookinfo/virtual-service-ratings-test-delay.yaml"
-	bookinfoRatingAbortYaml = "../samples/bookinfo/virtual-service-ratings-test-abort.yaml"
-	bookinfoReview50V3Yaml  = "../samples/bookinfo/virtual-service-reviews-50-v3.yaml"
-	bookinfoReviewV3Yaml    = "../samples/bookinfo/virtual-service-reviews-v3.yaml"
+	bookinfoAllv1Yaml       = "../testdata/examples/x86/bookinfo/virtual-service-all-v1.yaml"
+	bookinfoReviewV2Yaml    = "../testdata/examples/x86/bookinfo/virtual-service-reviews-test-v2.yaml"
+	bookinfoRatingDelayYaml = "../testdata/examples/x86/bookinfo/virtual-service-ratings-test-delay.yaml"
+	bookinfoRatingAbortYaml = "../testdata/examples/x86/bookinfo/virtual-service-ratings-test-abort.yaml"
+	bookinfoReview50V3Yaml  = "../testdata/examples/x86/bookinfo/virtual-service-reviews-50-v3.yaml"
+	bookinfoReviewV3Yaml    = "../testdata/examples/x86/bookinfo/virtual-service-reviews-v3.yaml"
 
 	// OSSM need custom changes in VirtualService tcp-echo
-	echoAllv1Yaml = "../samples/tcp-echo/tcp-echo-all-v1.yaml"
-	echo20v2Yaml  = "../samples/tcp-echo/tcp-echo-20-v2.yaml"
+	echoAllv1Yaml = "../testdata/examples/x86/tcp-echo/tcp-echo-all-v1.yaml"
+	echo20v2Yaml  = "../testdata/examples/x86/tcp-echo/tcp-echo-20-v2.yaml"
 
 	meshNamespace = "istio-system"
 	smcpName      = "basic"

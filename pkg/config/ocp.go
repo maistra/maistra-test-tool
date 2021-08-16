@@ -51,6 +51,7 @@ func Setup(cpns string) {
 	util.ShellSilent(`oc new-project foo`)
 	util.ShellSilent(`oc new-project bar`)
 	util.ShellSilent(`oc new-project legacy`)
+	util.ShellSilent(`oc new-project mesh-external`)
 
 	// Add scc for nginx and mongdb examples in bookinfo
 	util.ShellSilent(`oc adm policy add-scc-to-user anyuid -z default -n bookinfo`)

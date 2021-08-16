@@ -93,6 +93,7 @@ spec:
   - number: 80
     name: http-port
     protocol: HTTP
+    targetPort: 443
   - number: 443
     name: https-port
     protocol: HTTPS
@@ -401,7 +402,7 @@ spec:
     - destination:
         host: my-nginx.bookinfo.svc.cluster.local
         port:
-          number: 8443
+          number: 443
       weight: 100
 `
 
@@ -417,7 +418,7 @@ spec:
       simple: ROUND_ROBIN
     portLevelSettings:
     - port:
-        number: 8443
+        number: 443
       tls:
         mode: MUTUAL
         clientCertificate: /etc/istio/nginx-client-certs/tls.crt
@@ -425,5 +426,94 @@ spec:
         caCertificates: /etc/istio/nginx-ca-certs/example.com.crt
         sni: my-nginx.bookinfo.svc.cluster.local
   
+`
+
+	EgressGatewaySDS = `
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: istio-egressgateway
+spec:
+  selector:
+    istio: egressgateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    hosts:
+    - my-nginx.mesh-external.svc.cluster.local
+    tls:
+      mode: ISTIO_MUTUAL
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: egressgateway-for-nginx
+spec:
+  host: istio-egressgateway.istio-system.svc.cluster.local
+  subsets:
+  - name: nginx
+    trafficPolicy:
+      loadBalancer:
+        simple: ROUND_ROBIN
+      portLevelSettings:
+      - port:
+          number: 443
+        tls:
+          mode: ISTIO_MUTUAL
+          sni: my-nginx.mesh-external.svc.cluster.local
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: direct-nginx-through-egress-gateway
+spec:
+  hosts:
+  - my-nginx.mesh-external.svc.cluster.local
+  gateways:
+  - istio-egressgateway
+  - mesh
+  http:
+  - match:
+    - gateways:
+      - mesh
+      port: 80
+    route:
+    - destination:
+        host: istio-egressgateway.istio-system.svc.cluster.local
+        subset: nginx
+        port:
+          number: 443
+      weight: 100
+  - match:
+    - gateways:
+      - istio-egressgateway
+      port: 443
+    route:
+    - destination:
+        host: my-nginx.mesh-external.svc.cluster.local
+        port:
+          number: 443
+      weight: 100
+`
+
+	OriginateSDS = `
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: originate-tls-for-nginx
+spec:
+  host: my-nginx.mesh-external.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    portLevelSettings:
+    - port:
+        number: 443
+      tls:
+        mode: SIMPLE
+        credentialName: client-credential # this must match the secret created earlier without the "-cacert" suffix
+        sni: my-nginx.mesh-external.svc.cluster.local
 `
 )

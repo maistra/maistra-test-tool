@@ -24,8 +24,8 @@ const (
 	nginxServerCertKey = "../sampleCerts/nginx.example.com/nginx.example.com.key"
 	nginxServerCert    = "../sampleCerts/nginx.example.com/nginx.example.com.crt"
 	nginxServerCACert  = "../sampleCerts/nginx.example.com/example.com.crt"
-	nginxConf          = "../samples/nginx/nginx.conf"
-	nginxYaml          = "../samples/nginx/nginx.yaml"
+	nginxConf          = "../testdata/examples/x86/nginx/nginx.conf"
+	nginxYaml          = "../testdata/examples/x86/nginx/nginx.yaml"
 )
 
 type Nginx struct {

@@ -94,14 +94,14 @@ func TestTLSOriginationFileMount(t *testing.T) {
 	defer cleanupTLSOriginationFileMount()
 	defer util.RecoverPanic(t)
 
-	util.Log.Info("TestEgressGatewaysTLSOrigination")
+	util.Log.Info("TestEgressGatewaysTLSOrigination File Mount")
 	sleep := examples.Sleep{"bookinfo"}
 	sleep.Install()
 	sleepPod, err := util.GetPodName("bookinfo", "app=sleep")
 	util.Inspect(err, "Failed to get sleep pod name", "", t)
 
 	nginx := examples.Nginx{"bookinfo"}
-	nginx.Install("../samples/nginx/nginx_ssl.conf")
+	nginx.Install("../testdata/examples/x86/nginx/nginx_ssl.conf")
 
 	t.Run("TrafficManagement_egress_gateway_perform_TLS_origination", func(t *testing.T) {
 		defer util.RecoverPanic(t)
@@ -164,6 +164,7 @@ func TestTLSOriginationFileMount(t *testing.T) {
 		util.KubeApplyContents("bookinfo", nginxGatewayTLS)
 		time.Sleep(time.Duration(20) * time.Second)
 		util.KubeApplyContents("istio-system", nginxMeshRule)
+		time.Sleep(time.Duration(10) * time.Second)
 
 		util.Log.Info("Verify NGINX server")
 		cmd := fmt.Sprintf(`curl -sS http://my-nginx.bookinfo.svc.cluster.local`)

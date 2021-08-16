@@ -20,12 +20,12 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
-// samples directory is github.com/maistra/maistra-test-tool/samples
+// samples directory is github.com/maistra/maistra-test-tool/testdata/examples/x86
 const (
-	bookinfoYaml           = "../samples/bookinfo/bookinfo.yaml"
-	bookinfoGateway        = "../samples/bookinfo/bookinfo-gateway.yaml"
-	bookinfoRuleAllYaml    = "../samples/bookinfo/destination-rule-all.yaml"
-	bookinfoRuleAllTLSYaml = "../samples/bookinfo/destination-rule-all-mtls.yaml"
+	bookinfoYaml           = "../testdata/examples/x86/bookinfo/bookinfo.yaml"
+	bookinfoGateway        = "../testdata/examples/x86/bookinfo/bookinfo-gateway.yaml"
+	bookinfoRuleAllYaml    = "../testdata/examples/x86/bookinfo/destination-rule-all.yaml"
+	bookinfoRuleAllTLSYaml = "../testdata/examples/x86/bookinfo/destination-rule-all-mtls.yaml"
 )
 
 // Bookinfo includes app deployment namespace

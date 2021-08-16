@@ -17,16 +17,23 @@ package tests
 import (
 	"testing"
 
-	_ "github.com/maistra/maistra-test-tool/pkg/config"
+	"github.com/maistra/maistra-test-tool/pkg/util"
 )
+
+func setupNamespaces() {
+	util.ShellSilent(`oc new-project bookinfo`)
+	util.ShellSilent(`oc new-project foo`)
+	util.ShellSilent(`oc new-project bar`)
+	util.ShellSilent(`oc new-project legacy`)
+	util.ShellSilent(`oc new-project mesh-external`)
+}
 
 func matchString(a, b string) (bool, error) {
 	return a == b, nil
 }
 
 func TestMain(m *testing.M) {
-	//config.Setup("istio-system")
-
+	setupNamespaces()
 	// test runs
 	testing.Main(matchString, testCases, nil, nil)
 }

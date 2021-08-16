@@ -21,8 +21,8 @@ import (
 )
 
 const (
-	sleepYaml       = "../samples/sleep/sleep.yaml"
-	sleepLegacyYaml = "../samples/sleep/sleep_legacy.yaml"
+	sleepYaml       = "../testdata/examples/x86/sleep/sleep.yaml"
+	sleepLegacyYaml = "../testdata/examples/x86/sleep/sleep_legacy.yaml"
 )
 
 type Sleep struct {

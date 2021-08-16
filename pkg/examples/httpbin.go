@@ -21,10 +21,10 @@ import (
 )
 
 const (
-	httpbinYaml       = "../samples/httpbin/httpbin.yaml"
-	httpbinLegacyYaml = "../samples/httpbin/httpbin_legacy.yaml"
-	httpbinv1Yaml     = "../samples/httpbin/httpbinv1.yaml"
-	httpbinv2Yaml     = "../samples/httpbin/httpbinv2.yaml"
+	httpbinYaml       = "../testdata/examples/x86/httpbin/httpbin.yaml"
+	httpbinLegacyYaml = "../testdata/examples/x86/httpbin/httpbin_legacy.yaml"
+	httpbinv1Yaml     = "../testdata/examples/x86/httpbin/httpbinv1.yaml"
+	httpbinv2Yaml     = "../testdata/examples/x86/httpbin/httpbinv2.yaml"
 )
 
 type Httpbin struct {
