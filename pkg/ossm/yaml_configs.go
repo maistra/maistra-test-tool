@@ -51,4 +51,27 @@ spec:
         image: quay.io/maistra/testssl:latest
         imagePullPolicy: Always
 `
+
+	rateLimitSMCPPatch = `
+spec:
+  techPreview:
+    rateLimiting:
+      rls:
+        enabled: true
+        storageBackend: redis
+        storageAddress: redis.redis:6379
+      rawRules:
+        domain: productpage-ratelimit
+        descriptors:
+          - key: PATH
+            value: "/productpage"
+            rate_limit:
+              unit: minute
+              requests_per_unit: 1
+          - key: PATH
+            rate_limit:
+              unit: minute
+              requests_per_unit: 100
+
+`
 )
