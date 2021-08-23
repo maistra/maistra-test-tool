@@ -100,4 +100,8 @@ var testCases = []testing.InternalTest{
 		Name: "33",
 		F:    ossm.TestSSL,
 	},
+	testing.InternalTest{
+		Name: "34",
+		F:    ossm.TestRateLimiting,
+	},
 }
