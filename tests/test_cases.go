@@ -78,13 +78,14 @@ var testCases = []testing.InternalTest{
 		Name: "13",
 		F:    egress.TestEgressGateways,
 	},
-	testing.InternalTest{
-		Name: "14",
-		F:    egress.TestTLSOriginationSDS,
-	},
+
 	testing.InternalTest{
 		Name: "15",
 		F:    egress.TestTLSOriginationFileMount,
+	},
+	testing.InternalTest{
+		Name: "16",
+		F:    egress.TestEgressWildcard,
 	},
 
 	testing.InternalTest{

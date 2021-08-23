@@ -28,6 +28,7 @@ func cleanupTLSOriginationSDS() {
 	util.Log.Info("Cleanup")
 	util.KubeDeleteContents("istio-system", OriginateSDS)
 	util.KubeDeleteContents("bookinfo", EgressGatewaySDS)
+	util.Shell(`kubectl delete -n %s secret client-credential`, "istio-system")
 	util.Shell(`kubectl delete -n %s secret client-credential-cacert`, "istio-system")
 	sleep := examples.Sleep{"bookinfo"}
 	nginx := examples.Nginx{"mesh-external"}
@@ -68,5 +69,18 @@ func TestTLSOriginationSDS(t *testing.T) {
 		} else {
 			util.Log.Infof("Success. Get expected response: %s", msg)
 		}
+	})
+
+	cleanupTLSOriginationSDS()
+
+	t.Run("TrafficManagement_egress_configure_mtls_origination", func(t *testing.T) {
+		defer util.RecoverPanic(t)
+
+		util.Log.Info("Configure mutual TLS origination for egress traffic")
+		nginx := examples.Nginx{"mesh-external"}
+		nginx.Install("../testdata/examples/x86/nginx/nginx_mesh_external_ssl.conf")
+		util.Shell(`kubectl create -n %s secret generic client-credential --from-file=tls.key=%s --from-file=tls.crt=%s --from-file=ca.crt=%s`,
+			"istio-system", nginxClientCertKey, nginxClientCert, nginxServerCACert)
+
 	})
 }
