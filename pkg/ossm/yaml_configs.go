@@ -74,4 +74,59 @@ spec:
               requests_per_unit: 100
 
 `
+
+	testAnnotationProxyEnv = `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testenv
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: env
+  template:
+    metadata:
+      annotations:
+        sidecar.maistra.io/proxyEnv: '{ "maistra_test_env": "env_value", "maistra_test_env_2": "env_value_2" }'
+      labels:
+        app: env
+    spec:
+      containers:
+      - name: testenv
+        image: quay.io/maistra/testssl:latest
+        imagePullPolicy: Always
+`
+
+	testSpecProxyEnv = `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testenv
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: env
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+      labels:
+        app: env
+    spec:
+      containers:
+      - name: testenv
+        image: quay.io/maistra/testssl:latest
+        imagePullPolicy: Always
+`
+
+	ProxyEnvSMCPPath = `
+spec:
+  proxy:
+    runtime:
+      container:
+        env:
+          maistra_test_foo: maistra_test_bar
+`
 )

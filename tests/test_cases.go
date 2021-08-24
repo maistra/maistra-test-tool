@@ -104,4 +104,8 @@ var testCases = []testing.InternalTest{
 		Name: "34",
 		F:    ossm.TestRateLimiting,
 	},
+	testing.InternalTest{
+		Name: "35",
+		F:    ossm.TestProxyEnv,
+	},
 }
