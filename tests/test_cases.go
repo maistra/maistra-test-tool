@@ -17,6 +17,7 @@ package tests
 import (
 	"testing"
 
+	"github.com/maistra/maistra-test-tool/pkg/tasks/security/certificate"
 	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic"
 	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic/egress"
 	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic/ingress"
@@ -86,6 +87,10 @@ var testCases = []testing.InternalTest{
 	testing.InternalTest{
 		Name: "16",
 		F:    egress.TestEgressWildcard,
+	},
+	testing.InternalTest{
+		Name: "17",
+		F:    certificate.TestExternalCert,
 	},
 
 	testing.InternalTest{
