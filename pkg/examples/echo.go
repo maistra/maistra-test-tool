@@ -20,11 +20,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
-const (
-	echoYaml      = "../testdata/examples/x86/tcp-echo/tcp-echo-services.yaml"
-	echoWithProxy = "../testdata/examples/x86/tcp-echo/tcp-echo.yaml"
-)
-
 type Echo struct {
 	Namespace string `json:"namespace,omitempty"`
 }

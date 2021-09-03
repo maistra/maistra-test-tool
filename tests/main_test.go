@@ -15,6 +15,7 @@
 package tests
 
 import (
+	"os"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
@@ -33,6 +34,7 @@ func matchString(a, b string) (bool, error) {
 }
 
 func TestMain(m *testing.M) {
+	os.Setenv("GODEBUG", "x509ignoreCN=0")
 	setupNamespaces()
 	// test runs
 	testing.Main(matchString, testCases, nil, nil)

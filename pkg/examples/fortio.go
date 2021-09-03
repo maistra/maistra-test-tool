@@ -20,10 +20,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
-const (
-	fortioYaml = "../testdata/examples/x86/httpbin/sample-client/fortio-deploy.yaml"
-)
-
 type Fortio struct {
 	Namespace string `json:"namespace,omitempty"`
 }

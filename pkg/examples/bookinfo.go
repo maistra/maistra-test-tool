@@ -21,12 +21,6 @@ import (
 )
 
 // samples directory is github.com/maistra/maistra-test-tool/testdata/examples/x86
-const (
-	bookinfoYaml           = "../testdata/examples/x86/bookinfo/bookinfo.yaml"
-	bookinfoGateway        = "../testdata/examples/x86/bookinfo/bookinfo-gateway.yaml"
-	bookinfoRuleAllYaml    = "../testdata/examples/x86/bookinfo/destination-rule-all.yaml"
-	bookinfoRuleAllTLSYaml = "../testdata/examples/x86/bookinfo/destination-rule-all-mtls.yaml"
-)
 
 // Bookinfo includes app deployment namespace
 type Bookinfo struct {

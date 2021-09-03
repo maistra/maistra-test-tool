@@ -20,14 +20,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
-const (
-	nginxServerCertKey = "../sampleCerts/nginx.example.com/nginx.example.com.key"
-	nginxServerCert    = "../sampleCerts/nginx.example.com/nginx.example.com.crt"
-	nginxServerCACert  = "../sampleCerts/nginx.example.com/example.com.crt"
-	nginxConf          = "../testdata/examples/x86/nginx/nginx.conf"
-	nginxYaml          = "../testdata/examples/x86/nginx/nginx.yaml"
-)
-
 type Nginx struct {
 	Namespace string `json:"namespace,omitempty"`
 }

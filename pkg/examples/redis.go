@@ -21,10 +21,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
-const (
-	redisYaml = "../testdata/examples/x86/redis/redis.yaml"
-)
-
 type Redis struct {
 	Namespace string `json:"namespace,omitempty"`
 }

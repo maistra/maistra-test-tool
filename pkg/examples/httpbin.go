@@ -20,13 +20,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
-const (
-	httpbinYaml       = "../testdata/examples/x86/httpbin/httpbin.yaml"
-	httpbinLegacyYaml = "../testdata/examples/x86/httpbin/httpbin_legacy.yaml"
-	httpbinv1Yaml     = "../testdata/examples/x86/httpbin/httpbinv1.yaml"
-	httpbinv2Yaml     = "../testdata/examples/x86/httpbin/httpbinv2.yaml"
-)
-
 type Httpbin struct {
 	Namespace string `json:"namespace,omitempty"`
 }

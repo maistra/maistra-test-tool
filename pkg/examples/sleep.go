@@ -20,11 +20,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
-const (
-	sleepYaml       = "../testdata/examples/x86/sleep/sleep.yaml"
-	sleepLegacyYaml = "../testdata/examples/x86/sleep/sleep_legacy.yaml"
-)
-
 type Sleep struct {
 	Namespace string `json:"namespace,omitempty"`
 }
