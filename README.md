@@ -19,19 +19,13 @@ The testing follows [Istio Doc Tasks](https://istio.io/v1.9/docs/tasks/)
 | --        | --            |
 | OS        | Linux         |
 | Golang    | 1.13+         |
-| Python    | 3.7+          |
-| python3-pip |             |
-
 
 The host machine which triggers test scripts must have Golang and Python installed before running go tests.
-
-python3-pip is required for testing Security_authentication_end-user_JWT
 
 ## Testing Prerequisite
 
 1. Service Mesh Control Plane has been installed on an OpenShift OCP4 cluster.
 2. An `oc` client has been installed.  Completed CLI login an OCP cluster as a regular user. Run `oc login -u [user] -p [token] --server=[OCP API server]`
-3. For the test case using JWT token, the system needs python3 installed to be able to run the python script.
 
 ## Testing
 - All test cases and testdata are in the `tests` directory.

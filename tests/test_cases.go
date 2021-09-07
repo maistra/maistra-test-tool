@@ -17,6 +17,7 @@ package tests
 import (
 	"testing"
 
+	"github.com/maistra/maistra-test-tool/pkg/tasks/security/authentication"
 	"github.com/maistra/maistra-test-tool/pkg/tasks/security/certificate"
 	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic"
 	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic/egress"
@@ -91,6 +92,14 @@ var testCases = []testing.InternalTest{
 	testing.InternalTest{
 		Name: "17",
 		F:    certificate.TestExternalCert,
+	},
+	testing.InternalTest{
+		Name: "18",
+		F:    authentication.TestAuthPolicy,
+	},
+	testing.InternalTest{
+		Name: "19",
+		F:    authentication.TestMigration,
 	},
 
 	testing.InternalTest{
