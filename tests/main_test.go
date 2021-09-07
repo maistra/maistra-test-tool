@@ -21,12 +21,18 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
+var (
+	SMMR = "../templates/smmr-templates/smmr_default.yaml"
+)
+
 func setupNamespaces() {
 	util.ShellSilent(`oc new-project bookinfo`)
 	util.ShellSilent(`oc new-project foo`)
 	util.ShellSilent(`oc new-project bar`)
 	util.ShellSilent(`oc new-project legacy`)
 	util.ShellSilent(`oc new-project mesh-external`)
+	util.ShellSilent(`oc apply -n istio-system -f %s`, SMMR)
+	util.ShellSilent(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
 }
 
 func matchString(a, b string) (bool, error) {

@@ -16,6 +16,7 @@ package ingress
 
 import (
 	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -37,6 +38,14 @@ func cleanupSecureGateways() {
 	time.Sleep(time.Duration(20) * time.Second)
 }
 
+func getenv(key, fallback string) string {
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		return fallback
+	}
+	return value
+}
+
 func TestSecureGateways(t *testing.T) {
 	defer cleanupSecureGateways()
 	defer util.RecoverPanic(t)
@@ -45,7 +54,13 @@ func TestSecureGateways(t *testing.T) {
 	httpbin := examples.Httpbin{"bookinfo"}
 	httpbin.Install()
 
-	util.KubeApplyContents("bookinfo", helloworldv1)
+	if getenv("SAMPLEARCH", "x86") == "p" {
+		util.KubeApplyContents("bookinfo", helloworldv1P)
+	} else if getenv("SAMPLEARCH", "x86") == "z" {
+		util.KubeApplyContents("bookinfo", helloworldv1Z)
+	} else {
+		util.KubeApplyContents("bookinfo", helloworldv1)
+	}
 	util.CheckPodRunning("bookinfo", "app=helloworld-v1")
 	time.Sleep(time.Duration(10) * time.Second)
 

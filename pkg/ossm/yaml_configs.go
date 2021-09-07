@@ -52,6 +52,48 @@ spec:
         imagePullPolicy: Always
 `
 
+	testSSLDeploymentZ = `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testssl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: testssl
+  template:
+    metadata:
+      labels:
+        app: testssl
+    spec:
+      containers:
+      - name: testssl
+        image: quay.io/maistra/testssl:0.0-ibm-z
+        imagePullPolicy: Always
+`
+
+	testSSLDeploymentP = `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testssl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: testssl
+  template:
+    metadata:
+      labels:
+        app: testssl
+    spec:
+      containers:
+      - name: testssl
+        image: quay.io/maistra/testssl:0.0-ibm-p
+        imagePullPolicy: Always
+`
+
 	rateLimitSMCPPatch = `
 spec:
   techPreview:
@@ -94,7 +136,7 @@ spec:
     spec:
       containers:
       - name: testenv
-        image: quay.io/maistra/testssl:latest
+        image: docker.io/nginx
         imagePullPolicy: Always
 `
 
@@ -117,7 +159,7 @@ spec:
     spec:
       containers:
       - name: testenv
-        image: quay.io/maistra/testssl:latest
+        image: docker.io/nginx
         imagePullPolicy: Always
 `
 

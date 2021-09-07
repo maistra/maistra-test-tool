@@ -71,9 +71,8 @@ func TestAuthPolicy(t *testing.T) {
 	sleep.InstallLegacy()
 
 	util.Log.Info("Verify setup")
-	namespaces := []string{"foo", "bar", "legacy"}
-	for _, from := range namespaces {
-		for _, to := range namespaces {
+	for _, from := range []string{"foo", "bar", "legacy"} {
+		for _, to := range []string{"foo", "bar"} {
 			sleepPod, err := util.GetPodName(from, "app=sleep")
 			util.Inspect(err, "Failed to get sleep pod name", "", t)
 			cmd := fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%{http_code}"`,
@@ -144,9 +143,8 @@ func TestAuthPolicy(t *testing.T) {
 		util.KubeApplyContents("foo", NamespacePolicyStrict)
 		time.Sleep(time.Duration(10) * time.Second)
 
-		namespaces := []string{"foo", "bar", "legacy"}
-		for _, from := range namespaces {
-			for _, to := range namespaces {
+		for _, from := range []string{"foo", "bar", "legacy"} {
+			for _, to := range []string{"foo", "bar"} {
 				sleepPod, err := util.GetPodName(from, "app=sleep")
 				util.Inspect(err, "Failed to get sleep pod name", "", t)
 				cmd := fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%{http_code}"`,

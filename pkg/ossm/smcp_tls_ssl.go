@@ -15,6 +15,7 @@
 package ossm
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -31,6 +32,14 @@ func cleanupTestSSL() {
 	util.Shell(`kubectl patch -n %s smcp/basic --type=json -p='[{"op": "remove", "path": "/spec/security/controlPlane/tls"}]'`, "istio-system")
 	util.Shell(`kubectl patch -n %s smcp/basic --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":false},"controlPlane":{"mtls":false}}}}'`, "istio-system")
 	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
+}
+
+func getenv(key, fallback string) string {
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		return fallback
+	}
+	return value
 }
 
 func TestSSL(t *testing.T) {
@@ -61,7 +70,13 @@ func TestSSL(t *testing.T) {
 		bookinfo.Install(true)
 
 		util.Log.Info("Deploy testssl pod")
-		util.KubeApplyContents("bookinfo", testSSLDeployment)
+		if getenv("SAMPLEARCH", "x86") == "p" {
+			util.KubeApplyContents("bookinfo", testSSLDeploymentP)
+		} else if getenv("SAMPLEARCH", "x86") == "z" {
+			util.KubeApplyContents("bookinfo", testSSLDeploymentZ)
+		} else {
+			util.KubeApplyContents("bookinfo", testSSLDeployment)
+		}
 		util.CheckPodRunning("bookinfo", "app=testssl")
 
 		util.Log.Info("Check testssl.sh results. Ignore info	Command error")

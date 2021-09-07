@@ -37,7 +37,7 @@ var (
 	bookinfoYaml           = fmt.Sprintf("%s/%s/bookinfo/bookinfo.yaml", basedir, branch)
 	bookinfoGateway        = fmt.Sprintf("%s/%s/bookinfo/bookinfo-gateway.yaml", basedir, branch)
 	bookinfoRuleAllYaml    = fmt.Sprintf("%s/%s/bookinfo/destination-rule-all.yaml", basedir, branch)
-	bookinfoRuleAllTLSYaml = fmt.Sprintf("%s/%s/bookinfo/destination-rule-all-mtls.yam", basedir, branch)
+	bookinfoRuleAllTLSYaml = fmt.Sprintf("%s/%s/bookinfo/destination-rule-all-mtls.yaml", basedir, branch)
 
 	echoYaml      = fmt.Sprintf("%s/%s/tcp-echo/tcp-echo-services.yaml", basedir, branch)
 	echoWithProxy = fmt.Sprintf("%s/%s/tcp-echo/tcp-echo.yaml", basedir, branch)
