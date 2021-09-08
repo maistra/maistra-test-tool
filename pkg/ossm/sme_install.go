@@ -26,15 +26,19 @@ import (
 )
 
 func cleanUpTestExtensionInstall() {
+	httpbinPod, err := util.GetPodName("bookinfo", "app=httpbin")
+	if err == nil {
+		util.Log.Info("# httpbin proxy log: ")
+		util.Log.Info(util.GetPodLogs("bookinfo", httpbinPod, "istio-proxy", false, false))
+		util.Log.Info("# end of httpbin proxy log")
+	}
+
 	util.Log.Info("# Cleanup ...")
 	httpbin := examples.Httpbin{"bookinfo"}
 	sleep := examples.Sleep{"bookinfo"}
 	httpbin.Uninstall()
 	sleep.Uninstall()
 	util.KubeDeleteContents("bookinfo", httpbinServiceMeshExtension)
-	util.Shell(`kubectl patch -n %s smcp/basic --type=json -p='[{"op": "remove", "path": "/spec/techPreview"}]'`, "istio-system")
-	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
-	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func TestExtensionInstall(t *testing.T) {
@@ -59,7 +63,7 @@ func TestExtensionInstall(t *testing.T) {
 			t.Fatalf("error checking for SME header-append: %v", err)
 		}
 
-		command := "curl -I httpbin:8000/headers"
+		command := "curl -s -I httpbin:8000/headers"
 		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		if err != nil {
 			t.Fatalf("error running command %q in pod %q: %v", command, sleepPod, err)
