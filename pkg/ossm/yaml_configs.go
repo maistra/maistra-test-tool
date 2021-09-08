@@ -136,7 +136,53 @@ spec:
     spec:
       containers:
       - name: testenv
-        image: docker.io/nginx
+        image: quay.io/maistra/testssl:latest
+        imagePullPolicy: Always
+`
+
+	testAnnotationProxyEnvZ = `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testenv
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: env
+  template:
+    metadata:
+      annotations:
+        sidecar.maistra.io/proxyEnv: '{ "maistra_test_env": "env_value", "maistra_test_env_2": "env_value_2" }'
+      labels:
+        app: env
+    spec:
+      containers:
+      - name: testenv
+        image: quay.io/maistra/testssl:0.0-ibm-z
+        imagePullPolicy: Always
+`
+
+	testAnnotationProxyEnvP = `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testenv
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: env
+  template:
+    metadata:
+      annotations:
+        sidecar.maistra.io/proxyEnv: '{ "maistra_test_env": "env_value", "maistra_test_env_2": "env_value_2" }'
+      labels:
+        app: env
+    spec:
+      containers:
+      - name: testenv
+        image: quay.io/maistra/testssl:0.0-ibm-p
         imagePullPolicy: Always
 `
 

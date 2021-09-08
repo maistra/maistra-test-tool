@@ -35,7 +35,13 @@ func TestProxyEnv(t *testing.T) {
 		defer util.RecoverPanic(t)
 
 		util.Log.Info("Test annotation sidecar.maistra.io/proxyEnv")
-		util.KubeApplyContents("bookinfo", testAnnotationProxyEnv)
+		if getenv("SAMPLEARCH", "x86") == "p" {
+			util.KubeApplyContents("bookinfo", testAnnotationProxyEnvP)
+		} else if getenv("SAMPLEARCH", "x86") == "z" {
+			util.KubeApplyContents("bookinfo", testAnnotationProxyEnvZ)
+		} else {
+			util.KubeApplyContents("bookinfo", testAnnotationProxyEnv)
+		}
 		util.CheckPodRunning("bookinfo", "app=env")
 		msg, err := util.ShellMuteOutput(`kubectl get po -n bookinfo -o yaml | grep maistra_test_env`)
 		util.Inspect(err, "Failed to get variables", "", t)
