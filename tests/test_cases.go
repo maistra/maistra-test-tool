@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/tasks/security/authentication"
+	authorizaton "github.com/maistra/maistra-test-tool/pkg/tasks/security/authorization"
 	"github.com/maistra/maistra-test-tool/pkg/tasks/security/certificate"
 	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic"
 	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic/egress"
@@ -100,6 +101,26 @@ var testCases = []testing.InternalTest{
 	testing.InternalTest{
 		Name: "19",
 		F:    authentication.TestMigration,
+	},
+	testing.InternalTest{
+		Name: "20",
+		F:    authorizaton.TestAuthorHTTP,
+	},
+	testing.InternalTest{
+		Name: "21",
+		F:    authorizaton.TestAuthorTCP,
+	},
+	testing.InternalTest{
+		Name: "22",
+		F:    authorizaton.TestAuthorJWT,
+	},
+	testing.InternalTest{
+		Name: "23",
+		F:    authorizaton.TestAuthorDeny,
+	},
+	testing.InternalTest{
+		Name: "24",
+		F:    authorizaton.TestTrustDomainMigration,
 	},
 
 	testing.InternalTest{

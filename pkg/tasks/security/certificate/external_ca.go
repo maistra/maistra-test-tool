@@ -31,7 +31,7 @@ func cleanupExternalCert() {
 	util.Shell(`kubectl -n istio-system delete secret cacerts`)
 	util.Shell(`kubectl -n istio-system patch smcp/basic --type=json -p='[{"op": "remove", "path": "/spec/security"}]'`)
 	util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
-	time.Sleep(time.Duration(20) * time.Second)
+	time.Sleep(time.Duration(40) * time.Second)
 }
 
 func TestExternalCert(t *testing.T) {
@@ -49,6 +49,7 @@ func TestExternalCert(t *testing.T) {
 
 		util.Shell(`kubectl -n istio-system patch smcp/basic --type=merge --patch="%s"`, CertSMCPPath)
 		util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
+		time.Sleep(time.Duration(50) * time.Second)
 
 		sleep := examples.Sleep{"foo"}
 		sleep.Install()
