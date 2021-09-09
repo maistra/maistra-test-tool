@@ -5,20 +5,22 @@
 [![](https://goreportcard.com/badge/github.com/maistra/maistra-test-tool)](https://goreportcard.com/report/github.com/maistra/maistra-test-tool)
 
 
-A testing tool for running Maistra tasks on AWS OpenShift 4.x cluster.
+A testing tool for running Maistra Service Mesh tasks on an OpenShift 4.x cluster.
 
 ## Introduction
 
-This project aims to automate the running Maistra tasks on an AWS OpenShift 4.x Cluster.
+This project aims to automate the running Maistra Service Mesh tasks on an OpenShift 4.x Cluster.
 
-The testing follows [Istio Doc Tasks](https://istio.io/v1.6/docs/tasks/) and [Maistra Doc](https://maistra-1-1.maistra.io/).
+The testing follows [Istio Doc Tasks](https://istio.io/v1.6/docs/tasks/).
+
+The test cases include several changes for an OpenShift environment. Currently, those changes will not work in origin Kubernetes environments.
 
 
 ## Versions
 
 | Name      | Version       |
 | --        | --            |
-| OS        | Fedora 28+    |
+| OS        | Linux         |
 | Golang    | 1.13+         |
 | Python    | 3.7+          |
 | python3-pip |             |
@@ -30,22 +32,19 @@ python3-pip is required for testing Security_authentication_end-user_JWT
 
 ## Testing Prerequisite
 
-1. Maistra has been installed on an OpenShift OCP4 cluster.
-2. Several test cases require nginx or mongoDB running on OCP4 and we need to configure additional scc permission for them after login as a cluster admin user.
+1. User can access a running OpenShift cluster from command line.
+2. Service Mesh Control Plane (SMCP) has been installed on an OpenShift cluster. The SMCP is in namespace `istio-system` and the SMCP name is `basic`
+3. An `oc` client has been installed. User has completed CLI login an OCP cluster as an admin user. Run `oc login -u [user] -p [token] --server=[OCP API server]`
+4. Several test cases require nginx or mongoDB running on OCP4 and we need to configure additional scc permission for them after login as a cluster admin user.
    ```
    $ oc login -u kubeadmin -p [token] --server=[OCP API server]
-   $ chmod +x scripts/setup_ocp_scc_anyuid.sh;
    $ scripts/setup_ocp_scc_anyuid.sh
    ```
-3. Completed CLI login an OCP cluster as a regular user. Run `oc login -u [user] -p [token] --server=[OCP API server]` login command in a shell.
-4. For the test case using JWT token, the system needs python3 installed to be able to run the python script.
-
 
 ## Testing
 - All test cases and testdata are in the `tests` directory.
-- The test cases include several changes for an OpenShift environment. Currently, those changes will not work in origin Kubernetes environments.
 - To run all the test cases: `go test -timeout 3h -v`. It is required to use the `-timeout` flag. Otherwise, the go test by default will fall into panic after 10 minutes.
-- In order to save results in a junit report, we can run a go test command with "github.com/jstemmer/go-junit-report", e.g.
+- In order to save results in a XML report, we can run a go test command with "github.com/jstemmer/go-junit-report", e.g.
     ```
     $ cd tests
     $ export GODEBUG=x509ignoreCN=0
