@@ -23,8 +23,9 @@ The test cases include several changes for an OpenShift environment. Currently, 
 
 ## Testing Prerequisite
 
-1. Service Mesh Control Plane has been installed on an OpenShift OCP4 cluster.
-2. An `oc` client has been installed.  Completed CLI login an OCP cluster as an admin user. Run `oc login -u [user] -p [token] --server=[OCP API server]`
+1. User can access a running OpenShift cluster from command line.
+2. Service Mesh Control Plane (SMCP) has been installed on an OpenShift cluster. The SMCP is in namespace `istio-system` and the SMCP name is `basic`
+3. An `oc` client has been installed. User has completed CLI login an OCP cluster as an admin user. Run `oc login -u [user] -p [token] --server=[OCP API server]`
 
 ## Testing
 - A main test is in the `tests` directory. All test cases are in the `test_cases.go` and are mapped to the implementations in the `pkg` directory.
