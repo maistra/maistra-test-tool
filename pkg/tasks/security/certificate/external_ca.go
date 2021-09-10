@@ -29,13 +29,20 @@ func cleanupExternalCert() {
 	sleep.Uninstall()
 	httpbin.Uninstall()
 	util.Shell(`kubectl -n istio-system delete secret cacerts`)
-	util.Shell(`kubectl -n istio-system patch smcp/basic --type=json -p='[{"op": "remove", "path": "/spec/security"}]'`)
+	util.Shell(`kubectl -n istio-system patch smcp/basic --type=json -p='[{"op": "remove", "path": "/spec/security/certificateAuthority"}]'`)
 	util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
-	time.Sleep(time.Duration(40) * time.Second)
+	util.Shell(`kubectl patch -n istio-system smcp/basic --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":false},"controlPlane":{"mtls":false}}}}'`)
+	util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func TestExternalCert(t *testing.T) {
 	defer cleanupExternalCert()
+
+	util.Log.Info("Test External Certificates")
+	util.Log.Info("Enable Control Plane MTLS")
+	util.Shell(`kubectl patch -n istio-system smcp/basic --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}'`)
+	util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
 
 	httpbin := examples.Httpbin{"foo"}
 	httpbin.Install()
@@ -49,7 +56,7 @@ func TestExternalCert(t *testing.T) {
 
 		util.Shell(`kubectl -n istio-system patch smcp/basic --type=merge --patch="%s"`, CertSMCPPath)
 		util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
-		time.Sleep(time.Duration(50) * time.Second)
+		time.Sleep(time.Duration(20) * time.Second)
 
 		sleep := examples.Sleep{"foo"}
 		sleep.Install()
