@@ -23,12 +23,8 @@ The test cases include several changes for an OpenShift environment. Currently, 
 | OS        | Linux         |
 | Golang    | 1.13+         |
 | Python    | 3.7+          |
-| python3-pip |             |
-
 
 The host machine which triggers test scripts must have Golang and Python installed before running go tests.
-
-python3-pip is required for testing Security_authentication_end-user_JWT
 
 ## Testing Prerequisite
 

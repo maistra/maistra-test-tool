@@ -298,6 +298,7 @@ func TestAuthPolicy(t *testing.T) {
 			log.Infof("Success. Get response: %s", msg)
 		}
 
+		/*
 		log.Info("Test JWT expires in 5 seconds")
 		jwtGen := "https://raw.githubusercontent.com/istio/istio/release-1.6/security/tools/jwt/samples/gen-jwt.py"
 		jwtKey := "https://raw.githubusercontent.com/istio/istio/release-1.6/security/tools/jwt/samples/key.pem"
@@ -326,6 +327,7 @@ func TestAuthPolicy(t *testing.T) {
 			log.Infof("Success. Get expected response 401: %s", msg)
 		}
 		time.Sleep(time.Duration(waitTime) * time.Second)
+		*/
 	})
 
 	t.Run("Security_authentication_end-user_per-path_JWT", func(t *testing.T) {
