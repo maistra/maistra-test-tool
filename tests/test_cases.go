@@ -24,6 +24,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic/egress"
 	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic/ingress"
 
+	"github.com/maistra/maistra-test-tool/pkg/federation"
 	"github.com/maistra/maistra-test-tool/pkg/ossm"
 )
 
@@ -142,5 +143,9 @@ var testCases = []testing.InternalTest{
 	testing.InternalTest{
 		Name: "35",
 		F:    ossm.TestProxyEnv,
+	},
+	testing.InternalTest{
+		Name: "36",
+		F:    federation.TestSingleClusterFed,
 	},
 }
