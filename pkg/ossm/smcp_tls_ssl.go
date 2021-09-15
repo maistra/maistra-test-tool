@@ -23,6 +23,12 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
+func cleanupTestTLSVersionSMCP() {
+	util.Log.Info("Cleanup ...")
+	util.Shell(`kubectl patch -n %s smcp/basic --type=json -p='[{"op": "remove", "path": "/spec/security/controlPlane/tls"}]'`, "istio-system")
+	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
+}
+
 func cleanupTestSSL() {
 	util.Log.Info("Cleanup ...")
 	bookinfo := examples.Bookinfo{"bookinfo"}
@@ -40,6 +46,43 @@ func getenv(key, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func TestTLSVersionSMCP(t *testing.T) {
+	defer cleanupTestTLSVersionSMCP()
+
+	t.Run("Operator_test_smcp_global_tls_minVersion_TLSv1_0", func(t *testing.T) {
+		defer util.RecoverPanic(t)
+
+		util.Log.Info("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_0")
+		_, err := util.Shell(`kubectl patch -n %s smcp/basic --type merge -p '{"spec":{"security":{"controlPlane":{"tls":{"minProtocolVersion":"TLSv1_0"}}}}}'`, "istio-system")
+		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
+		if err != nil {
+			t.Errorf("Failed to update SMCP with tls.maxProtocolVersion: TLSv1_0")
+		}
+	})
+
+	t.Run("Operator_test_smcp_global_tls_minVersion_TLSv1_1", func(t *testing.T) {
+		defer util.RecoverPanic(t)
+
+		util.Log.Info("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_1")
+		_, err := util.Shell(`kubectl patch -n %s smcp/basic --type merge -p '{"spec":{"security":{"controlPlane":{"tls":{"minProtocolVersion":"TLSv1_1"}}}}}'`, "istio-system")
+		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
+		if err != nil {
+			t.Errorf("Failed to update SMCP with tls.maxProtocolVersion: TLSv1_1")
+		}
+	})
+
+	t.Run("Operator_test_smcp_global_tls_maxVersion_TLSv1_3", func(t *testing.T) {
+		defer util.RecoverPanic(t)
+
+		util.Log.Info("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_3")
+		_, err := util.Shell(`kubectl patch -n %s smcp/basic --type merge -p '{"spec":{"security":{"controlPlane":{"tls":{"maxProtocolVersion":"TLSv1_3"}}}}}'`, "istio-system")
+		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
+		if err != nil {
+			t.Errorf("Failed to update SMCP with tls.maxProtocolVersion: TLSv1_3")
+		}
+	})
 }
 
 func TestSSL(t *testing.T) {

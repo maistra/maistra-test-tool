@@ -31,121 +31,130 @@ import (
 var t = &testing.T{}
 var testCases = []testing.InternalTest{
 	testing.InternalTest{
-		Name: "01",
+		Name: "A1",
+		F:    ossm.TestSMCPInstall,
+	},
+
+	testing.InternalTest{
+		Name: "T1",
 		F:    traffic.TestRequestRouting,
 	},
 	testing.InternalTest{
-		Name: "02",
+		Name: "T2",
 		F:    traffic.TestFaultInjection,
 	},
 	testing.InternalTest{
-		Name: "03",
+		Name: "T3",
 		F:    traffic.TestTrafficShifting,
 	},
 	testing.InternalTest{
-		Name: "04",
+		Name: "T4",
 		F:    traffic.TestTCPShifting,
 	},
 	testing.InternalTest{
-		Name: "05",
+		Name: "T5",
 		F:    traffic.TestRequestTimeouts,
 	},
 	testing.InternalTest{
-		Name: "06",
+		Name: "T6",
 		F:    traffic.TestCircuitBreaking,
 	},
 	testing.InternalTest{
-		Name: "07",
+		Name: "T7",
 		F:    traffic.TestMirroring,
 	},
 	testing.InternalTest{
-		Name: "08",
+		Name: "T8",
 		F:    ingress.TestIngressGateways,
 	},
 	testing.InternalTest{
-		Name: "09",
+		Name: "T9",
 		F:    ingress.TestSecureGateways,
 	},
 	testing.InternalTest{
-		Name: "10",
+		Name: "T10",
 		F:    ingress.TestIngressWithoutTLS,
 	},
 	testing.InternalTest{
-		Name: "11",
+		Name: "T11",
 		F:    egress.TestAccessExternalServices,
 	},
 	testing.InternalTest{
-		Name: "12",
+		Name: "T12",
 		F:    egress.TestEgressTLSOrigination,
 	},
 	testing.InternalTest{
-		Name: "13",
+		Name: "T13",
 		F:    egress.TestEgressGateways,
 	},
 
 	testing.InternalTest{
-		Name: "15",
+		Name: "T15",
 		F:    egress.TestTLSOriginationFileMount,
 	},
 	testing.InternalTest{
-		Name: "16",
+		Name: "T16",
 		F:    egress.TestEgressWildcard,
 	},
 	testing.InternalTest{
-		Name: "17",
+		Name: "T17",
 		F:    certificate.TestExternalCert,
 	},
 	testing.InternalTest{
-		Name: "18",
+		Name: "T18",
 		F:    authentication.TestAuthPolicy,
 	},
 	testing.InternalTest{
-		Name: "19",
+		Name: "T19",
 		F:    authentication.TestMigration,
 	},
 	testing.InternalTest{
-		Name: "20",
+		Name: "T20",
 		F:    authorizaton.TestAuthorHTTP,
 	},
 	testing.InternalTest{
-		Name: "21",
+		Name: "T21",
 		F:    authorizaton.TestAuthorTCP,
 	},
 	testing.InternalTest{
-		Name: "22",
+		Name: "T22",
 		F:    authorizaton.TestAuthorJWT,
 	},
 	testing.InternalTest{
-		Name: "23",
+		Name: "T23",
 		F:    authorizaton.TestAuthorDeny,
 	},
 	testing.InternalTest{
-		Name: "24",
+		Name: "T24",
 		F:    authorizaton.TestTrustDomainMigration,
 	},
 
 	testing.InternalTest{
-		Name: "31",
+		Name: "S1",
 		F:    ossm.TestExtensionInstall,
 	},
 	testing.InternalTest{
-		Name: "32",
+		Name: "S2",
 		F:    ossm.TestTLSVersionSMCP,
 	},
 	testing.InternalTest{
-		Name: "33",
+		Name: "S3",
 		F:    ossm.TestSSL,
 	},
 	testing.InternalTest{
-		Name: "34",
+		Name: "S4",
 		F:    ossm.TestRateLimiting,
 	},
 	testing.InternalTest{
-		Name: "35",
+		Name: "S5",
 		F:    ossm.TestProxyEnv,
 	},
 	testing.InternalTest{
-		Name: "36",
+		Name: "S6",
+		F:    ossm.TestMustGather,
+	},
+	testing.InternalTest{
+		Name: "S7",
 		F:    federation.TestSingleClusterFed,
 	},
 }
