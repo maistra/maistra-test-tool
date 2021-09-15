@@ -31,7 +31,8 @@ func cleanupPathNormalizationSMCP() {
 	cleanHttpbin("foo")
 	cleanSleep("foo")
 	util.Shell(`kubectl patch -n %s smcp/%s --type=json -p='[{"op": "remove", "path": "/spec/techPreview"}]'`, meshNamespace, smcpName)
-	time.Sleep(time.Duration(waitTime*8) * time.Second)
+	util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
 	// avoid namespace recreation for downstream service account settings
 }
 
@@ -43,6 +44,7 @@ func TestPathNormalizationSMCP(t *testing.T) {
 
 		log.Info("Update SMCP pathNormalization")
 		util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"techPreview":{"global":{"pathNormalization":"DECODE_AND_MERGE_SLASHES"}}}}'`, meshNamespace, smcpName)
+		util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
 		time.Sleep(time.Duration(waitTime*4) * time.Second)
 
 		deployHttpbin("foo")

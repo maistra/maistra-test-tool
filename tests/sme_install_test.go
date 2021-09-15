@@ -30,6 +30,7 @@ func cleanUpTestExtensionInstall(namespace string) {
 	util.KubeDeleteContents(testNamespace, httpbinServiceMeshExtension, kubeconfig)
 
 	util.Shell(`kubectl patch -n %s smcp/%s --type=json -p='[{"op": "remove", "path": "/spec/techPreview"}]'`, meshNamespace, smcpName)
+	util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
 	time.Sleep(time.Duration(waitTime) * time.Second)
 }
 
@@ -45,6 +46,7 @@ func TestExtensionInstall(t *testing.T) {
 			meshNamespace, smcpName,
 			`"spec":{"techPreview":{"wasmExtensions"`,
 			`"enabled": true`)
+		util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
 
 		time.Sleep(time.Duration(waitTime) * time.Second)
 		util.CheckPodRunning(meshNamespace, "app=wasm-cacher", kubeconfig)
@@ -58,7 +60,7 @@ func TestExtensionInstall(t *testing.T) {
 		log.Info("Deploy sleep pod")
 		deploySleep(testNamespace)
 
-		log.Info("")
+		time.Sleep(time.Duration(waitTime*2) * time.Second)
 		pod, err := util.GetPodName(testNamespace, "app=sleep", kubeconfig)
 		util.Inspect(err, "failed to get sleep pod", "", t)
 

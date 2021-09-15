@@ -25,7 +25,7 @@ import (
 func cleanupExcludeOutboundPortsAnnotation(namespace string) {
 	log.Info("# Cleanup ...")
 	util.KubeDelete(namespace, excludeOutboundPortsAnnotation, kubeconfig)
-	time.Sleep(time.Duration(waitTime*8) * time.Second)
+	time.Sleep(time.Duration(waitTime*4) * time.Second)
 }
 
 func TestExcludeOutboundPortsAnnotation(t *testing.T) {
