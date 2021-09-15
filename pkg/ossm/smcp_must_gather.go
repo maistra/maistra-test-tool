@@ -41,21 +41,24 @@ func TestMustGather(t *testing.T) {
 	bookinfo := examples.Bookinfo{"bookinfo"}
 	bookinfo.Install(false)
 
-	util.Log.Info("Test must-gather log collection")
-	msg, err := util.Shell(`mkdir -p debug; oc adm must-gather --dest-dir=./debug --image=%s`, mustGatherImage)
-	util.Log.Info("Check CLI output message")
-	if err != nil || strings.Contains(msg, "error") {
-		util.Log.Errorf("must-gather command error: %s", msg)
-		t.Errorf("must-gather command error: %s", msg)
-	}
+	t.Run("smcp_test_must_gather", func(t *testing.T) {
+		defer util.RecoverPanic(t)
+		util.Log.Info("Test must-gather log collection")
+		msg, err := util.Shell(`mkdir -p debug; oc adm must-gather --dest-dir=./debug --image=%s`, mustGatherImage)
+		util.Log.Info("Check CLI output message")
+		if err != nil || strings.Contains(msg, "error") {
+			util.Log.Errorf("must-gather command error: %s", msg)
+			t.Errorf("must-gather command error: %s", msg)
+		}
 
-	util.Log.Info("Check cluster-scoped openshift-operators.servicemesh-resources.maistra.io.yaml")
-	pattern := "debug/*must-gather*/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/openshift-operators.servicemesh-resources.maistra.io.yaml"
-	matches, err := filepath.Glob(pattern)
-	if err != nil || len(matches) == 0 {
-		util.Log.Errorf("openshift-operators.servicemesh-resources.maistra.io.yaml file not found: %s", matches)
-		t.Errorf("openshift-operators.servicemesh-resources.maistra.io.yaml file not found: %s", matches)
-	} else {
-		util.Log.Infof("file exists: %s", matches)
-	}
+		util.Log.Info("Check cluster-scoped openshift-operators.servicemesh-resources.maistra.io.yaml")
+		pattern := "debug/*must-gather*/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/openshift-operators.servicemesh-resources.maistra.io.yaml"
+		matches, err := filepath.Glob(pattern)
+		if err != nil || len(matches) == 0 {
+			util.Log.Errorf("openshift-operators.servicemesh-resources.maistra.io.yaml file not found: %s", matches)
+			t.Errorf("openshift-operators.servicemesh-resources.maistra.io.yaml file not found: %s", matches)
+		} else {
+			util.Log.Infof("file exists: %s", matches)
+		}
+	})
 }
