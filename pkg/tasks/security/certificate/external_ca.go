@@ -15,6 +15,9 @@
 package certificate
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 
@@ -24,16 +27,14 @@ import (
 
 func cleanupExternalCert() {
 	util.Log.Info("Cleanup")
-	sleep := examples.Sleep{"foo"}
-	httpbin := examples.Httpbin{"foo"}
-	sleep.Uninstall()
-	httpbin.Uninstall()
+
+	bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
+	bookinfo.Uninstall()
+
 	util.Shell(`kubectl -n istio-system delete secret cacerts`)
-	util.Shell(`kubectl -n istio-system patch smcp/basic --type=json -p='[{"op": "remove", "path": "/spec/security/certificateAuthority"}]'`)
+	util.Shell(`kubectl -n istio-system patch smcp/basic --type=json -p='[{"op": "remove", "path": "/spec/security/certificateAuthority"}, {"op": "remove", "path": "/spec/security/dataPlane"}]'`)
 	util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
-	util.Shell(`kubectl patch -n istio-system smcp/basic --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":false},"controlPlane":{"mtls":false}}}}'`)
-	util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
-	time.Sleep(time.Duration(20) * time.Second)
+	time.Sleep(time.Duration(60) * time.Second)
 }
 
 func TestExternalCert(t *testing.T) {
@@ -41,11 +42,6 @@ func TestExternalCert(t *testing.T) {
 
 	util.Log.Info("Test External Certificates")
 	util.Log.Info("Enable Control Plane MTLS")
-	util.Shell(`kubectl patch -n istio-system smcp/basic --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}'`)
-	util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
-
-	httpbin := examples.Httpbin{"foo"}
-	httpbin.Install()
 
 	t.Run("Security_plugging_external_cert_test", func(t *testing.T) {
 		defer util.RecoverPanic(t)
@@ -56,23 +52,52 @@ func TestExternalCert(t *testing.T) {
 
 		util.Shell(`kubectl -n istio-system patch smcp/basic --type=merge --patch="%s"`, CertSMCPPath)
 		util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
-		time.Sleep(time.Duration(20) * time.Second)
+		time.Sleep(time.Duration(60) * time.Second)
 
-		sleep := examples.Sleep{"foo"}
-		sleep.Install()
-		sleepPod, err := util.GetPodName("foo", "app=sleep")
-		util.Inspect(err, "Failed to get sleep pod name", "", t)
-		time.Sleep(time.Duration(20) * time.Second)
+		bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
+		bookinfo.Install(true)
+
+		productPod, err := util.GetPodName("bookinfo", "app=productpage")
+		util.Inspect(err, "Failed to get productpage pod name", "", t)
+
+		tmpDir, err := ioutil.TempDir("", "cacerts")
+		util.Inspect(err, "Failed to create temp dir", "", t)
+		defer os.RemoveAll(tmpDir)
 
 		util.Log.Info("Verify the new certificates")
-		util.ShellMuteOutput(`kubectl exec -n %s -it %s -c istio-proxy -- /bin/cat /var/run/secrets/istio/root-cert.pem > /tmp/pod-root-cert.pem`, "foo", sleepPod)
-		//util.ShellMuteOutput(`kubectl exec -n %s -it %s -c istio-proxy -- /bin/cat /etc/certs/cert-chain.pem > /tmp/pod-cert-chain.pem`, "foo", sleepPod)
 
-		util.Log.Info("Verify the root certificate")
-		util.ShellMuteOutput(`openssl x509 -in %s -text -noout > /tmp/root-cert.crt.txt`, sampleCARoot)
-		util.ShellMuteOutput(`openssl x509 -in /tmp/pod-root-cert.pem -text -noout > /tmp/pod-root-cert.crt.txt`)
-		if err := util.CompareFiles("/tmp/root-cert.crt.txt", "/tmp/pod-root-cert.crt.txt"); err != nil {
-			t.Error("Error root cert.")
+		// Generate the cert files
+		util.ShellMuteOutput(`oc -n bookinfo exec %s -c istio-proxy -- openssl s_client -showcerts -connect details:9080 > %s/bookinfo-proxy-cert.txt`, productPod, tmpDir)
+		_, err = util.ShellMuteOutput(`sed -n '/-----BEGIN CERTIFICATE-----/{:start /-----END CERTIFICATE-----/!{N;b start};/.*/p}' %s/bookinfo-proxy-cert.txt > %s/certs.pem`, tmpDir, tmpDir)
+		util.Inspect(err, "Failed to parse 'openssl s_client' output", "", t)
+		_, err = util.ShellMuteOutput(`awk 'BEGIN {counter=0;} /BEGIN CERT/{counter++} { print > "%s/proxy-cert-" counter ".pem"}' < %s/certs.pem`, tmpDir, tmpDir)
+		util.Inspect(err, "Failed to split certs into separate files", "", t)
+
+		// Compare them with the original certs
+		util.Log.Info("Verifying the root certificate")
+		_, err = util.ShellMuteOutput(`openssl x509 -in %s -text -noout > %s/root-cert.crt.txt`, sampleCARoot, tmpDir)
+		util.Inspect(err, "Failed to print cert", "", t)
+		_, err = util.ShellMuteOutput(`openssl x509 -in %s/proxy-cert-3.pem -text -noout > %s/pod-root-cert.crt.txt`, tmpDir, tmpDir)
+		util.Inspect(err, "Failed to print cert", "", t)
+		if err := util.CompareFiles(fmt.Sprintf("%s/root-cert.crt.txt", tmpDir), fmt.Sprintf("%s/pod-root-cert.crt.txt", tmpDir)); err != nil {
+			t.Errorf("Root certs do not match: %v", err)
+		}
+
+		util.Log.Info("Verifying the CA certificate")
+		_, err = util.ShellMuteOutput(`openssl x509 -in %s -text -noout > %s/ca-cert.crt.txt`, sampleCACert, tmpDir)
+		util.Inspect(err, "Failed to print cert", "", t)
+		_, err = util.ShellMuteOutput(`openssl x509 -in %s/proxy-cert-2.pem -text -noout > %s/pod-cert-chain-ca.crt.txt`, tmpDir, tmpDir)
+		util.Inspect(err, "Failed to print cert", "", t)
+		if err := util.CompareFiles(fmt.Sprintf("%s/ca-cert.crt.txt", tmpDir), fmt.Sprintf("%s/pod-cert-chain-ca.crt.txt", tmpDir)); err != nil {
+			t.Errorf("CA certs do not match: %v", err)
+		}
+
+		util.Log.Info("Verifying the certificate chain")
+		output, err := util.ShellMuteOutput(`openssl verify -CAfile <(cat %s %s) %s/proxy-cert-1.pem`, sampleCACert, sampleCARoot, tmpDir)
+		util.Inspect(err, "Failed to verify the certificate chain", "", t)
+		expected := []byte(fmt.Sprintf("%s/proxy-cert-1.pem: OK", tmpDir))
+		if err := util.Compare([]byte(output), expected); err != nil {
+			t.Errorf("unexpected output while verifying cert chain: %v", err)
 		}
 	})
 }
