@@ -34,8 +34,7 @@ var (
 // Inspect error handling function
 func Inspect(err error, fMsg, sMsg string, t *testing.T) {
 	if err != nil {
-		Log.Errorf("%s. Error %s", fMsg, err)
-		t.Error(err)
+		t.Fatalf("%s. Error %s", fMsg, err)
 	} else if sMsg != "" {
 		Log.Info(sMsg)
 	}
