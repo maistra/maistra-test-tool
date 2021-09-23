@@ -1,0 +1,8 @@
+# Global allowlist
+[allowlist]
+  description = "Testdata sample cert files"
+  files = [
+      "^sampleCerts/(.*?)$",
+      "^testdata/examples/(.*?)$",
+      ".gitleaks.toml",
+  ]
