@@ -20,16 +20,17 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
+var _ ExampleInterface = &Httpbin{}
+
 type Httpbin struct {
 	Namespace string `json:"namespace,omitempty"`
 }
 
-func (h *Httpbin) Install() {
-	util.Log.Info("Deploy Httpbin")
+func (h *Httpbin) Install() error {
+	util.Log.Infof("Deploying Httpbin on namespace %s", h.Namespace)
 	util.KubeApply(h.Namespace, httpbinYaml)
-	time.Sleep(time.Duration(5) * time.Second)
-	util.CheckPodRunning(h.Namespace, "app=httpbin")
-	time.Sleep(time.Duration(10) * time.Second)
+	_, err := util.CheckDeploymentIsReady(h.Namespace, "httpbin", time.Second*180)
+	return err
 }
 
 func (h *Httpbin) InstallLegacy() {
@@ -57,9 +58,9 @@ func (h *Httpbin) InstallV2() {
 }
 
 func (h *Httpbin) Uninstall() {
-	util.Log.Info("Cleanup Httpbin")
+	util.Log.Infof("Removing Httpbin on namespace %s", h.Namespace)
 	util.KubeDelete(h.Namespace, httpbinYaml)
-	time.Sleep(time.Duration(10) * time.Second)
+	util.Shell(`oc -n %s wait --for=delete -l app=httpbin pods --timeout=30s`, h.Namespace)
 }
 
 func (h *Httpbin) UninstallV1() {
