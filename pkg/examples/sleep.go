@@ -20,16 +20,17 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
+var _ ExampleInterface = &Sleep{}
+
 type Sleep struct {
 	Namespace string `json:"namespace,omitempty"`
 }
 
-func (s *Sleep) Install() {
-	util.Log.Info("Deploy Sleep")
+func (s *Sleep) Install() error {
+	util.Log.Infof("Deploying Sleep in namespace %s", s.Namespace)
 	util.KubeApply(s.Namespace, sleepYaml)
-	time.Sleep(time.Duration(5) * time.Second)
-	util.CheckPodRunning(s.Namespace, "app=sleep")
-	time.Sleep(time.Duration(10) * time.Second)
+	_, err := util.CheckDeploymentIsReady(s.Namespace, "sleep", time.Second*180)
+	return err
 }
 
 func (s *Sleep) InstallLegacy() {
@@ -41,7 +42,7 @@ func (s *Sleep) InstallLegacy() {
 }
 
 func (s *Sleep) Uninstall() {
-	util.Log.Info("Cleanup Sleep")
+	util.Log.Infof("Removing Sleep on namespace %s", s.Namespace)
 	util.KubeDelete(s.Namespace, sleepYaml)
-	time.Sleep(time.Duration(10) * time.Second)
+	util.Shell(`oc -n %s wait --for=delete -l app=sleep pods --timeout=30s`, s.Namespace)
 }
