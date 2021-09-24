@@ -165,6 +165,8 @@ func applyTrustDomain(domain, alias string, mtls bool) {
 
 	// Restart istiod so it picks up the new trust domain
 	util.Shell(`oc -n istio-system rollout restart deployment istiod-basic`)
+	// wait 20 seconds and avoid a race condition checking wrong ingressgateway and istiod-basic pods
+	time.Sleep(time.Duration(20) * time.Second)
 	util.Shell(`oc -n istio-system wait --for condition=Ready --all pods --timeout 180s`)
 
 }
