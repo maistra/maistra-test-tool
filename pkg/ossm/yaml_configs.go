@@ -23,7 +23,7 @@ metadata:
 spec:
   config:
     maistra: rocks
-  image: quay.io/maistra-dev/header-append-filter:2.1
+  image: quay.io/maistra-dev/header-append-filter:2.0
   phase: PostAuthZ
   priority: 1000
   workloadSelector:
