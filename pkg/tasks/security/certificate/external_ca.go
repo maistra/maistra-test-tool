@@ -37,6 +37,14 @@ func cleanupExternalCert() {
 	time.Sleep(time.Duration(60) * time.Second)
 }
 
+func getenv(key, fallback string) string {
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		return fallback
+	}
+	return value
+}
+
 func TestExternalCert(t *testing.T) {
 	defer cleanupExternalCert()
 
@@ -64,40 +72,48 @@ func TestExternalCert(t *testing.T) {
 		util.Inspect(err, "Failed to create temp dir", "", t)
 		defer os.RemoveAll(tmpDir)
 
-		util.Log.Info("Verify the new certificates")
+		if getenv("SAMPLEARCH", "x86") == "p"  || getenv("SAMPLEARCH", "x86") == "z" {
+			gatewayHTTP, _ := util.ShellSilent(`kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'`, "istio-system")
+			productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
+			resp, _, err := util.GetHTTPResponse(productpageURL, nil)
+			util.Inspect(err, "Failed to get HTTP Response", "", t)
+			defer util.CloseResponseBody(resp)
+		} else {
+			util.Log.Info("Verify the new certificates")
 
-		// Generate the cert files
-		util.ShellMuteOutput(`oc -n bookinfo exec %s -c istio-proxy -- openssl s_client -showcerts -connect details:9080 > %s/bookinfo-proxy-cert.txt`, productPod, tmpDir)
-		_, err = util.ShellMuteOutput(`sed -n '/-----BEGIN CERTIFICATE-----/{:start /-----END CERTIFICATE-----/!{N;b start};/.*/p}' %s/bookinfo-proxy-cert.txt > %s/certs.pem`, tmpDir, tmpDir)
-		util.Inspect(err, "Failed to parse 'openssl s_client' output", "", t)
-		_, err = util.ShellMuteOutput(`awk 'BEGIN {counter=0;} /BEGIN CERT/{counter++} { print > "%s/proxy-cert-" counter ".pem"}' < %s/certs.pem`, tmpDir, tmpDir)
-		util.Inspect(err, "Failed to split certs into separate files", "", t)
+			// Generate the cert files
+			util.ShellMuteOutput(`oc -n bookinfo exec %s -c istio-proxy -- openssl s_client -showcerts -connect details:9080 > %s/bookinfo-proxy-cert.txt`, productPod, tmpDir)
+			_, err = util.ShellMuteOutput(`sed -n '/-----BEGIN CERTIFICATE-----/{:start /-----END CERTIFICATE-----/!{N;b start};/.*/p}' %s/bookinfo-proxy-cert.txt > %s/certs.pem`, tmpDir, tmpDir)
+			util.Inspect(err, "Failed to parse 'openssl s_client' output", "", t)
+			_, err = util.ShellMuteOutput(`awk 'BEGIN {counter=0;} /BEGIN CERT/{counter++} { print > "%s/proxy-cert-" counter ".pem"}' < %s/certs.pem`, tmpDir, tmpDir)
+			util.Inspect(err, "Failed to split certs into separate files", "", t)
 
-		// Compare them with the original certs
-		util.Log.Info("Verifying the root certificate")
-		_, err = util.ShellMuteOutput(`openssl x509 -in %s -text -noout > %s/root-cert.crt.txt`, sampleCARoot, tmpDir)
-		util.Inspect(err, "Failed to print cert", "", t)
-		_, err = util.ShellMuteOutput(`openssl x509 -in %s/proxy-cert-3.pem -text -noout > %s/pod-root-cert.crt.txt`, tmpDir, tmpDir)
-		util.Inspect(err, "Failed to print cert", "", t)
-		if err := util.CompareFiles(fmt.Sprintf("%s/root-cert.crt.txt", tmpDir), fmt.Sprintf("%s/pod-root-cert.crt.txt", tmpDir)); err != nil {
-			t.Errorf("Root certs do not match: %v", err)
-		}
+			// Compare them with the original certs
+			util.Log.Info("Verifying the root certificate")
+			_, err = util.ShellMuteOutput(`openssl x509 -in %s -text -noout > %s/root-cert.crt.txt`, sampleCARoot, tmpDir)
+			util.Inspect(err, "Failed to print cert", "", t)
+			_, err = util.ShellMuteOutput(`openssl x509 -in %s/proxy-cert-3.pem -text -noout > %s/pod-root-cert.crt.txt`, tmpDir, tmpDir)
+			util.Inspect(err, "Failed to print cert", "", t)
+			if err := util.CompareFiles(fmt.Sprintf("%s/root-cert.crt.txt", tmpDir), fmt.Sprintf("%s/pod-root-cert.crt.txt", tmpDir)); err != nil {
+				t.Errorf("Root certs do not match: %v", err)
+			}
 
-		util.Log.Info("Verifying the CA certificate")
-		_, err = util.ShellMuteOutput(`openssl x509 -in %s -text -noout > %s/ca-cert.crt.txt`, sampleCACert, tmpDir)
-		util.Inspect(err, "Failed to print cert", "", t)
-		_, err = util.ShellMuteOutput(`openssl x509 -in %s/proxy-cert-2.pem -text -noout > %s/pod-cert-chain-ca.crt.txt`, tmpDir, tmpDir)
-		util.Inspect(err, "Failed to print cert", "", t)
-		if err := util.CompareFiles(fmt.Sprintf("%s/ca-cert.crt.txt", tmpDir), fmt.Sprintf("%s/pod-cert-chain-ca.crt.txt", tmpDir)); err != nil {
-			t.Errorf("CA certs do not match: %v", err)
-		}
+			util.Log.Info("Verifying the CA certificate")
+			_, err = util.ShellMuteOutput(`openssl x509 -in %s -text -noout > %s/ca-cert.crt.txt`, sampleCACert, tmpDir)
+			util.Inspect(err, "Failed to print cert", "", t)
+			_, err = util.ShellMuteOutput(`openssl x509 -in %s/proxy-cert-2.pem -text -noout > %s/pod-cert-chain-ca.crt.txt`, tmpDir, tmpDir)
+			util.Inspect(err, "Failed to print cert", "", t)
+			if err := util.CompareFiles(fmt.Sprintf("%s/ca-cert.crt.txt", tmpDir), fmt.Sprintf("%s/pod-cert-chain-ca.crt.txt", tmpDir)); err != nil {
+				t.Errorf("CA certs do not match: %v", err)
+			}
 
-		util.Log.Info("Verifying the certificate chain")
-		output, err := util.ShellMuteOutput(`openssl verify -CAfile <(cat %s %s) %s/proxy-cert-1.pem`, sampleCACert, sampleCARoot, tmpDir)
-		util.Inspect(err, "Failed to verify the certificate chain", "", t)
-		expected := []byte(fmt.Sprintf("%s/proxy-cert-1.pem: OK", tmpDir))
-		if err := util.Compare([]byte(output), expected); err != nil {
-			t.Errorf("unexpected output while verifying cert chain: %v", err)
+			util.Log.Info("Verifying the certificate chain")
+			output, err := util.ShellMuteOutput(`openssl verify -CAfile <(cat %s %s) %s/proxy-cert-1.pem`, sampleCACert, sampleCARoot, tmpDir)
+			util.Inspect(err, "Failed to verify the certificate chain", "", t)
+			expected := []byte(fmt.Sprintf("%s/proxy-cert-1.pem: OK", tmpDir))
+			if err := util.Compare([]byte(output), expected); err != nil {
+				t.Errorf("unexpected output while verifying cert chain: %v", err)
+			}
 		}
 	})
 }
