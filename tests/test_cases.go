@@ -157,8 +157,12 @@ var testCases = []testing.InternalTest{
 		Name: "S7",
 		F:    federation.TestSingleClusterFed,
 	},
-	testing.InternalTest{
+  	testing.InternalTest{
 		Name: "S8",
+		F:    federation.TestSingleClusterFedDiffCert,
+	},
+	testing.InternalTest{
+		Name: "S9",
 		F:    ossm.TestSMCPProfile,
 	},
 }

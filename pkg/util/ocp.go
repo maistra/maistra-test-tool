@@ -148,3 +148,8 @@ func GetJaegerRoute(namespace string) (string, error) {
 		namespace)
 	return ingress, err
 }
+
+// CheckDeploymentIsReady checks whether the deployment is ready by using `oc wait`
+func CheckDeploymentIsReady(namespace, name string, timeout time.Duration) (string, error) {
+	return Shell(`oc -n %s wait --for condition=Available deploy/%s --timeout %s`, namespace, name, timeout.String())
+}
