@@ -17,14 +17,9 @@ package tests
 import (
 	"testing"
 
-	"github.com/maistra/maistra-test-tool/pkg/tasks/security/authentication"
-	authorizaton "github.com/maistra/maistra-test-tool/pkg/tasks/security/authorization"
-	"github.com/maistra/maistra-test-tool/pkg/tasks/security/certificate"
 	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic"
 	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic/egress"
-	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic/ingress"
 
-	"github.com/maistra/maistra-test-tool/pkg/federation"
 	"github.com/maistra/maistra-test-tool/pkg/ossm"
 )
 
@@ -65,100 +60,22 @@ var testCases = []testing.InternalTest{
 	},
 	testing.InternalTest{
 		Name: "T8",
-		F:    ingress.TestIngressGateways,
-	},
-	testing.InternalTest{
-		Name: "T9",
-		F:    ingress.TestSecureGateways,
-	},
-	testing.InternalTest{
-		Name: "T10",
-		F:    ingress.TestIngressWithoutTLS,
-	},
-	testing.InternalTest{
-		Name: "T11",
 		F:    egress.TestAccessExternalServices,
 	},
 	testing.InternalTest{
-		Name: "T12",
-		F:    egress.TestEgressTLSOrigination,
-	},
-	testing.InternalTest{
-		Name: "T13",
+		Name: "T9",
 		F:    egress.TestEgressGateways,
 	},
-
 	testing.InternalTest{
-		Name: "T15",
+		Name: "T10",
 		F:    egress.TestTLSOriginationFileMount,
 	},
 	testing.InternalTest{
-		Name: "T16",
+		Name: "T11",
 		F:    egress.TestEgressWildcard,
 	},
 	testing.InternalTest{
-		Name: "T17",
-		F:    certificate.TestExternalCert,
-	},
-	testing.InternalTest{
-		Name: "T18",
-		F:    authentication.TestAuthPolicy,
-	},
-	testing.InternalTest{
-		Name: "T19",
-		F:    authentication.TestMigration,
-	},
-	testing.InternalTest{
-		Name: "T20",
-		F:    authorizaton.TestAuthorHTTP,
-	},
-	testing.InternalTest{
-		Name: "T21",
-		F:    authorizaton.TestAuthorTCP,
-	},
-	testing.InternalTest{
-		Name: "T22",
-		F:    authorizaton.TestAuthorJWT,
-	},
-	testing.InternalTest{
-		Name: "T23",
-		F:    authorizaton.TestAuthorDeny,
-	},
-	testing.InternalTest{
-		Name: "T24",
-		F:    authorizaton.TestTrustDomainMigration,
-	},
-
-	testing.InternalTest{
-		Name: "S1",
-		F:    ossm.TestExtensionInstall,
-	},
-	testing.InternalTest{
-		Name: "S2",
+		Name: "T12",
 		F:    ossm.TestTLSVersionSMCP,
-	},
-	testing.InternalTest{
-		Name: "S3",
-		F:    ossm.TestSSL,
-	},
-	testing.InternalTest{
-		Name: "S4",
-		F:    ossm.TestRateLimiting,
-	},
-	testing.InternalTest{
-		Name: "S5",
-		F:    ossm.TestProxyEnv,
-	},
-	testing.InternalTest{
-		Name: "S6",
-		F:    ossm.TestMustGather,
-	},
-	testing.InternalTest{
-		Name: "S7",
-		F:    federation.TestSingleClusterFed,
-	},
-	testing.InternalTest{
-		Name: "S8",
-		F:    federation.TestSingleClusterFedDiffCert,
 	},
 }
