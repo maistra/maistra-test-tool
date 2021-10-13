@@ -29,7 +29,7 @@ func cleanupSingleClusterFedDiffCert() {
 			&& export MESH1_KUBECONFIG=~/.kube/config \
 			&& export MESH2_KUBECONFIG=~/.kube/config \
 			&& ./cleanup.sh`)
-	time.Sleep(time.Duration(40) * time.Second)
+	time.Sleep(time.Duration(50) * time.Second)
 }
 
 func TestSingleClusterFedDiffCert(t *testing.T) {
@@ -58,8 +58,8 @@ func TestSingleClusterFedDiffCert(t *testing.T) {
 				&& ./install_diff_cert.sh`)
 		}
 
-		util.Log.Info("Waiting 6 mins...")
-		time.Sleep(time.Duration(360) * time.Second)
+		util.Log.Info("Waiting 2 minutes...")
+		time.Sleep(time.Duration(120) * time.Second)
 
 		util.Log.Info("Verify mesh1 connection status")
 		msg, err := util.Shell(`oc -n mesh1-system get servicemeshpeer mesh2 -o json`)

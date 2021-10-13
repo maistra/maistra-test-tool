@@ -69,6 +69,8 @@ func TestRateLimiting(t *testing.T) {
 	}
 	host = strings.Trim(host, "'")
 
+	time.Sleep(time.Duration(20) * time.Second)
+
 	// Should work first time
 	checkProductPageResponseCode(t, host, "200")
 

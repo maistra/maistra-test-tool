@@ -29,7 +29,7 @@ func cleanupSingleClusterFed() {
 			&& export MESH1_KUBECONFIG=~/.kube/config \
 			&& export MESH2_KUBECONFIG=~/.kube/config \
 			&& ./cleanup.sh`)
-	time.Sleep(time.Duration(40) * time.Second)
+	time.Sleep(time.Duration(50) * time.Second)
 }
 
 func getenv(key, fallback string) string {
@@ -66,8 +66,8 @@ func TestSingleClusterFed(t *testing.T) {
 				&& ./install.sh`)
 		}
 
-		util.Log.Info("Waiting 6 mins...")
-		time.Sleep(time.Duration(360) * time.Second)
+		util.Log.Info("Waiting 30s...")
+		time.Sleep(time.Duration(30) * time.Second)
 
 		util.Log.Info("Verify mesh1 connection status")
 		msg, err := util.Shell(`oc -n mesh1-system get servicemeshpeer mesh2 -o json`)
