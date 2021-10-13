@@ -169,4 +169,7 @@ func applyTrustDomain(domain, alias string, mtls bool) {
 	time.Sleep(time.Duration(20) * time.Second)
 	util.Shell(`oc -n istio-system wait --for condition=Ready --all pods --timeout 180s`)
 
+	// Restart ingress gateway since we changed the mtls setting
+	util.Shell(`oc -n istio-system rollout restart deployment istio-ingressgateway`)
+	util.Shell(`oc -n istio-system wait --for condition=Ready --all pods --timeout 180s`)
 }
