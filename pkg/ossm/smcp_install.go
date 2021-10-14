@@ -129,7 +129,7 @@ func TestSMCPInstall(t *testing.T) {
 		util.Log.Info("Upgrade SMCP to v2.1 in istio-system")
 		util.KubeApply("istio-system", smcpV21)
 		util.Log.Info("Waiting for mesh installation to complete")
-		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, "istio-system")
+		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 360s`, "istio-system")
 
 		util.Log.Info("Verify SMCP status and pods")
 		msg, _ := util.Shell(`oc get -n %s smcp/%s -o wide`, "istio-system", "basic")
