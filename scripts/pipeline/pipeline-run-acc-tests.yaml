@@ -6,9 +6,7 @@ metadata:
 spec:
   steps:
   - name: run-all-test-cases
-    image: quay.io/maistra/maistra-test-tool:2.0
-    workingDir: /opt/tests
-
+    image: quay.io/maistra/maistra-test-tool:2.1
 ---
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
