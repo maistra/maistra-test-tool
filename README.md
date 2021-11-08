@@ -10,7 +10,7 @@ A testing tool for running Maistra Service Mesh tasks on an OpenShift 4.x cluste
 
 This project aims to automate the running Maistra Service Mesh tasks on an OpenShift 4.x Cluster.
 
-The testing follows [Istio Doc Tasks](https://istio.io/v1.9/docs/tasks/)
+The testing follows [Istio Doc Tasks](https://istio.io/v1.4/docs/tasks/)
 
 The test cases include several changes for an OpenShift environment. Currently, those changes will not work in origin Kubernetes environments.
 
