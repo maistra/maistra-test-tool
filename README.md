@@ -35,6 +35,11 @@ The test cases include several changes for an OpenShift environment. Currently, 
     $ go get -u github.com/jstemmer/go-junit-report
     ```
 
+- Avoid Golang 1.15+ client openSSL relies on legacy Common Name field.
+    ```
+    $ export GODEBUG="x509ignoreCN=0"
+    ```
+
 - By default, there is an environment variable `SAMPLEARCH=x86`
     - For Power environment testing, users can export an environment variable `SAMPLEARCH`
         ```

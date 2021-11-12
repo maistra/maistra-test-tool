@@ -61,26 +61,99 @@ if (util.getWhoBuild() == "[]") {
                 }
             }
             stage("Start running all tests"){
-                environment {
-                    SAMPLEARCH = "${params.OCP_SAMPLE_ARCH}"
-                }
                 dir('tests') {
-                    sh """if [ -z "${params.TEST_CASE}" ]; then go test -timeout 3h -v > test.log; else echo; fi"""
+                wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: 'OCP_CRED_PSW', password: OCP_CRED_PSW]], varMaskRegexes: []]) {
+                    def OUT = sh (
+                    script: """
+                        if [ -z "${params.TEST_CASE}" ]; 
+                        then docker run \
+                        --name maistra-test-tool \
+                        -d \
+                        --rm \
+                        --pull always \
+                        -e SAMPLEARCH='${params.OCP_SAMPLE_ARCH}' \
+                        -e OCP_CRED_USR='${params.OCP_CRED_USR}' \
+                        -e OCP_CRED_PSW='${OCP_CRED_PSW}' \
+                        -e OCP_API_URL='${params.OCP_API_URL}' \
+                        -e GODEBUG=x509ignoreCN=0 \
+                        quay.io/maistra/maistra-test-tool:2.1;
+                        else echo;
+                        fi
+                    """,
+                    returnStdout: true
+                    ).trim()
+                    println OUT
+                }
                 }
             }
             stage("Start running a single test case"){
-                environment {
-                    SAMPLEARCH = "${params.OCP_SAMPLE_ARCH}"
-                }
                 dir('tests') {
-                    sh """if [ -z "${params.TEST_CASE}" ]; then echo; else go test -timeout 3h -run ${params.TEST_CASE} -v > test.log; fi"""
+                wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: 'OCP_CRED_PSW', password: OCP_CRED_PSW]], varMaskRegexes: []]) {
+                    def OUT = sh (
+                    script: """
+                        if [ -z "${params.TEST_CASE}" ]; 
+                        then echo;
+                        else docker run \
+                        --name maistra-test-tool \
+                        -d \
+                        --rm \
+                        --pull always \
+                        -e SAMPLEARCH='${params.OCP_SAMPLE_ARCH}' \
+                        -e OCP_CRED_USR='${params.OCP_CRED_USR}' \
+                        -e OCP_CRED_PSW='${OCP_CRED_PSW}' \
+                        -e OCP_API_URL='${params.OCP_API_URL}' \
+                        -e TEST_CASE='${params.TEST_CASE}' \
+                        -e GODEBUG=x509ignoreCN=0 \
+                        --entrypoint "../scripts/pipeline/run_one_test.sh" \
+                        quay.io/maistra/maistra-test-tool:2.1;
+                        fi
+                    """,
+                    returnStdout: true
+                    ).trim()
+                    println OUT
                 }
+                }
+            }
+            stage ("Check Testing Completed") {
+                def OUT = sh (
+                script: """
+                set +ex
+                docker logs maistra-test-tool | grep "#Testing Completed#"
+                while [ \$? -ne 0 ]; do sleep 60; docker logs maistra-test-tool | grep "#Testing Completed#"
+                done
+                set -ex
+                """,
+                returnStdout: true
+                ).trim()
+                println OUT
+            }
+            stage ("Collect logs") {
+                def OUT = sh (
+                script: """
+                docker cp maistra-test-tool:/opt/maistra-test-tool/tests/test.log .
+                docker cp maistra-test-tool:/opt/maistra-test-tool/tests/results.xml .
+                """,
+                returnStdout: true
+                ).trim()
+                println OUT
+            }
+            stage ("Validate Results") {
+                def OUT = sh (
+                script: """
+                if grep -Fxq "FAIL" ${WORKSPACE}/test.log;
+                then exit 1;
+                else echo "Test Run PASS";
+                fi
+                """,
+                returnStdout: true
+                ).trim()
+                println OUT
             }
         } catch(e) {
             currentBuild.result = "FAILED"
             throw e
         } finally {
-            archiveArtifacts artifacts: 'tests/test.log'
+            archiveArtifacts artifacts: 'test.log,results.xml'
 
             stage("Notify Results"){
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {            
