@@ -39,6 +39,7 @@ func cleanUpTestExtensionInstall() {
 	httpbin.Uninstall()
 	sleep.Uninstall()
 	util.KubeDeleteContents("bookinfo", httpbinServiceMeshExtension)
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func TestExtensionInstall(t *testing.T) {
@@ -63,6 +64,7 @@ func TestExtensionInstall(t *testing.T) {
 			t.Fatalf("error checking for SME header-append: %v", err)
 		}
 
+		time.Sleep(time.Duration(20) * time.Second)
 		command := "curl -s -I httpbin:8000/headers"
 		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		if err != nil {

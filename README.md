@@ -20,6 +20,7 @@ The test cases include several changes for an OpenShift environment. Currently, 
 | --        | --            |
 | OS        | Linux         |
 | Golang    | 1.13+         |
+| OpenSSl   | --            |
 
 ## Testing Prerequisite
 

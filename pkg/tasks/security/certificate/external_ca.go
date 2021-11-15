@@ -108,7 +108,7 @@ func TestExternalCert(t *testing.T) {
 			}
 
 			util.Log.Info("Verifying the certificate chain")
-			output, err := util.ShellMuteOutput(`openssl verify -CAfile <(cat %s %s) %s/proxy-cert-1.pem`, sampleCACert, sampleCARoot, tmpDir)
+			output, err := util.ShellMuteOutput(`/bin/bash -c "openssl verify -CAfile <(cat %s %s) %s/proxy-cert-1.pem"`, sampleCACert, sampleCARoot, tmpDir)
 			util.Inspect(err, "Failed to verify the certificate chain", "", t)
 			expected := []byte(fmt.Sprintf("%s/proxy-cert-1.pem: OK", tmpDir))
 			if err := util.Compare([]byte(output), expected); err != nil {
