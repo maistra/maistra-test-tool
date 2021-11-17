@@ -6,7 +6,7 @@ metadata:
 spec:
   steps:
   - name: run-all-test-cases
-    image: quay.io/maistra/maistra-test-tool:2.0
+    image: quay.io/maistra/maistra-test-tool:1.1
     workingDir: /opt/tests
 
 ---

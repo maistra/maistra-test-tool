@@ -20,6 +20,7 @@ The test cases include several changes for an OpenShift environment. Currently, 
 | --        | --            |
 | OS        | Linux         |
 | Golang    | 1.13+         |
+| openSSL   |               |
 
 ## Testing Prerequisite
 
@@ -33,6 +34,11 @@ The test cases include several changes for an OpenShift environment. Currently, 
 - In order to save results in a XML report, we can run a go test command with "github.com/jstemmer/go-junit-report".
     ```
     $ go get -u github.com/jstemmer/go-junit-report
+    ```
+
+- Avoid Golang 1.15+ client openSSL relies on legacy Common Name field.
+    ```
+    $ export GODEBUG="x509ignoreCN=0"
     ```
 
 - By default, there is an environment variable `SAMPLEARCH=x86`
