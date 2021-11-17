@@ -127,4 +127,8 @@ var testCases = []testing.InternalTest{
 		Name: "T23",
 		F:    ossm.TestTLSVersionSMCP,
 	},
+	testing.InternalTest{
+		Name: "T24",
+		F:    ossm.TestInitContainer,
+	},
 }

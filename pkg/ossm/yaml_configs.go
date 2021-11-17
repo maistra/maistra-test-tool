@@ -217,4 +217,34 @@ spec:
         env:
           maistra_test_foo: maistra_test_bar
 `
+
+  testInitContainerYAML = `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sleep-init
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sleep-init
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+      labels:
+        app: sleep-init
+    spec:
+      terminationGracePeriodSeconds: 0
+      initContainers:
+      - name: init
+        image: curlimages/curl
+        command: ["/bin/echo", "init worked"]
+        imagePullPolicy: IfNotPresent
+      containers:
+      - name: sleep
+        image: curlimages/curl
+        command: ["/bin/sleep", "3650d"]
+        imagePullPolicy: IfNotPresent
+`
 )
