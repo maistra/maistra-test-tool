@@ -31,6 +31,7 @@ func cleanUpTestExtensionInstall() {
 		util.Log.Info("# httpbin proxy log: ")
 		util.Log.Info(util.GetPodLogs("bookinfo", httpbinPod, "istio-proxy", false, false))
 		util.Log.Info("# end of httpbin proxy log")
+		time.Sleep(time.Duration(20) * time.Second)
 	}
 
 	util.Log.Info("# Cleanup ...")
@@ -63,6 +64,7 @@ func TestExtensionInstall(t *testing.T) {
 			t.Fatalf("error checking for SME header-append: %v", err)
 		}
 
+		time.Sleep(time.Duration(20) * time.Second)
 		command := "curl -s -I httpbin:8000/headers"
 		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		if err != nil {
