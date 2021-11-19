@@ -29,7 +29,7 @@ func cleanupSingleClusterFed() {
 			&& export MESH1_KUBECONFIG=~/.kube/config \
 			&& export MESH2_KUBECONFIG=~/.kube/config \
 			&& ./cleanup.sh`)
-	time.Sleep(time.Duration(80) * time.Second)
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func getenv(key, fallback string) string {

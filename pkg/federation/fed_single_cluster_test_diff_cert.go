@@ -29,7 +29,7 @@ func cleanupSingleClusterFedDiffCert() {
 			&& export MESH1_KUBECONFIG=~/.kube/config \
 			&& export MESH2_KUBECONFIG=~/.kube/config \
 			&& ./cleanup.sh`)
-	time.Sleep(time.Duration(60) * time.Second)
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func TestSingleClusterFedDiffCert(t *testing.T) {

@@ -24,5 +24,8 @@ oc1 delete project mesh1-system
 oc2 delete project mesh2-system
 # oc1 delete project mesh1-exports
 # oc2 delete project mesh2-imports
+
 oc1 delete project mesh1-bookinfo
 oc2 delete project mesh2-bookinfo
+
+sleep 120
