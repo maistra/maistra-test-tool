@@ -158,19 +158,19 @@ func applyTrustDomain(domain, alias string, mtls bool) {
 		alias = fmt.Sprintf("%q", alias)
 	}
 
-	util.Shell(`oc -n istio-system patch smcp/basic --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":%v}, "trust":{"domain":"%s", "additionalDomains": [%s]}}}}'`, mtls, domain, alias)
+	util.Shell(`oc -n %s patch smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":%v}, "trust":{"domain":"%s", "additionalDomains": [%s]}}}}'`, meshNamespace, smcpName, mtls, domain, alias)
 
 	// Wait for the operator to reconcile the changes
-	util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
+	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
 
 	// Restart istiod so it picks up the new trust domain
-	util.Shell(`oc -n istio-system rollout restart deployment istiod-basic`)
+	util.Shell(`oc -n %s rollout restart deployment istiod-%s`, meshNamespace, smcpName)
 	// wait 20 seconds and avoid a race condition checking wrong ingressgateway and istiod-basic pods
 	time.Sleep(time.Duration(20) * time.Second)
-	util.Shell(`oc -n istio-system wait --for condition=Ready --all pods --timeout 180s`)
+	util.Shell(`oc -n %s wait --for condition=Ready --all pods --timeout 180s`, meshNamespace)
 
 	// Restart ingress gateway since we changed the mtls setting
-	util.Shell(`oc -n istio-system rollout restart deployment istio-ingressgateway`)
+	util.Shell(`oc -n %s rollout restart deployment istio-ingressgateway`, meshNamespace)
 	time.Sleep(time.Duration(20) * time.Second)
-	util.Shell(`oc -n istio-system wait --for condition=Ready --all pods --timeout 180s`)
+	util.Shell(`oc -n %s wait --for condition=Ready --all pods --timeout 180s`, meshNamespace)
 }

@@ -55,7 +55,7 @@ func TestExtensionInstall(t *testing.T) {
 
 	t.Run("Operator_test_sme_install", func(t *testing.T) {
 		defer util.RecoverPanic(t)
-		util.CheckPodRunning("istio-system", "app=wasm-cacher")
+		util.CheckPodRunning(meshNamespace, "app=wasm-cacher")
 
 		util.Log.Info("Creating ServiceMeshExtension")
 		util.KubeApplyContents("bookinfo", httpbinServiceMeshExtension)

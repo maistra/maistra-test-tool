@@ -1,8 +1,8 @@
 apiVersion: maistra.io/v2
 kind: ServiceMeshControlPlane
 metadata:
-  namespace: istio-system
-  name: basic
+  namespace: ${MESHNAMESPACE}
+  name: ${SMCPNAME}
 spec:
   tracing:
     sampling: 10000

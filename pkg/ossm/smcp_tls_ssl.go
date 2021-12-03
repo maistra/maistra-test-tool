@@ -15,7 +15,6 @@
 package ossm
 
 import (
-	"os"
 	"strings"
 	"testing"
 
@@ -25,8 +24,8 @@ import (
 
 func cleanupTestTLSVersionSMCP() {
 	util.Log.Info("Cleanup ...")
-	util.Shell(`kubectl patch -n %s smcp/basic --type=json -p='[{"op": "remove", "path": "/spec/security/controlPlane/tls"}]'`, "istio-system")
-	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
+	util.Shell(`kubectl patch -n %s smcp/%s --type=json -p='[{"op": "remove", "path": "/spec/security/controlPlane/tls"}]'`, meshNamespace, smcpName)
+	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, meshNamespace)
 }
 
 func cleanupTestSSL() {
@@ -35,17 +34,9 @@ func cleanupTestSSL() {
 	util.KubeDeleteContents("bookinfo", testSSLDeployment)
 	bookinfo.Uninstall()
 
-	util.Shell(`kubectl patch -n %s smcp/basic --type=json -p='[{"op": "remove", "path": "/spec/security/controlPlane/tls"}]'`, "istio-system")
-	util.Shell(`kubectl patch -n %s smcp/basic --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":false},"controlPlane":{"mtls":false}}}}'`, "istio-system")
-	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
-}
-
-func getenv(key, fallback string) string {
-	value := os.Getenv(key)
-	if len(value) == 0 {
-		return fallback
-	}
-	return value
+	util.Shell(`kubectl patch -n %s smcp/%s --type=json -p='[{"op": "remove", "path": "/spec/security/controlPlane/tls"}]'`, meshNamespace, smcpName)
+	util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":false},"controlPlane":{"mtls":false}}}}'`, meshNamespace, smcpName)
+	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, meshNamespace)
 }
 
 func TestTLSVersionSMCP(t *testing.T) {
@@ -55,8 +46,8 @@ func TestTLSVersionSMCP(t *testing.T) {
 		defer util.RecoverPanic(t)
 
 		util.Log.Info("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_0")
-		_, err := util.Shell(`kubectl patch -n %s smcp/basic --type merge -p '{"spec":{"security":{"controlPlane":{"tls":{"minProtocolVersion":"TLSv1_0"}}}}}'`, "istio-system")
-		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
+		_, err := util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"controlPlane":{"tls":{"minProtocolVersion":"TLSv1_0"}}}}}'`, meshNamespace, smcpName)
+		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, meshNamespace)
 		if err != nil {
 			t.Errorf("Failed to update SMCP with tls.maxProtocolVersion: TLSv1_0")
 		}
@@ -66,8 +57,8 @@ func TestTLSVersionSMCP(t *testing.T) {
 		defer util.RecoverPanic(t)
 
 		util.Log.Info("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_1")
-		_, err := util.Shell(`kubectl patch -n %s smcp/basic --type merge -p '{"spec":{"security":{"controlPlane":{"tls":{"minProtocolVersion":"TLSv1_1"}}}}}'`, "istio-system")
-		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
+		_, err := util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"controlPlane":{"tls":{"minProtocolVersion":"TLSv1_1"}}}}}'`, meshNamespace, smcpName)
+		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, meshNamespace)
 		if err != nil {
 			t.Errorf("Failed to update SMCP with tls.maxProtocolVersion: TLSv1_1")
 		}
@@ -77,8 +68,8 @@ func TestTLSVersionSMCP(t *testing.T) {
 		defer util.RecoverPanic(t)
 
 		util.Log.Info("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_3")
-		_, err := util.Shell(`kubectl patch -n %s smcp/basic --type merge -p '{"spec":{"security":{"controlPlane":{"tls":{"maxProtocolVersion":"TLSv1_3"}}}}}'`, "istio-system")
-		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
+		_, err := util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"controlPlane":{"tls":{"maxProtocolVersion":"TLSv1_3"}}}}}'`, meshNamespace, smcpName)
+		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, meshNamespace)
 		if err != nil {
 			t.Errorf("Failed to update SMCP with tls.maxProtocolVersion: TLSv1_3")
 		}
@@ -93,20 +84,20 @@ func TestSSL(t *testing.T) {
 
 		// update mtls to true
 		util.Log.Info("Update SMCP mtls to true")
-		util.Shell(`kubectl patch -n %s smcp/basic --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}'`, "istio-system")
-		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
+		util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}'`, meshNamespace, smcpName)
+		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, meshNamespace)
 
 		util.Log.Info("Update SMCP spec.security.controlPlane.tls")
 
-		util.Shell(`kubectl patch -n %s smcp/basic --type merge -p '{%s:{%s,%s,%s,%s}}}}}'`,
-			"istio-system",
+		util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{%s:{%s,%s,%s,%s}}}}}'`,
+			meshNamespace, smcpName,
 			`"spec":{"security":{"controlPlane":{"tls"`,
 			`"minProtocolVersion":"TLSv1_2"`,
 			`"maxProtocolVersion":"TLSv1_2"`,
 			`"cipherSuites":["TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"]`,
 			`"ecdhCurves":["CurveP256", "CurveP384"]`)
 
-		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
+		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, meshNamespace)
 
 		util.Log.Info("Deploy bookinfo")
 		bookinfo := examples.Bookinfo{"bookinfo"}

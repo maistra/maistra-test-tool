@@ -14,9 +14,24 @@
 
 package certificate
 
+import "os"
+
 const (
 	sampleCACert  = "../sampleCerts/ca-cert.pem"
 	sampleCAKey   = "../sampleCerts/ca-key.pem"
 	sampleCARoot  = "../sampleCerts/root-cert.pem"
 	sampleCAChain = "../sampleCerts/cert-chain.pem"
 )
+
+var (
+	meshNamespace string = getenv("MESHNAMESPACE", "istio-system")
+	smcpName      string = getenv("SMCPNAME", "basic")
+)
+
+func getenv(key, fallback string) string {
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		return fallback
+	}
+	return value
+}

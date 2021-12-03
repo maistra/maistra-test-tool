@@ -24,12 +24,13 @@ import (
 )
 
 const (
-	rateLimitFilterYaml = "../testdata/resources/yaml/ratelimit-envoyfilter.yaml"
+	rateLimitFilterYaml_template = "../testdata/resources/yaml/ratelimit-envoyfilter_template.yaml"
+	rateLimitFilterYaml          = "../testdata/resources/yaml/ratelimit-envoyfilter.yaml"
 )
 
 func cleanupRateLimiting(redisDeploy examples.Redis, bookinfoDeploy examples.Bookinfo) {
-	util.Shell(`kubectl -n istio-system patch smcp/basic --type=json -p='[{"op": "remove", "path": "/spec/techPreview"}]'`)
-	util.KubeDelete("istio-system", rateLimitFilterYaml)
+	util.Shell(`kubectl -n %s patch smcp/%s --type=json -p='[{"op": "remove", "path": "/spec/techPreview/rateLimiting"}]'`, meshNamespace, smcpName)
+	util.KubeDelete(meshNamespace, rateLimitSMCPPatch)
 	redisDeploy.Uninstall()
 	bookinfoDeploy.Uninstall()
 }
@@ -44,26 +45,28 @@ func TestRateLimiting(t *testing.T) {
 	if err := redisDeploy.Install(); err != nil {
 		t.Fatal(err)
 	}
-
-	if _, err := util.Shell(`kubectl -n istio-system patch smcp/basic --type=merge --patch="%s"`, rateLimitSMCPPatch); err != nil {
+	if _, err := util.Shell(`kubectl -n %s patch smcp/%s --type=merge --patch="%s"`, meshNamespace, smcpName, rateLimitSMCPPatch); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`); err != nil {
+	if _, err := util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := util.CheckPodRunning("istio-system", "app=rls"); err != nil {
+	if err := util.CheckPodRunning(meshNamespace, "app=rls"); err != nil {
 		t.Fatalf("rls deployment not ready: %v", err)
 	}
-
-	if err := util.KubeApply("istio-system", rateLimitFilterYaml); err != nil {
+	util.Shell(`envsubst < %s > %s`, rateLimitFilterYaml_template, rateLimitFilterYaml)
+	if err := util.KubeApply(meshNamespace, rateLimitFilterYaml); err != nil {
 		t.Fatalf("error applying envoy filter: %v", err)
 	}
+	util.Shell(`kubectl -n %s get envoyfilter -o yaml > rrr.yaml`, meshNamespace)
+	//util.Log.Info(msg)
+
 	// Give some time to envoy filters apply
 	time.Sleep(time.Second * 5)
 
-	host, err := util.Shell("oc -n istio-system get route istio-ingressgateway -o jsonpath='{.spec.host}'")
+	host, err := util.Shell("oc -n %s get route istio-ingressgateway -o jsonpath='{.spec.host}'", meshNamespace)
 	if err != nil {
 		t.Fatalf("error getting route hostname: %v", err)
 	}
