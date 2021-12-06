@@ -15,9 +15,21 @@
 package authorizaton
 
 import (
+	"os"
+
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
 var (
-	gatewayHTTP, _ = util.ShellSilent(`kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'`, "istio-system")
+	meshNamespace  string = getenv("MESHNAMESPACE", "istio-system")
+	smcpName       string = getenv("SMCPNAME", "basic")
+	gatewayHTTP, _        = util.ShellSilent(`kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'`, meshNamespace)
 )
+
+func getenv(key, fallback string) string {
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		return fallback
+	}
+	return value
+}

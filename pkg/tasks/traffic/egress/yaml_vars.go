@@ -14,8 +14,22 @@
 
 package egress
 
+import "os"
+
 const (
 	nginxClientCertKey = "../sampleCerts/nginx.example.com/nginx-client.example.com.key"
 	nginxClientCert    = "../sampleCerts/nginx.example.com/nginx-client.example.com.crt"
 	nginxServerCACert  = "../sampleCerts/nginx.example.com/example.com.crt"
 )
+
+var (
+	meshNamespace string = getenv("MESHNAMESPACE", "istio-system")
+)
+
+func getenv(key, fallback string) string {
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		return fallback
+	}
+	return value
+}

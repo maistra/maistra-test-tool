@@ -73,16 +73,16 @@ func cleanupTLSOriginationFileMount() {
 	util.Log.Info("Cleanup")
 	sleep := examples.Sleep{"bookinfo"}
 	nginx := examples.Nginx{"bookinfo"}
-	util.KubeDeleteContents("istio-system", nginxMeshRule)
+	util.KubeDeleteContents(meshNamespace, nginxMeshRule)
 	util.KubeDeleteContents("bookinfo", nginxGatewayTLS)
 
-	util.Shell(`kubectl -n %s rollout undo deploy istio-egressgateway`, "istio-system")
+	util.Shell(`kubectl -n %s rollout undo deploy istio-egressgateway`, meshNamespace)
 	time.Sleep(time.Duration(20) * time.Second)
-	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
-	util.Shell(`kubectl -n %s rollout history deploy istio-egressgateway`, "istio-system")
+	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, meshNamespace)
+	util.Shell(`kubectl -n %s rollout history deploy istio-egressgateway`, meshNamespace)
 
-	util.Shell(`kubectl delete -n %s secret nginx-client-certs`, "istio-system")
-	util.Shell(`kubectl delete -n %s secret nginx-ca-certs`, "istio-system")
+	util.Shell(`kubectl delete -n %s secret nginx-client-certs`, meshNamespace)
+	util.Shell(`kubectl delete -n %s secret nginx-ca-certs`, meshNamespace)
 	util.KubeDeleteContents("bookinfo", cnnextGatewayTLSFile)
 	util.KubeDeleteContents("bookinfo", cnnextServiceEntry)
 	nginx.Uninstall()
@@ -144,26 +144,26 @@ func TestTLSOriginationFileMount(t *testing.T) {
 		defer util.RecoverPanic(t)
 
 		util.Log.Info("Redeploy the egress gateway with the client certs")
-		util.Shell(`kubectl create -n %s secret tls nginx-client-certs --key %s --cert %s`, "istio-system", nginxClientCertKey, nginxClientCert)
-		util.Shell(`kubectl create -n %s secret generic nginx-ca-certs --from-file=%s`, "istio-system", nginxServerCACert)
+		util.Shell(`kubectl create -n %s secret tls nginx-client-certs --key %s --cert %s`, meshNamespace, nginxClientCertKey, nginxClientCert)
+		util.Shell(`kubectl create -n %s secret generic nginx-ca-certs --from-file=%s`, meshNamespace, nginxServerCACert)
 
 		util.Log.Info("Patch egress gateway")
-		util.Shell(`kubectl -n %s rollout history deploy istio-egressgateway`, "istio-system")
-		util.Shell(`kubectl -n %s patch --type=json deploy istio-egressgateway -p='%s'`, "istio-system", strings.ReplaceAll(gatewayPatchAdd, "\n", ""))
+		util.Shell(`kubectl -n %s rollout history deploy istio-egressgateway`, meshNamespace)
+		util.Shell(`kubectl -n %s patch --type=json deploy istio-egressgateway -p='%s'`, meshNamespace, strings.ReplaceAll(gatewayPatchAdd, "\n", ""))
 		time.Sleep(time.Duration(20) * time.Second)
-		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
+		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, meshNamespace)
 		util.Log.Info("Verify the istio-egressgateway pod")
 		util.Shell(`kubectl exec -n %s "$(kubectl -n %s get pods -l %s -o jsonpath='{.items[0].metadata.name}')" -- ls -al %s %s`,
-			"istio-system", "istio-system",
+			meshNamespace, meshNamespace,
 			"istio=egressgateway",
 			"/etc/istio/nginx-client-certs",
 			"/etc/istio/nginx-ca-certs")
-		util.Shell(`kubectl -n %s rollout history deploy istio-egressgateway`, "istio-system")
+		util.Shell(`kubectl -n %s rollout history deploy istio-egressgateway`, meshNamespace)
 
 		util.Log.Info("Configure MTLS origination for egress traffic")
 		util.KubeApplyContents("bookinfo", nginxGatewayTLS)
 		time.Sleep(time.Duration(20) * time.Second)
-		util.KubeApplyContents("istio-system", nginxMeshRule)
+		util.KubeApplyContents(meshNamespace, nginxMeshRule)
 		time.Sleep(time.Duration(10) * time.Second)
 
 		util.Log.Info("Verify NGINX server")

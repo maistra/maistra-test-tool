@@ -14,13 +14,13 @@
 
 package authentication
 
-const (
+var (
 	PeerAuthPolicyStrict = `
 apiVersion: "security.istio.io/v1beta1"
 kind: "PeerAuthentication"
 metadata:
   name: "default"
-  namespace: "istio-system"
+  namespace: "` + meshNamespace + `"
 spec:
   mtls:
     mode: STRICT
@@ -157,7 +157,7 @@ apiVersion: "security.istio.io/v1beta1"
 kind: "RequestAuthentication"
 metadata:
   name: "jwt-example"
-  namespace: istio-system
+  namespace: ` + meshNamespace + `
 spec:
   selector:
     matchLabels:
@@ -173,7 +173,7 @@ apiVersion: "security.istio.io/v1beta1"
 kind: "AuthorizationPolicy"
 metadata:
   name: "frontend-ingress"
-  namespace: istio-system
+  namespace: ` + meshNamespace + `
 spec:
   selector:
     matchLabels:
@@ -190,7 +190,7 @@ apiVersion: "security.istio.io/v1beta1"
 kind: "AuthorizationPolicy"
 metadata:
   name: "frontend-ingress"
-  namespace: istio-system
+  namespace: ` + meshNamespace + `
 spec:
   selector:
     matchLabels:
@@ -210,7 +210,7 @@ apiVersion: "security.istio.io/v1beta1"
 kind: "PeerAuthentication"
 metadata:
   name: "default"
-  namespace: "istio-system"
+  namespace: "` + meshNamespace + `"
 spec:
   mtls:
     mode: STRICT

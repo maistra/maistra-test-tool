@@ -16,7 +16,6 @@ package ingress
 
 import (
 	"io/ioutil"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -36,14 +35,6 @@ func cleanupSecureGateways() {
 	util.KubeDeleteContents("bookinfo", helloworldv1)
 	httpbin.Uninstall()
 	time.Sleep(time.Duration(20) * time.Second)
-}
-
-func getenv(key, fallback string) string {
-	value := os.Getenv(key)
-	if len(value) == 0 {
-		return fallback
-	}
-	return value
 }
 
 func TestSecureGateways(t *testing.T) {

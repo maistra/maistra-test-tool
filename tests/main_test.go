@@ -21,9 +21,19 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
+var meshNamespace string = getenv("MESHNAMESPACE", "istio-system")
+
 var (
 	SMMR = "../templates/smmr-templates/smmr_default.yaml"
 )
+
+func getenv(key, fallback string) string {
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		return fallback
+	}
+	return value
+}
 
 func setupNamespaces() {
 	util.ShellSilent(`oc new-project bookinfo`)
@@ -31,8 +41,8 @@ func setupNamespaces() {
 	util.ShellSilent(`oc new-project bar`)
 	util.ShellSilent(`oc new-project legacy`)
 	util.ShellSilent(`oc new-project mesh-external`)
-	util.ShellSilent(`oc apply -n istio-system -f %s`, SMMR)
-	util.ShellSilent(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
+	util.ShellSilent(`oc apply -n %s -f %s`, meshNamespace, SMMR)
+	util.ShellSilent(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, meshNamespace)
 }
 
 func matchString(a, b string) (bool, error) {
