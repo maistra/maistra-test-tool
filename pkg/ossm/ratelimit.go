@@ -56,7 +56,7 @@ func TestRateLimiting(t *testing.T) {
 	if err := util.CheckPodRunning(meshNamespace, "app=rls"); err != nil {
 		t.Fatalf("rls deployment not ready: %v", err)
 	}
-	util.Shell(`envsubst < %s > %s`, rateLimitFilterYaml_template, rateLimitFilterYaml)
+	util.Shell(`MESHNAMESPACE="${MESHNAMESPACE:-istio-system}" envsubst < %s > %s`, rateLimitFilterYaml_template, rateLimitFilterYaml)
 	if err := util.KubeApply(meshNamespace, rateLimitFilterYaml); err != nil {
 		t.Fatalf("error applying envoy filter: %v", err)
 	}

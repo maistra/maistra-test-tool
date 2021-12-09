@@ -25,7 +25,8 @@ The test cases include several changes for an OpenShift environment. Currently, 
 ## Testing Prerequisite
 
 1. User can access a running OpenShift cluster from command line.
-2. Service Mesh Control Plane (SMCP) has been installed on an OpenShift cluster. The `tests/.env` file is configured for the namespace where SMCP is located like `istio-system` and for the SMCP name, like `basic`. Then in all cases `source .env` has to be executed.
+2. Service Mesh Control Plane (SMCP) has been installed on an OpenShift cluster. By default (without any additional step) the SMCP is in namespace `istio-system` and the SMCP name is `basic`.
+Optionally the `tests/.env` file can be configured for the namespace where SMCP is located like `istio-system` and for the SMCP name, like `basic`. Then to activate this `source .env` has to be executed before triggering the testing.
 3. An `oc` client has been installed. User has completed CLI login an OCP cluster as an admin user. Run `oc login -u [user] -p [token] --server=[OCP API server]`
 
 ## Testing
@@ -51,12 +52,18 @@ The test cases include several changes for an OpenShift environment. Currently, 
         $ export SAMPLEARCH=z
         ```
 
-- To run all the test cases: `cd tests; source .env; go test -timeout 3h -v`. It is required to use the `-timeout` flag. Otherwise, the go test will fall into panic after 10 minutes.
+- To run all the test cases: `cd tests; go test -timeout 3h -v`. It is required to use the `-timeout` flag. Otherwise, the go test will fall into panic after 10 minutes.
     ```
     $ cd tests
     $ go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
     ```
 
+- Optionally to run all the test cases customizing the SMCP namespace and the SMCP name: Set the expected values in the `tests/.env`. By default `istio-system` and `basic` is set. `cd tests; source .env; go test -timeout 3h -v`. It is required to use the `-timeout` flag. Otherwise, the go test will fall into panic after 10 minutes. 
+    ```
+    $ cd tests
+    $ source .env
+    $ go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
+    ```
 ## License
 
 [Maistra OpenShift Test Tool](https://github.com/maistra/maistra-test-tool) is [Apache 2.0 licensed](https://github.com/maistra/maistra-test-tool/blob/development/LICENSE)
