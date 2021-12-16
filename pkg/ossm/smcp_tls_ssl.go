@@ -104,9 +104,9 @@ func TestSSL(t *testing.T) {
 		bookinfo.Install(true)
 
 		util.Log.Info("Deploy testssl pod")
-		if getenv("SAMPLEARCH", "x86") == "p" {
+		if util.Getenv("SAMPLEARCH", "x86") == "p" {
 			util.KubeApplyContents("bookinfo", testSSLDeploymentP)
-		} else if getenv("SAMPLEARCH", "x86") == "z" {
+		} else if util.Getenv("SAMPLEARCH", "x86") == "z" {
 			util.KubeApplyContents("bookinfo", testSSLDeploymentZ)
 		} else {
 			util.KubeApplyContents("bookinfo", testSSLDeployment)

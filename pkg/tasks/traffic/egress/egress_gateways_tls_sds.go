@@ -27,7 +27,7 @@ import (
 func cleanupTLSOriginationSDS() {
 	util.Log.Info("Cleanup")
 	util.KubeDeleteContents(meshNamespace, OriginateSDS)
-	util.KubeDeleteContents("bookinfo", EgressGatewaySDS)
+	util.KubeDeleteContents("bookinfo", util.RunTemplate(EgressGatewaySDSTemplate, smcp))
 	util.Shell(`kubectl delete -n %s secret client-credential`, meshNamespace)
 	util.Shell(`kubectl delete -n %s secret client-credential-cacert`, meshNamespace)
 	sleep := examples.Sleep{"bookinfo"}
@@ -54,7 +54,7 @@ func TestTLSOriginationSDS(t *testing.T) {
 		defer util.RecoverPanic(t)
 
 		util.Log.Info("Configure simple TLS origination for egress traffic")
-		util.KubeApplyContents("bookinfo", EgressGatewaySDS)
+		util.KubeApplyContents("bookinfo", util.RunTemplate(EgressGatewaySDSTemplate, smcp))
 		time.Sleep(time.Duration(20) * time.Second)
 		util.KubeApplyContents(meshNamespace, OriginateSDS)
 		time.Sleep(time.Duration(10) * time.Second)

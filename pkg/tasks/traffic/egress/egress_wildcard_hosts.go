@@ -25,7 +25,7 @@ import (
 
 func cleanupEgressWildcard() {
 	util.Log.Info("Cleanup")
-	util.KubeDeleteContents("bookinfo", EgressWildcardGateway)
+	util.KubeDeleteContents("bookinfo", util.RunTemplate(EgressWildcardGatewayTemplate, smcp))
 	util.KubeDeleteContents("bookinfo", EgressWildcardEntry)
 	sleep := examples.Sleep{"bookinfo"}
 	sleep.Uninstall()
@@ -66,7 +66,7 @@ func TestEgressWildcard(t *testing.T) {
 		defer util.RecoverPanic(t)
 
 		util.Log.Info("Configure egress gateway to a wildcard host")
-		util.KubeApplyContents("bookinfo", EgressWildcardGateway)
+		util.KubeApplyContents("bookinfo", util.RunTemplate(EgressWildcardGatewayTemplate, smcp))
 		time.Sleep(time.Duration(10) * time.Second)
 
 		command := `curl -s https://en.wikipedia.org/wiki/Main_Page | grep -o "<title>.*</title>"; curl -s https://de.wikipedia.org/wiki/Wikipedia:Hauptseite | grep -o "<title>.*</title>"`
@@ -79,7 +79,7 @@ func TestEgressWildcard(t *testing.T) {
 			t.Errorf("Error response: %s", msg)
 		}
 
-		util.KubeDeleteContents("bookinfo", EgressWildcardGateway)
+		util.KubeDeleteContents("bookinfo", util.RunTemplate(EgressWildcardGatewayTemplate, smcp))
 	})
 
 	// setup SNI proxy for wildcard arbitrary domains

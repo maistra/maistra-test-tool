@@ -1,6 +1,6 @@
 #!/bin/bash
 
-HOST=http://istio-ingressgateway-istio-system.apps.yuaxu-maistra-daily.devcluster.openshift.com
+HOST=""
 
 function deploy_bookinfo_mtls() {
     oc apply -n bookinfo -f <(cat <<EOF

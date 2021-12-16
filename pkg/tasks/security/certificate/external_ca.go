@@ -64,7 +64,7 @@ func TestExternalCert(t *testing.T) {
 		util.Inspect(err, "Failed to create temp dir", "", t)
 		defer os.RemoveAll(tmpDir)
 
-		if getenv("SAMPLEARCH", "x86") == "p" || getenv("SAMPLEARCH", "x86") == "z" {
+		if util.Getenv("SAMPLEARCH", "x86") == "p" || util.Getenv("SAMPLEARCH", "x86") == "z" {
 			gatewayHTTP, _ := util.ShellSilent(`kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'`, meshNamespace)
 			productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
 			resp, _, err := util.GetHTTPResponse(productpageURL, nil)

@@ -8,11 +8,9 @@ A testing tool for running Maistra Service Mesh tasks on an OpenShift 4.x cluste
 
 ## Introduction
 
-This project aims to automate the running Maistra Service Mesh tasks on an OpenShift 4.x Cluster.
+This project aims to automate Maistra Service Mesh tasks on an OpenShift 4.x Cluster.
 
-The testing follows [Istio Doc Tasks](https://istio.io/v1.9/docs/tasks/)
-
-The test cases include several changes for an OpenShift environment. Currently, those changes will not work in origin Kubernetes environments.
+The testing tasks are based on [istio.io Doc Tasks](https://istio.io/v1.9/docs/tasks/)
 
 ## Versions
 
@@ -20,14 +18,14 @@ The test cases include several changes for an OpenShift environment. Currently, 
 | --        | --            |
 | OS        | Linux         |
 | Golang    | 1.13+         |
-| OpenSSl   | --            |
+| OpenSSl   | 1.1.1+        |
+| oc client | 4.x           |
 
 ## Testing Prerequisite
 
-1. User can access a running OpenShift cluster from command line.
-2. Service Mesh Control Plane (SMCP) has been installed on an OpenShift cluster. By default (without any additional step) the SMCP is in namespace `istio-system` and the SMCP name is `basic`.
-Optionally the `tests/.env` file can be configured for the namespace where SMCP is located like `istio-system` and for the SMCP name, like `basic`. Then to activate this `source .env` has to be executed before triggering the testing.
-3. An `oc` client has been installed. User has completed CLI login an OCP cluster as an admin user. Run `oc login -u [user] -p [token] --server=[OCP API server]`
+1. An OpenShift `oc` client has been installed. A user can access an OpenShift cluster from command line by running a login command. `oc login -u [user] -p [token] --server=[OCP API server]`
+2. RedHat Service Mesh Operators and Control Plane (SMCP) have been installed on the OpenShift cluster.
+3. OpenSSL tool has been installed from the client command line.
 
 ## Testing
 - A main test is in the `tests` directory. All test cases are in the `test_cases.go` and are mapped to the implementations in the `pkg` directory.
@@ -37,33 +35,18 @@ Optionally the `tests/.env` file can be configured for the namespace where SMCP 
     $ go get -u github.com/jstemmer/go-junit-report
     ```
 
-- Avoid Golang 1.15+ client openSSL relies on legacy Common Name field.
-    ```
-    $ export GODEBUG="x509ignoreCN=0"
-    ```
+- Optionally to run all the test cases customizing the SMCP namespace and the SMCP name: A user can update the expected values in the `tests/test.env`.
 
-- By default, there is an environment variable `SAMPLEARCH=x86`
-    - For Power environment testing, users can export an environment variable `SAMPLEARCH`
-        ```
-        $ export SAMPLEARCH=p
-        ```
-    - For Z environment testing, users can export an environment variable `SAMPLEARCH`
-        ```
-        $ export SAMPLEARCH=z
-        ```
+- By default, the `tests/test.env` file uses `export SAMPLEARCH=x86`
+    - For Power environment testing, a user can update the `tests/test.env` file `export SAMPLEARCH=p`
+    - For Z environment testing, a user can update the `tests/test.env` file `export SAMPLEARCH=z`
 
-- To run all the test cases: `cd tests; go test -timeout 3h -v`. It is required to use the `-timeout` flag. Otherwise, the go test will fall into panic after 10 minutes.
+- To run all the test cases: `cd tests; go test -timeout 3h -v`
     ```
     $ cd tests
     $ go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
     ```
 
-- Optionally to run all the test cases customizing the SMCP namespace and the SMCP name: Set the expected values in the `tests/.env`. By default `istio-system` and `basic` is set. `cd tests; source .env; go test -timeout 3h -v`. It is required to use the `-timeout` flag. Otherwise, the go test will fall into panic after 10 minutes. 
-    ```
-    $ cd tests
-    $ source .env
-    $ go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
-    ```
 ## License
 
 [Maistra OpenShift Test Tool](https://github.com/maistra/maistra-test-tool) is [Apache 2.0 licensed](https://github.com/maistra/maistra-test-tool/blob/development/LICENSE)

@@ -35,9 +35,9 @@ func TestProxyEnv(t *testing.T) {
 		defer util.RecoverPanic(t)
 
 		util.Log.Info("Test annotation sidecar.maistra.io/proxyEnv")
-		if getenv("SAMPLEARCH", "x86") == "p" {
+		if util.Getenv("SAMPLEARCH", "x86") == "p" {
 			util.KubeApplyContents("bookinfo", testAnnotationProxyEnvP)
-		} else if getenv("SAMPLEARCH", "x86") == "z" {
+		} else if util.Getenv("SAMPLEARCH", "x86") == "z" {
 			util.KubeApplyContents("bookinfo", testAnnotationProxyEnvZ)
 		} else {
 			util.KubeApplyContents("bookinfo", testAnnotationProxyEnv)

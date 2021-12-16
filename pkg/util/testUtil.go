@@ -15,15 +15,46 @@
 package util
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"testing"
+	"text/template"
 	"time"
+
+	"github.com/joho/godotenv"
 )
+
+// getenv loads test.env file and returns an environment variable value.
+// If the environment variable is empty, it returns the fallback as a default value.
+func Getenv(key, fallback string) string {
+	if err := godotenv.Load("test.env"); err != nil {
+		Log.Fatal("Error loading .env file")
+	}
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		return fallback
+	}
+	return value
+}
+
+// RunTemplate renders a yaml template string in the yaml_configs.go file
+func RunTemplate(tmpl string, input interface{}) string {
+	tt, err := template.New("").Parse(tmpl)
+	if err != nil {
+		Log.Fatal(err)
+	}
+	var buf bytes.Buffer
+	if err := tt.Execute(&buf, input); err != nil {
+		Log.Fatal(err)
+	}
+	return buf.String()
+}
 
 // recover from panic if one occurred. This allows cleanup to be executed after panic.
 func RecoverPanic(t *testing.T) {

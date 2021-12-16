@@ -26,8 +26,8 @@ import (
 func cleanupEgressGateways() {
 	util.Log.Info("Cleanup")
 	sleep := examples.Sleep{"bookinfo"}
-	util.KubeDeleteContents("bookinfo", cnnextGatewayHTTPS)
-	util.KubeDeleteContents("bookinfo", cnnextGateway)
+	util.KubeDeleteContents("bookinfo", util.RunTemplate(cnnextGatewayHTTPSTemplate, smcp))
+	util.KubeDeleteContents("bookinfo", util.RunTemplate(cnnextGatewayTemplate, smcp))
 	util.KubeDeleteContents("bookinfo", cnnextServiceEntryTLS)
 	util.KubeDeleteContents("bookinfo", cnnextServiceEntry)
 	sleep.Uninstall()
@@ -62,7 +62,7 @@ func TestEgressGateways(t *testing.T) {
 		}
 
 		util.Log.Info("Create a Gateway to external edition.cnn.com")
-		util.KubeApplyContents("bookinfo", cnnextGateway)
+		util.KubeApplyContents("bookinfo", util.RunTemplate(cnnextGatewayTemplate, smcp))
 		time.Sleep(time.Duration(20) * time.Second)
 
 		command = `curl -sSL -o /dev/null -D - http://edition.cnn.com/politics`
@@ -75,7 +75,7 @@ func TestEgressGateways(t *testing.T) {
 			t.Errorf("Error response: %s", msg)
 		}
 
-		util.KubeDeleteContents("bookinfo", cnnextGateway)
+		util.KubeDeleteContents("bookinfo", util.RunTemplate(cnnextGatewayTemplate, smcp))
 		util.KubeDeleteContents("bookinfo", cnnextServiceEntry)
 		time.Sleep(time.Duration(20) * time.Second)
 	})
@@ -98,7 +98,7 @@ func TestEgressGateways(t *testing.T) {
 		}
 
 		util.Log.Info("Create a https Gateway to external edition.cnn.com")
-		util.KubeApplyContents("bookinfo", cnnextGatewayHTTPS)
+		util.KubeApplyContents("bookinfo", util.RunTemplate(cnnextGatewayHTTPSTemplate, smcp))
 		time.Sleep(time.Duration(20) * time.Second)
 
 		command = `curl -sSL -o /dev/null -D - https://edition.cnn.com/politics`

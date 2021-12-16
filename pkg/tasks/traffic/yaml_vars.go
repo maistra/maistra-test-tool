@@ -15,8 +15,6 @@
 package traffic
 
 import (
-	"os"
-
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
@@ -37,17 +35,9 @@ const (
 
 var (
 	// OCP4.x
-	meshNamespace        string = getenv("MESHNAMESPACE", "istio-system")
-	smcpName             string = getenv("SMCPNAME", "basic")
+	smcpName             string = util.Getenv("SMCPNAME", "basic")
+	meshNamespace        string = util.Getenv("MESHNAMESPACE", "istio-system")
 	gatewayHTTP, _              = util.ShellSilent(`kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'`, meshNamespace)
 	ingressHTTPPort, _          = util.ShellSilent(`kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name=="http2")].port}'`, meshNamespace, "istio-ingressgateway")
 	secureIngressPort, _        = util.ShellSilent(`kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name=="https")].port}'`, meshNamespace, "istio-ingressgateway")
 )
-
-func getenv(key, fallback string) string {
-	value := os.Getenv(key)
-	if len(value) == 0 {
-		return fallback
-	}
-	return value
-}

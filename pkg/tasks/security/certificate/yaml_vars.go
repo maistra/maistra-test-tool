@@ -14,7 +14,9 @@
 
 package certificate
 
-import "os"
+import (
+	"github.com/maistra/maistra-test-tool/pkg/util"
+)
 
 const (
 	sampleCACert  = "../sampleCerts/ca-cert.pem"
@@ -24,14 +26,6 @@ const (
 )
 
 var (
-	meshNamespace string = getenv("MESHNAMESPACE", "istio-system")
-	smcpName      string = getenv("SMCPNAME", "basic")
+	smcpName      string = util.Getenv("SMCPNAME", "basic")
+	meshNamespace string = util.Getenv("MESHNAMESPACE", "istio-system")
 )
-
-func getenv(key, fallback string) string {
-	value := os.Getenv(key)
-	if len(value) == 0 {
-		return fallback
-	}
-	return value
-}
