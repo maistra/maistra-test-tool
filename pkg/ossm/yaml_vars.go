@@ -14,24 +14,17 @@
 
 package ossm
 
-import "os"
-
-var (
-	meshNamespace    string = getenv("MESHNAMESPACE", "istio-system")
-	smcpName         string = getenv("SMCPNAME", "basic")
-	smcpV21_template        = "../templates/smcp-templates/v2.1/cr_2.1_default_template.yaml"
-	smcpV20_template        = "../templates/smcp-templates/v2.0/cr_2.0_default_template.yaml"
-	smcpV11_template        = "../templates/smcp-templates/v1.1/cr_1.1_default_template.yaml"
-	smcpV21                 = "../templates/smcp-templates/v2.1/cr_2.1_default.yaml"
-	smcpV20                 = "../templates/smcp-templates/v2.0/cr_2.0_default.yaml"
-	smcpV11                 = "../templates/smcp-templates/v1.1/cr_1.1_default.yaml"
-	smmr                    = "../templates/smmr-templates/smmr_default.yaml"
+import (
+	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
-func getenv(key, fallback string) string {
-	value := os.Getenv(key)
-	if len(value) == 0 {
-		return fallback
-	}
-	return value
+type SMCP struct {
+	Name      string `default:"basic"`
+	Namespace string `default:"istio-system"`
 }
+
+var (
+	smcpName      string = util.Getenv("SMCPNAME", "basic")
+	meshNamespace string = util.Getenv("MESHNAMESPACE", "istio-system")
+	smcp          SMCP   = SMCP{smcpName, meshNamespace}
+)

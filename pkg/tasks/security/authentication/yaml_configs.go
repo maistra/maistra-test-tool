@@ -15,12 +15,12 @@
 package authentication
 
 var (
-	PeerAuthPolicyStrict = `
+	PeerAuthPolicyStrictTemplate = `
 apiVersion: "security.istio.io/v1beta1"
 kind: "PeerAuthentication"
 metadata:
   name: "default"
-  namespace: "` + meshNamespace + `"
+  namespace: "{{ .Namespace }}"
 spec:
   mtls:
     mode: STRICT
@@ -152,12 +152,12 @@ spec:
         host: httpbin.foo.svc.cluster.local
 `
 
-	JWTAuthPolicy = `
+	JWTAuthPolicyTemplate = `
 apiVersion: "security.istio.io/v1beta1"
 kind: "RequestAuthentication"
 metadata:
   name: "jwt-example"
-  namespace: ` + meshNamespace + `
+  namespace: "{{ .Namespace }}"
 spec:
   selector:
     matchLabels:
@@ -168,12 +168,12 @@ spec:
   
 `
 
-	RequireTokenPolicy = `
+	RequireTokenPolicyTemplate = `
 apiVersion: "security.istio.io/v1beta1"
 kind: "AuthorizationPolicy"
 metadata:
   name: "frontend-ingress"
-  namespace: ` + meshNamespace + `
+  namespace: "{{ .Namespace }}"
 spec:
   selector:
     matchLabels:
@@ -185,12 +185,12 @@ spec:
         notRequestPrincipals: ["*"]
 `
 
-	RequireTokenPathPolicy = `
+	RequireTokenPathPolicyTemplate = `
 apiVersion: "security.istio.io/v1beta1"
 kind: "AuthorizationPolicy"
 metadata:
   name: "frontend-ingress"
-  namespace: ` + meshNamespace + `
+  namespace: "{{ .Namespace }}"
 spec:
   selector:
     matchLabels:
@@ -205,12 +205,12 @@ spec:
         paths: ["/headers"]
 `
 
-	MeshPolicyStrict = `
+	MeshPolicyStrictTemplate = `
 apiVersion: "security.istio.io/v1beta1"
 kind: "PeerAuthentication"
 metadata:
   name: "default"
-  namespace: "` + meshNamespace + `"
+  namespace: "{{ .Namespace }}"
 spec:
   mtls:
     mode: STRICT

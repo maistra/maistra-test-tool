@@ -26,7 +26,7 @@ import (
 
 func cleanupMigration() {
 	util.Log.Info("Cleanup")
-	util.KubeDeleteContents(meshNamespace, MeshPolicyStrict)
+	util.KubeDeleteContents(meshNamespace, util.RunTemplate(MeshPolicyStrictTemplate, smcp))
 	util.KubeDeleteContents("foo", NamespacePolicyStrict)
 	sleep := examples.Sleep{"foo"}
 	httpbin := examples.Httpbin{"foo"}
@@ -112,7 +112,7 @@ func TestMigration(t *testing.T) {
 		defer util.RecoverPanic(t)
 
 		util.Log.Info("Lock down to mutual TLS for the entire mesh")
-		util.KubeApplyContents(meshNamespace, MeshPolicyStrict)
+		util.KubeApplyContents(meshNamespace, util.RunTemplate(MeshPolicyStrictTemplate, smcp))
 		time.Sleep(time.Duration(30) * time.Second)
 
 		for _, from := range []string{"legacy"} {

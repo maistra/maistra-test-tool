@@ -26,15 +26,15 @@ import (
 
 func cleanupAuthPolicy() {
 	util.Log.Info("Cleanup")
-	util.KubeDeleteContents(meshNamespace, RequireTokenPathPolicy)
-	util.KubeDeleteContents(meshNamespace, RequireTokenPolicy)
-	util.KubeDeleteContents(meshNamespace, JWTAuthPolicy)
+	util.KubeDeleteContents(meshNamespace, util.RunTemplate(RequireTokenPathPolicyTemplate, smcp))
+	util.KubeDeleteContents(meshNamespace, util.RunTemplate(RequireTokenPolicyTemplate, smcp))
+	util.KubeDeleteContents(meshNamespace, util.RunTemplate(JWTAuthPolicyTemplate, smcp))
 	util.KubeDeleteContents("foo", HttpbinGateway)
 	util.KubeDeleteContents("foo", OverwritePolicy)
 	util.KubeDeleteContents("bar", PortPolicy)
 	util.KubeDeleteContents("bar", WorkloadPolicyStrict)
 	util.KubeDeleteContents("foo", NamespacePolicyStrict)
-	util.KubeDeleteContents(meshNamespace, PeerAuthPolicyStrict)
+	util.KubeDeleteContents(meshNamespace, util.RunTemplate(PeerAuthPolicyStrictTemplate, smcp))
 
 	sleep := examples.Sleep{"foo"}
 	httpbin := examples.Httpbin{"foo"}
@@ -113,7 +113,7 @@ func TestAuthPolicy(t *testing.T) {
 		defer util.RecoverPanic(t)
 
 		util.Log.Info("Globally enabling Istio mutual TLS in STRICT mode")
-		util.KubeApplyContents(meshNamespace, PeerAuthPolicyStrict)
+		util.KubeApplyContents(meshNamespace, util.RunTemplate(PeerAuthPolicyStrictTemplate, smcp))
 		util.Log.Info("Waiting for rules to propagate. Sleep 30 seconds...")
 		time.Sleep(time.Duration(30) * time.Second)
 
@@ -132,7 +132,7 @@ func TestAuthPolicy(t *testing.T) {
 				util.Log.Infof("Response 000 as expected: %s", msg)
 			}
 		}
-		util.KubeDeleteContents(meshNamespace, PeerAuthPolicyStrict)
+		util.KubeDeleteContents(meshNamespace, util.RunTemplate(PeerAuthPolicyStrictTemplate, smcp))
 		time.Sleep(time.Duration(30) * time.Second)
 	})
 
@@ -249,7 +249,7 @@ func TestAuthPolicy(t *testing.T) {
 		}
 
 		util.Log.Info("Apply a JWT policy")
-		util.KubeApplyContents(meshNamespace, JWTAuthPolicy)
+		util.KubeApplyContents(meshNamespace, util.RunTemplate(JWTAuthPolicyTemplate, smcp))
 		time.Sleep(time.Duration(20) * time.Second)
 
 		util.Log.Info("Request without token returns 200. Request with an invalid token returns 401")
@@ -293,7 +293,7 @@ func TestAuthPolicy(t *testing.T) {
 		defer util.RecoverPanic(t)
 
 		util.Log.Info("Require a valid token")
-		util.KubeApplyContents(meshNamespace, RequireTokenPolicy)
+		util.KubeApplyContents(meshNamespace, util.RunTemplate(RequireTokenPolicyTemplate, smcp))
 		time.Sleep(time.Duration(20) * time.Second)
 
 		msg, err := util.Shell(`curl %s/headers -s -o /dev/null -w "%%{http_code}\n"`, gatewayHTTP)
@@ -306,7 +306,7 @@ func TestAuthPolicy(t *testing.T) {
 		}
 
 		util.Log.Info("Require valid tokens per-path")
-		util.KubeApplyContents(meshNamespace, RequireTokenPathPolicy)
+		util.KubeApplyContents(meshNamespace, util.RunTemplate(RequireTokenPathPolicyTemplate, smcp))
 		time.Sleep(time.Duration(20) * time.Second)
 
 		msg, err = util.Shell(`curl %s/headers -s -o /dev/null -w "%%{http_code}\n"`, gatewayHTTP)

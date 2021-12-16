@@ -25,9 +25,8 @@ import (
 func installDefaultSMCP21() {
 	util.Log.Info("Create SMCP v2.1 in ", meshNamespace)
 	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
-	util.Shell(`MESHNAMESPACE="${MESHNAMESPACE:-istio-system}" SMCPNAME="${SMCPNAME:-basic}" envsubst < %s > %s`, smcpV21_template, smcpV21)
-	util.KubeApply(meshNamespace, smcpV21)
-	util.KubeApply(meshNamespace, smmr)
+	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV21_template, smcp))
+	util.KubeApplyContents(meshNamespace, smmr)
 	util.Log.Info("Waiting for mesh installation to complete")
 	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
 }
@@ -39,9 +38,8 @@ func TestSMCPInstall(t *testing.T) {
 		defer util.RecoverPanic(t)
 		util.Log.Info("Create SMCP v2.1 in ", meshNamespace)
 		util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
-		util.Shell(`MESHNAMESPACE="${MESHNAMESPACE:-istio-system}" SMCPNAME="${SMCPNAME:-basic}" envsubst < %s > %s`, smcpV21_template, smcpV21)
-		util.KubeApply(meshNamespace, smcpV21)
-		util.KubeApply(meshNamespace, smmr)
+		util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV21_template, smcp))
+		util.KubeApplyContents(meshNamespace, smmr)
 		util.Log.Info("Waiting for mesh installation to complete")
 		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
 
@@ -57,9 +55,8 @@ func TestSMCPInstall(t *testing.T) {
 	t.Run("smcp_test_uninstall_2.1", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 		util.Log.Info("Delete SMCP v2.1 in ", meshNamespace)
-		util.KubeDelete(meshNamespace, smmr)
-		util.Shell(`MESHNAMESPACE="${MESHNAMESPACE:-istio-system}" SMCPNAME="${SMCPNAME:-basic}" envsubst < %s > %s`, smcpV21_template, smcpV21)
-		util.KubeDelete(meshNamespace, smcpV21)
+		util.KubeDeleteContents(meshNamespace, smmr)
+		util.KubeDeleteContents(meshNamespace, util.RunTemplate(smcpV21_template, smcp))
 		time.Sleep(time.Duration(40) * time.Second)
 	})
 
@@ -67,9 +64,8 @@ func TestSMCPInstall(t *testing.T) {
 		defer util.RecoverPanic(t)
 		util.Log.Info("Create SMCP v2.0 in namespace ", meshNamespace)
 		util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
-		util.Shell(`MESHNAMESPACE="${MESHNAMESPACE:-istio-system}" SMCPNAME="${SMCPNAME:-basic}" envsubst < %s > %s`, smcpV20_template, smcpV20)
-		util.KubeApply(meshNamespace, smcpV20)
-		util.KubeApply(meshNamespace, smmr)
+		util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV20_template, smcp))
+		util.KubeApplyContents(meshNamespace, smmr)
 		util.Log.Info("Waiting for mesh installation to complete")
 		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
 
@@ -85,9 +81,8 @@ func TestSMCPInstall(t *testing.T) {
 	t.Run("smcp_test_uninstall_2.0", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 		util.Log.Info("Delete SMCP v2.0 in ", meshNamespace)
-		util.KubeDelete(meshNamespace, smmr)
-		util.Shell(`MESHNAMESPACE="${MESHNAMESPACE:-istio-system}" SMCPNAME="${SMCPNAME:-basic}" envsubst < %s > %s`, smcpV20_template, smcpV20)
-		util.KubeDelete(meshNamespace, smcpV20)
+		util.KubeDeleteContents(meshNamespace, smmr)
+		util.KubeDeleteContents(meshNamespace, util.RunTemplate(smcpV20_template, smcp))
 		time.Sleep(time.Duration(40) * time.Second)
 	})
 
@@ -95,9 +90,8 @@ func TestSMCPInstall(t *testing.T) {
 		defer util.RecoverPanic(t)
 		util.Log.Info("Create SMCP v1.1 in namespace ", meshNamespace)
 		util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
-		util.Shell(`MESHNAMESPACE="${MESHNAMESPACE:-istio-system}" SMCPNAME="${SMCPNAME:-basic}" envsubst < %s > %s`, smcpV11_template, smcpV11)
-		util.KubeApply(meshNamespace, smcpV11)
-		util.KubeApply(meshNamespace, smmr)
+		util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV11_template, smcp))
+		util.KubeApplyContents(meshNamespace, smmr)
 		util.Log.Info("Waiting for mesh installation to complete")
 		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
 
@@ -113,9 +107,8 @@ func TestSMCPInstall(t *testing.T) {
 	t.Run("smcp_test_uninstall_1.1", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 		util.Log.Info("Delete SMCP v1,1 in ", meshNamespace)
-		util.KubeDelete(meshNamespace, smmr)
-		util.Shell(`MESHNAMESPACE="${MESHNAMESPACE:-istio-system}" SMCPNAME="${SMCPNAME:-basic}" envsubst < %s > %s`, smcpV11_template, smcpV11)
-		util.KubeDelete(meshNamespace, smcpV11)
+		util.KubeDeleteContents(meshNamespace, smmr)
+		util.KubeDeleteContents(meshNamespace, util.RunTemplate(smcpV11_template, smcp))
 		time.Sleep(time.Duration(40) * time.Second)
 	})
 
@@ -124,9 +117,8 @@ func TestSMCPInstall(t *testing.T) {
 
 		util.Log.Info("Create SMCP v2.0 in namespace ", meshNamespace)
 		util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
-		util.Shell(`MESHNAMESPACE="${MESHNAMESPACE:-istio-system}" SMCPNAME="${SMCPNAME:-basic}" envsubst < %s > %s`, smcpV20_template, smcpV20)
-		util.KubeApply(meshNamespace, smcpV20)
-		util.KubeApply(meshNamespace, smmr)
+		util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV20_template, smcp))
+		util.KubeApplyContents(meshNamespace, smmr)
 		util.Log.Info("Waiting for mesh installation to complete")
 		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
 
@@ -134,9 +126,8 @@ func TestSMCPInstall(t *testing.T) {
 		util.Shell(`oc get -n %s smcp/%s -o wide`, meshNamespace, smcpName)
 		util.Shell(`oc get -n %s pods`, meshNamespace)
 
-		util.Log.Info("Upgrade SMCP to v2.1 in istio-system")
-		util.Shell(`MESHNAMESPACE="${MESHNAMESPACE:-istio-system}" SMCPNAME="${SMCPNAME:-basic}" envsubst < %s > %s`, smcpV21_template, smcpV21)
-		util.KubeApply(meshNamespace, smcpV21)
+		util.Log.Info("Upgrade SMCP to v2.1")
+		util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV21_template, smcp))
 		util.Log.Info("Waiting for mesh installation to complete")
 		time.Sleep(time.Duration(10) * time.Second)
 		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 360s`, meshNamespace)

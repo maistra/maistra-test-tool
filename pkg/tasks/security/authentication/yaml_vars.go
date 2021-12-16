@@ -15,21 +15,17 @@
 package authentication
 
 import (
-	"os"
-
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
-func getenv(key, fallback string) string {
-	value := os.Getenv(key)
-	if len(value) == 0 {
-		return fallback
-	}
-	return value
+type SMCP struct {
+	Name      string `default:"basic"`
+	Namespace string `default:"istio-system"`
 }
 
 var (
-	meshNamespace  string = getenv("MESHNAMESPACE", "istio-system")
-	smcpName       string = getenv("SMCPNAME", "basic")
+	smcpName       string = util.Getenv("SMCPNAME", "basic")
+	meshNamespace  string = util.Getenv("MESHNAMESPACE", "istio-system")
+	smcp           SMCP   = SMCP{smcpName, meshNamespace}
 	gatewayHTTP, _        = util.ShellSilent(`kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'`, meshNamespace)
 )

@@ -15,25 +15,10 @@
 package tests
 
 import (
-	"os"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
-
-var meshNamespace string = getenv("MESHNAMESPACE", "istio-system")
-
-var (
-	SMMR = "../templates/smmr-templates/smmr_default.yaml"
-)
-
-func getenv(key, fallback string) string {
-	value := os.Getenv(key)
-	if len(value) == 0 {
-		return fallback
-	}
-	return value
-}
 
 func setupNamespaces() {
 	util.ShellSilent(`oc new-project bookinfo`)
@@ -41,8 +26,6 @@ func setupNamespaces() {
 	util.ShellSilent(`oc new-project bar`)
 	util.ShellSilent(`oc new-project legacy`)
 	util.ShellSilent(`oc new-project mesh-external`)
-	util.ShellSilent(`oc apply -n %s -f %s`, meshNamespace, SMMR)
-	util.ShellSilent(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, meshNamespace)
 }
 
 func matchString(a, b string) (bool, error) {
@@ -50,7 +33,6 @@ func matchString(a, b string) (bool, error) {
 }
 
 func TestMain(m *testing.M) {
-	os.Setenv("GODEBUG", "x509ignoreCN=0")
 	setupNamespaces()
 	// test runs
 	testing.Main(matchString, testCases, nil, nil)

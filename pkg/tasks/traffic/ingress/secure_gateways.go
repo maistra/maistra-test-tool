@@ -45,9 +45,9 @@ func TestSecureGateways(t *testing.T) {
 	httpbin := examples.Httpbin{"bookinfo"}
 	httpbin.Install()
 
-	if getenv("SAMPLEARCH", "x86") == "p" {
+	if util.Getenv("SAMPLEARCH", "x86") == "p" {
 		util.KubeApplyContents("bookinfo", helloworldv1P)
-	} else if getenv("SAMPLEARCH", "x86") == "z" {
+	} else if util.Getenv("SAMPLEARCH", "x86") == "z" {
 		util.KubeApplyContents("bookinfo", helloworldv1Z)
 	} else {
 		util.KubeApplyContents("bookinfo", helloworldv1)

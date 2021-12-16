@@ -74,7 +74,7 @@ func cleanupTLSOriginationFileMount() {
 	sleep := examples.Sleep{"bookinfo"}
 	nginx := examples.Nginx{"bookinfo"}
 	util.KubeDeleteContents(meshNamespace, nginxMeshRule)
-	util.KubeDeleteContents("bookinfo", nginxGatewayTLS)
+	util.KubeDeleteContents("bookinfo", util.RunTemplate(nginxGatewayTLSTemplate, smcp))
 
 	util.Shell(`kubectl -n %s rollout undo deploy istio-egressgateway`, meshNamespace)
 	time.Sleep(time.Duration(20) * time.Second)
@@ -83,7 +83,7 @@ func cleanupTLSOriginationFileMount() {
 
 	util.Shell(`kubectl delete -n %s secret nginx-client-certs`, meshNamespace)
 	util.Shell(`kubectl delete -n %s secret nginx-ca-certs`, meshNamespace)
-	util.KubeDeleteContents("bookinfo", cnnextGatewayTLSFile)
+	util.KubeDeleteContents("bookinfo", util.RunTemplate(cnnextGatewayTLSFileTemplate, smcp))
 	util.KubeDeleteContents("bookinfo", cnnextServiceEntry)
 	nginx.Uninstall()
 	sleep.Uninstall()
@@ -121,7 +121,7 @@ func TestTLSOriginationFileMount(t *testing.T) {
 		}
 
 		util.Log.Info("Create a Gateway to external edition.cnn.com")
-		util.KubeApplyContents("bookinfo", cnnextGatewayTLSFile)
+		util.KubeApplyContents("bookinfo", util.RunTemplate(cnnextGatewayTLSFileTemplate, smcp))
 		time.Sleep(time.Duration(20) * time.Second)
 
 		command = `curl -sSL -o /dev/null -D - http://edition.cnn.com/politics`
@@ -135,7 +135,7 @@ func TestTLSOriginationFileMount(t *testing.T) {
 		}
 
 		util.Log.Info("Cleanup the TLS origination example")
-		util.KubeDeleteContents("bookinfo", cnnextGatewayTLSFile)
+		util.KubeDeleteContents("bookinfo", util.RunTemplate(cnnextGatewayTLSFileTemplate, smcp))
 		util.KubeDeleteContents("bookinfo", cnnextServiceEntry)
 		time.Sleep(time.Duration(20) * time.Second)
 	})
@@ -161,7 +161,7 @@ func TestTLSOriginationFileMount(t *testing.T) {
 		util.Shell(`kubectl -n %s rollout history deploy istio-egressgateway`, meshNamespace)
 
 		util.Log.Info("Configure MTLS origination for egress traffic")
-		util.KubeApplyContents("bookinfo", nginxGatewayTLS)
+		util.KubeApplyContents("bookinfo", util.RunTemplate(nginxGatewayTLSTemplate, smcp))
 		time.Sleep(time.Duration(20) * time.Second)
 		util.KubeApplyContents(meshNamespace, nginxMeshRule)
 		time.Sleep(time.Duration(10) * time.Second)
