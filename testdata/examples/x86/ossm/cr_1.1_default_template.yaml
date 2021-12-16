@@ -1,8 +1,8 @@
 apiVersion: maistra.io/v2
 kind: ServiceMeshControlPlane
 metadata:
-  name: ${SMCPNAME}
-  namespace: ${MESHNAMESPACE}
+  name: {{ .Name }}
+  namespace: {{ .Namespace }}
 spec:
   version: v1.1
   tracing:

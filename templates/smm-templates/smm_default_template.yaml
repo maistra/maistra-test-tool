@@ -4,5 +4,5 @@ metadata:
   name: default
 spec:
   controlPlaneRef:
-    namespace: ${MESHNAMESPACE}
-    name: ${SMCPNAME}
+    namespace: {{ .Namespace }} 
+    name: {{ .Name }}
