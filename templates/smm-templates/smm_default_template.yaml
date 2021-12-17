@@ -4,5 +4,5 @@ metadata:
   name: default
 spec:
   controlPlaneRef:
-    namespace: istio-system
-    name: basic
+    namespace: {{ .Namespace }} 
+    name: {{ .Name }}

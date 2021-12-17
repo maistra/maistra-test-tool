@@ -31,18 +31,10 @@ func cleanupExternalCert() {
 	bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
 	bookinfo.Uninstall()
 
-	util.Shell(`kubectl -n istio-system delete secret cacerts`)
-	util.Shell(`kubectl -n istio-system patch smcp/basic --type=json -p='[{"op": "remove", "path": "/spec/security/certificateAuthority"}, {"op": "remove", "path": "/spec/security/dataPlane"}]'`)
-	util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
+	util.Shell(`kubectl -n %s delete secret cacerts`, meshNamespace)
+	util.Shell(`kubectl -n %s patch smcp/%s --type=json -p='[{"op": "remove", "path": "/spec/security/certificateAuthority"}, {"op": "remove", "path": "/spec/security/dataPlane"}]'`, meshNamespace, smcpName)
+	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
 	time.Sleep(time.Duration(60) * time.Second)
-}
-
-func getenv(key, fallback string) string {
-	value := os.Getenv(key)
-	if len(value) == 0 {
-		return fallback
-	}
-	return value
 }
 
 func TestExternalCert(t *testing.T) {
@@ -56,10 +48,10 @@ func TestExternalCert(t *testing.T) {
 
 		util.Log.Info("Adding an external CA")
 		util.Shell(`kubectl create -n %s secret generic cacerts --from-file=%s --from-file=%s --from-file=%s --from-file=%s`,
-			"istio-system", sampleCACert, sampleCAKey, sampleCARoot, sampleCAChain)
+			meshNamespace, sampleCACert, sampleCAKey, sampleCARoot, sampleCAChain)
 
-		util.Shell(`kubectl -n istio-system patch smcp/basic --type=merge --patch="%s"`, CertSMCPPath)
-		util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
+		util.Shell(`kubectl -n %s patch smcp/%s --type=merge --patch="%s"`, meshNamespace, smcpName, CertSMCPPath)
+		util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
 		time.Sleep(time.Duration(60) * time.Second)
 
 		bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
@@ -72,8 +64,8 @@ func TestExternalCert(t *testing.T) {
 		util.Inspect(err, "Failed to create temp dir", "", t)
 		defer os.RemoveAll(tmpDir)
 
-		if getenv("SAMPLEARCH", "x86") == "p"  || getenv("SAMPLEARCH", "x86") == "z" {
-			gatewayHTTP, _ := util.ShellSilent(`kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'`, "istio-system")
+		if util.Getenv("SAMPLEARCH", "x86") == "p" || util.Getenv("SAMPLEARCH", "x86") == "z" {
+			gatewayHTTP, _ := util.ShellSilent(`kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'`, meshNamespace)
 			productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
 			resp, _, err := util.GetHTTPResponse(productpageURL, nil)
 			util.Inspect(err, "Failed to get HTTP Response", "", t)

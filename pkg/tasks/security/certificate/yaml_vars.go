@@ -14,9 +14,18 @@
 
 package certificate
 
+import (
+	"github.com/maistra/maistra-test-tool/pkg/util"
+)
+
 const (
 	sampleCACert  = "../sampleCerts/ca-cert.pem"
 	sampleCAKey   = "../sampleCerts/ca-key.pem"
 	sampleCARoot  = "../sampleCerts/root-cert.pem"
 	sampleCAChain = "../sampleCerts/cert-chain.pem"
+)
+
+var (
+	smcpName      string = util.Getenv("SMCPNAME", "basic")
+	meshNamespace string = util.Getenv("MESHNAMESPACE", "istio-system")
 )

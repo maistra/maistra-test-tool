@@ -14,7 +14,7 @@
 
 package egress
 
-const (
+var (
 	httbinextServiceEntry = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
@@ -128,7 +128,7 @@ spec:
   resolution: DNS
 `
 
-	cnnextGateway = `
+	cnnextGatewayTemplate = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -149,7 +149,7 @@ kind: DestinationRule
 metadata:
   name: egressgateway-for-cnn
 spec:
-  host: istio-egressgateway.istio-system.svc.cluster.local
+  host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
   subsets:
   - name: cnn
 ---
@@ -170,7 +170,7 @@ spec:
       port: 80
     route:
     - destination:
-        host: istio-egressgateway.istio-system.svc.cluster.local
+        host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
         subset: cnn
         port:
           number: 80
@@ -187,7 +187,7 @@ spec:
       weight: 100
 `
 
-	cnnextGatewayHTTPS = `
+	cnnextGatewayHTTPSTemplate = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -210,7 +210,7 @@ kind: DestinationRule
 metadata:
   name: egressgateway-for-cnn
 spec:
-  host: istio-egressgateway.istio-system.svc.cluster.local
+  host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
   subsets:
   - name: cnn
 ---
@@ -233,7 +233,7 @@ spec:
       - edition.cnn.com
     route:
     - destination:
-        host: istio-egressgateway.istio-system.svc.cluster.local
+        host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
         subset: cnn
         port:
           number: 443
@@ -251,7 +251,7 @@ spec:
       weight: 100
 `
 
-	cnnextGatewayTLSFile = `
+	cnnextGatewayTLSFileTemplate = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -274,7 +274,7 @@ kind: DestinationRule
 metadata:
   name: egressgateway-for-cnn
 spec:
-  host: istio-egressgateway.istio-system.svc.cluster.local
+  host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
   subsets:
   - name: cnn
     trafficPolicy:
@@ -304,7 +304,7 @@ spec:
       port: 80
     route:
     - destination:
-        host: istio-egressgateway.istio-system.svc.cluster.local
+        host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
         subset: cnn
         port:
           number: 80
@@ -336,7 +336,7 @@ spec:
         mode: SIMPLE # initiates HTTPS for connections to edition.cnn.com
 `
 
-	nginxGatewayTLS = `
+	nginxGatewayTLSTemplate = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -359,7 +359,7 @@ kind: DestinationRule
 metadata:
   name: egressgateway-for-nginx
 spec:
-  host: istio-egressgateway.istio-system.svc.cluster.local
+  host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
   subsets:
   - name: nginx
     trafficPolicy:
@@ -389,7 +389,7 @@ spec:
       port: 80
     route:
     - destination:
-        host: istio-egressgateway.istio-system.svc.cluster.local
+        host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
         subset: nginx
         port:
           number: 443
@@ -428,7 +428,7 @@ spec:
   
 `
 
-	EgressGatewaySDS = `
+	EgressGatewaySDSTemplate = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -451,7 +451,7 @@ kind: DestinationRule
 metadata:
   name: egressgateway-for-nginx
 spec:
-  host: istio-egressgateway.istio-system.svc.cluster.local
+  host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
   subsets:
   - name: nginx
     trafficPolicy:
@@ -481,7 +481,7 @@ spec:
       port: 80
     route:
     - destination:
-        host: istio-egressgateway.istio-system.svc.cluster.local
+        host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
         subset: nginx
         port:
           number: 443
@@ -531,7 +531,7 @@ spec:
     protocol: HTTPS
 `
 
-	EgressWildcardGateway = `
+	EgressWildcardGatewayTemplate = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -554,7 +554,7 @@ kind: DestinationRule
 metadata:
   name: egressgateway-for-wikipedia
 spec:
-  host: istio-egressgateway.istio-system.svc.cluster.local
+  host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
   subsets:
     - name: wikipedia
 ---
@@ -577,7 +577,7 @@ spec:
       - "*.wikipedia.org"
     route:
     - destination:
-        host: istio-egressgateway.istio-system.svc.cluster.local
+        host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
         subset: wikipedia
         port:
           number: 443

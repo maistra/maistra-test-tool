@@ -37,7 +37,7 @@ spec:
     - applyTo: CLUSTER
       match:
         cluster:
-          service: rls-basic.istio-system.svc.cluster.local
+          service: rls-{{ .Name }}.{{ .Namespace }}.svc.cluster.local
       patch:
         operation: ADD
         # Adds the rate limit service cluster for rate limit service defined in step 1.
@@ -54,7 +54,7 @@ spec:
               - endpoint:
                   address:
                      socket_address:
-                      address: rls-basic.istio-system.svc.cluster.local
+                      address: rls-{{ .Name }}.{{ .Namespace }}.svc.cluster.local
                       port_value: 8081
 
 ---

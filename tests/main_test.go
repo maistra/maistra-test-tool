@@ -15,14 +15,9 @@
 package tests
 
 import (
-	"os"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
-)
-
-var (
-	SMMR = "../templates/smmr-templates/smmr_default.yaml"
 )
 
 func setupNamespaces() {
@@ -31,8 +26,6 @@ func setupNamespaces() {
 	util.ShellSilent(`oc new-project bar`)
 	util.ShellSilent(`oc new-project legacy`)
 	util.ShellSilent(`oc new-project mesh-external`)
-	util.ShellSilent(`oc apply -n istio-system -f %s`, SMMR)
-	util.ShellSilent(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
 }
 
 func matchString(a, b string) (bool, error) {
@@ -40,7 +33,6 @@ func matchString(a, b string) (bool, error) {
 }
 
 func TestMain(m *testing.M) {
-	os.Setenv("GODEBUG", "x509ignoreCN=0")
 	setupNamespaces()
 	// test runs
 	testing.Main(matchString, testCases, nil, nil)

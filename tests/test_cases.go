@@ -17,6 +17,9 @@ package tests
 import (
 	"testing"
 
+	// Keep pkg/ossm at the beginning of this import list. It initializes a default SMCP.
+	"github.com/maistra/maistra-test-tool/pkg/ossm"
+
 	"github.com/maistra/maistra-test-tool/pkg/tasks/security/authentication"
 	authorizaton "github.com/maistra/maistra-test-tool/pkg/tasks/security/authorization"
 	"github.com/maistra/maistra-test-tool/pkg/tasks/security/certificate"
@@ -25,7 +28,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/tasks/traffic/ingress"
 
 	"github.com/maistra/maistra-test-tool/pkg/federation"
-	"github.com/maistra/maistra-test-tool/pkg/ossm"
 )
 
 var t = &testing.T{}

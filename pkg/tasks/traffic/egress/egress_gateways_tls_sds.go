@@ -26,10 +26,10 @@ import (
 
 func cleanupTLSOriginationSDS() {
 	util.Log.Info("Cleanup")
-	util.KubeDeleteContents("istio-system", OriginateSDS)
-	util.KubeDeleteContents("bookinfo", EgressGatewaySDS)
-	util.Shell(`kubectl delete -n %s secret client-credential`, "istio-system")
-	util.Shell(`kubectl delete -n %s secret client-credential-cacert`, "istio-system")
+	util.KubeDeleteContents(meshNamespace, OriginateSDS)
+	util.KubeDeleteContents("bookinfo", util.RunTemplate(EgressGatewaySDSTemplate, smcp))
+	util.Shell(`kubectl delete -n %s secret client-credential`, meshNamespace)
+	util.Shell(`kubectl delete -n %s secret client-credential-cacert`, meshNamespace)
 	sleep := examples.Sleep{"bookinfo"}
 	nginx := examples.Nginx{"mesh-external"}
 	sleep.Uninstall()
@@ -48,15 +48,15 @@ func TestTLSOriginationSDS(t *testing.T) {
 
 	nginx := examples.Nginx{"mesh-external"}
 	nginx.Install("../testdata/examples/x86/nginx/nginx_mesh_external.conf")
-	util.Shell(`kubectl create -n %s secret generic client-credential-cacert --from-file=%s`, "istio-system", nginxServerCACert)
+	util.Shell(`kubectl create -n %s secret generic client-credential-cacert --from-file=%s`, meshNamespace, nginxServerCACert)
 
 	t.Run("TrafficManagement_egress_configure_tls_origination", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
 		util.Log.Info("Configure simple TLS origination for egress traffic")
-		util.KubeApplyContents("bookinfo", EgressGatewaySDS)
+		util.KubeApplyContents("bookinfo", util.RunTemplate(EgressGatewaySDSTemplate, smcp))
 		time.Sleep(time.Duration(20) * time.Second)
-		util.KubeApplyContents("istio-system", OriginateSDS)
+		util.KubeApplyContents(meshNamespace, OriginateSDS)
 		time.Sleep(time.Duration(10) * time.Second)
 
 		util.Log.Info("Verify NGINX server")
@@ -80,7 +80,7 @@ func TestTLSOriginationSDS(t *testing.T) {
 		nginx := examples.Nginx{"mesh-external"}
 		nginx.Install("../testdata/examples/x86/nginx/nginx_mesh_external_ssl.conf")
 		util.Shell(`kubectl create -n %s secret generic client-credential --from-file=tls.key=%s --from-file=tls.crt=%s --from-file=ca.crt=%s`,
-			"istio-system", nginxClientCertKey, nginxClientCert, nginxServerCACert)
+			meshNamespace, nginxClientCertKey, nginxClientCert, nginxServerCACert)
 
 	})
 }

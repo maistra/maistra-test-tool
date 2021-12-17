@@ -24,12 +24,100 @@ import (
 )
 
 const (
-	rateLimitFilterYaml = "../testdata/resources/yaml/ratelimit-envoyfilter.yaml"
+	rateLimitFilterYaml_template = `
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: filter-ratelimit
+spec:
+  workloadSelector:
+    # select by label in the same namespace
+    labels:
+      istio: ingressgateway
+  configPatches:
+    # The Envoy config you want to modify
+    - applyTo: HTTP_FILTER
+      match:
+        context: GATEWAY
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+              subFilter:
+                name: "envoy.filters.http.router"
+      patch:
+        operation: INSERT_BEFORE
+        # Adds the Envoy Rate Limit Filter in HTTP filter chain.
+        value:
+          name: envoy.filters.http.ratelimit
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
+            # domain can be anything! Match it to the ratelimter service config
+            domain: productpage-ratelimit
+            failure_mode_deny: true
+            timeout: 10s
+            rate_limit_service:
+              grpc_service:
+                envoy_grpc:
+                  cluster_name: rate_limit_cluster
+              transport_api_version: V3
+    - applyTo: CLUSTER
+      match:
+        cluster:
+          service: rls-{{ .Name }}.{{ .Namespace }}.svc.cluster.local
+      patch:
+        operation: ADD
+        # Adds the rate limit service cluster for rate limit service defined in step 1.
+        value:
+          name: rate_limit_cluster
+          type: STRICT_DNS
+          connect_timeout: 10s
+          lb_policy: ROUND_ROBIN
+          http2_protocol_options: {}
+          load_assignment:
+            cluster_name: rate_limit_cluster
+            endpoints:
+            - lb_endpoints:
+              - endpoint:
+                  address:
+                     socket_address:
+                      address: rls-{{ .Name }}.{{ .Namespace }}.svc.cluster.local
+                      port_value: 8081
+
+---
+
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: filter-ratelimit-svc
+spec:
+  workloadSelector:
+    labels:
+      istio: ingressgateway
+  configPatches:
+    - applyTo: VIRTUAL_HOST
+      match:
+        context: GATEWAY
+        routeConfiguration:
+          vhost:
+            name: ""
+            route:
+              action: ANY
+      patch:
+        operation: MERGE
+        # Applies the rate limit rules.
+        value:
+          rate_limits:
+            - actions: # any actions in here
+              - request_headers:
+                  header_name: ":path"
+                  descriptor_key: "PATH"	
+`
 )
 
 func cleanupRateLimiting(redisDeploy examples.Redis, bookinfoDeploy examples.Bookinfo) {
-	util.Shell(`kubectl -n istio-system patch smcp/basic --type=json -p='[{"op": "remove", "path": "/spec/techPreview"}]'`)
-	util.KubeDelete("istio-system", rateLimitFilterYaml)
+	util.Shell(`kubectl -n %s patch smcp/%s --type=json -p='[{"op": "remove", "path": "/spec/techPreview/rateLimiting"}]'`, meshNamespace, smcpName)
+	util.KubeDeleteContents(meshNamespace, rateLimitSMCPPatch)
 	redisDeploy.Uninstall()
 	bookinfoDeploy.Uninstall()
 }
@@ -44,26 +132,28 @@ func TestRateLimiting(t *testing.T) {
 	if err := redisDeploy.Install(); err != nil {
 		t.Fatal(err)
 	}
-
-	if _, err := util.Shell(`kubectl -n istio-system patch smcp/basic --type=merge --patch="%s"`, rateLimitSMCPPatch); err != nil {
+	if _, err := util.Shell(`kubectl -n %s patch smcp/%s --type=merge --patch="%s"`, meshNamespace, smcpName, rateLimitSMCPPatch); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`); err != nil {
+	if _, err := util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := util.CheckPodRunning("istio-system", "app=rls"); err != nil {
+	if err := util.CheckPodRunning(meshNamespace, "app=rls"); err != nil {
 		t.Fatalf("rls deployment not ready: %v", err)
 	}
 
-	if err := util.KubeApply("istio-system", rateLimitFilterYaml); err != nil {
+	if err := util.KubeApplyContents(meshNamespace, util.RunTemplate(rateLimitFilterYaml_template, smcp)); err != nil {
 		t.Fatalf("error applying envoy filter: %v", err)
 	}
+	util.Shell(`kubectl -n %s get envoyfilter -o yaml > rrr.yaml`, meshNamespace)
+	//util.Log.Info(msg)
+
 	// Give some time to envoy filters apply
 	time.Sleep(time.Second * 5)
 
-	host, err := util.Shell("oc -n istio-system get route istio-ingressgateway -o jsonpath='{.spec.host}'")
+	host, err := util.Shell("oc -n %s get route istio-ingressgateway -o jsonpath='{.spec.host}'", meshNamespace)
 	if err != nil {
 		t.Fatalf("error getting route hostname: %v", err)
 	}

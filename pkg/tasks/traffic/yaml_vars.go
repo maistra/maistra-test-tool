@@ -30,14 +30,14 @@ const (
 	echoAllv1Yaml = "../testdata/examples/x86/tcp-echo/tcp-echo-all-v1.yaml"
 	echo20v2Yaml  = "../testdata/examples/x86/tcp-echo/tcp-echo-20-v2.yaml"
 
-	meshNamespace = "istio-system"
-	smcpName      = "basic"
-	testUsername  = "jason"
+	testUsername = "jason"
 )
 
 var (
 	// OCP4.x
-	gatewayHTTP, _       = util.ShellSilent(`kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'`, meshNamespace)
-	ingressHTTPPort, _   = util.ShellSilent(`kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name=="http2")].port}'`, meshNamespace, "istio-ingressgateway")
-	secureIngressPort, _ = util.ShellSilent(`kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name=="https")].port}'`, meshNamespace, "istio-ingressgateway")
+	smcpName             string = util.Getenv("SMCPNAME", "basic")
+	meshNamespace        string = util.Getenv("MESHNAMESPACE", "istio-system")
+	gatewayHTTP, _              = util.ShellSilent(`kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'`, meshNamespace)
+	ingressHTTPPort, _          = util.ShellSilent(`kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name=="http2")].port}'`, meshNamespace, "istio-ingressgateway")
+	secureIngressPort, _        = util.ShellSilent(`kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name=="https")].port}'`, meshNamespace, "istio-ingressgateway")
 )

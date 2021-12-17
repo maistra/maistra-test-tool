@@ -35,8 +35,8 @@ func cleanupAuthorHTTP() {
 	time.Sleep(time.Duration(20) * time.Second)
 	bookinfo := examples.Bookinfo{"bookinfo"}
 	bookinfo.Uninstall()
-	util.Shell(`kubectl patch -n istio-system smcp/basic --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":false},"controlPlane":{"mtls":false}}}}'`)
-	util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
+	util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":false},"controlPlane":{"mtls":false}}}}'`, meshNamespace, smcpName)
+	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
 	time.Sleep(time.Duration(20) * time.Second)
 }
 
@@ -46,8 +46,8 @@ func TestAuthorHTTP(t *testing.T) {
 
 	util.Log.Info("Authorization for HTTP traffic")
 	util.Log.Info("Enable Control Plane MTLS")
-	util.Shell(`kubectl patch -n istio-system smcp/basic --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}'`)
-	util.Shell(`oc -n istio-system wait --for condition=Ready smcp/basic --timeout 180s`)
+	util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}'`, meshNamespace, smcpName)
+	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
 
 	bookinfo := examples.Bookinfo{"bookinfo"}
 	bookinfo.Install(true)

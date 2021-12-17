@@ -12,20 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package authentication
+package ossm
 
 import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
-type SMCP struct {
-	Name      string `default:"basic"`
-	Namespace string `default:"istio-system"`
+// Initialize a default SMCP and SMMR
+func init() {
+	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
+	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV21_template, smcp))
+	util.KubeApplyContents(meshNamespace, smmr)
+	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
 }
-
-var (
-	smcpName       string = util.Getenv("SMCPNAME", "basic")
-	meshNamespace  string = util.Getenv("MESHNAMESPACE", "istio-system")
-	smcp           SMCP   = SMCP{smcpName, meshNamespace}
-	gatewayHTTP, _        = util.ShellSilent(`kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'`, meshNamespace)
-)
