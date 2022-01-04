@@ -167,4 +167,8 @@ var testCases = []testing.InternalTest{
 		Name: "S9",
 		F:    ossm.TestInitContainer,
 	},
+	testing.InternalTest{
+		Name: "S10",
+		F:    ossm.TestSMCPAddons,
+	},
 }
