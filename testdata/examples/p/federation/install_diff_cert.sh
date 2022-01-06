@@ -49,7 +49,7 @@ log "Waiting for mesh2 installation to complete"
 oc2 wait --for condition=Ready -n mesh2-system smmr/default --timeout 300s
 
 log "Retrieving root certificates"
-MESH1_CERT=$(cat cacerts/root-cert.pem cacerts/ca-cert.pem | sed ':a;N;$!ba;s/\n/\\\n    /g')
+MESH1_CERT=$(oc1 get configmap -n mesh1-system istio-ca-root-cert -o jsonpath='{.data.root-cert\.pem}' | sed ':a;N;$!ba;s/\n/\\\n    /g')
 MESH2_CERT=$(oc2 get configmap -n mesh2-system istio-ca-root-cert -o jsonpath='{.data.root-cert\.pem}' | sed ':a;N;$!ba;s/\n/\\\n    /g')
 
 MESH1_DISCOVERY_PORT="8188"
