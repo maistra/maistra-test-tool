@@ -63,14 +63,14 @@ spec:
         weight: 100
 `
 
-	cnnextServiceEntry = `
+	ExServiceEntry = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
-  name: cnn
+  name: istio-io
 spec:
   hosts:
-  - edition.cnn.com
+  - istio.io
   ports:
   - number: 80
     name: http-port
@@ -81,14 +81,14 @@ spec:
   resolution: DNS
 `
 
-	cnnextServiceEntryOriginate = `
+	ExServiceEntryOriginate = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
-  name: edition-cnn-com
+  name: istio-io
 spec:
   hosts:
-  - edition.cnn.com
+  - istio.io
   ports:
   - number: 80
     name: http-port
@@ -101,16 +101,16 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: edition-cnn-com
+  name: istio-io
 spec:
   hosts:
-  - edition.cnn.com
+  - istio.io
   http:
   - match:
     - port: 80
     route:
     - destination:
-        host: edition.cnn.com
+        host: istio.io
         subset: tls-origination
         port:
           number: 443
@@ -118,9 +118,9 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: edition-cnn-com
+  name: istio-io
 spec:
-  host: edition.cnn.com
+  host: istio.io
   subsets:
   - name: tls-origination
     trafficPolicy:
@@ -130,17 +130,17 @@ spec:
       - port:
           number: 443
         tls:
-          mode: SIMPLE # initiates HTTPS when accessing edition.cnn.com
+          mode: SIMPLE # initiates HTTPS when accessing istio.io
 `
 
-	cnnextServiceEntryTLS = `
+	ExServiceEntryTLS = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
-  name: cnn
+  name: istio-io
 spec:
   hosts:
-  - edition.cnn.com
+  - istio.io
   ports:
   - number: 443
     name: tls
@@ -148,7 +148,7 @@ spec:
   resolution: DNS
 `
 
-	cnnextGateway = `
+	ExGateway = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -162,24 +162,24 @@ spec:
       name: http
       protocol: HTTP
     hosts:
-    - edition.cnn.com
+    - istio.io
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: egressgateway-for-cnn
+  name: egressgateway-for-istio-io
 spec:
   host: istio-egressgateway.istio-system.svc.cluster.local
   subsets:
-  - name: cnn
+  - name: istio-io
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: direct-cnn-through-egress-gateway
+  name: direct-istio-io-through-egress-gateway
 spec:
   hosts:
-  - edition.cnn.com
+  - istio.io
   gateways:
   - istio-egressgateway
   - mesh
@@ -191,7 +191,7 @@ spec:
     route:
     - destination:
         host: istio-egressgateway.istio-system.svc.cluster.local
-        subset: cnn
+        subset: istio-io
         port:
           number: 80
       weight: 100
@@ -201,13 +201,13 @@ spec:
       port: 80
     route:
     - destination:
-        host: edition.cnn.com
+        host: istio.io
         port:
           number: 80
       weight: 100
 `
 
-	cnnextGatewayHTTPS = `
+	ExGatewayHTTPS = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -221,26 +221,26 @@ spec:
       name: tls
       protocol: TLS
     hosts:
-    - edition.cnn.com
+    - istio.io
     tls:
       mode: PASSTHROUGH
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: egressgateway-for-cnn
+  name: egressgateway-for-istio-io
 spec:
   host: istio-egressgateway.istio-system.svc.cluster.local
   subsets:
-  - name: cnn
+  - name: istio-io
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: direct-cnn-through-egress-gateway
+  name: direct-istio-io-through-egress-gateway
 spec:
   hosts:
-  - edition.cnn.com
+  - istio.io
   gateways:
   - mesh
   - istio-egressgateway
@@ -250,11 +250,11 @@ spec:
       - mesh
       port: 443
       sniHosts:
-      - edition.cnn.com
+      - istio.io
     route:
     - destination:
         host: istio-egressgateway.istio-system.svc.cluster.local
-        subset: cnn
+        subset: istio-io
         port:
           number: 443
   - match:
@@ -262,16 +262,16 @@ spec:
       - istio-egressgateway
       port: 443
       sniHosts:
-      - edition.cnn.com
+      - istio.io
     route:
     - destination:
-        host: edition.cnn.com
+        host: istio.io
         port:
           number: 443
       weight: 100
 `
 
-	cnnextGatewayTLSFile = `
+	ExGatewayTLSFile = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -285,18 +285,18 @@ spec:
       name: https-port-for-tls-origination
       protocol: HTTPS
     hosts:
-    - edition.cnn.com
+    - istio.io
     tls:
       mode: ISTIO_MUTUAL
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: egressgateway-for-cnn
+  name: egressgateway-for-istio-io
 spec:
   host: istio-egressgateway.istio-system.svc.cluster.local
   subsets:
-  - name: cnn
+  - name: istio-io
     trafficPolicy:
       loadBalancer:
         simple: ROUND_ROBIN
@@ -305,15 +305,15 @@ spec:
           number: 80
         tls:
           mode: ISTIO_MUTUAL
-          sni: edition.cnn.com
+          sni: istio.io
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: direct-cnn-through-egress-gateway
+  name: direct-istio-io-through-egress-gateway
 spec:
   hosts:
-  - edition.cnn.com
+  - istio.io
   gateways:
   - istio-egressgateway
   - mesh
@@ -325,7 +325,7 @@ spec:
     route:
     - destination:
         host: istio-egressgateway.istio-system.svc.cluster.local
-        subset: cnn
+        subset: istio-io
         port:
           number: 80
       weight: 100
@@ -335,7 +335,7 @@ spec:
       port: 80
     route:
     - destination:
-        host: edition.cnn.com
+        host: istio.io
         port:
           number: 443
       weight: 100
@@ -343,9 +343,9 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: originate-tls-for-edition-cnn-com
+  name: originate-tls-for-edition-istio-io
 spec:
-  host: edition.cnn.com
+  host: istio.io
   trafficPolicy:
     loadBalancer:
       simple: ROUND_ROBIN
@@ -353,7 +353,7 @@ spec:
     - port:
         number: 443
       tls:
-        mode: SIMPLE # initiates HTTPS for connections to edition.cnn.com
+        mode: SIMPLE # initiates HTTPS for connections to istio.io
 `
 
 	nginxGatewayTLS = `

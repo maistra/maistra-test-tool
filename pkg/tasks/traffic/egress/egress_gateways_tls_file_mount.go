@@ -83,8 +83,8 @@ func cleanupTLSOriginationFileMount() {
 
 	util.Shell(`kubectl delete -n %s secret nginx-client-certs`, "istio-system")
 	util.Shell(`kubectl delete -n %s secret nginx-ca-certs`, "istio-system")
-	util.KubeDeleteContents("bookinfo", cnnextGatewayTLSFile)
-	util.KubeDeleteContents("bookinfo", cnnextServiceEntry)
+	util.KubeDeleteContents("bookinfo", ExGatewayTLSFile)
+	util.KubeDeleteContents("bookinfo", ExServiceEntry)
 	nginx.Uninstall()
 	sleep.Uninstall()
 	time.Sleep(time.Duration(20) * time.Second)
@@ -107,36 +107,36 @@ func TestTLSOriginationFileMount(t *testing.T) {
 		defer util.RecoverPanic(t)
 
 		util.Log.Info("Perform TLS origination with an egress gateway")
-		util.KubeApplyContents("bookinfo", cnnextServiceEntry)
+		util.KubeApplyContents("bookinfo", ExServiceEntry)
 		time.Sleep(time.Duration(10) * time.Second)
 
-		command := `curl -sSL -o /dev/null -D - http://edition.cnn.com/politics`
+		command := `curl -sSL -o /dev/null -D - http://istio.io`
 		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "301 Moved Permanently") {
-			util.Log.Info("Success. Get http://edition.cnn.com/politics response")
+			util.Log.Info("Success. Get http://istio.io response")
 		} else {
 			util.Log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		}
 
-		util.Log.Info("Create a Gateway to external edition.cnn.com")
-		util.KubeApplyContents("bookinfo", cnnextGatewayTLSFile)
+		util.Log.Info("Create a Gateway to external istio.io")
+		util.KubeApplyContents("bookinfo", ExGatewayTLSFile)
 		time.Sleep(time.Duration(20) * time.Second)
 
-		command = `curl -sSL -o /dev/null -D - http://edition.cnn.com/politics`
+		command = `curl -sSL -o /dev/null -D - http://istio.io`
 		msg, err = util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "301 Moved Permanently") || !strings.Contains(msg, "200") {
 			util.Log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		} else {
-			util.Log.Infof("Success. Get http://edition.cnn.com/politics response")
+			util.Log.Infof("Success. Get http://istio.io response")
 		}
 
 		util.Log.Info("Cleanup the TLS origination example")
-		util.KubeDeleteContents("bookinfo", cnnextGatewayTLSFile)
-		util.KubeDeleteContents("bookinfo", cnnextServiceEntry)
+		util.KubeDeleteContents("bookinfo", ExGatewayTLSFile)
+		util.KubeDeleteContents("bookinfo", ExServiceEntry)
 		time.Sleep(time.Duration(20) * time.Second)
 	})
 
