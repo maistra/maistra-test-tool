@@ -26,8 +26,8 @@ import (
 func cleanupEgressTLSOrigination() {
 	util.Log.Info("Cleanup")
 	sleep := examples.Sleep{"bookinfo"}
-	util.KubeDeleteContents("bookinfo", cnnextServiceEntryOriginate)
-	util.KubeDeleteContents("bookinfo", cnnextServiceEntry)
+	util.KubeDeleteContents("bookinfo", ExServiceEntryOriginate)
+	util.KubeDeleteContents("bookinfo", ExServiceEntry)
 	sleep.Uninstall()
 	time.Sleep(time.Duration(20) * time.Second)
 }
@@ -45,15 +45,15 @@ func TestEgressTLSOrigination(t *testing.T) {
 	t.Run("TrafficManagement_egress_configure_access_to_external_service", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Create a ServiceEntry to external edition.cnn.com")
-		util.KubeApplyContents("bookinfo", cnnextServiceEntry)
+		util.Log.Info("Create a ServiceEntry to external istio.io")
+		util.KubeApplyContents("bookinfo", ExServiceEntry)
 		time.Sleep(time.Duration(10) * time.Second)
 
-		command := `curl -sSL -o /dev/null -D - http://edition.cnn.com/politics`
+		command := `curl -sSL -o /dev/null -D - http://istio.io`
 		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "301 Moved Permanently") {
-			util.Log.Info("Success. Get http://edition.cnn.com/politics response")
+			util.Log.Info("Success. Get http://istio.io response")
 		} else {
 			util.Log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
@@ -64,27 +64,27 @@ func TestEgressTLSOrigination(t *testing.T) {
 		defer util.RecoverPanic(t)
 
 		util.Log.Info("TLS origination for egress traffic")
-		util.KubeApplyContents("bookinfo", cnnextServiceEntryOriginate)
+		util.KubeApplyContents("bookinfo", ExServiceEntryOriginate)
 		time.Sleep(time.Duration(10) * time.Second)
 
-		command := `curl -sSL -o /dev/null -D - http://edition.cnn.com/politics`
+		command := `curl -sSL -o /dev/null -D - http://istio.io`
 		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "301 Moved Permanently") || strings.Contains(msg, "503 Service Unavailable") {
 			util.Log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		} else {
-			util.Log.Infof("Success. Get http://edition.cnn.com/politics response: %s", msg)
+			util.Log.Infof("Success. Get http://istio.io response: %s", msg)
 		}
 
-		command = `curl -sSL -o /dev/null -D - https://edition.cnn.com/politics`
+		command = `curl -sSL -o /dev/null -D - https://istio.io`
 		msg, err = util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "301 Moved Permanently") || strings.Contains(msg, "503 Service Unavailable") {
 			util.Log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		} else {
-			util.Log.Infof("Success. Get https://edition.cnn.com/politics response: %s", msg)
+			util.Log.Infof("Success. Get https://istio.io response: %s", msg)
 		}
 	})
 }
