@@ -45,6 +45,7 @@ func TestAuthorTCP(t *testing.T) {
 	sleep.Install()
 	echo := examples.Echo{"foo"}
 	echo.InstallWithProxy()
+	time.Sleep(time.Duration(20) * time.Second)
 
 	util.Log.Info("Verify echo hello port")
 	sleepPod, err := util.GetPodName("foo", "app=sleep")
