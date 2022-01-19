@@ -35,15 +35,7 @@ properties([
     ])
 ])
 
-// If the value is empty, so it was triggered by Jenkins, and execution is not needed (only pipeline updates).
-if (util.getWhoBuild() == "[]") {
-    // Define the build name and informations about it
-    currentBuild.displayName = "Not Applicable"
-    currentBuild.description = "Triggered Job"
-
-    echo "Nothing to do!"
-
-} else if (OCP_API_URL == "") {
+if (OCP_API_URL == "") {
       // Define the build name and informations about it
       currentBuild.displayName = "Not Applicable"
       currentBuild.description = "Need more info"
