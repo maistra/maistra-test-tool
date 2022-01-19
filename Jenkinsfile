@@ -14,14 +14,14 @@ properties([
         string(
             name: 'OCP_CRED_ID',
             defaultValue: 'jenkins-ocp-auto',
-            description: 'Jenkins credentials ID for OCP cluster. When set this takes takes precedence over OCP_CRED_USR.'
+            description: 'Jenkins credentials ID for OCP cluster. When set this, it takes precedence over OCP_CRED_USR and OCP_CRED_PSW.'
         ),
         string(
             name: 'OCP_CRED_USR',
             defaultValue: 'kubeadmin',
-            description: 'OCP login user'
+            description: 'OCP login user. When OCP_CRED_ID parameter is not empty, OCP_CRED_USR will be ignored.'
         ),
-        password(name: 'OCP_CRED_PSW', description: 'User password'),
+        password(name: 'OCP_CRED_PSW', description: 'User password. When OCP_CRED_ID parameter is not empty, OCP_CRED_PSW will be ignored.'),
         string(
             name: 'OCP_SAMPLE_ARCH',
             defaultValue: 'x86',
