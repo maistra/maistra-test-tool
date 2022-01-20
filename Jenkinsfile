@@ -143,16 +143,7 @@ if (OCP_API_URL == "") {
                 println OUT
             }
             stage ("Validate Results") {
-                def OUT = sh (
-                script: """
-                if grep -Fxq "FAIL" ${WORKSPACE}/test.log || true;
-                then exit 1;
-                else echo "Test Run PASS";
-                fi
-                """,
-                returnStdout: true
-                ).trim()
-                println OUT
+                junit "results.xml"
             }
         } catch(e) {
             currentBuild.result = "FAILED"
