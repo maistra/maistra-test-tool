@@ -29,6 +29,7 @@ func installDefaultSMCP21() {
 	util.KubeApplyContents(meshNamespace, smmr)
 	util.Log.Info("Waiting for mesh installation to complete")
 	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func TestSMCPInstall(t *testing.T) {

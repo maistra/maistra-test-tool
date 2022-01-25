@@ -36,6 +36,10 @@ var testCases = []testing.InternalTest{
 		Name: "A1",
 		F:    ossm.TestSMCPInstall,
 	},
+	testing.InternalTest{
+		Name: "A2",
+		F:    ossm.TestBookinfo,
+	},
 
 	testing.InternalTest{
 		Name: "T1",
@@ -89,7 +93,6 @@ var testCases = []testing.InternalTest{
 		Name: "T13",
 		F:    egress.TestEgressGateways,
 	},
-
 	testing.InternalTest{
 		Name: "T15",
 		F:    egress.TestTLSOriginationFileMount,
@@ -132,43 +135,43 @@ var testCases = []testing.InternalTest{
 	},
 
 	testing.InternalTest{
-		Name: "S1",
+		Name: "T25",
 		F:    ossm.TestExtensionInstall,
 	},
 	testing.InternalTest{
-		Name: "S2",
+		Name: "T26",
 		F:    ossm.TestTLSVersionSMCP,
 	},
 	testing.InternalTest{
-		Name: "S3",
+		Name: "T27",
 		F:    ossm.TestSSL,
 	},
 	testing.InternalTest{
-		Name: "S4",
+		Name: "T28",
 		F:    ossm.TestRateLimiting,
 	},
 	testing.InternalTest{
-		Name: "S5",
+		Name: "T29",
 		F:    ossm.TestProxyEnv,
 	},
 	testing.InternalTest{
-		Name: "S6",
+		Name: "T30",
 		F:    ossm.TestMustGather,
 	},
 	testing.InternalTest{
-		Name: "S7",
+		Name: "T31",
 		F:    federation.TestSingleClusterFed,
 	},
 	testing.InternalTest{
-		Name: "S8",
+		Name: "T32",
 		F:    federation.TestSingleClusterFedDiffCert,
 	},
 	testing.InternalTest{
-		Name: "S9",
+		Name: "T33",
 		F:    ossm.TestInitContainer,
 	},
 	testing.InternalTest{
-		Name: "S10",
+		Name: "T34",
 		F:    ossm.TestSMCPAddons,
 	},
 }

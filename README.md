@@ -42,10 +42,17 @@ The testing tasks are based on [istio.io Doc Tasks](https://istio.io/v1.9/docs/t
     - For Z environment testing, a user can update the `tests/test.env` file `export SAMPLEARCH=z`
 
 - To run all the test cases: `cd tests; go test -timeout 3h -v`
+
     ```
     $ cd tests
     $ go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
     ```
+- To run a single test case: e.g. `cd tests; go test -run S1 -timeout 3h -v`
+
+    Test cases shortname and mapping are in the `tests/test_cases.go` file.
+    `A...` are shortname of smoke tests.
+    `T...` are shortname of tasks and functional test cases.
+
 
 ## License
 
