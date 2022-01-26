@@ -33,7 +33,7 @@ func cleanupBookinfo() {
 func TestBookinfo(t *testing.T) {
 	defer util.RecoverPanic(t)
 
-	util.Log.Info("TestRequestRouting")
+	util.Log.Info("Test Bookinfo Installation")
 	app := examples.Bookinfo{"bookinfo"}
 	app.Install(false)
 
