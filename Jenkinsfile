@@ -70,14 +70,14 @@ if (OCP_API_URL == "") {
                     sh "oc login ${params.OCP_API_URL} -u=${OCP_CRED_USR} -p=${OCP_CRED_PSW} --insecure-skip-tls-verify"
                 }
             }
-            stage("Start running nightly build testing"){
+            stage("Start running all tests"){
                 dir('tests') {
                 wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: 'OCP_CRED_PSW', password: OCP_CRED_PSW]], varMaskRegexes: []]) {
                     def OUT = sh (
                     script: """
-                        if [ "${params.NIGHTLY}" == "true" ];
+                        if [ -z "${params.TEST_CASE}" ]; 
                         then docker run \
-                        --name maistra-test-tool \
+                        --name maistra-test-tool-${env.BUILD_NUMBER} \
                         -d \
                         --rm \
                         --pull always \
@@ -97,32 +97,6 @@ if (OCP_API_URL == "") {
                 }
                 }
             }
-            stage("Start running all tests"){
-                dir('tests') {
-                wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: 'OCP_CRED_PSW', password: OCP_CRED_PSW]], varMaskRegexes: []]) {
-                    def OUT = sh (
-                    script: """
-                        if [ -z "${params.TEST_CASE}" ]; 
-                        then docker run \
-                        --name maistra-test-tool \
-                        -d \
-                        --rm \
-                        --pull always \
-                        -e SAMPLEARCH='${params.OCP_SAMPLE_ARCH}' \
-                        -e OCP_CRED_USR='${OCP_CRED_USR}' \
-                        -e OCP_CRED_PSW='${OCP_CRED_PSW}' \
-                        -e OCP_API_URL='${params.OCP_API_URL}' \
-                        -e GODEBUG=x509ignoreCN=0 \
-                        quay.io/maistra/maistra-test-tool:2.1;
-                        else echo 'Skip';
-                        fi
-                    """,
-                    returnStdout: true
-                    ).trim()
-                    println OUT
-                }
-                }
-            }
             stage("Start running a single test case"){
                 dir('tests') {
                 wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: 'OCP_CRED_PSW', password: OCP_CRED_PSW]], varMaskRegexes: []]) {
@@ -131,7 +105,7 @@ if (OCP_API_URL == "") {
                         if [ -z "${params.TEST_CASE}" ]; 
                         then echo 'Skip';
                         else docker run \
-                        --name maistra-test-tool \
+                        --name maistra-test-tool-${env.BUILD_NUMBER} \
                         -d \
                         --rm \
                         --pull always \
@@ -140,6 +114,7 @@ if (OCP_API_URL == "") {
                         -e OCP_CRED_PSW='${OCP_CRED_PSW}' \
                         -e OCP_API_URL='${params.OCP_API_URL}' \
                         -e TEST_CASE='${params.TEST_CASE}' \
+                        -e NIGHTLY='${params.NIGHTLY}' \
                         -e GODEBUG=x509ignoreCN=0 \
                         --entrypoint "../scripts/pipeline/run_one_test.sh" \
                         quay.io/maistra/maistra-test-tool:2.1;
@@ -155,8 +130,8 @@ if (OCP_API_URL == "") {
                 def OUT = sh (
                 script: """
                 set +ex
-                docker logs maistra-test-tool | grep "#Testing Completed#"
-                while [ \$? -ne 0 ]; do sleep 60; docker logs maistra-test-tool | grep "#Testing Completed#"
+                docker logs maistra-test-tool-${env.BUILD_NUMBER} | grep "#Testing Completed#"
+                while [ \$? -ne 0 ]; do sleep 60; docker logs maistra-test-tool-${env.BUILD_NUMBER} | grep "#Testing Completed#"
                 done
                 set -ex
                 """,
@@ -167,8 +142,8 @@ if (OCP_API_URL == "") {
             stage ("Collect logs") {
                 def OUT = sh (
                 script: """
-                docker cp maistra-test-tool:/opt/maistra-test-tool/tests/test.log .
-                docker cp maistra-test-tool:/opt/maistra-test-tool/tests/results.xml .
+                docker cp maistra-test-tool-${env.BUILD_NUMBER}:/opt/maistra-test-tool/tests/test.log .
+                docker cp maistra-test-tool-${env.BUILD_NUMBER}:/opt/maistra-test-tool/tests/results.xml .
                 """,
                 returnStdout: true
                 ).trim()
