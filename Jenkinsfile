@@ -31,6 +31,11 @@ properties([
             name: 'TEST_CASE',
             defaultValue: '',
             description: 'test case name, e.g. T1, T2. See tests/test_cases.go, default empty value will run all test cases.'
+        ),
+        string(
+            name: 'NIGHTLY',
+            defaultValue: 'false',
+            description: 'Install nightly operators from quay.io/maistra'
         )
     ])
 ])
@@ -72,7 +77,7 @@ if (OCP_API_URL == "") {
                     script: """
                         if [ -z "${params.TEST_CASE}" ]; 
                         then docker run \
-                        --name maistra-test-tool \
+                        --name maistra-test-tool-${env.BUILD_NUMBER} \
                         -d \
                         --rm \
                         --pull always \
@@ -80,9 +85,10 @@ if (OCP_API_URL == "") {
                         -e OCP_CRED_USR='${OCP_CRED_USR}' \
                         -e OCP_CRED_PSW='${OCP_CRED_PSW}' \
                         -e OCP_API_URL='${params.OCP_API_URL}' \
+                        -e NIGHTLY='${params.NIGHTLY}' \
                         -e GODEBUG=x509ignoreCN=0 \
                         quay.io/maistra/maistra-test-tool:2.1;
-                        else echo;
+                        else echo 'Skip';
                         fi
                     """,
                     returnStdout: true
@@ -97,9 +103,9 @@ if (OCP_API_URL == "") {
                     def OUT = sh (
                     script: """
                         if [ -z "${params.TEST_CASE}" ]; 
-                        then echo;
+                        then echo 'Skip';
                         else docker run \
-                        --name maistra-test-tool \
+                        --name maistra-test-tool-${env.BUILD_NUMBER} \
                         -d \
                         --rm \
                         --pull always \
@@ -108,6 +114,7 @@ if (OCP_API_URL == "") {
                         -e OCP_CRED_PSW='${OCP_CRED_PSW}' \
                         -e OCP_API_URL='${params.OCP_API_URL}' \
                         -e TEST_CASE='${params.TEST_CASE}' \
+                        -e NIGHTLY='${params.NIGHTLY}' \
                         -e GODEBUG=x509ignoreCN=0 \
                         --entrypoint "../scripts/pipeline/run_one_test.sh" \
                         quay.io/maistra/maistra-test-tool:2.1;
@@ -123,8 +130,8 @@ if (OCP_API_URL == "") {
                 def OUT = sh (
                 script: """
                 set +ex
-                docker logs maistra-test-tool | grep "#Testing Completed#"
-                while [ \$? -ne 0 ]; do sleep 60; docker logs maistra-test-tool | grep "#Testing Completed#"
+                docker logs maistra-test-tool-${env.BUILD_NUMBER} | grep "#Testing Completed#"
+                while [ \$? -ne 0 ]; do sleep 60; docker logs maistra-test-tool-${env.BUILD_NUMBER} | grep "#Testing Completed#"
                 done
                 set -ex
                 """,
@@ -135,8 +142,8 @@ if (OCP_API_URL == "") {
             stage ("Collect logs") {
                 def OUT = sh (
                 script: """
-                docker cp maistra-test-tool:/opt/maistra-test-tool/tests/test.log .
-                docker cp maistra-test-tool:/opt/maistra-test-tool/tests/results.xml .
+                docker cp maistra-test-tool-${env.BUILD_NUMBER}:/opt/maistra-test-tool/tests/test.log .
+                docker cp maistra-test-tool-${env.BUILD_NUMBER}:/opt/maistra-test-tool/tests/results.xml .
                 """,
                 returnStdout: true
                 ).trim()

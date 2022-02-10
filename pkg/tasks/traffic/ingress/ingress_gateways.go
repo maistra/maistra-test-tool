@@ -46,7 +46,7 @@ func TestIngressGateways(t *testing.T) {
 			t.Errorf("Failed to configure Gateway")
 			util.Log.Errorf("Failed to configure Gateway")
 		}
-		time.Sleep(time.Duration(10) * time.Second)
+		time.Sleep(time.Duration(20) * time.Second)
 
 		resp, err := util.GetWithHost(fmt.Sprintf("http://%s/status/200", gatewayHTTP), "httpbin.example.com")
 		defer util.CloseResponseBody(resp)

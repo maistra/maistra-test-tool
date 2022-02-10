@@ -23,6 +23,12 @@ type SMCP struct {
 	Namespace string `default:"istio-system"`
 }
 
+const (
+	jaegerSubYaml = "../templates/olm-templates/nightly/jaeger_subscription.yaml"
+	kialiSubYaml = "../templates/olm-templates/nightly/kiali_subscription.yaml"
+	ossmSubYaml = "../templates/olm-templates/nightly/ossm_subscription.yaml"
+)
+
 var (
 	smcpName      string = util.Getenv("SMCPNAME", "basic")
 	meshNamespace string = util.Getenv("MESHNAMESPACE", "istio-system")
