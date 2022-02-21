@@ -27,8 +27,14 @@ func installDefaultSMCP21() {
 	util.ShellMuteOutputError(`oc new-project istio-system`)
 	util.KubeApply("istio-system", smcpV11)
 	util.KubeApply("istio-system", smmr)
+
+	// patch SMCP identity if it's on a ROSA cluster
+	if util.Getenv("ROSA", "false") == "true" {
+		util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
+	}
 	util.Log.Info("Waiting for mesh installation to complete")
 	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, "istio-system")
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func TestSMCPInstall(t *testing.T) {
@@ -40,6 +46,11 @@ func TestSMCPInstall(t *testing.T) {
 		util.ShellMuteOutputError(`oc new-project istio-system`)
 		util.KubeApply("istio-system", smcpV11)
 		util.KubeApply("istio-system", smmr)
+
+		// patch SMCP identity if it's on a ROSA cluster
+		if util.Getenv("ROSA", "false") == "true" {
+			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
+		}
 		util.Log.Info("Waiting for mesh installation to complete")
 		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, "istio-system")
 
