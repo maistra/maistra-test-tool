@@ -32,7 +32,6 @@ func setupNamespaces() {
 	util.ShellSilent(`oc new-project legacy`)
 	util.ShellSilent(`oc new-project mesh-external`)
 	util.ShellSilent(`oc apply -n istio-system -f %s`, SMMR)
-	util.ShellSilent(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
 }
 
 func matchString(a, b string) (bool, error) {
