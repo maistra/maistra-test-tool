@@ -40,7 +40,7 @@ func init() {
 	util.KubeApplyContents(meshNamespace, smmr)
 
 	// patch SMCP identity if it's on a ROSA cluster
-	if util.Getenv("NIGHTLY", "false") == "true" {
+	if util.Getenv("ROSA", "false") == "true" {
 		util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
 	}
 	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)

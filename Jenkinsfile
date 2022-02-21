@@ -91,6 +91,7 @@ if (OCP_API_URL == "") {
                         -e OCP_CRED_PSW='${OCP_CRED_PSW}' \
                         -e OCP_API_URL='${params.OCP_API_URL}' \
                         -e NIGHTLY='${params.NIGHTLY}' \
+                        -e ROSA='${params.ROSA}' \
                         -e GODEBUG=x509ignoreCN=0 \
                         quay.io/maistra/maistra-test-tool:2.1;
                         else echo 'Skip';
@@ -120,6 +121,7 @@ if (OCP_API_URL == "") {
                         -e OCP_API_URL='${params.OCP_API_URL}' \
                         -e TEST_CASE='${params.TEST_CASE}' \
                         -e NIGHTLY='${params.NIGHTLY}' \
+                        -e ROSA='${params.ROSA}' \
                         -e GODEBUG=x509ignoreCN=0 \
                         --entrypoint "../scripts/pipeline/run_one_test.sh" \
                         quay.io/maistra/maistra-test-tool:2.1;
