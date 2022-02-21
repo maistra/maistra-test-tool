@@ -32,6 +32,11 @@ properties([
             defaultValue: '',
             description: 'test case name, e.g. T1, T2. See tests/test_cases.go, default empty value will run all test cases.'
         ),
+        choice(
+            name: 'ROSA',
+            choices: ['false', 'true'],
+            description: 'Testing on ROSA'
+        ),
         string(
             name: 'NIGHTLY',
             defaultValue: 'false',
