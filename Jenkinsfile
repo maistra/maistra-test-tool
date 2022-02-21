@@ -32,6 +32,11 @@ properties([
             defaultValue: '',
             description: 'test case name, e.g. T1, T2. See tests/test_cases.go, default empty value will run all test cases.'
         ),
+        choice(
+            name: 'ROSA',
+            choices: ['false', 'true'],
+            description: 'Testing on ROSA'
+        ),
         string(
             name: 'NIGHTLY',
             defaultValue: 'false',
@@ -86,6 +91,7 @@ if (OCP_API_URL == "") {
                         -e OCP_CRED_PSW='${OCP_CRED_PSW}' \
                         -e OCP_API_URL='${params.OCP_API_URL}' \
                         -e NIGHTLY='${params.NIGHTLY}' \
+                        -e ROSA='${params.ROSA}' \
                         -e GODEBUG=x509ignoreCN=0 \
                         quay.io/maistra/maistra-test-tool:2.1;
                         else echo 'Skip';
@@ -115,6 +121,7 @@ if (OCP_API_URL == "") {
                         -e OCP_API_URL='${params.OCP_API_URL}' \
                         -e TEST_CASE='${params.TEST_CASE}' \
                         -e NIGHTLY='${params.NIGHTLY}' \
+                        -e ROSA='${params.ROSA}' \
                         -e GODEBUG=x509ignoreCN=0 \
                         --entrypoint "../scripts/pipeline/run_one_test.sh" \
                         quay.io/maistra/maistra-test-tool:2.1;
