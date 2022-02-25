@@ -176,7 +176,7 @@ func TestRateLimiting(t *testing.T) {
 	checkProductPageResponseCode(t, host, "200")
 
 	// Should fail
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 15)
 	checkProductPageResponseCode(t, host, "429")
 }
 
