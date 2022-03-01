@@ -44,4 +44,13 @@ func TestBookinfo(t *testing.T) {
 	} else {
 		t.Error("Error. proxy container is not running.")
 	}
+
+	util.Log.Info("Check istiod pod is ready and print istiod logs")
+	mesg, _ := util.Shell(`oc get pods -n istio-system | grep istiod`)
+	if strings.Contains(mesg, "1/1") {
+		util.Log.Info("Success. istiod pod is running with below logs:")
+		util.Shell(`oc logs -n %s -l app=istiod | grep info`, meshNamespace)
+	} else {
+		t.Error("Error. istiod pod is not running.")
+	}
 }
