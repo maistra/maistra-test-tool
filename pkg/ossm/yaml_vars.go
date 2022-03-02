@@ -25,8 +25,8 @@ type SMCP struct {
 
 const (
 	jaegerSubYaml = "../templates/olm-templates/nightly/jaeger_subscription.yaml"
-	kialiSubYaml = "../templates/olm-templates/nightly/kiali_subscription.yaml"
-	ossmSubYaml = "../templates/olm-templates/nightly/ossm_subscription.yaml"
+	kialiSubYaml  = "../templates/olm-templates/nightly/kiali_subscription.yaml"
+	ossmSubYaml   = "../templates/olm-templates/nightly/ossm_subscription.yaml"
 )
 
 var (

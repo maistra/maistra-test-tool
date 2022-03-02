@@ -152,7 +152,7 @@ var testCases = []testing.InternalTest{
 	},
 	testing.InternalTest{
 		Name: "T29",
-		F:    ossm.TestProxyEnv,
+		F:    ossm.TestSMCPAnnotations,
 	},
 	testing.InternalTest{
 		Name: "T30",

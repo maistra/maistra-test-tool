@@ -15,9 +15,7 @@
 package ossm
 
 import (
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
@@ -27,15 +25,15 @@ func TestSMCPAddons(t *testing.T) {
 	t.Run("smcp_test_addons_3scale", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 		util.Log.Info("Enable 3scale in a CR. Expected validation error.")
-		util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"addons":{"3scale":{"enabled":true}}}}'`, meshNamespace, smcpName)
-		time.Sleep(time.Duration(20) * time.Second)
+		_, err := util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"addons":{"3scale":{"enabled":true}}}}'`, meshNamespace, smcpName)
+		if err != nil {
+			util.Log.Info("Expected validation error")
+		} else {
+			util.Log.Error("Failed check. enabling 3scale should be deprecated.")
+		}
 
 		util.Log.Info("Verify SMCP status")
-		msg, _ := util.Shell(`oc get -n %s smcp/%s -o wide`, meshNamespace, smcpName)
-		if strings.Contains(msg, "ReconcileError") {
-			util.Log.Errorf("SMCP not Ready: %s", msg)
-			t.Error("SMCP not Ready")
-		}
+		util.Shell(`oc get -n %s smcp/%s -o wide`, meshNamespace, smcpName)
 		util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"addons":{"3scale":{"enabled":false}}}}'`, meshNamespace, smcpName)
 		util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
 	})
