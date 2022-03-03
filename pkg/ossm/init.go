@@ -25,7 +25,8 @@ func installNightlyOperators() {
 	util.KubeApply("openshift-operators", jaegerSubYaml)
 	util.KubeApply("openshift-operators", kialiSubYaml)
 	util.KubeApply("openshift-operators", ossmSubYaml)
-	time.Sleep(time.Duration(180) * time.Second)
+	time.Sleep(time.Duration(60) * time.Second)
+	util.CheckPodRunning("openshift-operators", "name=istio-operator")
 }
 
 // Initialize a default SMCP and SMMR
