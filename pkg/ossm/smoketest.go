@@ -53,4 +53,14 @@ func TestBookinfo(t *testing.T) {
 	} else {
 		t.Error("Error. istiod pod is not running.")
 	}
+
+	util.Log.Info("Check if bookinfo productpage is running")
+	util.Shell(`export GATEWAY_URL=$(oc -n %s get route istio-ingressgateway -o jsonpath='{.spec.host}')`, meshNamespace)
+	mes, _ := util.Shell(`curl -o /dev/null -s -w "%%{http_code}\n" http://${GATEWAY_URL}/productpage`)
+	if strings.Contains(mes, "200") {
+		util.Log.Info("Success. bookinfo productpage is running")
+	} else {
+		t.Error("Error. bookinfo productpage is not running.")
+
+	}
 }
