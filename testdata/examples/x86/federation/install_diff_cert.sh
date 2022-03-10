@@ -33,6 +33,7 @@ oc1 create -n mesh1-system secret generic cacerts \
 log "Installing control plane for mesh1"
 oc1 apply -f export/smcp_new_cert.yaml
 oc1 apply -f export/smmr.yaml
+oc1 patch -n mesh1-system smcp/fed-export --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'
 
 log "Creating projects for mesh2"
 oc2 new-project mesh2-system || true
@@ -41,6 +42,7 @@ oc2 new-project mesh2-bookinfo || true
 log "Installing control plane for mesh2"
 oc2 apply -f import/smcp.yaml
 oc2 apply -f import/smmr.yaml
+oc2 patch -n mesh2-system smcp/fed-import --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'
 
 log "Waiting for mesh1 installation to complete"
 oc1 wait --for condition=Ready -n mesh1-system smmr/default --timeout 300s
