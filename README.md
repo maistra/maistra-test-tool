@@ -23,9 +23,11 @@ The testing tasks are based on [istio.io Doc Tasks](https://istio.io/v1.9/docs/t
 
 ## Testing Prerequisite
 
-1. An OpenShift `oc` client has been installed. A user can access an OpenShift cluster from command line by running a login command. `oc login -u [user] -p [token] --server=[OCP API server]`
-2. RedHat Service Mesh Operators and Control Plane (SMCP) have been installed on the OpenShift cluster.
-3. OpenSSL tool has been installed from the client command line.
+1. An `oc` client can be downloaded from [mirror openshift-v4 clients](https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/). Extract the `openshift-client-...tar.gz` file and move both `oc` and `kubectl` binaries into a local PATH directory.
+
+2. Access an OpenShift cluster from command line before running tests. Run a login command. `oc login -u [user] -p [token] --server=[OCP API server]`
+
+3. RedHat Service Mesh Operator has been installed on the OpenShift cluster.
 
 ## Testing
 - A main test is in the `tests` directory. All test cases are in the `test_cases.go` and are mapped to the implementations in the `pkg` directory.
@@ -41,18 +43,17 @@ The testing tasks are based on [istio.io Doc Tasks](https://istio.io/v1.9/docs/t
     - For Power environment testing, a user can update the `tests/test.env` file `export SAMPLEARCH=p`
     - For Z environment testing, a user can update the `tests/test.env` file `export SAMPLEARCH=z`
 
-- To run all the test cases: `cd tests; go test -timeout 3h -v`
+- To run all the test cases: `cd tests; go test -timeout 2h -v`.
+
+    The `-timeout` flag is necessary when running all tests or several major test cases. Otherwise, a `go test` command falls into panic after 10 minutes.
 
     ```
     $ cd tests
-    $ go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
+    $ go test -timeout 2h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
     ```
-- To run a single test case: e.g. `cd tests; go test -run S1 -timeout 3h -v`
+- To run a single test case: e.g. `cd tests; go test -run A1 -timeout 2h -v`
 
     Test cases shortname and mapping are in the `tests/test_cases.go` file.
-    `A...` are shortname of smoke tests.
-    `T...` are shortname of tasks and functional test cases.
-
 
 ## License
 
