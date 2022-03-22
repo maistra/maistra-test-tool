@@ -7,5 +7,5 @@ spec:
   channel: stable
   installPlanApproval: Automatic
   name: kiali-ossm
-  source: maistra-manifests
+  source: redhat-operators
   sourceNamespace: openshift-marketplace

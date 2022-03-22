@@ -104,6 +104,11 @@ func TestSMCPInstall(t *testing.T) {
 
 	t.Run("smcp_test_install_1.1", func(t *testing.T) {
 		defer util.RecoverPanic(t)
+
+		// skip 1.1 SMCP test in an ARM environment
+		if util.Getenv("SAMPLEARCH", "x86") == "arm" {
+			t.Skip("Skipping testing 1.1 SMCP in an ARM environment")
+		}
 		util.Log.Info("Create SMCP v1.1 in namespace ", meshNamespace)
 		util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
 		util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV11_template, smcp))
@@ -127,6 +132,11 @@ func TestSMCPInstall(t *testing.T) {
 
 	t.Run("smcp_test_uninstall_1.1", func(t *testing.T) {
 		defer util.RecoverPanic(t)
+
+		// skip 1.1 SMCP test in an ARM environment
+		if util.Getenv("SAMPLEARCH", "x86") == "arm" {
+			t.Skip("Skipping testing 1.1 SMCP in an ARM environment")
+		}
 		util.Log.Info("Delete SMCP v1,1 in ", meshNamespace)
 		util.KubeDeleteContents(meshNamespace, smmr)
 		util.KubeDeleteContents(meshNamespace, util.RunTemplate(smcpV11_template, smcp))
