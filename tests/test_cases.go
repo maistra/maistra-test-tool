@@ -31,6 +31,66 @@ import (
 )
 
 var t = &testing.T{}
+
+var smokeTests = []testing.InternalTest{
+	testing.InternalTest{
+		Name: "A1",
+		F:    ossm.TestSMCPInstall,
+	},
+	testing.InternalTest{
+		Name: "A2",
+		F:    ossm.TestBookinfo,
+	},
+	testing.InternalTest{
+		Name: "T1",
+		F:    traffic.TestRequestRouting,
+	},
+}
+
+var armCases = []testing.InternalTest{
+	testing.InternalTest{
+		Name: "A1",
+		F:    ossm.TestSMCPInstall,
+	},
+	testing.InternalTest{
+		Name: "A2",
+		F:    ossm.TestBookinfo,
+	},
+
+	testing.InternalTest{
+		Name: "T1",
+		F:    traffic.TestRequestRouting,
+	},
+	testing.InternalTest{
+		Name: "T2",
+		F:    traffic.TestFaultInjection,
+	},
+	testing.InternalTest{
+		Name: "T3",
+		F:    traffic.TestTrafficShifting,
+	},
+	testing.InternalTest{
+		Name: "T4",
+		F:    traffic.TestRequestTimeouts,
+	},
+	testing.InternalTest{
+		Name: "T5",
+		F:    certificate.TestExternalCert,
+	},
+	testing.InternalTest{
+		Name: "T6",
+		F:    authorizaton.TestAuthorHTTP,
+	},
+	testing.InternalTest{
+		Name: "T7",
+		F:    ossm.TestTLSVersionSMCP,
+	},
+	testing.InternalTest{
+		Name: "T8",
+		F:    federation.TestSingleClusterFed,
+	},
+}
+
 var testCases = []testing.InternalTest{
 	testing.InternalTest{
 		Name: "A1",
@@ -146,14 +206,14 @@ var testCases = []testing.InternalTest{
 		Name: "T27",
 		F:    ossm.TestSSL,
 	},
-	testing.InternalTest{
-		Name: "T28",
-		F:    ossm.TestRateLimiting,
-	},
-	testing.InternalTest{
-		Name: "T29",
-		F:    ossm.TestSMCPAnnotations,
-	},
+	//testing.InternalTest{
+	//	Name: "T28",
+	//	F:    ossm.TestRateLimiting,
+	//},
+	//testing.InternalTest{
+	//	Name: "T29",
+	//	F:    ossm.TestSMCPAnnotations,
+	//},
 	testing.InternalTest{
 		Name: "T30",
 		F:    ossm.TestMustGather,
