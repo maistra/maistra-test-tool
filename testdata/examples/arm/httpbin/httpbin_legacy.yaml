@@ -52,7 +52,7 @@ spec:
     spec:
       serviceAccountName: httpbin
       containers:
-      - image: docker.io/kennethreitz/httpbin
+      - image: quay.io/openshifttest/httpbin:multiarch
         imagePullPolicy: IfNotPresent
         name: httpbin
         ports:

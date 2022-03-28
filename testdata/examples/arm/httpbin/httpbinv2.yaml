@@ -37,7 +37,7 @@ spec:
         version: v2
     spec:
       containers:
-      - image: docker.io/kennethreitz/httpbin
+      - image: quay.io/openshifttest/httpbin:multiarch
         imagePullPolicy: IfNotPresent
         name: httpbin
         command: ["gunicorn", "--access-logfile", "-", "-b", "0.0.0.0:8000", "httpbin:app"]
