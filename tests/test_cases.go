@@ -210,10 +210,10 @@ var testCases = []testing.InternalTest{
 	//	Name: "T28",
 	//	F:    ossm.TestRateLimiting,
 	//},
-	//testing.InternalTest{
-	//	Name: "T29",
-	//	F:    ossm.TestSMCPAnnotations,
-	//},
+	testing.InternalTest{
+		Name: "T29",
+		F:    ossm.TestSMCPAnnotations,
+	},
 	testing.InternalTest{
 		Name: "T30",
 		F:    ossm.TestMustGather,
