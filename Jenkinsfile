@@ -86,9 +86,11 @@ if (util.getWhoBuild() == "[]") {
 
                     if [ ${params.TESTCASE} == 'All' ];
                     then
-                        cd tests; go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
+                        #cd tests; go test -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
+			cd tests; go test -timeout 3h -v 2>&1 | tee > test.log
                     else
-                        cd tests; go test -run ${params.TESTCASE} -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
+                        #cd tests; go test -run ${params.TESTCASE} -timeout 3h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
+			cd tests; go test -run ${params.TESTCASE} -timeout 3h -v 2>&1 | tee > test.log
                     fi
 
                     set +ex
