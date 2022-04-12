@@ -133,6 +133,56 @@ spec:
           mode: SIMPLE # initiates HTTPS when accessing istio.io
 `
 
+	ALPNPatch = `
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: alpn-envoytweak
+spec:
+  configPatches:
+  - applyTo: HTTP_FILTER # Applies the patch to the HTTP filter chain in the http connection manager
+    match:
+      context: SIDECAR_OUTBOUND
+      listener:
+        name: "0.0.0.0_80"
+        filterChain:
+          filter:
+            name: "envoy.http_connection_manager"
+            subFilter:
+              name: "istio.alpn"
+    patch:
+      operation: REMOVE
+  - applyTo: HTTP_FILTER # Applies the patch to the HTTP filter chain in the http connection manager
+    match:
+      context: SIDECAR_OUTBOUND
+      listener:
+        name: "0.0.0.0_80"
+        filterChain:
+          filter:
+            name: "envoy.http_connection_manager"
+            subFilter:
+              name: "envoy.cors"
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: "istio.alpn"
+        typed_config:
+          "@type": "type.googleapis.com/istio.envoy.config.filter.http.alpn.v2alpha1.FilterConfig"
+          alpn_override:
+          - alpn_override:
+            - "istio-http/1.0"
+            - "istio"
+          - upstream_protocol: "HTTP11"
+            alpn_override:
+            - "istio-http/1.1"
+            - "istio"
+            - "http/1.1"
+          - upstream_protocol: "HTTP2"
+            alpn_override:
+            - "istio-h2"
+            - "istio"
+`
+
 	ExServiceEntryTLS = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
