@@ -38,7 +38,7 @@ func init() {
 	}
 
 	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
-	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV21_template, smcp))
+	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV22_template, smcp))
 	util.KubeApplyContents(meshNamespace, smmr)
 	time.Sleep(time.Duration(30) * time.Second)
 }
