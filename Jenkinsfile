@@ -93,7 +93,7 @@ if (OCP_API_URL == "") {
                         -e NIGHTLY='${params.NIGHTLY}' \
                         -e ROSA='${params.ROSA}' \
                         -e GODEBUG=x509ignoreCN=0 \
-                        quay.io/maistra/maistra-test-tool:2.1;
+                        quay.io/maistra/maistra-test-tool:2.2;
                         else echo 'Skip';
                         fi
                     """,
@@ -124,7 +124,7 @@ if (OCP_API_URL == "") {
                         -e ROSA='${params.ROSA}' \
                         -e GODEBUG=x509ignoreCN=0 \
                         --entrypoint "../scripts/pipeline/run_one_test.sh" \
-                        quay.io/maistra/maistra-test-tool:2.1;
+                        quay.io/maistra/maistra-test-tool:2.2;
                         fi
                     """,
                     returnStdout: true
