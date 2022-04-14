@@ -27,6 +27,7 @@ func installNightlyOperators() {
 	util.KubeApply("openshift-operators", ossmSubYaml)
 	time.Sleep(time.Duration(60) * time.Second)
 	util.CheckPodRunning("openshift-operators", "name=istio-operator")
+	time.Sleep(time.Duration(30) * time.Second)
 }
 
 // Initialize a default SMCP and SMMR
@@ -39,10 +40,5 @@ func init() {
 	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
 	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV21_template, smcp))
 	util.KubeApplyContents(meshNamespace, smmr)
-
-	// patch SMCP identity if it's on a ROSA cluster
-	if util.Getenv("ROSA", "false") == "true" {
-		util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
-	}
-	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
+	time.Sleep(time.Duration(30) * time.Second)
 }

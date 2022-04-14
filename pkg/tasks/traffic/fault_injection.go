@@ -62,7 +62,7 @@ func TestFaultInjection(t *testing.T) {
 		time.Sleep(time.Duration(5) * time.Second)
 
 		minDuration := 4000
-		maxDuration := 9000
+		maxDuration := 14000
 		standby := 10
 
 		for i := 0; i < 5; i++ {

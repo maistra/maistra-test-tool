@@ -37,8 +37,6 @@ spec:
 
 func cleanupSMCPAnnotations() {
 	util.Log.Info("Cleanup ...")
-	util.Shell(`kubectl -n %s patch smcp/%s --type=json -p='[{"op": "remove", "path": "/spec/proxy/injection/injectedAnnotations"}]'`, meshNamespace, smcpName)
-	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
 	util.KubeDeleteContents("bookinfo", testAnnotationProxyEnv)
 	time.Sleep(time.Duration(20) * time.Second)
 }
@@ -66,6 +64,8 @@ func TestSMCPAnnotations(t *testing.T) {
 		} else {
 			t.Errorf("Failed to get env variable: %v", msg)
 		}
+		util.KubeDeleteContents("bookinfo", testAnnotationProxyEnv)
+		time.Sleep(time.Duration(30) * time.Second)
 	})
 
 	t.Run("smcp_test_annotation_quote_injection", func(t *testing.T) {
@@ -89,18 +89,15 @@ func TestSMCPAnnotations(t *testing.T) {
 			util.KubeApplyContents("bookinfo", testAnnotationProxyEnv)
 		}
 		util.CheckPodRunning("bookinfo", "app=env")
-		time.Sleep(time.Duration(20) * time.Second)
-		util.Shell(`oc -n bookinfo rollout restart deployment testenv`)
-		util.CheckPodRunning("bookinfo", "app=env")
+		time.Sleep(time.Duration(10) * time.Second)
 
-		msg, err := util.Shell(`kubectl get po -n bookinfo -l app=env -o yaml | grep "annotation-from-smcp"`)
-		util.Inspect(err, "Failed to get po", "", t)
+		msg, _ := util.Shell(`kubectl get po -n bookinfo -l app=env -o yaml | grep "annotation-from-smcp"`)
 
 		if !strings.Contains(msg, `test1.annotation-from-smcp: test1`) {
 			t.Errorf("Failed to get annotations: %v", `test1.annotation-from-smcp: test1`)
 		}
-		if !strings.Contains(msg, `test2.annotation-from-smcp: '["test2"]'`) {
-			t.Errorf("Failed to get annotations: %v", `test2.annotation-from-smcp: '["test2"]'`)
+		if !strings.Contains(msg, `test2.annotation-from-smcp: '[test2]'`) {
+			t.Errorf("Failed to get annotations: %v", `test2.annotation-from-smcp: '[test2]'`)
 		}
 		if !strings.Contains(msg, `test3.annotation-from-smcp: '{test3}'`) {
 			t.Errorf("Failed to get annotations: %v", `test3.annotation-from-smcp: '{test3}'`)

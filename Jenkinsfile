@@ -22,10 +22,10 @@ properties([
             description: 'OCP login user. When OCP_CRED_ID parameter is not empty, OCP_CRED_USR will be ignored.'
         ),
         password(name: 'OCP_CRED_PSW', description: 'User password. When OCP_CRED_ID parameter is not empty, OCP_CRED_PSW will be ignored.'),
-        string(
+        choice(
             name: 'OCP_SAMPLE_ARCH',
-            defaultValue: 'x86',
-            description: 'Sample Arch, for P env, value should be p, for Z env, value should be z'
+            choices: ['x86','p', 'z', 'arm'],
+            description: 'This is a switch for bookinfo images on different platforms'
         ),
         string(
             name: 'TEST_CASE',
@@ -93,7 +93,7 @@ if (OCP_API_URL == "") {
                         -e NIGHTLY='${params.NIGHTLY}' \
                         -e ROSA='${params.ROSA}' \
                         -e GODEBUG=x509ignoreCN=0 \
-                        quay.io/maistra/maistra-test-tool:2.1;
+                        quay.io/maistra/maistra-test-tool:2.2;
                         else echo 'Skip';
                         fi
                     """,
@@ -124,7 +124,7 @@ if (OCP_API_URL == "") {
                         -e ROSA='${params.ROSA}' \
                         -e GODEBUG=x509ignoreCN=0 \
                         --entrypoint "../scripts/pipeline/run_one_test.sh" \
-                        quay.io/maistra/maistra-test-tool:2.1;
+                        quay.io/maistra/maistra-test-tool:2.2;
                         fi
                     """,
                     returnStdout: true
