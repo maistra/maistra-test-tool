@@ -20,12 +20,13 @@ source common.sh
 oc1 delete -n mesh1-system servicemeshpeer/mesh2
 oc2 delete -n mesh2-system servicemeshpeer/mesh1
 
-oc1 delete project mesh1-system
-oc2 delete project mesh2-system
-# oc1 delete project mesh1-exports
-# oc2 delete project mesh2-imports
+# Running `oc delete project` does not wait until deletion is finished,
+# even when using --wait flag, so we use `oc delete namespace`
 
-oc1 delete project mesh1-bookinfo
-oc2 delete project mesh2-bookinfo
+oc1 delete namespace mesh1-system
+oc2 delete namespace mesh2-system
+# oc1 delete namespace mesh1-exports
+# oc2 delete namespace mesh2-imports
 
-sleep 120
+oc1 delete namespace mesh1-bookinfo
+oc2 delete namespace mesh2-bookinfo
