@@ -5,8 +5,8 @@ def util = new libs.utils.Util()
 
 // Parameters to be used on job
 properties([
+    buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '20')),
     parameters([
-        buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '20')),
         string(
             name: 'OCP_SERVER',
             defaultValue: '',
