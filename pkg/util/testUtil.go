@@ -21,9 +21,25 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"testing"
 	"time"
+
+	"github.com/joho/godotenv"
 )
+
+// getenv loads test.env file and returns an environment variable value.
+// If the environment variable is empty, it returns the fallback as a default value.
+func Getenv(key, fallback string) string {
+	if err := godotenv.Load("test.env"); err != nil {
+		Log.Fatal("Error loading .env file")
+	}
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		return fallback
+	}
+	return value
+}
 
 // recover from panic if one occurred. This allows cleanup to be executed after panic.
 func RecoverPanic(t *testing.T) {

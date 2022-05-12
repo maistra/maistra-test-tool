@@ -14,9 +14,14 @@
 
 package ossm
 
+import "github.com/maistra/maistra-test-tool/pkg/util"
+
 var (
 	smcpV21 = "../templates/smcp-templates/v2.1/cr_2.1_default.yaml"
 	smcpV20 = "../templates/smcp-templates/v2.0/cr_2.0_default.yaml"
 	smcpV11 = "../templates/smcp-templates/v1.1/cr_1.1_default.yaml"
 	smmr    = "../templates/smmr-templates/smmr_default.yaml"
+
+	smcpName      string = util.Getenv("SMCPNAME", "basic")
+	meshNamespace string = util.Getenv("MESHNAMESPACE", "istio-system")
 )

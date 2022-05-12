@@ -26,6 +26,7 @@ import (
 func cleanupEgressTLSOrigination() {
 	util.Log.Info("Cleanup")
 	sleep := examples.Sleep{"bookinfo"}
+	util.KubeDeleteContents("istio-system", ALPNPatch)
 	util.KubeDeleteContents("bookinfo", ExServiceEntryOriginate)
 	util.KubeDeleteContents("bookinfo", ExServiceEntry)
 	sleep.Uninstall()
@@ -65,6 +66,7 @@ func TestEgressTLSOrigination(t *testing.T) {
 
 		util.Log.Info("TLS origination for egress traffic")
 		util.KubeApplyContents("bookinfo", ExServiceEntryOriginate)
+		util.KubeApplyContents("istio-system", ALPNPatch)
 		time.Sleep(time.Duration(10) * time.Second)
 
 		command := `curl -sSL -o /dev/null -D - http://istio.io`

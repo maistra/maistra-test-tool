@@ -58,7 +58,7 @@ func TestTrafficShifting(t *testing.T) {
 		}
 		time.Sleep(time.Duration(5) * time.Second)
 
-		tolerance := 0.20
+		tolerance := 0.40
 		totalShot := 100
 		once := sync.Once{}
 		c1, cVersionToMigrate := 0, 0
