@@ -7,7 +7,6 @@ def util = new libs.utils.Util()
 properties([
     buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '20')),
     parameters([
-        buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '20')),
         string(
             name: 'OCP_API_URL',
             defaultValue: '',
