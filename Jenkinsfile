@@ -6,6 +6,7 @@ def util = new libs.utils.Util()
 // Parameters to be used on job
 properties([
     parameters([
+        buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '20')),
         string(
             name: 'OCP_API_URL',
             defaultValue: '',
