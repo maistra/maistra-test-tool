@@ -64,7 +64,7 @@ func TestExtensionInstall(t *testing.T) {
 			t.Fatalf("error checking for SME header-append: %v", err)
 		}
 
-		time.Sleep(time.Duration(20) * time.Second)
+		time.Sleep(time.Duration(30) * time.Second)
 		command := "curl -s -I httpbin:8000/headers"
 		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		if err != nil {

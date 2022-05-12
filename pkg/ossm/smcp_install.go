@@ -27,8 +27,14 @@ func installDefaultSMCP20() {
 	util.ShellMuteOutputError(`oc new-project istio-system`)
 	util.KubeApply("istio-system", smcpV20)
 	util.KubeApply("istio-system", smmr)
+
+	// patch SMCP identity if it's on a ROSA cluster
+	if util.Getenv("ROSA", "false") == "true" {
+		util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
+	}
 	util.Log.Info("Waiting for mesh installation to complete")
 	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, "istio-system")
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func TestSMCPInstall(t *testing.T) {
@@ -40,6 +46,11 @@ func TestSMCPInstall(t *testing.T) {
 		util.ShellMuteOutputError(`oc new-project istio-system`)
 		util.KubeApply("istio-system", smcpV20)
 		util.KubeApply("istio-system", smmr)
+
+		// patch SMCP identity if it's on a ROSA cluster
+		if util.Getenv("ROSA", "false") == "true" {
+			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
+		}
 		util.Log.Info("Waiting for mesh installation to complete")
 		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, "istio-system")
 
@@ -57,7 +68,7 @@ func TestSMCPInstall(t *testing.T) {
 		util.Log.Info("Delete SMCP v2.0 in istio-system")
 		util.KubeDelete("istio-system", smmr)
 		util.KubeDelete("istio-system", smcpV20)
-		time.Sleep(time.Duration(40) * time.Second)
+		time.Sleep(time.Duration(60) * time.Second)
 	})
 
 	t.Run("smcp_test_install_1.1", func(t *testing.T) {
@@ -66,6 +77,10 @@ func TestSMCPInstall(t *testing.T) {
 		util.ShellMuteOutputError(`oc new-project istio-system`)
 		util.KubeApply("istio-system", smcpV11)
 		util.KubeApply("istio-system", smmr)
+		// patch SMCP identity if it's on a ROSA cluster
+		if util.Getenv("ROSA", "false") == "true" {
+			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
+		}
 		util.Log.Info("Waiting for mesh installation to complete")
 		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, "istio-system")
 
