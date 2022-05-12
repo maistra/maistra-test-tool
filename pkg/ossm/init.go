@@ -15,13 +15,30 @@
 package ossm
 
 import (
+	"time"
+
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
+// Install nightly build operators from quay.io. This is used in Jenkins daily build pipeline.
+func installNightlyOperators() {
+	util.KubeApply("openshift-operators", jaegerSubYaml)
+	util.KubeApply("openshift-operators", kialiSubYaml)
+	util.KubeApply("openshift-operators", ossmSubYaml)
+	time.Sleep(time.Duration(60) * time.Second)
+	util.CheckPodRunning("openshift-operators", "name=istio-operator")
+	time.Sleep(time.Duration(30) * time.Second)
+}
+
 // Initialize a default SMCP and SMMR
 func init() {
+
+	if util.Getenv("NIGHTLY", "false") == "true" {
+		installNightlyOperators()
+	}
+
 	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
 	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV21_template, smcp))
 	util.KubeApplyContents(meshNamespace, smmr)
-	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
+	time.Sleep(time.Duration(30) * time.Second)
 }

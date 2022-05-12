@@ -25,7 +25,7 @@ import (
 
 func cleanupSingleClusterFed() {
 	util.Log.Info("Cleanup ...")
-	util.Shell(`pushd ../testdata/examples/x86/federation \
+	util.Shell(`pushd ../testdata/examples/federation \
 			&& export MESH1_KUBECONFIG=~/.kube/config \
 			&& export MESH2_KUBECONFIG=~/.kube/config \
 			&& ./cleanup.sh`)
@@ -48,23 +48,10 @@ func TestSingleClusterFed(t *testing.T) {
 		util.Log.Info("Test federation install in a single cluster")
 		util.Log.Info("Reference: https://github.com/maistra/istio/blob/maistra-2.1/pkg/servicemesh/federation/example/config-poc/install.sh")
 		util.Log.Info("Running install.sh waiting 1 min...")
-
-		if getenv("SAMPLEARCH", "x86") == "p" {
-			util.Shell(`pushd ../testdata/examples/p/federation \
-				&& export MESH1_KUBECONFIG=~/.kube/config \
-				&& export MESH2_KUBECONFIG=~/.kube/config \
-				&& ./install.sh`)
-		} else if getenv("SAMPLEARCH", "x86") == "z" {
-			util.Shell(`pushd ../testdata/examples/z/federation \
-				&& export MESH1_KUBECONFIG=~/.kube/config \
-				&& export MESH2_KUBECONFIG=~/.kube/config \
-				&& ./install.sh`)
-		} else {
-			util.Shell(`pushd ../testdata/examples/x86/federation \
-				&& export MESH1_KUBECONFIG=~/.kube/config \
-				&& export MESH2_KUBECONFIG=~/.kube/config \
-				&& ./install.sh`)
-		}
+		util.Shell(`pushd ../testdata/examples/federation \
+			&& export MESH1_KUBECONFIG=~/.kube/config \
+			&& export MESH2_KUBECONFIG=~/.kube/config \
+			&& ./install.sh`)
 
 		util.Log.Info("Waiting 40s...")
 		time.Sleep(time.Duration(40) * time.Second)

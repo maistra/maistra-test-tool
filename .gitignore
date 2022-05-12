@@ -29,3 +29,4 @@ tests/apache-jmeter-5.3
 tests/jmeter-report.out
 tests/jmeter.log
 tests/debug
+tests/rrr.yaml

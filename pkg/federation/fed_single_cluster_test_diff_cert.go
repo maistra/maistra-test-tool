@@ -25,7 +25,7 @@ import (
 func cleanupSingleClusterFedDiffCert() {
 	util.Log.Info("Cleanup ...")
 	util.Shell(`kubectl -n mesh1-system delete secret cacerts`)
-	util.Shell(`pushd ../testdata/examples/x86/federation \
+	util.Shell(`pushd ../testdata/examples/federation \
 			&& export MESH1_KUBECONFIG=~/.kube/config \
 			&& export MESH2_KUBECONFIG=~/.kube/config \
 			&& ./cleanup.sh`)
@@ -40,23 +40,10 @@ func TestSingleClusterFedDiffCert(t *testing.T) {
 		util.Log.Info("Test federation install in a single cluster")
 		util.Log.Info("Reference: https://github.com/maistra/istio/blob/maistra-2.1/pkg/servicemesh/federation/example/config-poc/install.sh")
 		util.Log.Info("Running install_diff_cert.sh waiting 1 min...")
-
-		if getenv("SAMPLEARCH", "x86") == "p" {
-			util.Shell(`pushd ../testdata/examples/p/federation \
-				&& export MESH1_KUBECONFIG=~/.kube/config \
-				&& export MESH2_KUBECONFIG=~/.kube/config \
-				&& ./install_diff_cert.sh`)
-		} else if getenv("SAMPLEARCH", "x86") == "z" {
-			util.Shell(`pushd ../testdata/examples/z/federation \
-				&& export MESH1_KUBECONFIG=~/.kube/config \
-				&& export MESH2_KUBECONFIG=~/.kube/config \
-				&& ./install_diff_cert.sh`)
-		} else {
-			util.Shell(`pushd ../testdata/examples/x86/federation \
-				&& export MESH1_KUBECONFIG=~/.kube/config \
-				&& export MESH2_KUBECONFIG=~/.kube/config \
-				&& ./install_diff_cert.sh`)
-		}
+		util.Shell(`pushd ../testdata/examples/federation \
+			&& export MESH1_KUBECONFIG=~/.kube/config \
+			&& export MESH2_KUBECONFIG=~/.kube/config \
+			&& ./install_diff_cert.sh`)
 
 		util.Log.Info("Waiting 2 minutes...")
 		time.Sleep(time.Duration(120) * time.Second)

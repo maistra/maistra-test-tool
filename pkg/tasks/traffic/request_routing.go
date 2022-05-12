@@ -75,7 +75,7 @@ func TestRequestRouting(t *testing.T) {
 			t.Errorf("Failed to route traffic based on user: %s", err)
 			util.Log.Errorf("Failed to route traffic based on user: %s", err)
 		}
-		time.Sleep(time.Duration(5) * time.Second)
+		time.Sleep(time.Duration(20) * time.Second)
 
 		for i := 0; i <= 5; i++ {
 			resp, duration, err := util.GetHTTPResponse(productpageURL, testUserJar)

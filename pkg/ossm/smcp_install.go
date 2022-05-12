@@ -27,8 +27,14 @@ func installDefaultSMCP21() {
 	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
 	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV21_template, smcp))
 	util.KubeApplyContents(meshNamespace, smmr)
+
+	// patch SMCP identity if it's on a ROSA cluster
+	if util.Getenv("ROSA", "false") == "true" {
+		util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
+	}
 	util.Log.Info("Waiting for mesh installation to complete")
 	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
+	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func TestSMCPInstall(t *testing.T) {
@@ -40,6 +46,11 @@ func TestSMCPInstall(t *testing.T) {
 		util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
 		util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV21_template, smcp))
 		util.KubeApplyContents(meshNamespace, smmr)
+
+		// patch SMCP identity if it's on a ROSA cluster
+		if util.Getenv("ROSA", "false") == "true" {
+			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
+		}
 		util.Log.Info("Waiting for mesh installation to complete")
 		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
 
@@ -66,6 +77,11 @@ func TestSMCPInstall(t *testing.T) {
 		util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
 		util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV20_template, smcp))
 		util.KubeApplyContents(meshNamespace, smmr)
+
+		// patch SMCP identity if it's on a ROSA cluster
+		if util.Getenv("ROSA", "false") == "true" {
+			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
+		}
 		util.Log.Info("Waiting for mesh installation to complete")
 		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
 
@@ -83,15 +99,25 @@ func TestSMCPInstall(t *testing.T) {
 		util.Log.Info("Delete SMCP v2.0 in ", meshNamespace)
 		util.KubeDeleteContents(meshNamespace, smmr)
 		util.KubeDeleteContents(meshNamespace, util.RunTemplate(smcpV20_template, smcp))
-		time.Sleep(time.Duration(40) * time.Second)
+		time.Sleep(time.Duration(60) * time.Second)
 	})
 
 	t.Run("smcp_test_install_1.1", func(t *testing.T) {
 		defer util.RecoverPanic(t)
+
+		// skip 1.1 SMCP test in an ARM environment
+		if util.Getenv("SAMPLEARCH", "x86") == "arm" {
+			t.Skip("Skipping testing 1.1 SMCP in an ARM environment")
+		}
 		util.Log.Info("Create SMCP v1.1 in namespace ", meshNamespace)
 		util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
 		util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV11_template, smcp))
 		util.KubeApplyContents(meshNamespace, smmr)
+
+		// patch SMCP identity if it's on a ROSA cluster
+		if util.Getenv("ROSA", "false") == "true" {
+			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
+		}
 		util.Log.Info("Waiting for mesh installation to complete")
 		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
 
@@ -106,6 +132,11 @@ func TestSMCPInstall(t *testing.T) {
 
 	t.Run("smcp_test_uninstall_1.1", func(t *testing.T) {
 		defer util.RecoverPanic(t)
+
+		// skip 1.1 SMCP test in an ARM environment
+		if util.Getenv("SAMPLEARCH", "x86") == "arm" {
+			t.Skip("Skipping testing 1.1 SMCP in an ARM environment")
+		}
 		util.Log.Info("Delete SMCP v1,1 in ", meshNamespace)
 		util.KubeDeleteContents(meshNamespace, smmr)
 		util.KubeDeleteContents(meshNamespace, util.RunTemplate(smcpV11_template, smcp))
@@ -119,6 +150,11 @@ func TestSMCPInstall(t *testing.T) {
 		util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
 		util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV20_template, smcp))
 		util.KubeApplyContents(meshNamespace, smmr)
+
+		// patch SMCP identity if it's on a ROSA cluster
+		if util.Getenv("ROSA", "false") == "true" {
+			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
+		}
 		util.Log.Info("Waiting for mesh installation to complete")
 		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
 
@@ -128,6 +164,11 @@ func TestSMCPInstall(t *testing.T) {
 
 		util.Log.Info("Upgrade SMCP to v2.1")
 		util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV21_template, smcp))
+
+		// patch SMCP identity if it's on a ROSA cluster
+		if util.Getenv("ROSA", "false") == "true" {
+			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
+		}
 		util.Log.Info("Waiting for mesh installation to complete")
 		time.Sleep(time.Duration(10) * time.Second)
 		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 360s`, meshNamespace)
