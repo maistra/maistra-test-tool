@@ -4,5 +4,6 @@
   files = [
       "^sampleCerts/(.*?)$",
       "^testdata/examples/(.*?)$",
+      "^scripts/federation/(.*?)$",
       ".gitleaks.toml",
   ]

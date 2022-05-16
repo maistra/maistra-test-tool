@@ -1,0 +1,23 @@
+apiVersion: federation.maistra.io/v1
+kind: ServiceMeshPeer
+metadata:
+  name: east-mesh
+  namespace: west-mesh-system
+spec:
+  remote:
+    addresses:
+    - {{EAST_MESH_ADDRESS}}
+    discoveryPort: {{EAST_MESH_DISCOVERY_PORT}}
+    servicePort: {{EAST_MESH_SERVICE_PORT}}
+  gateways:
+    ingress:
+      name: east-mesh-ingress
+    egress:
+      name: east-mesh-egress
+  security:
+    trustDomain: east-mesh.local
+    clientID: east-mesh.local/ns/east-mesh-system/sa/west-mesh-egress-service-account
+    # same as default, if certificateChain is omitted
+    certificateChain:
+      kind: ConfigMap
+      name: east-mesh-ca-root-cert
