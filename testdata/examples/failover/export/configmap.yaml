@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: east-mesh-ca-root-cert
+  namespace: west-mesh-system
+data:
+  root-cert.pem: |-
+    {{EAST_MESH_CERT}}

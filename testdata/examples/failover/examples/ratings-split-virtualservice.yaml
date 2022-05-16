@@ -1,0 +1,19 @@
+# VirtualService resource that redirects the local service to the remote
+# services.  This only works with passthrough.
+
+kind: VirtualService
+apiVersion: networking.istio.io/v1alpha3
+metadata:
+  name: ratings-split
+  namespace: bookinfo-ha
+spec:
+  hosts:
+    - ratings.bookinfo-ha.svc.cluster.local
+  http:
+    - route:
+        - destination:
+            host: ratings.bookinfo-ha.svc.cluster.local
+          weight: 50
+        - destination:
+            host: west-ratings.bookinfo-ha.svc.cluster.local
+          weight: 50
