@@ -15,14 +15,13 @@ properties([
         string(
             name: 'OCP_CRED_ID',
             defaultValue: 'jenkins-ocp-auto',
-            description: 'Jenkins credentials ID for OCP cluster. When set this, it takes precedence over OCP_CRED_USR and OCP_CRED_PSW.'
+            description: 'Jenkins credentials ID for OCP cluster. When set this, it takes precedence over OCP_TOKEN.'
         ),
         string(
-            name: 'OCP_CRED_USR',
-            defaultValue: 'kubeadmin',
-            description: 'OCP login user. When OCP_CRED_ID parameter is not empty, OCP_CRED_USR will be ignored.'
+            name: 'OCP_TOKEN',
+            defaultValue: '',
+            description: 'OCP token. When OCP_CRED_ID parameter is not empty, OCP_TOKEN will be ignored.'
         ),
-        password(name: 'OCP_CRED_PSW', description: 'User password. When OCP_CRED_ID parameter is not empty, OCP_CRED_PSW will be ignored.'),
         choice(
             name: 'OCP_SAMPLE_ARCH',
             choices: ['x86','p', 'z', 'arm'],
@@ -64,16 +63,15 @@ if (OCP_API_URL == "") {
             gitSteps()
             stage("Login in Openshift"){
                 if (OCP_CRED_ID != ""){
-                    echo "Using ${OCP_CRED_ID} credentials ID instead of user/password parameters."
+                    echo "Using ${OCP_CRED_ID} credentials ID instead of token parameter."
 
                     withCredentials([usernamePassword(credentialsId: OCP_CRED_ID, passwordVariable: 'Password', usernameVariable: 'Username')]) {
                         OCP_CRED_PSW = Password
                         OCP_CRED_USR = Username
+                        sh "oc login ${params.OCP_API_URL} -u=${OCP_CRED_USR} -p=${OCP_CRED_PSW} --insecure-skip-tls-verify"
                     }
-                }
-                // Will print the masked value of the KEY, replaced with ****
-                wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: 'OCP_CRED_PSW', password: OCP_CRED_PSW]], varMaskRegexes: []]) {
-                    sh "oc login ${params.OCP_API_URL} -u=${OCP_CRED_USR} -p=${OCP_CRED_PSW} --insecure-skip-tls-verify"
+                } else {
+                    sh "oc login ${params.OCP_API_URL} --token=${params.OCP_TOKEN} --insecure-skip-tls-verify"
                 }
             }
             stage("Start running all tests"){
@@ -90,6 +88,7 @@ if (OCP_API_URL == "") {
                         -e SAMPLEARCH='${params.OCP_SAMPLE_ARCH}' \
                         -e OCP_CRED_USR='${OCP_CRED_USR}' \
                         -e OCP_CRED_PSW='${OCP_CRED_PSW}' \
+                        -e OCP_TOKEN='${params.OCP_TOKEN}' \
                         -e OCP_API_URL='${params.OCP_API_URL}' \
                         -e NIGHTLY='${params.NIGHTLY}' \
                         -e ROSA='${params.ROSA}' \
@@ -119,6 +118,7 @@ if (OCP_API_URL == "") {
                         -e SAMPLEARCH='${params.OCP_SAMPLE_ARCH}' \
                         -e OCP_CRED_USR='${OCP_CRED_USR}' \
                         -e OCP_CRED_PSW='${OCP_CRED_PSW}' \
+                        -e OCP_TOKEN='${params.OCP_TOKEN}' \
                         -e OCP_API_URL='${params.OCP_API_URL}' \
                         -e TEST_CASE='${params.TEST_CASE}' \
                         -e NIGHTLY='${params.NIGHTLY}' \
