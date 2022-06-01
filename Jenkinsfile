@@ -3,6 +3,10 @@
 //Instanciate Objects from Libs
 def util = new libs.utils.Util()
 
+// initialize variables in case the token is used
+def String OCP_CRED_PSW = ''
+def String OCP_CRED_USR = ''
+
 // Parameters to be used on job
 properties([
     buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '20')),
