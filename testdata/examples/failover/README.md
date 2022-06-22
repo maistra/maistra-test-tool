@@ -21,7 +21,6 @@ Sample scripts for setting a bookinfo ratings service failover demo.
 
 1. Setup
 ```
-# $ cd scripts/federation/
 $ export MESH1_KUBECONFIG=<cluster01 kubeconfig file path>
 $ export MESH2_KUBECONFIG=<cluster02 kubeconfig file path>
 $ source common.sh 
@@ -44,6 +43,7 @@ $ ./install.sh
 $ oc1 apply -f export/exportedserviceset.yaml
 $ oc2 apply -f import/importedserviceset.yaml
 $ oc2 -n east-mesh-system get importedservicesets west-mesh -o json
+# Wait 10 minutes for pilot pushing all updates
 $ oc2 apply -f examples/destinationrule-failover.yaml
 ```
 
@@ -83,3 +83,11 @@ Reference: https://istio.io/latest/docs/reference/config/networking/destination-
 
 - Check kiali graph from east-mesh
 
+- Restore ratings-v1 deployment in cluster02 bookinfo-ha to 1
+
+- Refresh cluster02 (east-mesh) boookinfo productpage
+- Check cluster02 bookinfo-ha ns pod ratings-v1 ratings container log.
+  ```
+  Server listening on: http://0.0.0.0:9080
+    GET /ratings/0
+  ```
