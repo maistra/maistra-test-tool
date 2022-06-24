@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
-
 # shellcheck disable=SC1091
 source common.sh
 
@@ -107,15 +105,11 @@ else
   echo MESH2_SERVICE_PORT="${MESH2_SERVICE_PORT}"
 fi
 
-log "Enabling federation for mesh1"
 sed "s:{{MESH2_CERT}}:$MESH2_CERT:g" export/configmap.yaml | oc1 apply -f -
 sed -e "s:{{MESH2_ADDRESS}}:$MESH2_ADDRESS:g" -e "s:{{MESH2_DISCOVERY_PORT}}:$MESH2_DISCOVERY_PORT:g" -e "s:{{MESH2_SERVICE_PORT}}:$MESH2_SERVICE_PORT:g" export/servicemeshpeer.yaml | oc1 apply -f -
-oc1 apply -f export/exportedserviceset.yaml
 
-log "Enabling federation for mesh2"
 sed "s:{{MESH1_CERT}}:$MESH1_CERT:g" import/configmap.yaml | oc2 apply -f -
 sed -e "s:{{MESH1_ADDRESS}}:$MESH1_ADDRESS:g" -e "s:{{MESH1_DISCOVERY_PORT}}:$MESH1_DISCOVERY_PORT:g" -e "s:{{MESH1_SERVICE_PORT}}:$MESH1_SERVICE_PORT:g" import/servicemeshpeer.yaml | oc2 apply -f -
-oc2 apply -f import/importedserviceset.yaml
 
 log "Installing bookinfo in mesh1"
 oc1 -n mesh1-bookinfo apply -f ../${SAMPLEARCH}/bookinfo/bookinfo.yaml
@@ -132,6 +126,25 @@ oc2 -n mesh2-bookinfo apply -f ../${SAMPLEARCH}/bookinfo/virtual-service-reviews
 
 log "Installing mongodb k8s Service for mesh2"
 oc2 apply -f import/mongodb-service.yaml
+
+log "Check ServiceMeshPeer connection"
+oc1 -n mesh1-system get servicemeshpeer mesh2 -o json | grep '\"connected\": false'
+if [ $? == 0 ]; then
+  echo "LB connection is not ready. Wait 5 minutes..."
+  sleep 300
+fi
+
+oc2 -n mesh2-system get servicemeshpeer mesh1 -o json | grep '\"connected\": false'
+if [ $? == 0 ]; then
+  echo "LB connection is not ready. Wait 5 minutes..."
+  sleep 300
+fi
+
+log "Enabling federation for mesh1"
+oc1 apply -f export/exportedserviceset.yaml
+
+log "Enabling federation for mesh2"
+oc2 apply -f import/importedserviceset.yaml
 
 log "Installing VirtualServices for mesh2"
 oc2 apply -f examples/mongodb-remote-virtualservice.yaml
