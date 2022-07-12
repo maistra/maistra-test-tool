@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: builder-unittest
+spec:
+  template:
+    spec:
+      containers:
+        - name: builder
+          image: >-
+            quay.io/maistra-dev/maistra-builder:2.2
+          imagePullPolicy: Always
+          command: ["/bin/sh", "-c"]
+          args:
+          - echo "start cloning repo...";
+            git clone --branch ${TARGET_BRANCH} --single-branch ${REPO_GIT_URL};
+            mkdir -p /work/${REPO_NAME}/tmp && chmod 777 /work/${REPO_NAME}/tmp;
+            cd  /work/${REPO_NAME};
+            ${MAKE_COMMAND};
+          env:
+          - name: REPO_GIT_URL
+            value: https://github.com/maistra/istio.git
+          - name: REPO_NAME
+            value: istio
+          - name: TARGET_BRANCH
+            value: maistra-2.2
+          - name: MAKE_COMMAND
+            value: make -e T=-v build racetest binaries-test
+          - name: BUILD_WITH_CONTAINER
+            value: "0"
+          - name: GOFLAGS
+            value: -mod=vendor
+          - name: XDG_CACHE_HOME
+            value: /tmp/cache
+          - name: GOCACHE
+            value: /tmp/cache
+          - name: ISTIO_ENVOY_BASE_URL
+            value: https://storage.googleapis.com/maistra-prow-testing/proxy
+      restartPolicy: Never

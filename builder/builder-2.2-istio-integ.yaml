@@ -1,0 +1,65 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: builder-integration-test
+spec:
+  template:
+    spec:
+      containers:
+        - name: builder
+          image: >-
+            quay.io/maistra-dev/maistra-builder:2.2
+          imagePullPolicy: Always
+          command: ["/bin/sh", "-c"]
+          args:
+          -  echo "start cloning repo...";
+            git clone --branch ${TARGET_BRANCH} --single-branch ${REPO_GIT_URL};
+            mkdir -p /work/${REPO_NAME}/tmp && chmod 777 /work/${REPO_NAME}/tmp;
+            cd  /work/${REPO_NAME};
+            entrypoint ${ENTRYPOINT_COMMAND};
+          securityContext:
+            # Need to grant privileged scc e.g. 
+            # oc adm policy add-scc-to-user privileged -z default -n efk
+            # https://github.com/code-ready/crc/issues/1160 
+            privileged: true
+          volumeMounts:
+          - mountPath: /lib/modules
+            name: modules
+            readOnly: true
+          - mountPath: /sys/fs/cgroup
+            name: cgroup
+            readOnly: true
+          - mountPath: /var/lib/docker
+            name: varlibdocker
+            readOnly: false
+          env:
+          - name: REPO_GIT_URL
+            value: https://github.com/maistra/istio.git
+          - name: REPO_NAME
+            value: istio
+          - name: TARGET_BRANCH
+            value: maistra-2.2
+          - name: ENTRYPOINT_COMMAND
+            value: prow/integ-suite-kind.sh test.integration.kube.presubmit
+          - name: GOFLAGS
+            value: -mod=vendor
+          - name: BUILD_WITH_CONTAINER
+            value: "0"
+          - name: ISTIO_ENVOY_BASE_URL
+            value: https://storage.googleapis.com/maistra-prow-testing/proxy
+          - name: XDG_CACHE_HOME
+            value: /tmp/cache
+          - name: GOCACHE
+            value: /tmp/cache
+      volumes:
+      - hostPath:
+          path: /lib/modules
+          type: Directory
+        name: modules
+      - hostPath:
+          path: /sys/fs/cgroup
+          type: Directory
+        name: cgroup
+      - emptyDir: {}
+        name: varlibdocker
+      restartPolicy: Never
