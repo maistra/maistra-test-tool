@@ -43,6 +43,12 @@ func cleanUpTestExtensionInstall() {
 }
 
 func TestExtensionInstall(t *testing.T) {
+	util.Log.Info("Verify OCP version")
+	msg, _ := util.Shell(`oc version | awk '{print $3}' | sed -n 2p | head -c4`)
+	if strings.Contains(msg, "4.11") {
+		util.Log.Info("Skipping the test case on OCP version 4.11")
+		t.Skip()
+	}
 	defer cleanUpTestExtensionInstall()
 	httpbin := examples.Httpbin{"bookinfo"}
 	sleep := examples.Sleep{"bookinfo"}
