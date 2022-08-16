@@ -32,7 +32,7 @@ oc2 apply -f import/smmr.yaml
 #oc2 patch -n mesh2-system smcp/fed-import --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'
 
 log "Waiting for west-mesh installation to complete"
-oc1 wait --for condition=Ready -n west-mesh-system smmr/default --timeout 300s
+oc1 wait --for condition=Ready -n west-mesh-system smcp/fed-export --timeout 300s
 
 log "Waiting for east-mesh installation to complete"
-oc2 wait --for condition=Ready -n east-mesh-system smmr/default --timeout 300s
+oc2 wait --for condition=Ready -n east-mesh-system smcp/fed-import --timeout 300s

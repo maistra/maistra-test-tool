@@ -78,7 +78,7 @@ func cleanupTLSOriginationFileMount() {
 
 	util.Shell(`kubectl -n %s rollout undo deploy istio-egressgateway`, meshNamespace)
 	time.Sleep(time.Duration(20) * time.Second)
-	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, meshNamespace)
+	util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 180s`, meshNamespace, smcpName)
 	util.Shell(`kubectl -n %s rollout history deploy istio-egressgateway`, meshNamespace)
 
 	util.Shell(`kubectl delete -n %s secret nginx-client-certs`, meshNamespace)
@@ -151,7 +151,7 @@ func TestTLSOriginationFileMount(t *testing.T) {
 		util.Shell(`kubectl -n %s rollout history deploy istio-egressgateway`, meshNamespace)
 		util.Shell(`kubectl -n %s patch --type=json deploy istio-egressgateway -p='%s'`, meshNamespace, strings.ReplaceAll(gatewayPatchAdd, "\n", ""))
 		time.Sleep(time.Duration(20) * time.Second)
-		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, meshNamespace)
+		util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 180s`, meshNamespace, smcpName)
 		util.Log.Info("Verify the istio-egressgateway pod")
 		util.Shell(`kubectl exec -n %s "$(kubectl -n %s get pods -l %s -o jsonpath='{.items[0].metadata.name}')" -- ls -al %s %s`,
 			meshNamespace, meshNamespace,
