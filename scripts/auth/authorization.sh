@@ -707,7 +707,7 @@ function main() {
     # enable mtls
     oc patch -n istio-system smcp/basic --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}'
     sleep 20
-    oc wait --for condition=Ready -n istio-system smmr/default --timeout 180s
+    oc wait --for condition=Ready -n istio-system smcp/basic --timeout 180s
 
     # deploy bookinfo
     deploy_bookinfo_mtls
@@ -745,7 +745,7 @@ function main() {
     # disable mtls
     oc patch -n istio-system smcp/basic --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":false},"controlPlane":{"mtls":false}}}}'
     sleep 20
-    oc wait --for condition=Ready -n istio-system smmr/default --timeout 180s
+    oc wait --for condition=Ready -n istio-system smcp/basic --timeout 180s
 
     # check tcp echo ports
     check_echo_ports

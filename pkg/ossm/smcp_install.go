@@ -33,7 +33,7 @@ func installDefaultSMCP21() {
 		util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
 	}
 	util.Log.Info("Waiting for mesh installation to complete")
-	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
+	util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 300s`, meshNamespace, smcpName)
 	time.Sleep(time.Duration(20) * time.Second)
 }
 
@@ -52,7 +52,7 @@ func TestSMCPInstall(t *testing.T) {
 			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
 		}
 		util.Log.Info("Waiting for mesh installation to complete")
-		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
+		util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 300s`, meshNamespace, smcpName)
 
 		util.Log.Info("Verify SMCP status and pods")
 		msg, _ := util.Shell(`oc get -n %s smcp/%s -o wide`, meshNamespace, smcpName)
@@ -83,7 +83,7 @@ func TestSMCPInstall(t *testing.T) {
 			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
 		}
 		util.Log.Info("Waiting for mesh installation to complete")
-		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
+		util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 300s`, meshNamespace, smcpName)
 
 		util.Log.Info("Verify SMCP status and pods")
 		msg, _ := util.Shell(`oc get -n %s smcp/%s -o wide`, meshNamespace, smcpName)
@@ -119,7 +119,7 @@ func TestSMCPInstall(t *testing.T) {
 			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
 		}
 		util.Log.Info("Waiting for mesh installation to complete")
-		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
+		util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 300s`, meshNamespace, smcpName)
 
 		util.Log.Info("Verify SMCP status and pods")
 		msg, _ := util.Shell(`oc get -n %s smcp/%s -o wide`, meshNamespace, smcpName)
@@ -156,7 +156,7 @@ func TestSMCPInstall(t *testing.T) {
 			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
 		}
 		util.Log.Info("Waiting for mesh installation to complete")
-		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, meshNamespace)
+		util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 300s`, meshNamespace, smcpName)
 
 		util.Log.Info("Verify SMCP status and pods")
 		util.Shell(`oc get -n %s smcp/%s -o wide`, meshNamespace, smcpName)
@@ -171,7 +171,7 @@ func TestSMCPInstall(t *testing.T) {
 		}
 		util.Log.Info("Waiting for mesh installation to complete")
 		time.Sleep(time.Duration(10) * time.Second)
-		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 360s`, meshNamespace)
+		util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 360s`, meshNamespace, smcpName)
 
 		util.Log.Info("Verify SMCP status and pods")
 		msg, _ := util.Shell(`oc get -n %s smcp/%s -o wide`, meshNamespace, smcpName)
