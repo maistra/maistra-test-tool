@@ -33,7 +33,7 @@ func installDefaultSMCP20() {
 		util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
 	}
 	util.Log.Info("Waiting for mesh installation to complete")
-	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, "istio-system")
+	util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 300s`, meshNamespace, smcpName)
 	time.Sleep(time.Duration(20) * time.Second)
 }
 
@@ -52,7 +52,7 @@ func TestSMCPInstall(t *testing.T) {
 			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
 		}
 		util.Log.Info("Waiting for mesh installation to complete")
-		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, "istio-system")
+		util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 300s`, meshNamespace, smcpName)
 
 		util.Log.Info("Verify SMCP status and pods")
 		msg, _ := util.Shell(`oc get -n %s smcp/%s -o wide`, "istio-system", "basic")
@@ -82,7 +82,7 @@ func TestSMCPInstall(t *testing.T) {
 			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
 		}
 		util.Log.Info("Waiting for mesh installation to complete")
-		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 300s`, "istio-system")
+		util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 300s`, meshNamespace, smcpName)
 
 		util.Log.Info("Verify SMCP status and pods")
 		msg, _ := util.Shell(`oc get -n %s smcp/%s -o wide`, "istio-system", "basic")

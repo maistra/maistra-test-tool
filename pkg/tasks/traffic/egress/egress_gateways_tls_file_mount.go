@@ -78,7 +78,7 @@ func cleanupTLSOriginationFileMount() {
 
 	util.Shell(`kubectl -n %s rollout undo deploy istio-egressgateway`, "istio-system")
 	time.Sleep(time.Duration(20) * time.Second)
-	util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
+	util.Shell(`oc wait --for condition=Ready -n istio-system smcp/basic --timeout 300s`)
 	util.Shell(`kubectl -n %s rollout history deploy istio-egressgateway`, "istio-system")
 
 	util.Shell(`kubectl delete -n %s secret nginx-client-certs`, "istio-system")
@@ -151,7 +151,7 @@ func TestTLSOriginationFileMount(t *testing.T) {
 		util.Shell(`kubectl -n %s rollout history deploy istio-egressgateway`, "istio-system")
 		util.Shell(`kubectl -n %s patch --type=json deploy istio-egressgateway -p='%s'`, "istio-system", strings.ReplaceAll(gatewayPatchAdd, "\n", ""))
 		time.Sleep(time.Duration(20) * time.Second)
-		util.Shell(`oc wait --for condition=Ready -n %s smmr/default --timeout 180s`, "istio-system")
+		util.Shell(`oc wait --for condition=Ready -n istio-system smcp/basic --timeout 300s`)
 		util.Log.Info("Verify the istio-egressgateway pod")
 		util.Shell(`kubectl exec -n %s "$(kubectl -n %s get pods -l %s -o jsonpath='{.items[0].metadata.name}')" -- ls -al %s %s`,
 			"istio-system", "istio-system",
