@@ -37,6 +37,21 @@ func installDefaultSMCP23() {
 	time.Sleep(time.Duration(20) * time.Second)
 }
 
+func installDefaultSMCP22() {
+	util.Log.Info("Create SMCP v2.2 in ", meshNamespace)
+	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
+	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV23_template, smcp))
+	util.KubeApplyContents(meshNamespace, smmr)
+
+	// patch SMCP identity if it's on a ROSA cluster
+	if util.Getenv("ROSA", "false") == "true" {
+		util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
+	}
+	util.Log.Info("Waiting for mesh installation to complete")
+	util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 300s`, meshNamespace, smcpName)
+	time.Sleep(time.Duration(20) * time.Second)
+}
+
 func TestSMCPInstall(t *testing.T) {
 	defer installDefaultSMCP23()
 
