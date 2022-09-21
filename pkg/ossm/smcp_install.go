@@ -40,7 +40,7 @@ func installDefaultSMCP23() {
 func installDefaultSMCP22() {
 	util.Log.Info("Create SMCP v2.2 in ", meshNamespace)
 	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
-	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV23_template, smcp))
+	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV22_template, smcp))
 	util.KubeApplyContents(meshNamespace, smmr)
 
 	// patch SMCP identity if it's on a ROSA cluster
