@@ -7,6 +7,8 @@ def util = new libs.utils.Util()
 def String OCP_CRED_PSW = ''
 def String OCP_CRED_USR = ''
 
+// Version from Maistra - need to be improved!
+def MAISTRA_VERSION = "2.3"
 // Parameters to be used on job
 properties([
     buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '20')),
@@ -97,7 +99,7 @@ if (OCP_API_URL == "") {
                         -e NIGHTLY='${params.NIGHTLY}' \
                         -e ROSA='${params.ROSA}' \
                         -e GODEBUG=x509ignoreCN=0 \
-                        quay.io/maistra/maistra-test-tool:2.3;
+                        quay.io/maistra/maistra-test-tool:${MAISTRA_VERSION};
                         else echo 'Skip';
                         fi
                     """,
@@ -129,7 +131,7 @@ if (OCP_API_URL == "") {
                         -e ROSA='${params.ROSA}' \
                         -e GODEBUG=x509ignoreCN=0 \
                         --entrypoint "../scripts/pipeline/run_one_test.sh" \
-                        quay.io/maistra/maistra-test-tool:2.3;
+                        quay.io/maistra/maistra-test-tool:${MAISTRA_VERSION};
                         fi
                     """,
                     returnStdout: true
