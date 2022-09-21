@@ -82,7 +82,7 @@ func TestSMCPInstall(t *testing.T) {
 		defer util.RecoverPanic(t)
 		util.Log.Info("Delete SMCP v2.3 in ", meshNamespace)
 		util.KubeDeleteContents(meshNamespace, smmr)
-		util.KubeDeleteContents(meshNamespace, util.RunTemplate(smcpV22_template, smcp))
+		util.KubeDeleteContents(meshNamespace, util.RunTemplate(smcpV23_template, smcp))
 		time.Sleep(time.Duration(40) * time.Second)
 	})
 
@@ -121,7 +121,7 @@ func TestSMCPInstall(t *testing.T) {
 		defer util.RecoverPanic(t)
 		util.Log.Info("Create SMCP v2.1 in namespace ", meshNamespace)
 		util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
-		util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV20_template, smcp))
+		util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV21_template, smcp))
 		util.KubeApplyContents(meshNamespace, smmr)
 
 		// patch SMCP identity if it's on a ROSA cluster
