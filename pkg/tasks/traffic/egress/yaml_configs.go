@@ -432,7 +432,7 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
-  name: istio-egressgateway
+  name: istio-egressgateway-sds
 spec:
   selector:
     istio: egressgateway
@@ -472,7 +472,7 @@ spec:
   hosts:
   - my-nginx.mesh-external.svc.cluster.local
   gateways:
-  - istio-egressgateway
+  - istio-egressgateway-sds
   - mesh
   http:
   - match:
@@ -488,13 +488,13 @@ spec:
       weight: 100
   - match:
     - gateways:
-      - istio-egressgateway
+      - istio-egressgateway-sds
       port: 443
     route:
     - destination:
         host: my-nginx.mesh-external.svc.cluster.local
         port:
-          number: 443
+          number: 8443
       weight: 100
 `
 
@@ -512,7 +512,7 @@ spec:
     - port:
         number: 443
       tls:
-        mode: SIMPLE
+        mode: MUTUAL
         credentialName: client-credential # this must match the secret created earlier without the "-cacert" suffix
         sni: my-nginx.mesh-external.svc.cluster.local
 `
