@@ -194,10 +194,8 @@ var testCases = []testing.InternalTest{
 		F:    authorizaton.TestTrustDomainMigration,
 	},
 
-	//testing.InternalTest{
-	//	Name: "T25",
-	//	F:    ossm.TestExtensionInstall,
-	//},
+	// placeholder for T25 TestWasmPlugin
+
 	testing.InternalTest{
 		Name: "T26",
 		F:    ossm.TestTLSVersionSMCP,
