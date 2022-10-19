@@ -4,11 +4,21 @@ This directory contains sample pre-generated certificate and keys to demonstrate
 a deployment, Citadel acts as an intermediate certificate authority (CA), under the given root CA.
 Instructions are available [here](https://istio.io/docs/tasks/security/plugin-ca-cert/).
 
-The included sample files are:
+The following sample files are deprecated:
 
 - `root-cert.pem`: root CA certificate.
 - `ca-cert.pem` and `ca-cert.key`: Citadel intermediate certificate and corresponding private key.
 - `cert-chain.pem`: certificate trust chain.
+
+The following sample files are shared in bookinfo, httpbin and helloworld-v1 sample certificates:
+
+- `httpbin.example.com/example.com.crt`: sample root CA certificate.
+- `httpbin.example.com/example.com.key`: sample root CA private key.
+
+## Generating Certificates Steps
+
+See comments in https://github.com/maistra/maistra-test-tool/issues/338
+TBD: Update those steps in a Makefile
 
 ## Generating Certificates for Bootstrapping Multicluster Chain of Trust
 
