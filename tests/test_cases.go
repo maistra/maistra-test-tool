@@ -214,10 +214,10 @@ var testCases = []testing.InternalTest{
 		Name: "T29",
 		F:    ossm.TestSMCPAnnotations,
 	},
-	testing.InternalTest{
-		Name: "T30",
-		F:    ossm.TestMustGather,
-	},
+	// testing.InternalTest{
+	// 	Name: "T30",
+	// 	F:    ossm.TestMustGather,
+	// },
 	testing.InternalTest{
 		Name: "T31",
 		F:    federation.TestSingleClusterFed,
