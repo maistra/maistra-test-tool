@@ -22,6 +22,9 @@ const (
 	nginxClientCertKey = "../sampleCerts/nginx.example.com/nginx-client.example.com.key"
 	nginxClientCert    = "../sampleCerts/nginx.example.com/nginx-client.example.com.crt"
 	nginxServerCACert  = "../sampleCerts/nginx.example.com/example.com.crt"
+
+	meshExtServerCertKey = "../sampleCerts/nginx.example.com/my-nginx.mesh-external.svc.cluster.local.key"
+	meshExtServerCert    = "../sampleCerts/nginx.example.com/my-nginx.mesh-external.svc.cluster.local.crt"
 )
 
 type SMCP struct {

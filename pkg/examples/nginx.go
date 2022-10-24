@@ -40,6 +40,22 @@ func (n *Nginx) Install(config string) {
 	time.Sleep(time.Duration(10) * time.Second)
 }
 
+func (n *Nginx) Install_mTLS(config, serverCertKey, serverCert string) {
+	util.Log.Info("Create Secret")
+	util.CreateTLSSecret("nginx-server-certs", n.Namespace, serverCertKey, serverCert)
+	util.Shell(`kubectl create -n %s secret generic nginx-ca-certs --from-file=%s`, n.Namespace, nginxServerCACert)
+
+	util.Log.Info("Create ConfigMap")
+	util.Shell(`kubectl create configmap nginx-configmap --from-file=nginx.conf=%s -n %s`, config, n.Namespace)
+	time.Sleep(time.Duration(5) * time.Second)
+
+	util.Log.Info("Deploy Nginx")
+	util.KubeApply(n.Namespace, nginxYaml)
+	time.Sleep(time.Duration(5) * time.Second)
+	util.CheckPodRunning(n.Namespace, "run=my-nginx")
+	time.Sleep(time.Duration(10) * time.Second)
+}
+
 func (n *Nginx) Uninstall() {
 	util.Log.Info("Cleanup Nginx")
 	util.KubeDelete(n.Namespace, nginxYaml)
