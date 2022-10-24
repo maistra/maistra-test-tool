@@ -1,7 +1,7 @@
 # Global allowlist
 [allowlist]
   description = "Testdata sample cert files"
-  files = [
+  paths = [
       "^sampleCerts/(.*?)$",
       "^testdata/examples/(.*?)$",
       "^scripts/federation/(.*?)$",
