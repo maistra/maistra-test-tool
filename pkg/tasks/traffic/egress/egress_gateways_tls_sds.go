@@ -15,6 +15,7 @@
 package egress
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -26,7 +27,8 @@ import (
 func cleanupTLSOriginationSDS() {
 	util.Log.Info("Cleanup")
 	util.KubeDeleteContents(meshNamespace, OriginateSDS)
-	util.KubeDeleteContents("mesh-external", util.RunTemplate(EgressGatewaySDSTemplate, smcp))
+	util.KubeDeleteContents(meshNamespace, meshExternalServiceEntry)
+	util.KubeDeleteContents("bookinfo", util.RunTemplate(EgressGatewaySDSTemplate, smcp))
 	util.Shell(`kubectl delete -n %s secret client-credential`, meshNamespace)
 	util.KubeDeleteContents("bookinfo", util.RunTemplate(ExGatewayTLSFileTemplate, smcp))
 	util.KubeDeleteContents("bookinfo", ExServiceEntry)
@@ -81,5 +83,37 @@ func TestTLSOriginationSDS(t *testing.T) {
 		util.KubeDeleteContents("bookinfo", util.RunTemplate(ExGatewayTLSFileTemplate, smcp))
 		util.KubeDeleteContents("bookinfo", ExServiceEntry)
 		time.Sleep(time.Duration(20) * time.Second)
+	})
+
+	t.Run("TrafficManagement_egress_gateway_perform_mtls_origination", func(t *testing.T) {
+		defer util.RecoverPanic(t)
+
+		util.Log.Info("Deploy nginx mtls server")
+		nginx := examples.Nginx{Namespace: "mesh-external"}
+		nginx.Install_mTLS("../testdata/examples/x86/nginx/nginx_mesh_external_ssl.conf")
+
+		util.Log.Info("Create client cert secret")
+		util.Shell(`kubectl create secret -n %s generic client-credential --from-file=tls.key=%s --from-file=tls.crt=%s --from-file=ca.crt=%s`,
+			meshNamespace,
+			nginxClientCertKey,
+			nginxClientCert,
+			nginxServerCACert)
+
+		util.Log.Info("Configure MTLS origination for egress traffic")
+		util.KubeApplyContents("bookinfo", util.RunTemplate(EgressGatewaySDSTemplate, smcp))
+		util.KubeApplyContents(meshNamespace, meshExternalServiceEntry)
+		util.KubeApplyContents(meshNamespace, OriginateSDS)
+		time.Sleep(time.Duration(10) * time.Second)
+
+		util.Log.Info("Verify NGINX server")
+		cmd := fmt.Sprintf(`curl -sS http://my-nginx.mesh-external.svc.cluster.local`)
+		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", cmd, true)
+		util.Inspect(err, "failed to get response", "", t)
+		if !strings.Contains(msg, "Welcome to nginx") {
+			t.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)
+			util.Log.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)
+		} else {
+			util.Log.Infof("Success. Get expected response: %s", msg)
+		}
 	})
 }
