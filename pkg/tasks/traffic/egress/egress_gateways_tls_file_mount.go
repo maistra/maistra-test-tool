@@ -72,8 +72,9 @@ var (
 func cleanupTLSOriginationFileMount() {
 	util.Log.Info("Cleanup")
 	sleep := examples.Sleep{"bookinfo"}
-	nginx := examples.Nginx{"bookinfo"}
+	nginx := examples.Nginx{Namespace: "mesh-external"}
 	util.KubeDeleteContents(meshNamespace, nginxMeshRule)
+	util.KubeDeleteContents(meshNamespace, meshExternalServiceEntry)
 	util.KubeDeleteContents("bookinfo", util.RunTemplate(nginxGatewayTLSTemplate, smcp))
 
 	util.Shell(`kubectl -n %s rollout undo deploy istio-egressgateway`, meshNamespace)
@@ -99,9 +100,6 @@ func TestTLSOriginationFileMount(t *testing.T) {
 	sleep.Install()
 	sleepPod, err := util.GetPodName("bookinfo", "app=sleep")
 	util.Inspect(err, "Failed to get sleep pod name", "", t)
-
-	nginx := examples.Nginx{"bookinfo"}
-	nginx.Install("../testdata/examples/x86/nginx/nginx_ssl.conf")
 
 	t.Run("TrafficManagement_egress_gateway_perform_TLS_origination", func(t *testing.T) {
 		defer util.RecoverPanic(t)
@@ -143,6 +141,10 @@ func TestTLSOriginationFileMount(t *testing.T) {
 	t.Run("TrafficManagement_egress_gateway_perform_MTLS_origination", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
+		util.Log.Info("Deploy nginx mtls server")
+		nginx := examples.Nginx{Namespace: "mesh-external"}
+		nginx.Install_mTLS("../testdata/examples/x86/nginx/nginx_mesh_external_ssl.conf")
+
 		util.Log.Info("Redeploy the egress gateway with the client certs")
 		util.Shell(`kubectl create -n %s secret tls nginx-client-certs --key %s --cert %s`, meshNamespace, nginxClientCertKey, nginxClientCert)
 		util.Shell(`kubectl create -n %s secret generic nginx-ca-certs --from-file=%s`, meshNamespace, nginxServerCACert)
@@ -162,12 +164,12 @@ func TestTLSOriginationFileMount(t *testing.T) {
 
 		util.Log.Info("Configure MTLS origination for egress traffic")
 		util.KubeApplyContents("bookinfo", util.RunTemplate(nginxGatewayTLSTemplate, smcp))
-		time.Sleep(time.Duration(20) * time.Second)
+		util.KubeApplyContents(meshNamespace, meshExternalServiceEntry)
 		util.KubeApplyContents(meshNamespace, nginxMeshRule)
 		time.Sleep(time.Duration(10) * time.Second)
 
 		util.Log.Info("Verify NGINX server")
-		cmd := fmt.Sprintf(`curl -sS http://my-nginx.bookinfo.svc.cluster.local`)
+		cmd := fmt.Sprintf(`curl -sS http://my-nginx.mesh-external.svc.cluster.local`)
 		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", cmd, true)
 		util.Inspect(err, "failed to get response", "", t)
 		if !strings.Contains(msg, "Welcome to nginx") {

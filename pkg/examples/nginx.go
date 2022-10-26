@@ -40,19 +40,20 @@ func (n *Nginx) Install(config string) {
 	time.Sleep(time.Duration(10) * time.Second)
 }
 
-func (n *Nginx) Install_mTLS(config, serverCertKey, serverCert string) {
+// Install_mTLS deploys a nginx server with mtls config in mesh-external namespace
+func (n *Nginx) Install_mTLS(config string) {
 	util.Log.Info("Create Secret")
-	util.CreateTLSSecret("nginx-server-certs", n.Namespace, serverCertKey, serverCert)
-	util.Shell(`kubectl create -n %s secret generic nginx-ca-certs --from-file=%s`, n.Namespace, nginxServerCACert)
+	util.CreateTLSSecret("nginx-server-certs", "mesh-external", meshExtServerCertKey, meshExtServerCert)
+	util.Shell(`kubectl create -n %s secret generic nginx-ca-certs --from-file=%s`, "mesh-external", nginxServerCACert)
 
 	util.Log.Info("Create ConfigMap")
-	util.Shell(`kubectl create configmap nginx-configmap --from-file=nginx.conf=%s -n %s`, config, n.Namespace)
+	util.Shell(`kubectl create configmap nginx-configmap --from-file=nginx.conf=%s -n %s`, config, "mesh-external")
 	time.Sleep(time.Duration(5) * time.Second)
 
 	util.Log.Info("Deploy Nginx")
-	util.KubeApply(n.Namespace, nginxYaml)
+	util.KubeApply("mesh-external", nginxYaml)
 	time.Sleep(time.Duration(5) * time.Second)
-	util.CheckPodRunning(n.Namespace, "run=my-nginx")
+	util.CheckPodRunning("mesh-external", "run=my-nginx")
 	time.Sleep(time.Duration(10) * time.Second)
 }
 

@@ -154,6 +154,10 @@ var testCases = []testing.InternalTest{
 		F:    egress.TestEgressGateways,
 	},
 	testing.InternalTest{
+		Name: "T14",
+		F:    egress.TestTLSOriginationFileMount,
+	},
+	testing.InternalTest{
 		Name: "T15",
 		F:    egress.TestTLSOriginationSDS,
 	},
