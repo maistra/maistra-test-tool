@@ -53,8 +53,8 @@ func TestSingleClusterFed(t *testing.T) {
 			&& export MESH2_KUBECONFIG=~/.kube/config \
 			&& ./install.sh`)
 
-		util.Log.Info("Waiting 40s...")
-		time.Sleep(time.Duration(40) * time.Second)
+		util.Log.Info("Waiting 60s...")
+		time.Sleep(time.Duration(60) * time.Second)
 
 		util.Log.Info("Verify mesh1 connection status")
 		msg, err := util.Shell(`oc -n mesh1-system get servicemeshpeer mesh2 -o json`)
