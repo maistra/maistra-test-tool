@@ -102,47 +102,6 @@ func TestSMCPInstall(t *testing.T) {
 		time.Sleep(time.Duration(60) * time.Second)
 	})
 
-	t.Run("smcp_test_install_1.1", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-
-		// skip 1.1 SMCP test in an ARM environment
-		if util.Getenv("SAMPLEARCH", "x86") == "arm" {
-			t.Skip("Skipping testing 1.1 SMCP in an ARM environment")
-		}
-		util.Log.Info("Create SMCP v1.1 in namespace ", meshNamespace)
-		util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
-		util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV11_template, smcp))
-		util.KubeApplyContents(meshNamespace, smmr)
-
-		// patch SMCP identity if it's on a ROSA cluster
-		if util.Getenv("ROSA", "false") == "true" {
-			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
-		}
-		util.Log.Info("Waiting for mesh installation to complete")
-		util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 300s`, meshNamespace, smcpName)
-
-		util.Log.Info("Verify SMCP status and pods")
-		msg, _ := util.Shell(`oc get -n %s smcp/%s -o wide`, meshNamespace, smcpName)
-		if !strings.Contains(msg, "ComponentsReady") {
-			util.Log.Error("SMCP not Ready")
-			t.Error("SMCP not Ready")
-		}
-		util.Shell(`oc get -n %s pods`, meshNamespace)
-	})
-
-	t.Run("smcp_test_uninstall_1.1", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-
-		// skip 1.1 SMCP test in an ARM environment
-		if util.Getenv("SAMPLEARCH", "x86") == "arm" {
-			t.Skip("Skipping testing 1.1 SMCP in an ARM environment")
-		}
-		util.Log.Info("Delete SMCP v1,1 in ", meshNamespace)
-		util.KubeDeleteContents(meshNamespace, smmr)
-		util.KubeDeleteContents(meshNamespace, util.RunTemplate(smcpV11_template, smcp))
-		time.Sleep(time.Duration(40) * time.Second)
-	})
-
 	t.Run("smcp_test_upgrade_2.0_to_2.1", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
