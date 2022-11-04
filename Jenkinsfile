@@ -184,6 +184,12 @@ if (OCP_API_URL == "") {
 
                     // Slack message to who ran the job
                     slackMessage(currentBuild.result,moreInfo,currentBuild.displayName)
+
+                    // send email notification
+                    step([$class: 'Mailer',
+                    notifyEveryUnstableBuild: true,
+                    recipients: 'pyadav@redhat.com',
+                    sendToIndividuals: true])
                 }
             } 
         }
