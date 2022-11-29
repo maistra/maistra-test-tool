@@ -32,7 +32,7 @@ import (
 
 var t = &testing.T{}
 
-var smokeTests = []testing.InternalTest{
+var smoke = []testing.InternalTest{
 	testing.InternalTest{
 		Name: "A1",
 		F:    ossm.TestSMCPInstall,
@@ -47,7 +47,7 @@ var smokeTests = []testing.InternalTest{
 	},
 }
 
-var armCases = []testing.InternalTest{
+var arm = []testing.InternalTest{
 	testing.InternalTest{
 		Name: "A1",
 		F:    ossm.TestSMCPInstall,
@@ -91,7 +91,7 @@ var armCases = []testing.InternalTest{
 	},
 }
 
-var testCases = []testing.InternalTest{
+var full = []testing.InternalTest{
 	testing.InternalTest{
 		Name: "A1",
 		F:    ossm.TestSMCPInstall,
@@ -235,5 +235,120 @@ var testCases = []testing.InternalTest{
 	testing.InternalTest{
 		Name: "T34",
 		F:    ossm.TestSMCPAddons,
+	},
+}
+var interop = []testing.InternalTest{
+	testing.InternalTest{
+		Name: "A1",
+		F:    ossm.TestSMCPInstall,
+	},
+	testing.InternalTest{
+		Name: "A2",
+		F:    ossm.TestBookinfo,
+	},
+
+	testing.InternalTest{
+		Name: "T1",
+		F:    traffic.TestRequestRouting,
+	},
+	testing.InternalTest{
+		Name: "T2",
+		F:    traffic.TestFaultInjection,
+	},
+	testing.InternalTest{
+		Name: "T3",
+		F:    traffic.TestTrafficShifting,
+	},
+	testing.InternalTest{
+		Name: "T4",
+		F:    traffic.TestTCPShifting,
+	},
+	testing.InternalTest{
+		Name: "T5",
+		F:    traffic.TestRequestTimeouts,
+	},
+	testing.InternalTest{
+		Name: "T6",
+		F:    traffic.TestCircuitBreaking,
+	},
+	testing.InternalTest{
+		Name: "T7",
+		F:    traffic.TestMirroring,
+	},
+	testing.InternalTest{
+		Name: "T8",
+		F:    ingress.TestIngressGateways,
+	},
+	testing.InternalTest{
+		Name: "T9",
+		F:    ingress.TestSecureGateways,
+	},
+	testing.InternalTest{
+		Name: "T10",
+		F:    ingress.TestIngressWithoutTLS,
+	},
+	testing.InternalTest{
+		Name: "T11",
+		F:    egress.TestAccessExternalServices,
+	},
+	testing.InternalTest{
+		Name: "T12",
+		F:    egress.TestEgressTLSOrigination,
+	},
+	testing.InternalTest{
+		Name: "T13",
+		F:    egress.TestEgressGateways,
+	},
+	testing.InternalTest{
+		Name: "T14",
+		F:    egress.TestTLSOriginationFileMount,
+	},
+	testing.InternalTest{
+		Name: "T15",
+		F:    egress.TestTLSOriginationSDS,
+	},
+	testing.InternalTest{
+		Name: "T16",
+		F:    egress.TestEgressWildcard,
+	},
+	testing.InternalTest{
+		Name: "T17",
+		F:    certificate.TestExternalCert,
+	},
+	testing.InternalTest{
+		Name: "T18",
+		F:    authentication.TestAuthPolicy,
+	},
+	testing.InternalTest{
+		Name: "T19",
+		F:    authentication.TestMigration,
+	},
+	testing.InternalTest{
+		Name: "T20",
+		F:    authorizaton.TestAuthorHTTP,
+	},
+	testing.InternalTest{
+		Name: "T21",
+		F:    authorizaton.TestAuthorTCP,
+	},
+	testing.InternalTest{
+		Name: "T22",
+		F:    authorizaton.TestAuthorJWT,
+	},
+	testing.InternalTest{
+		Name: "T23",
+		F:    authorizaton.TestAuthorDeny,
+	},
+	testing.InternalTest{
+		Name: "T24",
+		F:    authorizaton.TestTrustDomainMigration,
+	},
+	testing.InternalTest{
+		Name: "T26",
+		F:    ossm.TestTLSVersionSMCP,
+	},
+	testing.InternalTest{
+		Name: "T27",
+		F:    ossm.TestSSL,
 	},
 }

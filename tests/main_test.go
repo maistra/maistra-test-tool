@@ -44,13 +44,18 @@ func matchString(a, b string) (bool, error) {
 func TestMain(m *testing.M) {
 	setupNamespaces()
 
-	if util.Getenv("SAMPLEARCH", "x86") == "x86" ||
-	   util.Getenv("SAMPLEARCH", "x86") == "p" ||
-	   util.Getenv("SAMPLEARCH", "x86") == "z" {
-		// Search all test cases in a regular run
-		testing.Main(matchString, testCases, nil, nil)  // testCases constant is defined in test_cases.go
-	} else if util.Getenv("SAMPLEARCH", "x86") == "arm" {
-		// Search test cases in an ARM run
-		testing.Main(matchString, armCases, nil, nil)  // armCases constant is defined in test_cases.go
+	// run test group defined by env variable 'TEST_GROUP'
+	// groups are defined in test_cases.go
+	// TODO check https://go.dev/blog/subtests if we want to use that instead of this
+	if util.Getenv("TEST_GROUP", "full") == "full" {
+		testing.Main(matchString, full, nil, nil)
+	} else if util.Getenv("SAMPLEARCH", "x86") == "arm" ||
+		util.Getenv("TEST_GROUP", "full") == "arm" {
+		testing.Main(matchString, arm, nil, nil)
+	} else if util.Getenv("TEST_GROUP", "full") == "smoke" {
+		testing.Main(matchString, smoke, nil, nil)
+	} else if util.Getenv("TEST_GROUP", "full") == "interop" {
+		testing.Main(matchString, interop, nil, nil)
 	}
+
 }
