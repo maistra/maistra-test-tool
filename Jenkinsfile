@@ -33,6 +33,11 @@ properties([
             choices: ['x86','p', 'z', 'arm'],
             description: 'This is a switch for bookinfo images on different platforms'
         ),
+        choice(
+            name: 'TEST_GROUP',
+            choices: ['smoke', 'full', 'arm', 'interop'],
+            description: 'Given test group will be run'
+        ),
         string(
             name: 'TEST_CASE',
             defaultValue: '',
@@ -80,7 +85,7 @@ if (OCP_API_URL == "") {
                     sh "oc login ${params.OCP_API_URL} --token=${params.OCP_TOKEN} --insecure-skip-tls-verify"
                 }
             }
-            stage("Start running all tests"){
+            stage("Start running given test group"){
                 dir('tests') {
                 wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[var: 'OCP_CRED_PSW', password: OCP_CRED_PSW]], varMaskRegexes: []]) {
                     def OUT = sh (
@@ -92,6 +97,7 @@ if (OCP_API_URL == "") {
                         --rm \
                         --pull always \
                         -e SAMPLEARCH='${params.OCP_SAMPLE_ARCH}' \
+                        -e TEST_GROUP='${params.TEST_GROUP}' \
                         -e OCP_CRED_USR='${OCP_CRED_USR}' \
                         -e OCP_CRED_PSW='${OCP_CRED_PSW}' \
                         -e OCP_TOKEN='${params.OCP_TOKEN}' \

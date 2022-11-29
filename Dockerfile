@@ -12,6 +12,7 @@ RUN microdnf install --nodocs tar gcc gzip git bind-utils sudo \
     && microdnf clean all
 
 ENV GOROOT=/go
+ENV TEST_GROUP ${TEST_GROUP}
 ENV PATH=$GOROOT/bin:$PATH
 ENV SAMPLEARCH ${SAMPLEARCH}
 ENV OCP_CRED_USR ${OCP_CRED_USR}
