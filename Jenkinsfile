@@ -35,7 +35,7 @@ properties([
         ),
         choice(
             name: 'TEST_GROUP',
-            choices: ['smoke', 'full', 'arm', 'interop'],
+            choices: ['full', 'smoke', 'arm', 'interop'],
             description: 'Given test group will be run'
         ),
         string(
