@@ -366,6 +366,6 @@ spec:
     - destination:
         host: my-nginx
         port:
-          number: 8443
+          number: 443
 `
 )

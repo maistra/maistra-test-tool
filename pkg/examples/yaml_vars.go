@@ -49,11 +49,13 @@ var (
 	httpbinv1Yaml     = fmt.Sprintf("%s/%s/httpbin/httpbinv1.yaml", basedir, branch)
 	httpbinv2Yaml     = fmt.Sprintf("%s/%s/httpbin/httpbinv2.yaml", basedir, branch)
 
-	nginxServerCertKey = fmt.Sprintf("%s/nginx.example.com/nginx.example.com.key", certdir)
-	nginxServerCert    = fmt.Sprintf("%s/nginx.example.com/nginx.example.com.crt", certdir)
-	nginxServerCACert  = fmt.Sprintf("%s/nginx.example.com/example.com.crt", certdir)
-	nginxConf          = fmt.Sprintf("%s/%s/nginx/nginx.conf", basedir, branch)
-	nginxYaml          = fmt.Sprintf("%s/%s/nginx/nginx.yaml", basedir, branch)
+	nginxServerCertKey   = fmt.Sprintf("%s/nginx.example.com/nginx.example.com.key", certdir)
+	nginxServerCert      = fmt.Sprintf("%s/nginx.example.com/nginx.example.com.crt", certdir)
+	nginxServerCACert    = fmt.Sprintf("%s/nginx.example.com/example.com.crt", certdir)
+	meshExtServerCertKey = fmt.Sprintf("%s/nginx.example.com/my-nginx.mesh-external.svc.cluster.local.key", certdir)
+	meshExtServerCert    = fmt.Sprintf("%s/nginx.example.com/my-nginx.mesh-external.svc.cluster.local.crt", certdir)
+	nginxConf            = fmt.Sprintf("%s/%s/nginx/nginx.conf", basedir, branch)
+	nginxYaml            = fmt.Sprintf("%s/%s/nginx/nginx.yaml", basedir, branch)
 
 	redisYaml = fmt.Sprintf("%s/%s/redis/redis.yaml", basedir, branch)
 

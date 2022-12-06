@@ -350,7 +350,7 @@ spec:
       name: https
       protocol: HTTPS
     hosts:
-    - my-nginx.bookinfo.svc.cluster.local
+    - my-nginx.mesh-external.svc.cluster.local
     tls:
       mode: ISTIO_MUTUAL
 ---
@@ -370,7 +370,7 @@ spec:
           number: 443
         tls:
           mode: ISTIO_MUTUAL
-          sni: my-nginx.bookinfo.svc.cluster.local
+          sni: my-nginx.mesh-external.svc.cluster.local
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
@@ -378,7 +378,7 @@ metadata:
   name: direct-nginx-through-egress-gateway
 spec:
   hosts:
-  - my-nginx.bookinfo.svc.cluster.local
+  - my-nginx.mesh-external.svc.cluster.local
   gateways:
   - istio-egressgateway
   - mesh
@@ -400,7 +400,7 @@ spec:
       port: 443
     route:
     - destination:
-        host: my-nginx.bookinfo.svc.cluster.local
+        host: my-nginx.mesh-external.svc.cluster.local
         port:
           number: 443
       weight: 100
@@ -412,7 +412,7 @@ kind: DestinationRule
 metadata:
   name: originate-mtls-for-nginx
 spec:
-  host: my-nginx.bookinfo.svc.cluster.local
+  host: my-nginx.mesh-external.svc.cluster.local
   trafficPolicy:
     loadBalancer:
       simple: ROUND_ROBIN
@@ -424,15 +424,14 @@ spec:
         clientCertificate: /etc/istio/nginx-client-certs/tls.crt
         privateKey: /etc/istio/nginx-client-certs/tls.key
         caCertificates: /etc/istio/nginx-ca-certs/example.com.crt
-        sni: my-nginx.bookinfo.svc.cluster.local
-  
+        sni: my-nginx.mesh-external.svc.cluster.local
 `
 
 	EgressGatewaySDSTemplate = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
-  name: istio-egressgateway-sds
+  name: istio-egressgateway
 spec:
   selector:
     istio: egressgateway
@@ -472,7 +471,7 @@ spec:
   hosts:
   - my-nginx.mesh-external.svc.cluster.local
   gateways:
-  - istio-egressgateway-sds
+  - istio-egressgateway
   - mesh
   http:
   - match:
@@ -488,14 +487,29 @@ spec:
       weight: 100
   - match:
     - gateways:
-      - istio-egressgateway-sds
+      - istio-egressgateway
       port: 443
     route:
     - destination:
         host: my-nginx.mesh-external.svc.cluster.local
         port:
-          number: 8443
+          number: 443
       weight: 100
+`
+	meshExternalServiceEntry = `
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: mynginx-mesh-external
+spec:
+  hosts:
+  - my-nginx.mesh-external.svc.cluster.local
+  location: MESH_EXTERNAL
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  resolution: DNS
 `
 
 	OriginateSDS = `
