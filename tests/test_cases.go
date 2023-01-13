@@ -234,4 +234,8 @@ var testCases = []testing.InternalTest{
 		Name: "T34",
 		F:    ossm.TestSMCPAddons,
 	},
+	testing.InternalTest{
+		Name: "T35",
+		F:    ossm.TestIstioPodProbesFails,
+	},
 }
