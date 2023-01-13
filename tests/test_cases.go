@@ -236,6 +236,10 @@ var full = []testing.InternalTest{
 		Name: "T34",
 		F:    ossm.TestSMCPAddons,
 	},
+	testing.InternalTest{
+		Name: "T35",
+		F:    ossm.TestIstioPodProbesFails,
+	},
 }
 var interop = []testing.InternalTest{
 	testing.InternalTest{
