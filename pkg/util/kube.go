@@ -483,6 +483,27 @@ func CheckPodsRunningWithMaxDuration(n string, maxDuration time.Duration) (ready
 func CheckPodsRunning(n string) (ready bool) {
 	return CheckPodsRunningWithMaxDuration(n, 2*time.Minute)
 }
+// CheckPodDeletion returns true if the pod is deleted. Params: label of the pod, the Pod Name to check,  namespace and a timeout
+func CheckPodDeletion(n, labelSelector string, previousPodName string, timeout int) (deleted bool, err error) {
+	deleted = false
+	for i := 0; i < timeout; i++ {
+		pod, err := GetPodName(n, labelSelector)
+		if err != nil {
+			deleted = true
+			return deleted, err
+		}
+		if pod != previousPodName {
+			deleted = true
+			return deleted, nil
+		}
+		if pod == "" {
+			deleted = true
+			return deleted, nil
+		}
+		time.Sleep(time.Duration(1) * time.Second)
+	}
+	return deleted, nil
+}
 
 // CheckDeployment gets status of a deployment from a namespace
 func CheckDeployment(ctx context.Context, namespace, deployment string) error {

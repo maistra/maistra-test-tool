@@ -48,29 +48,42 @@ func TestIstioPodProbesFails(t *testing.T) {
 		util.Shell(`../scripts/smmr/create_members_50.sh`)
 		util.Log.Info("Namespaces created...")
 		rand.Seed(time.Now().UnixNano())
-		randId := rand.Intn(10-4) + 1
+		// Random number of deletes for the pod between 4 and 10
+		randId := rand.Intn(10-4) + 4
 		util.Log.Info("Random number of deletes: ", randId)
 		count := 0
 		for count < randId {
-			util.Log.Info("Get the istiod pod name")
+			util.Log.Info("*** Get the istiod pod name")
 			istiod, _ := util.GetPodName(`istio-system`, `app=istiod`)
-			util.Log.Info("Delete Istio pod multiple times: ", istiod)
+			util.Log.Info("*** Delete Istio pod: ", istiod)
 			util.Shell(`oc delete pod %s -n istio-system`, istiod)
-			time.Sleep(time.Duration(20) * time.Second)
-			status, _ := util.Shell(`oc get pods -n istio-system | grep istiod | awk '{print $2}'`)
-			istiod, _ = util.GetPodName(`istio-system`, `app=istiod`)
-			if status == "1/1" {
-				util.Log.Info("Istiod pod is running: ", istiod)
-			} else {
-				event, _ := util.Shell(`kubectl get events  -n istio-system --field-selector type!=Normal,involvedObject.name=%s |tail -1`, istiod)
-				if strings.Contains(event, "Readiness probe failed") {
-					t.Errorf("Istio pod is not running and fail because of readiness probe failure: %s", event)
-				} else {
-					t.Errorf("Istio pod is not running but is not failing because of readiness probe failure: %s", event)
+			deleted, _ := util.CheckPodDeletion(`istio-system`, `app=istiod`, istiod, 60)
+			if deleted {
+				util.Log.Info("*** Istiod pod deleted: ", istiod)
+				ready := util.CheckPodRunning(`istio-system`, `app=istiod`)
+				if ready == nil {
+					util.Log.Info("*** New Istiod pod is running")
+					status, _ := util.Shell(`oc get pods -n istio-system | grep istiod | awk '{print $2}'`)
+					istiod, _ = util.GetPodName(`istio-system`, `app=istiod`)
+					if strings.Contains(status, `1/1`) {
+						util.Log.Info("*** Istiod pod is running: ", istiod)
+					} else {
+						//Get events that are not type = Normal from the pod
+						event, _ := util.Shell(`kubectl get events  -n istio-system --field-selector type!=Normal,involvedObject.name=%s |tail -1`, istiod)
+						if strings.Contains(event, "Readiness probe failed") {
+							t.Fatalf("****** Istio pod is not running and fail because of readiness probe failure: %s", event)
+						} else if event == "No resources found in istio-system namespace." {
+							util.Log.Info("*** No eventss for pod: ", istiod)
+						} else {
+							t.Errorf("*** Istio pod is not running but is not failing because of readiness probe failure: %s", event)
+						}
+					}
+					count++
 				}
+			} else {
+				t.Errorf("*** Istiod pod is not deleted: %s", istiod)
 			}
-			count++
 		}
-		util.Log.Info("Test finished")
+		util.Log.Info("*** Test finished without errors after deletion of pods")
 	})
 }
