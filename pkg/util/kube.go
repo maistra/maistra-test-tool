@@ -419,6 +419,28 @@ func GetPodName(n, labelSelector string) (pod string, err error) {
 	return
 }
 
+// CheckPodDeletion returns true if the pod is deleted. Params: label of the pod, the Pod Name to check,  namespace and a timeout
+func CheckPodDeletion(n, labelSelector string, previousPodName string, timeout int) (deleted bool, err error) {
+	deleted = false
+	for i := 0; i < timeout; i++ {
+		pod, err := GetPodName(n, labelSelector)
+		if err != nil {
+			deleted = true
+			return deleted, err
+		}
+		if pod != previousPodName {
+			deleted = true
+			return deleted, nil
+		}
+		if pod == "" {
+			deleted = true
+			return deleted, nil
+		}
+		time.Sleep(time.Duration(1) * time.Second)
+	}
+	return deleted, nil
+}
+
 // GetPodLogsForLabel gets the logs for the given label selector and container
 func GetPodLogsForLabel(n, labelSelector string, container string, tail, alsoShowPreviousPodLogs bool) string {
 	pod, err := GetPodName(n, labelSelector)
