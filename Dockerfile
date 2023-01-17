@@ -23,6 +23,7 @@ ENV NIGHTLY ${NIGHTLY}
 ENV TEST_CASE ${TEST_CASE}
 ENV ROSA ${ROSA}
 ENV GODEBUG "x509ignoreCN=0"
+ENV MUSTGATHERTAG ${MUSTGATHERTAG}
 
 COPY . /opt/maistra-test-tool
 WORKDIR /opt/maistra-test-tool/tests
