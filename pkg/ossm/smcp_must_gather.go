@@ -24,6 +24,7 @@ import (
 )
 
 var mustGatherImage = "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel8"
+var mustGatherTag string = util.Getenv("MUSTGATHERTAG", "2.3")
 
 func cleanupMustGatherTest() {
 	util.Log.Info("Cleanup ...")
@@ -43,7 +44,8 @@ func TestMustGather(t *testing.T) {
 	t.Run("smcp_test_must_gather", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 		util.Log.Info("Test must-gather log collection")
-		util.Shell(`mkdir -p debug; oc adm must-gather --dest-dir=./debug --image=%s`, mustGatherImage)
+		util.Log.Info("Must-gather image: ", mustGatherImage, ":", mustGatherTag)
+		util.Shell(`mkdir -p debug; oc adm must-gather --dest-dir=./debug --image=%s:%s`, mustGatherImage, mustGatherTag)
 
 		util.Log.Info("Check cluster-scoped openshift-operators.servicemesh-resources.maistra.io.yaml")
 		pattern := "debug/*must-gather*/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/openshift-operators.servicemesh-resources.maistra.io.yaml"
