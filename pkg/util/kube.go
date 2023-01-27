@@ -377,6 +377,31 @@ func GetPodLabelValues(n, label string) (map[string]string, error) {
 	return m, nil
 }
 
+// GetPodAnnotations gets a map annotations from a pod name for the given: namespace, pod label and a timeout for checking the pod annotations
+func GetPodAnnotations(n, podName string, timeout int) (map[string]string, error) {
+	retry := Retrier{
+		BaseDelay: 1 * time.Second,
+		MaxDelay:  1 * time.Second,
+		Retries:   timeout,
+	}
+	var annotations map[string]string
+	_, err := retry.Retry(context.Background(), func(_ context.Context, _ int) error {
+		output, error := Shell("kubectl get pod %s -n %s -o jsonpath='{.metadata.annotations}'", podName, n)
+		if error != nil {
+			Log.Infof("Failed to get pods by label %s in namespace %s: %s", podName, n, error)
+			return &Break{error}
+		}
+		if output != "" {
+			if err := json.Unmarshal([]byte(output), &annotations); err != nil {
+				return fmt.Errorf("failed to unmarshal pod annotations: %s", err)
+			}
+			return nil
+		}
+		return fmt.Errorf("pod annotations not found yet")
+	})
+	return annotations, err
+}
+
 // GetPodNames gets names of all pods in specific namespace and return in a slice
 func GetPodNames(n string) (pods []string) {
 	res, err := Shell("kubectl -n %s get pods -o jsonpath='{.items[*].metadata.name}'", n)
