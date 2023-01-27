@@ -89,7 +89,6 @@ func TestSMCPAnnotations(t *testing.T) {
 			util.KubeApplyContents("bookinfo", testAnnotationProxyEnv)
 		}
 		util.CheckPodRunning("bookinfo", "app=env")
-		time.Sleep(time.Duration(10) * time.Second)
 		podName, _ := util.GetPodName("bookinfo", "app=env")
 		annotations, err := util.GetPodAnnotations("bookinfo", podName, 30)
 		if err != nil {
