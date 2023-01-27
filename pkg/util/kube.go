@@ -378,7 +378,7 @@ func GetPodLabelValues(n, label string) (map[string]string, error) {
 	return m, nil
 }
 
-// GetPodAnnotations gets a map annotations from a pod name for the given: namespace, pod label and a timeout for checking the pod annotations
+// GetPodAnnotations gets a map annotations from a pod name for the given: namespace, pod label and retry times for checking the pod annotations
 func GetPodAnnotations(n, podName string, retries int) (map[string]string, error) {
 	retry := Retrier{
 		BaseDelay: 1 * time.Second,
