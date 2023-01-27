@@ -420,7 +420,7 @@ func GetPodName(n, labelSelector string) (pod string, err error) {
 }
 
 // Check PodReady (Example: 2/2 container running on a pod) returns true if the pod is ready. Params: namespace, pod label and timeout to check ready pod.
-func CheckPodReady(n, labelSelector string, timeout int) (ready bool, err error) {
+func CheckPodReady(ns, selector string, timeout time.Duration) (bool, error) {
 	ready = false
 	for i := 0; i < timeout; i++ {
 		pod, err := GetPodName(n, labelSelector)
