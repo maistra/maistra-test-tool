@@ -89,35 +89,31 @@ func TestSMCPAnnotations(t *testing.T) {
 			util.KubeApplyContents("bookinfo", testAnnotationProxyEnv)
 		}
 		util.CheckPodRunning("bookinfo", "app=env")
-		podName, _ := util.GetPodName("bookinfo", "app=env")
+		podName, err := util.GetPodName("bookinfo", "app=env")
+		if err != nil {
+			t.Fatalf("Failed to get pod name: %v", err)
+		}
 		annotations, err := util.GetPodAnnotations("bookinfo", podName, 30)
 		if err != nil {
-			t.Errorf("Failed to get annotations: %v", err)
-			t.Fatal(err)
+			t.Fatalf("Failed to get annotations: %v", err)
 		}
 		util.Log.Infof("Checking annotation: %", annotations["test1.annotation-from-smcp"])
 		if _, ok := annotations["test1.annotation-from-smcp"]; !ok {
-			t.Errorf("Failed to get annotations: %v", `test1.annotation-from-smcp: test1`)
-		} else {
-			if annotations["test1.annotation-from-smcp"] != "test1" {
-				t.Errorf("Failed to get annotations: %v", `test1.annotation-from-smcp: test1`)
-			}
+			t.Errorf("Failed to get annotations: test1.annotation-from-smcp: test1")
+		} else if annotations["test1.annotation-from-smcp"] != "test1" {
+			t.Errorf("Failed to get annotations: test1.annotation-from-smcp: test1")
 		}
 		util.Log.Infof("Checking annotation: %", annotations["test2.annotation-from-smcp"])
 		if _, ok := annotations["test2.annotation-from-smcp"]; !ok {
-			t.Errorf("Failed to get annotations: %v", `test2.annotation-from-smcp: '[test2]'`)
-		} else {
-			if annotations["test2.annotation-from-smcp"] != "[test2]" {
-				t.Errorf("Failed to get annotations: %v", `test2.annotation-from-smcp: '[test2]'`)
-			}
+			t.Errorf("Failed to get annotations: test2.annotation-from-smcp: '[test2]'")
+		} else if annotations["test2.annotation-from-smcp"] != "[test2]" {
+			t.Errorf("Failed to get annotations: test2.annotation-from-smcp: '[test2]'")
 		}
 		util.Log.Infof("Checking annotation: %", annotations["test3.annotation-from-smcp"])
 		if _, ok := annotations["test3.annotation-from-smcp"]; !ok {
-			t.Errorf("Failed to get annotations: %v", `test3.annotation-from-smcp: '{test3}'`)
-		} else {
-			if annotations["test3.annotation-from-smcp"] != "{test3}" {
-				t.Errorf("Failed to get annotations: %v", `test3.annotation-from-smcp: '{test3}'`)
-			}
+			t.Errorf("Failed to get annotations: test3.annotation-from-smcp: '{test3}'")
+		} else if annotations["test3.annotation-from-smcp"] != "{test3}" {
+			t.Errorf("Failed to get annotations: test3.annotation-from-smcp: '{test3}'")
 		}
 	})
 }
