@@ -420,35 +420,28 @@ func GetPodName(n, labelSelector string) (pod string, err error) {
 }
 
 // Check PodReady (Example: 2/2 container running on a pod) returns true if the pod is ready. Params: namespace, pod label and timeout to check ready pod.
-func CheckPodReady(ns, selector string, timeout time.Duration) (bool, error) {
-	ready = false
-	for i := 0; i < timeout; i++ {
-		pod, err := GetPodName(n, labelSelector)
-		status, _ := Shell(`oc get pod %s -n istio-system | grep istiod | awk '{print $2}'`, pod)
-		if err != nil {
-			return ready, err
-		}
-		//split status to get the number of containers expected to be running
-		s := strings.Split(status, "/")
-		//trim the status to get the number of containers running without spaces
-		s[0] = strings.Trim(s[0], "\r\n")
-		s[1] = strings.Trim(s[1], "\r\n")
-
-		if len(s) < 2 {
-			return ready, fmt.Errorf("*** unexpected status format: %s", status)
-		}
-		//check if the number of containers running is equal to the number of containers expected to be running
-		if s[0] != s[1] {
-			time.Sleep(time.Duration(1) * time.Second)
-			Log.Infof(`*** Pod status is not ready: %s of %s. Checking again in 1 second`, s[0], s[1])
-			continue
-		} else {
-			Log.Infof("*** Pod status: %s of %s ready", s[0], s[1])
-			ready = true
-			return ready, nil
-		}
+func CheckPodReady(ns, selector string, retries int) (bool, error) {
+	ready := false
+	retry := Retrier{
+		BaseDelay: 1 * time.Second,
+		MaxDelay:  1 * time.Second,
+		Retries:   retries,
 	}
-	return false, nil
+	_, err := retry.Retry(context.Background(), func(_ context.Context, _ int) error {
+		output, err := Shell(`oc get pods -n istio-system -l %s -o jsonpath='{range .items[*]}{.status.containerStatuses[*].ready}'`, selector)
+		if err != nil {
+			ready = false
+			return fmt.Errorf("failed to get pod: %s", err)
+		}
+		if strings.Contains(output, "false") {
+			ready = false
+			return fmt.Errorf("pod is not ready")
+		} else {
+			ready = true
+			return nil
+		}
+	})
+	return ready, err
 }
 
 // CheckPodDeletion returns true if the pod is deleted. Params: label of the pod, the Pod Name to check,  namespace and a timeout
