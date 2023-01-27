@@ -90,17 +90,35 @@ func TestSMCPAnnotations(t *testing.T) {
 		}
 		util.CheckPodRunning("bookinfo", "app=env")
 		time.Sleep(time.Duration(10) * time.Second)
-
-		msg, _ := util.Shell(`kubectl get po -n bookinfo -l app=env -o yaml | grep "annotation-from-smcp"`)
-
-		if !strings.Contains(msg, `test1.annotation-from-smcp: test1`) {
+		podName, _ := util.GetPodName("bookinfo", "app=env")
+		annotations, err := util.GetPodAnnotations("bookinfo", podName, 30)
+		if err != nil {
+			t.Errorf("Failed to get annotations: %v", err)
+			t.Fatal(err)
+		}
+		util.Log.Infof("Checking annotation: %", annotations["test1.annotation-from-smcp"])
+		if _, ok := annotations["test1.annotation-from-smcp"]; !ok {
 			t.Errorf("Failed to get annotations: %v", `test1.annotation-from-smcp: test1`)
+		} else {
+			if annotations["test1.annotation-from-smcp"] != "test1" {
+				t.Errorf("Failed to get annotations: %v", `test1.annotation-from-smcp: test1`)
+			}
 		}
-		if !strings.Contains(msg, `test2.annotation-from-smcp: '[test2]'`) {
+		util.Log.Infof("Checking annotation: %", annotations["test2.annotation-from-smcp"])
+		if _, ok := annotations["test2.annotation-from-smcp"]; !ok {
 			t.Errorf("Failed to get annotations: %v", `test2.annotation-from-smcp: '[test2]'`)
+		} else {
+			if annotations["test2.annotation-from-smcp"] != "[test2]" {
+				t.Errorf("Failed to get annotations: %v", `test2.annotation-from-smcp: '[test2]'`)
+			}
 		}
-		if !strings.Contains(msg, `test3.annotation-from-smcp: '{test3}'`) {
+		util.Log.Infof("Checking annotation: %", annotations["test3.annotation-from-smcp"])
+		if _, ok := annotations["test3.annotation-from-smcp"]; !ok {
 			t.Errorf("Failed to get annotations: %v", `test3.annotation-from-smcp: '{test3}'`)
+		} else {
+			if annotations["test3.annotation-from-smcp"] != "{test3}" {
+				t.Errorf("Failed to get annotations: %v", `test3.annotation-from-smcp: '{test3}'`)
+			}
 		}
 	})
 }
