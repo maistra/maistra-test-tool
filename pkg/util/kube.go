@@ -430,11 +430,9 @@ func CheckPodReady(ns, selector string, retries int) (bool, error) {
 	_, err := retry.Retry(context.Background(), func(_ context.Context, _ int) error {
 		output, err := Shell(`oc get pods -n istio-system -l %s -o jsonpath='{range .items[*]}{.status.containerStatuses[*].ready}'`, selector)
 		if err != nil {
-			ready = false
 			return fmt.Errorf("failed to get pod: %s", err)
 		}
 		if strings.Contains(output, "false") {
-			ready = false
 			return fmt.Errorf("pod is not ready")
 		} else {
 			ready = true
