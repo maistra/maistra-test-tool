@@ -23,22 +23,20 @@ log "Retrieving root certificates"
 WEST_MESH_CERT=$(oc1 get configmap -n west-mesh-system istio-ca-root-cert -o jsonpath='{.data.root-cert\.pem}' | sed ':a;N;$!ba;s/\n/\\\n    /g')
 EAST_MESH_CERT=$(oc2 get configmap -n east-mesh-system istio-ca-root-cert -o jsonpath='{.data.root-cert\.pem}' | sed ':a;N;$!ba;s/\n/\\\n    /g')
 
-if [ -z "$WEST_MESH_CERT" ]; then
-  sleep 60
-  WEST_MESH_CERT=$(oc1 get configmap -n west-mesh-system istio-ca-root-cert -o jsonpath='{.data.root-cert\.pem}' | sed ':a;N;$!ba;s/\n/\\\n    /g')
-  if [ -z "$WEST_MESH_CERT" ]; then
-    echo "FATAL: Could not retrieve root certificate for west-mesh"
-    exit 1
+n=0
+until [ "$n" -ge 4 ]
+do
+  if [ -z "$MESH1_CERT" ] || [ -z "$MESH2_CERT" ]; then
+    log "Retrieving root certificates (retry)"
+    sleep 30
+    MESH1_CERT=$(oc1 get configmap -n mesh1-system istio-ca-root-cert -o jsonpath='{.data.root-cert\.pem}' | sed ':a;N;$!ba;s/\n/\\\n    /g')
+    MESH2_CERT=$(oc2 get configmap -n mesh2-system istio-ca-root-cert -o jsonpath='{.data.root-cert\.pem}' | sed ':a;N;$!ba;s/\n/\\\n    /g')
+    n=$((n+1))
+  else
+    log "Both root certificates retrieved"
+    break
   fi
-fi
-if [ -z "$EAST_MESH_CERT" ]; then
-  sleep 60
-  EAST_MESH_CERT=$(oc2 get configmap -n east-mesh-system istio-ca-root-cert -o jsonpath='{.data.root-cert\.pem}' | sed ':a;N;$!ba;s/\n/\\\n    /g')
-  if [ -z "$EAST_MESH_CERT" ]; then
-    echo "FATAL: Could not retrieve root certificate for east-mesh"
-    exit 1
-  fi
-fi
+done
 
 WEST_MESH_DISCOVERY_PORT="${MESH1_DISCOVERY_PORT:-8188}"
 WEST_MESH_SERVICE_PORT="${MESH1_SERVICE_PORT:-15443}"

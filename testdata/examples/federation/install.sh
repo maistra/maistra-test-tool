@@ -44,22 +44,22 @@ oc2 wait --for condition=Ready -n mesh2-system smcp/fed-import --timeout 300s
 log "Retrieving root certificates"
 MESH1_CERT=$(oc1 get configmap -n mesh1-system istio-ca-root-cert -o jsonpath='{.data.root-cert\.pem}' | sed ':a;N;$!ba;s/\n/\\\n    /g')
 MESH2_CERT=$(oc2 get configmap -n mesh2-system istio-ca-root-cert -o jsonpath='{.data.root-cert\.pem}' | sed ':a;N;$!ba;s/\n/\\\n    /g')
-if [ -z "$MESH1_CERT" ]; then
-  sleep 60
-  MESH1_CERT=$(oc1 get configmap -n mesh1-system istio-ca-root-cert -o jsonpath='{.data.root-cert\.pem}' | sed ':a;N;$!ba;s/\n/\\\n    /g')
-  if [ -z "$MESH1_CERT" ]; then
-    echo "FATAL: Could not retrieve root certificate for mesh1"
-    exit 1
+
+n=0
+until [ "$n" -ge 4 ]
+do
+  if [ -z "$MESH1_CERT" ] || [ -z "$MESH2_CERT" ]; then
+    log "Retrieving root certificates (retry)"
+    sleep 30
+    MESH1_CERT=$(oc1 get configmap -n mesh1-system istio-ca-root-cert -o jsonpath='{.data.root-cert\.pem}' | sed ':a;N;$!ba;s/\n/\\\n    /g')
+    MESH2_CERT=$(oc2 get configmap -n mesh2-system istio-ca-root-cert -o jsonpath='{.data.root-cert\.pem}' | sed ':a;N;$!ba;s/\n/\\\n    /g')
+    n=$((n+1))
+  else
+    log "Both root certificates retrieved"
+    break
   fi
-fi
-if [ -z "$MESH2_CERT" ]; then
-  sleep 60
-  MESH2_CERT=$(oc2 get configmap -n mesh2-system istio-ca-root-cert -o jsonpath='{.data.root-cert\.pem}' | sed ':a;N;$!ba;s/\n/\\\n    /g')
-  if [ -z "$MESH2_CERT" ]; then
-    echo "FATAL: Could not retrieve root certificate for mesh2"
-    exit 1
-  fi
-fi
+done
+
 MESH1_DISCOVERY_PORT="8188"
 MESH1_SERVICE_PORT="15443"
 MESH2_DISCOVERY_PORT="8188"
