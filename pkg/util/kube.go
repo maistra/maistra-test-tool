@@ -449,8 +449,8 @@ func GetPodName(n, labelSelector string) (pod string, err error) {
 func CheckPodReady(ns, selector string, retries int) (bool, error) {
 	ready := false
 	retry := Retrier{
-		BaseDelay: 1 * time.Second,
-		MaxDelay:  1 * time.Second,
+		BaseDelay: 10 * time.Second,
+		MaxDelay:  10 * time.Second,
 		Retries:   retries,
 	}
 	_, err := retry.Retry(context.Background(), func(_ context.Context, _ int) error {
