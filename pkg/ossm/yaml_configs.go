@@ -15,7 +15,7 @@
 package ossm
 
 const (
-  smcpV23_template = `
+	smcpV23_template = `
 apiVersion: maistra.io/v2
 kind: ServiceMeshControlPlane
 metadata:
@@ -42,7 +42,34 @@ spec:
   telemetry:
     type: Istiod
 `
-  smcpV22_template = `
+	smcpV23_template_meta = `
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: meta
+spec:
+  version: v2.3
+  tracing:
+    type: Jaeger
+    sampling: 10000
+  policy:
+    type: Istiod
+  addons:
+    grafana:
+      enabled: true
+    jaeger:
+      install:
+        storage:
+          type: Memory
+    kiali:
+      enabled: true
+    prometheus:
+      enabled: true
+  
+  telemetry:
+    type: Istiod
+`
+	smcpV22_template = `
 apiVersion: maistra.io/v2
 kind: ServiceMeshControlPlane
 metadata:
