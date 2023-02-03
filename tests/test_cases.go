@@ -240,6 +240,10 @@ var full = []testing.InternalTest{
 		Name: "T35",
 		F:    ossm.TestIstioPodProbesFails,
 	},
+	testing.InternalTest{
+		Name: "T36",
+		F:    ossm.TestSMCPMutiple,
+	},
 }
 var interop = []testing.InternalTest{
 	testing.InternalTest{
