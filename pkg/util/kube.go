@@ -68,6 +68,7 @@ func Fill(outFile, inFile string, values interface{}) error {
 
 	var filled bytes.Buffer
 	w := bufio.NewWriter(&filled)
+	Log.Info("Filling template ", inFile, " with values ", values)
 	if err := tmpl.Execute(w, values); err != nil {
 		return err
 	}

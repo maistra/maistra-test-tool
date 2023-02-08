@@ -15,6 +15,7 @@
 package examples
 
 import (
+	"os"
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
@@ -22,14 +23,36 @@ import (
 
 var _ ExampleInterface = &Httpbin{}
 
+var ipv6 string = util.Getenv("IPV6", "false")
+var httpbinFile string
+
 type Httpbin struct {
 	Namespace string `json:"namespace,omitempty"`
+}
+type bindAddress struct {
+	Bind string `default:"0.0.0.0:8000"`
 }
 
 func (h *Httpbin) Install() error {
 	util.Log.Infof("Deploying Httpbin on namespace %s", h.Namespace)
-	util.KubeApply(h.Namespace, httpbinYaml)
-	_, err := util.CheckDeploymentIsReady(h.Namespace, "httpbin", time.Second*180)
+	b := bindAddress{}
+	templateBytes, err := os.ReadFile(httpbinYaml)
+	templateString := string(templateBytes)
+	if err != nil {
+		util.Log.Errorf("Failed to read httpbin yaml file: %s", err)
+		return err
+	}
+	if ipv6 == "true" {
+		util.Log.Info("Deploy Httpbin to bind IPV6 address [::]:8000")
+		b.Bind = "[::]:8000"
+	} else {
+		util.Log.Info("Deploy Httpbin to bind IPV4 address 0.0.0.0:8000")
+	}
+	template := util.RunTemplate(templateString, b)
+	util.Log.Infof("Deploying Httpbin file %s", template)
+	util.Log.Infof("Deploying Httpbin on namespace %s", h.Namespace)
+	util.KubeApplyContents(h.Namespace, template)
+	_, err = util.CheckDeploymentIsReady(h.Namespace, "httpbin", time.Second*180)
 	return err
 }
 
