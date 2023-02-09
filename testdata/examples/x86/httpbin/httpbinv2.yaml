@@ -40,6 +40,6 @@ spec:
       - image: docker.io/kennethreitz/httpbin
         imagePullPolicy: IfNotPresent
         name: httpbin
-        command: ["gunicorn", "--access-logfile", "-", "-b", "{{ .Bind }}", "httpbin:app"]
+        command: ["gunicorn", "--access-logfile", "-", "-b", "[::]:8000", "httpbin:app"]
         ports:
         - containerPort: 8000

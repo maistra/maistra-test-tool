@@ -60,4 +60,4 @@ spec:
         name: httpbin
         ports:
         - containerPort: 8000
-        command: ["gunicorn", "-b", "{{ .Bind }}", "httpbin:app", "-k", "gevent"]
+        command: ["gunicorn", "-b", "[::]:8000", "httpbin:app", "-k", "gevent"]
