@@ -24,32 +24,18 @@ import (
 var _ ExampleInterface = &Httpbin{}
 
 var ipv6 string = util.Getenv("IPV6", "false")
-var httpbinFile string
 
 type Httpbin struct {
 	Namespace string `json:"namespace,omitempty"`
 }
-type bindAddress struct {
-	Bind string `default:"0.0.0.0:8000"`
-}
 
 func (h *Httpbin) Install() error {
 	util.Log.Infof("Deploying Httpbin on namespace %s", h.Namespace)
-	b := bindAddress{}
-	templateBytes, err := os.ReadFile(httpbinYaml)
-	templateString := string(templateBytes)
+	template, err := GetHttpbinTemplate(httpbinYaml)
 	if err != nil {
-		util.Log.Errorf("Failed to read httpbin yaml file: %s", err)
+		util.Log.Errorf("Failed to get Httpbin template: %s", err)
 		return err
 	}
-	if ipv6 == "true" {
-		util.Log.Info("Deploy Httpbin to bind IPV6 address [::]:8000")
-		b.Bind = "[::]:8000"
-	} else {
-		util.Log.Info("Deploy Httpbin to bind IPV4 address 0.0.0.0:8000")
-	}
-	template := util.RunTemplate(templateString, b)
-	util.Log.Infof("Deploying Httpbin file %s", template)
 	util.Log.Infof("Deploying Httpbin on namespace %s", h.Namespace)
 	util.KubeApplyContents(h.Namespace, template)
 	_, err = util.CheckDeploymentIsReady(h.Namespace, "httpbin", time.Second*180)
@@ -57,8 +43,13 @@ func (h *Httpbin) Install() error {
 }
 
 func (h *Httpbin) InstallLegacy() {
-	util.Log.Info("Deploy Httpbin")
-	util.KubeApply(h.Namespace, httpbinLegacyYaml)
+	util.Log.Info("Deploy Httpbin Legacy")
+	template, err := GetHttpbinTemplate(httpbinLegacyYaml)
+	if err != nil {
+		util.Log.Errorf("Failed to get Httpbin template: %s", err)
+	}
+	util.Log.Infof("Deploying httpbinLegacyYaml on namespace %s", h.Namespace)
+	util.KubeApplyContents(h.Namespace, template)
 	time.Sleep(time.Duration(5) * time.Second)
 	util.CheckPodRunning(h.Namespace, "app=httpbin")
 	time.Sleep(time.Duration(10) * time.Second)
@@ -66,7 +57,12 @@ func (h *Httpbin) InstallLegacy() {
 
 func (h *Httpbin) InstallV1() {
 	util.Log.Info("Deploy Httpbin-v1")
-	util.KubeApply(h.Namespace, httpbinv1Yaml)
+	template, err := GetHttpbinTemplate(httpbinv1Yaml)
+	if err != nil {
+		util.Log.Errorf("Failed to get Httpbin template: %s", err)
+	}
+	util.Log.Infof("Deploying httpbinv1Yaml on namespace %s", h.Namespace)
+	util.KubeApplyContents(h.Namespace, template)
 	time.Sleep(time.Duration(5) * time.Second)
 	util.CheckPodRunning(h.Namespace, "app=httpbin,version=v1")
 	time.Sleep(time.Duration(10) * time.Second)
@@ -74,7 +70,12 @@ func (h *Httpbin) InstallV1() {
 
 func (h *Httpbin) InstallV2() {
 	util.Log.Info("Deploy Httpbin-v2")
-	util.KubeApply(h.Namespace, httpbinv2Yaml)
+	template, err := GetHttpbinTemplate(httpbinv2Yaml)
+	if err != nil {
+		util.Log.Errorf("Failed to get Httpbin template: %s", err)
+	}
+	util.Log.Infof("Deploying httpbinv2Yaml on namespace %s", h.Namespace)
+	util.KubeApplyContents(h.Namespace, template)
 	time.Sleep(time.Duration(5) * time.Second)
 	util.CheckPodRunning(h.Namespace, "app=httpbin,version=v2")
 	time.Sleep(time.Duration(10) * time.Second)
@@ -82,18 +83,52 @@ func (h *Httpbin) InstallV2() {
 
 func (h *Httpbin) Uninstall() {
 	util.Log.Infof("Removing Httpbin on namespace %s", h.Namespace)
-	util.KubeDelete(h.Namespace, httpbinYaml)
+	template, err := GetHttpbinTemplate(httpbinYaml)
+	if err != nil {
+		util.Log.Errorf("Failed to get Httpbin template: %s", err)
+	}
+	util.KubeDelete(h.Namespace, template)
 	util.Shell(`oc -n %s wait --for=delete -l app=httpbin pods --timeout=30s`, h.Namespace)
 }
 
 func (h *Httpbin) UninstallV1() {
 	util.Log.Info("Cleanup Httpbin-v1")
-	util.KubeDelete(h.Namespace, httpbinv1Yaml)
+	template, err := GetHttpbinTemplate(httpbinv1Yaml)
+	if err != nil {
+		util.Log.Errorf("Failed to get Httpbin template: %s", err)
+	}
+	util.KubeDelete(h.Namespace, template)
 	time.Sleep(time.Duration(10) * time.Second)
 }
 
 func (h *Httpbin) UninstallV2() {
 	util.Log.Info("Cleanup Httpbin-v2")
-	util.KubeDelete(h.Namespace, httpbinv2Yaml)
+	template, err := GetHttpbinTemplate(httpbinv2Yaml)
+	if err != nil {
+		util.Log.Errorf("Failed to get Httpbin template: %s", err)
+	}
+	util.KubeDelete(h.Namespace, template)
 	time.Sleep(time.Duration(10) * time.Second)
+}
+
+// Get the template file and fill in the values for httpbin yaml file
+func GetHttpbinTemplate(templateFile string) (string, error) {
+	type bindAddress struct {
+		Bind string `default:"0.0.0.0:8000"`
+	}
+	values := bindAddress{}
+	templateBytes, err := os.ReadFile(templateFile)
+	templateString := string(templateBytes)
+	if err != nil {
+		util.Log.Errorf("Failed to read httpbin yaml file: %s", err)
+		return "", err
+	}
+	if ipv6 == "true" {
+		util.Log.Info("Deploy Httpbin to bind IPV6 address [::]:8000")
+		values.Bind = "[::]:8000"
+	} else {
+		util.Log.Info("Deploy Httpbin to bind IPV4 address 0.0.0.0:8000")
+	}
+	template := util.RunTemplate(templateString, values)
+	return template, nil
 }
