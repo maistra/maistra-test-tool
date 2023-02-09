@@ -45,6 +45,21 @@ log "Retrieving root certificates"
 MESH1_CERT=$(oc1 get configmap -n mesh1-system istio-ca-root-cert -o jsonpath='{.data.root-cert\.pem}' | sed ':a;N;$!ba;s/\n/\\\n    /g')
 MESH2_CERT=$(oc2 get configmap -n mesh2-system istio-ca-root-cert -o jsonpath='{.data.root-cert\.pem}' | sed ':a;N;$!ba;s/\n/\\\n    /g')
 
+n=0
+until [ "$n" -ge 4 ]
+do
+  if [ -z "$MESH1_CERT" ] || [ -z "$MESH2_CERT" ]; then
+    log "Retrieving root certificates (retry)"
+    sleep 30
+    MESH1_CERT=$(oc1 get configmap -n mesh1-system istio-ca-root-cert -o jsonpath='{.data.root-cert\.pem}' | sed ':a;N;$!ba;s/\n/\\\n    /g')
+    MESH2_CERT=$(oc2 get configmap -n mesh2-system istio-ca-root-cert -o jsonpath='{.data.root-cert\.pem}' | sed ':a;N;$!ba;s/\n/\\\n    /g')
+    n=$((n+1))
+  else
+    log "Both root certificates retrieved"
+    break
+  fi
+done
+
 MESH1_DISCOVERY_PORT="8188"
 MESH1_SERVICE_PORT="15443"
 MESH2_DISCOVERY_PORT="8188"
