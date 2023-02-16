@@ -20,6 +20,18 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
+// Define the sleep configmap file
+const sleepConfigmap = `
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sleep-configmap
+data:
+  https-proxy: "{{ .HTTPProxy }}"
+  http-proxy: "{{ .HTTPSProxy }}"
+  no-proxy: "{{ .NoProxy }}"
+`
+
 var _ ExampleInterface = &Sleep{}
 
 type Sleep struct {
@@ -28,6 +40,10 @@ type Sleep struct {
 
 func (s *Sleep) Install() error {
 	util.Log.Infof("Deploying Sleep in namespace %s", s.Namespace)
+	proxy, _ := util.GetProxy()
+	configmap := util.RunTemplate(sleepConfigmap, proxy)
+	util.Log.Infof("Creating configmap %s", configmap)
+	util.KubeApplyContents(s.Namespace, configmap)
 	util.KubeApply(s.Namespace, sleepYaml)
 	_, err := util.CheckDeploymentIsReady(s.Namespace, "sleep", time.Second*180)
 	return err
@@ -35,6 +51,10 @@ func (s *Sleep) Install() error {
 
 func (s *Sleep) InstallLegacy() {
 	util.Log.Info("Deploy Sleep")
+	proxy, _ := util.GetProxy()
+	configmap := util.RunTemplate(sleepConfigmap, proxy)
+	util.Log.Infof("Creating configmap %s", configmap)
+	util.KubeApplyContents(s.Namespace, configmap)
 	util.KubeApply(s.Namespace, sleepLegacyYaml)
 	time.Sleep(time.Duration(5) * time.Second)
 	util.CheckPodRunning(s.Namespace, "app=sleep")

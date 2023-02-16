@@ -15,6 +15,7 @@
 package egress
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -48,8 +49,14 @@ func TestEgressTLSOrigination(t *testing.T) {
 		util.Log.Info("Create a ServiceEntry to external istio.io")
 		util.KubeApplyContents("bookinfo", ExServiceEntry)
 		time.Sleep(time.Duration(10) * time.Second)
-
-		command := `curl -sSL -o /dev/null -D - http://istio.io`
+		proxy, _ := util.GetProxy()
+		curlParams := ""
+		if proxy.HTTPProxy == "" {
+			util.Log.Info("HTTP_PROXY is not set")
+		} else {
+			curlParams = curlParams + " -x " + proxy.HTTPProxy
+		}
+		command := fmt.Sprintf(`curl -sSL -o /dev/null %s -D - http://istio.io`, curlParams)
 		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "301 Moved Permanently") {

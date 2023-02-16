@@ -55,6 +55,22 @@ spec:
       - name: sleep
         image: curlimages/curl
         command: ["/bin/sleep", "3650d"]
+        env:
+        - name: HTTPS_PROXY
+          valueFrom:
+            configMapKeyRef:
+              name: sleep-configmap
+              key: https-proxy
+        - name: HTTP_PROXY
+          valueFrom:
+            configMapKeyRef:
+              name: sleep-configmap
+              key: http-proxy
+        - name: NO_PROXY
+          valueFrom:
+            configMapKeyRef:
+              name: sleep-configmap
+              key: no-proxy
         imagePullPolicy: IfNotPresent
         volumeMounts:
         - mountPath: /etc/sleep/tls
