@@ -33,4 +33,5 @@ var (
 	smcpName      string = util.Getenv("SMCPNAME", "basic")
 	meshNamespace string = util.Getenv("MESHNAMESPACE", "istio-system")
 	smcp          SMCP   = SMCP{smcpName, meshNamespace}
+	ipv6          string = util.Getenv("IPV6", "false")
 )
