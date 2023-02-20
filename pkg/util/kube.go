@@ -114,6 +114,12 @@ func DeleteDeployment(d string, n string) error {
 	return err
 }
 
+// delete SMCP from specified namespace
+func DeleteSMCP(d string, n string) error {
+	_, err := Shell("kubectl delete smcp/%s -n %s", d, n)
+	return err
+}
+
 // NamespaceDeleted check if a kubernete namespace is deleted
 func NamespaceDeleted(n string) (bool, error) {
 	output, err := ShellSilent("kubectl get namespace %s -o name", n)
