@@ -243,6 +243,9 @@ var full = []testing.InternalTest{
 	testing.InternalTest{
 		Name: "T36",
 		F:    ossm.TestSMCPMutiple,
+	}, testing.InternalTest{
+		Name: "T37",
+		F:    ossm.TestIOR,
 	},
 }
 var interop = []testing.InternalTest{
