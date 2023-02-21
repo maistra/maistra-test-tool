@@ -77,8 +77,7 @@ func TestIOR(t *testing.T) {
 		if _, err := util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName); err != nil {
 			t.Fatal("SMCP is not ready after add aditional ingress and egress", err)
 		}
-		util.Log.Info("Wait 10 minutes to check that the routes are not recreated")
-		time.Sleep(time.Duration(600) * time.Second)
+
 		routes, _ = util.ShellMuteOutput(`oc get -n istio-system route -o jsonpath='{.items}'`)
 		routesDataNew := ParseRoutes(routes)
 		for k, v := range routesDataNew {
