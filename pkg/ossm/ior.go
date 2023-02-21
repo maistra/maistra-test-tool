@@ -21,6 +21,8 @@ type Routes struct {
 func cleanupMultipleIOR() {
 	util.Log.Info("Delete the namespaces and smmr")
 	util.Shell(`../scripts/smmr/clean_members_ior.sh`)
+	//Add patch smcp to remove the gateways
+	util.Shell(`oc patch smcp/%s -n %s --type merge -p '{"spec":{"gateways":{}}'`, smcpName, meshNamespace)
 	time.Sleep(time.Duration(40) * time.Second)
 }
 
@@ -36,20 +38,60 @@ func TestIOR(t *testing.T) {
 	util.Shell(`../scripts/gateway/create_multiple_gateway.sh`)
 	util.Log.Info("Gateways created...")
 	routes, _ := util.ShellMuteOutput(`oc get -n istio-system route -o jsonpath='{.items}'`)
-	routesdata := ParseRoutes(routes)
-	for k, v := range routesdata {
+	routesData := ParseRoutes(routes)
+	for k, v := range routesData {
 		util.Log.Info("Route: ", k, " CreationTime: ", v)
 	}
 
-	// Check that the routes are not recreated after deleting the istiod pod
+	// // Check that the routes are not recreated after deleting the istiod pod
 	t.Run("delete_istiod_check_routes", func(t *testing.T) {
 		defer util.RecoverPanic(t)
-
+		//Delete the istiod pod multiple times
+		util.Shell(`for n in $(seq 1 10):; do oc rollout restart deployment/istiod-basic -n istio-system; sleep 60; done`)
+		util.Log.Info("Verify SMCP status and pods")
+		if _, err := util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName); err != nil {
+			t.Fatal("SMCP is not ready after istiod pod deletion", err)
+		}
+		//Get the routes again to compare the routes
+		routes, _ = util.ShellMuteOutput(`oc get -n istio-system route -o jsonpath='{.items}'`)
+		routesDataNew := ParseRoutes(routes)
+		for k, v := range routesDataNew {
+			util.Log.Info("Route: ", k, " CreationTime: ", v)
+		}
+		if len(routesData) != len(routesDataNew) {
+			t.Errorf("The number of routes has changed")
+		}
+		//Compare the routes list to check that the routes are not recreated. The routes are recreated if the creation time is different
+		for k, v := range routesData {
+			if v != routesDataNew[k] {
+				t.Errorf("The route %s has been recreated", k)
+			}
+		}
 	})
 	// Check that the routes are not recreated after create a new ingressgateway and egressgateway
-	t.Run("create_ingress_egress_check_routes", func(t *testing.T) {
+	t.Run("create_aditional_ingress_egress_check_routes", func(t *testing.T) {
 		defer util.RecoverPanic(t)
-
+		//Patch the SMCP to create a aditional ingressgateway and egressgateway
+		util.Shell(`oc patch smcp/%s -n %s --type merge -p '{"spec":{"gateways":{"additionalEgress":{"eg0001":{"enabled":true,"namespace":"%s","runtime":{"container":{"resources":{"limits":{"cpu":"1000m","memory":"1028Mi"},"requests":{"cpu":"300m","memory":"250Mi"}}},"deployment":{"autoScaling":{"enabled":false},"replicas":1}}}},"additionalIngress":{"ig0001":{"enabled":true,"namespace":"%s","runtime":{"container":{"resources":{"limits":{"cpu":"1000m","memory":"1024Mi"},"requests":{"cpu":"200m","memory":"150Mi"}}},"deployment":{"autoScaling":{"enabled":false}}}}}}}}'`, smcpName, meshNamespace, meshNamespace, meshNamespace)
+		util.Log.Info("Verify SMCP status and pods")
+		if _, err := util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName); err != nil {
+			t.Fatal("SMCP is not ready after add aditional ingress and egress", err)
+		}
+		util.Log.Info("Wait 10 minutes to check that the routes are not recreated")
+		time.Sleep(time.Duration(600) * time.Second)
+		routes, _ = util.ShellMuteOutput(`oc get -n istio-system route -o jsonpath='{.items}'`)
+		routesDataNew := ParseRoutes(routes)
+		for k, v := range routesDataNew {
+			util.Log.Info("Route: ", k, " CreationTime: ", v)
+		}
+		if len(routesData) != len(routesDataNew) {
+			t.Errorf("The number of routes has changed")
+		}
+		for k, v := range routesData {
+			if v != routesDataNew[k] {
+				t.Errorf("The route %s has been recreated", k)
+			}
+		}
 	})
 }
 

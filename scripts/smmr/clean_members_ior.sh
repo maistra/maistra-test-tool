@@ -16,7 +16,7 @@ EOF
 
 oc apply -f ServiceMeshMemberRoll.yaml -n istio-system
 
-for i in {1..2}
+for i in {1..100}
 do
   oc delete project test$i
 done

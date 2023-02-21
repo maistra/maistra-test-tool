@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for i in {1..2}; do
+for i in {1..100}; do
 oc apply -f - <<EOF
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway

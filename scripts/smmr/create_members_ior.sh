@@ -16,7 +16,7 @@ spec:
     - legacy
 EOF
 
-for i in {1..2}
+for i in {1..100}
 do
 
   cat << EOF > namespaces/namespace-test$i.yaml
