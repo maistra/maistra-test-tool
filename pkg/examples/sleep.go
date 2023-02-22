@@ -63,6 +63,9 @@ func (s *Sleep) InstallLegacy() {
 
 func (s *Sleep) Uninstall() {
 	util.Log.Infof("Removing Sleep on namespace %s", s.Namespace)
+	proxy, _ := util.GetProxy()
+	configmap := util.RunTemplate(sleepConfigmap, proxy)
+	util.KubeDeleteContents(s.Namespace, configmap)
 	util.KubeDelete(s.Namespace, sleepYaml)
 	util.Shell(`oc -n %s wait --for=delete -l app=sleep pods --timeout=30s`, s.Namespace)
 }
