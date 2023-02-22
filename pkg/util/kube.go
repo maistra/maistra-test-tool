@@ -43,6 +43,12 @@ const (
 	LoadBalancerServiceType = "LoadBalancer"
 )
 
+type Proxy struct {
+	HTTPProxy  string `json:"httpProxy"`
+	HTTPSProxy string `json:"httpsProxy"`
+	NoProxy    string `json:"noProxy"`
+}
+
 var (
 	logDumpResources = []string{
 		"pod",
@@ -743,4 +749,49 @@ func DeleteMultiClusterSecret(namespace string, remoteKubeConfig string, localKu
 		Log.Infof("Deleted secret %s", secretName)
 	}
 	return err
+}
+
+// GetJsonObject get json string as input and returns a map of the json string
+func GetJsonObject(jsonString string) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := json.Unmarshal([]byte(jsonString), &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// GetHTTPProxy returns the Proxy struc object from the cluster
+func GetProxy() (*Proxy, error) {
+	Proxy := &Proxy{}
+	proxyString, err := ShellSilent(`oc get Proxy -o json`)
+	if err != nil {
+		Log.Error("Error getting proxy String")
+		return nil, err
+	}
+	proxyObject, err := GetJsonObject(proxyString)
+	if err != nil {
+		Log.Error("Error getting proxy object")
+		return nil, err
+	}
+	proxyObject = proxyObject["items"].([]interface{})[0].(map[string]interface{})
+	if proxyObject["status"] != nil {
+		proxyStatus := proxyObject["status"].(map[string]interface{})
+		if proxyStatus["httpProxy"] != nil && proxyStatus["httpsProxy"] != nil {
+			Proxy.HTTPProxy = proxyStatus["httpProxy"].(string)
+			Proxy.HTTPSProxy = proxyStatus["httpsProxy"].(string)
+			Log.Info("Current httpProxy: ", Proxy.HTTPProxy)
+			Log.Info("Current httpsProxy: ", Proxy.HTTPSProxy)
+			if proxyStatus["noProxy"] != nil {
+				Proxy.NoProxy = proxyStatus["noProxy"].(string)
+				Log.Info("Current noProxy: ", Proxy.NoProxy)
+			}
+		}
+	} else {
+		Log.Info("No proxy variables need to be configured")
+		Proxy.HTTPProxy = ""
+		Proxy.HTTPSProxy = ""
+		Proxy.NoProxy = ""
+	}
+	return Proxy, nil
 }
