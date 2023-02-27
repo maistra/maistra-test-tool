@@ -281,4 +281,67 @@ spec:
     - operation:
         paths: ["/ip"]
 `
+
+	ExternalAuthzService = `
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "ext-authz"
+  labels:
+    app: "ext-authz"
+spec:
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+  - name: grpc
+    port: 9000
+    targetPort: 9000
+  selector:
+    app: ext-authz
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "ext-authz"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ext-authz
+  template:
+    metadata:
+      labels:
+        app: ext-authz
+    spec:
+      containers:
+      - image: gcr.io/istio-testing/ext-authz:latest
+        imagePullPolicy: IfNotPresent
+        name: ext-authz
+        ports:
+        - containerPort: 8000
+        - containerPort: 9000
+---
+`
+
+	ExternalRoute = `
+  apiVersion: security.istio.io/v1beta1
+  kind: AuthorizationPolicy
+  metadata:
+    name: ext-authz
+  spec:
+    selector:
+      matchLabels:
+        app: httpbin
+    action: CUSTOM
+    provider:
+      # The provider name must match the extension provider defined in the mesh config.
+      # You can also replace this with sample-ext-authz-http to test the other external authorizer definition.
+      name: sample-ext-authz-grpc
+    rules:
+    # The rules specify when to trigger the external authorizer.
+    - to:
+      - operation:
+         paths: ["/headers"]
+ `
 )

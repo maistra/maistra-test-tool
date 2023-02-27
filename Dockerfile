@@ -24,6 +24,7 @@ ENV TEST_CASE ${TEST_CASE}
 ENV ROSA ${ROSA}
 ENV GODEBUG "x509ignoreCN=0"
 ENV MUSTGATHERTAG ${MUSTGATHERTAG}
+ENV IPV6 ${IPV6}
 
 COPY . /opt/maistra-test-tool
 WORKDIR /opt/maistra-test-tool/tests

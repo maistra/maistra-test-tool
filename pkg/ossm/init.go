@@ -41,4 +41,8 @@ func init() {
 	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV23_template, smcp))
 	util.KubeApplyContents(meshNamespace, smmr)
 	time.Sleep(time.Duration(30) * time.Second)
+	if ipv6 == "true" {
+		util.Log.Info("Running the test with IPv6 configuration")
+	}
+
 }
