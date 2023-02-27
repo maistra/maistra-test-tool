@@ -46,10 +46,8 @@ func TestIOR(t *testing.T) {
 	// // Check that the routes are not recreated after deleting the istiod pod
 	t.Run("delete_istiod_check_routes", func(t *testing.T) {
 		defer util.RecoverPanic(t)
-		//Delete the istiod pod multiple times
-		util.Shell(`for n in $(seq 1 10):; do oc rollout restart deployment/istiod-basic -n istio-system; sleep 60; done`)
-		util.Log.Info("Verify SMCP status and pods")
-		if _, err := util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName); err != nil {
+		util.Log.Info("Delete istiod pod multiple times")
+		if _, err := util.Shell(`for n in $(seq 1 10):; do oc rollout restart deployment/istiod-basic -n istio-system; oc -n %s wait --for condition=Ready smcp/%s --timeout 60s; done`, meshNamespace, smcpName); err != nil {
 			t.Fatal("SMCP is not ready after istiod pod deletion", err)
 		}
 		//Get the routes again to compare the routes
@@ -72,12 +70,10 @@ func TestIOR(t *testing.T) {
 	t.Run("create_aditional_ingress_egress_check_routes", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 		//Patch the SMCP to create a aditional ingressgateway and egressgateway
-		util.Shell(`oc patch smcp/%s -n %s --type merge -p '{"spec":{"gateways":{"additionalEgress":{"eg0001":{"enabled":true,"namespace":"%s","runtime":{"container":{"resources":{"limits":{"cpu":"1000m","memory":"1028Mi"},"requests":{"cpu":"300m","memory":"250Mi"}}},"deployment":{"autoScaling":{"enabled":false},"replicas":1}}}},"additionalIngress":{"ig0001":{"enabled":true,"namespace":"%s","runtime":{"container":{"resources":{"limits":{"cpu":"1000m","memory":"1024Mi"},"requests":{"cpu":"200m","memory":"150Mi"}}},"deployment":{"autoScaling":{"enabled":false}}}}}}}}'`, smcpName, meshNamespace, meshNamespace, meshNamespace)
-		util.Log.Info("Verify SMCP status and pods")
-		if _, err := util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName); err != nil {
-			t.Fatal("SMCP is not ready after add aditional ingress and egress", err)
+		err := AddAdditionalGateway(100)
+		if err != nil {
+			t.Fatal("Error adding aditional ingress and egress", err)
 		}
-
 		routes, _ = util.ShellMuteOutput(`oc get -n istio-system route -o jsonpath='{.items}'`)
 		routesDataNew := ParseRoutes(routes)
 		for k, v := range routesDataNew {
@@ -108,4 +104,28 @@ func ParseRoutes(routes string) map[string]string {
 		}
 	}
 	return routesMap
+}
+
+func AddAdditionalGateway(number int) error {
+	//Patch the SMCP to create a aditionals (by number variable) ingressgateway and egressgateway
+	var err error
+	for i := 0; i < number; i++ {
+		_, err = util.Shell(`oc patch smcp/%s -n %s --type merge -p '{"spec":{"gateways":{"additionalEgress":
+		{"eg%d":{"enabled":true,"namespace":"%s","runtime":{"container":{"resources":
+		{"limits":{"cpu":"1000m","memory":"1028Mi"},"requests":{"cpu":"300m","memory":"250Mi"}}},
+		"deployment":{"autoScaling":{"enabled":false},"replicas":1}}}},"additionalIngress":
+		{"ig%d":{"enabled":true,"namespace":"%s","runtime":
+		{"container":{"resources":{"limits":{"cpu":"1000m","memory":"1024Mi"},"requests":
+		{"cpu":"200m","memory":"150Mi"}}},"deployment":{"autoScaling":{"enabled":false}}}}}}}}'`,
+			smcpName, meshNamespace, i, meshNamespace, i, meshNamespace)
+		if err != nil {
+			return err
+		}
+		util.Log.Info("Verify SMCP status and pods")
+		if _, err = util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName); err != nil {
+			return err
+		}
+	}
+	return err
+
 }
