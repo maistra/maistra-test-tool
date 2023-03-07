@@ -1,6 +1,7 @@
 #!/bin/bash
 
 go get -u github.com/jstemmer/go-junit-report
+go install github.com/jstemmer/go-junit-report
 
 if [ -z "${OCP_CRED_PSW}" ]
 then
