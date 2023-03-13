@@ -17,24 +17,14 @@ package ossm
 import (
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
 
+var workername string
+
 func cleanupOperatorTest() {
 	util.Log.Info("Cleanup ...")
-	//delete the infra label from the worker node
-	util.Log.Info("Delete Nodeselector and Tolerations from the operator")
-	_, err := util.Shell(`oc patch subscription servicemeshoperator -n openshift-operators --type json -p='[{"op": "remove", "path": "/spec/config/nodeSelector"}]'`)
-	if err != nil {
-		util.Log.Error("Failed to remove the nodeSelector from the operator")
-	}
-	_, err = util.Shell(`oc patch subscription servicemeshoperator -n openshift-operators --type json -p='[{"op": "remove", "path": "/spec/config/tolerations"}]'`)
-	if err != nil {
-		util.Log.Error("Failed to remove the tolerations from the operator")
-	}
-	util.Log.Info("Operator patching completed")
 	response, err := util.Shell(`oc adm taint nodes -l node-role.kubernetes.io/infra node-role.kubernetes.io/infra=reserved:NoSchedule- node-role.kubernetes.io/infra=reserved:NoExecute-`)
 	if err != nil {
 		util.Log.Error("Failed to taint the infra node")
@@ -45,7 +35,24 @@ func cleanupOperatorTest() {
 	} else {
 		util.Log.Error("Fail to remove the taint from the infra node")
 	}
-
+	_, err = util.Shell(`oc label node %s node-role.kubernetes.io/infra-`, workername)
+	if err != nil {
+		util.Log.Error("Failed to unlabel the worker node as infra")
+	}
+	_, err = util.Shell(`oc label node %s node-role.kubernetes.io-`, workername)
+	if err != nil {
+		util.Log.Error("Failed to unlabel the worker node as infra")
+	}
+	util.Log.Info("Delete Nodeselector and Tolerations from the operator")
+	_, err = util.Shell(`oc patch subscription servicemeshoperator -n openshift-operators --type json -p='[{"op": "remove", "path": "/spec/config/nodeSelector"}]'`)
+	if err != nil {
+		util.Log.Error("Failed to remove the nodeSelector from the operator")
+	}
+	_, err = util.Shell(`oc patch subscription servicemeshoperator -n openshift-operators --type json -p='[{"op": "remove", "path": "/spec/config/tolerations"}]'`)
+	if err != nil {
+		util.Log.Error("Failed to remove the tolerations from the operator")
+	}
+	util.Log.Info("Operator patching completed")
 }
 
 // TestOperator tests scenario to cover all the test cases related to the OSSM operators
@@ -60,7 +67,7 @@ func TestOperator(t *testing.T) {
 		defer util.RecoverPanic(t)
 		util.Log.Info("Testing: Run OSSM Operator on infra nodes")
 		//Get and pick one worker node that does not have already installed the istio operator
-		workername := pickWorkerNode(t)
+		workername = pickWorkerNode(t)
 		//Label the worker node as infra
 		_, err := util.Shell(`oc label node %s node-role.kubernetes.io/infra=`, workername)
 		if err != nil {
@@ -93,28 +100,13 @@ func TestOperator(t *testing.T) {
 			t.Fatalf("Failed to patch the subscription")
 		}
 		//Verify that the operator pod is running on the infra node
-		podname, err := util.Shell(`oc get pods -n openshift-operators -l name=istio-operator --field-selector spec.nodeName=%s -o jsonpath='{.items[0].metadata.name}'`, workername)
-		if err != nil {
-			time.Sleep(time.Duration(20) * time.Second)
-			podname, err = util.Shell(`oc get pods -n openshift-operators -l name=istio-operator --field-selector spec.nodeName=%s -o jsonpath='{.items[0].metadata.name}'`, workername)
-			if err != nil {
-				t.Fatalf("Failed to get the operator pod name")
-			}
-		}
+		podname, _ := util.CheckPodReadyInNode("openshift-operators", "name=istio-operator", workername, 30)
 		node, err := util.Shell(`oc get pods -n openshift-operators %s -o jsonpath='{.spec.nodeName}'`, podname)
 		if err != nil {
 			t.Fatalf("Failed to get the node name")
 		}
 		if node != workername {
 			t.Fatalf("Failed to run the operator on the infra node")
-		}
-		_, err = util.Shell(`oc label node %s node-role.kubernetes.io/infra-`, workername)
-		if err != nil {
-			t.Fatalf("Failed to unlabel the worker node as infra")
-		}
-		_, err = util.Shell(`oc label node %s node-role.kubernetes.io-`, workername)
-		if err != nil {
-			t.Fatalf("Failed to unlabel the worker node as infra")
 		}
 	})
 

@@ -480,6 +480,36 @@ func CheckPodReady(ns, selector string, retries int) (bool, error) {
 	return ready, err
 }
 
+// Check PodReady in specific Node returns podname if the pod is ready in the specific node. Params: namespace, pod label, node name and timeout to check ready pod.
+func CheckPodReadyInNode(ns, selector string, node string, retries int) (string, error) {
+	retry := Retrier{
+		BaseDelay: 10 * time.Second,
+		MaxDelay:  10 * time.Second,
+		Retries:   retries,
+	}
+	_, err := retry.Retry(context.Background(), func(_ context.Context, _ int) error {
+		name, err := Shell(`oc get pods -n %s -l %s --field-selector spec.nodeName=%s -o jsonpath='{.items[0].metadata.name}'`, ns, selector, node)
+		if err != nil {
+			return fmt.Errorf("failed to get pod on node: %s", err)
+		}
+		if name != "" {
+			output, err := Shell(`oc get pods -n %s %s -o jsonpath='{range .items[*]}{.status.containerStatuses[*].ready}'`, ns, name)
+			if err != nil {
+				return fmt.Errorf("failed to get pod: %s", err)
+			}
+			if strings.Contains(output, "false") {
+				return fmt.Errorf("pod is not ready")
+			} else {
+				return nil
+			}
+		} else {
+			return nil
+		}
+	})
+	podname, err := Shell(`oc get pods -n %s -l %s --field-selector spec.nodeName=%s -o jsonpath='{.items[0].metadata.name}'`, ns, selector, node)
+	return podname, err
+}
+
 // CheckPodDeletion returns true if the pod is deleted. Params: label of the pod, the Pod Name to check,  namespace and a timeout
 func CheckPodDeletion(n, labelSelector string, previousPodName string, timeout int) (deleted bool, err error) {
 	deleted = false
