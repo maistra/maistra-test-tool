@@ -248,6 +248,10 @@ var full = []testing.InternalTest{
 		Name: "T37",
 		F:    authorizaton.TestExtAuth,
 	},
+	testing.InternalTest{
+		Name: "T40",
+		F:    ossm.TestOperator,
+	},
 }
 var interop = []testing.InternalTest{
 	testing.InternalTest{
