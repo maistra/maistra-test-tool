@@ -21,11 +21,12 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 var mustGatherImage = "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel8"
-var mustGatherTag string = util.Getenv("MUSTGATHERTAG", "2.3")
+var mustGatherTag string = env.Getenv("MUSTGATHERTAG", "2.3")
 
 func cleanupMustGatherTest() {
 	log.Log.Info("Cleanup ...")

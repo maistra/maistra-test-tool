@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
@@ -30,7 +31,7 @@ func installDefaultSMCP23() {
 	util.KubeApplyContents(meshNamespace, smmr)
 
 	// patch SMCP identity if it's on a ROSA cluster
-	if util.Getenv("ROSA", "false") == "true" {
+	if env.Getenv("ROSA", "false") == "true" {
 		util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
 	}
 	log.Log.Info("Waiting for mesh installation to complete")
@@ -45,7 +46,7 @@ func installDefaultSMCP22() {
 	util.KubeApplyContents(meshNamespace, smmr)
 
 	// patch SMCP identity if it's on a ROSA cluster
-	if util.Getenv("ROSA", "false") == "true" {
+	if env.Getenv("ROSA", "false") == "true" {
 		util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
 	}
 	log.Log.Info("Waiting for mesh installation to complete")
@@ -64,7 +65,7 @@ func TestSMCPInstall(t *testing.T) {
 		util.KubeApplyContents(meshNamespace, smmr)
 
 		// patch SMCP identity if it's on a ROSA cluster
-		if util.Getenv("ROSA", "false") == "true" {
+		if env.Getenv("ROSA", "false") == "true" {
 			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
 		}
 		log.Log.Info("Waiting for mesh installation to complete")
@@ -95,7 +96,7 @@ func TestSMCPInstall(t *testing.T) {
 		util.KubeApplyContents(meshNamespace, smmr)
 
 		// patch SMCP identity if it's on a ROSA cluster
-		if util.Getenv("ROSA", "false") == "true" {
+		if env.Getenv("ROSA", "false") == "true" {
 			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
 		}
 		log.Log.Info("Waiting for mesh installation to complete")
@@ -126,7 +127,7 @@ func TestSMCPInstall(t *testing.T) {
 		util.KubeApplyContents(meshNamespace, smmr)
 
 		// patch SMCP identity if it's on a ROSA cluster
-		if util.Getenv("ROSA", "false") == "true" {
+		if env.Getenv("ROSA", "false") == "true" {
 			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
 		}
 		log.Log.Info("Waiting for mesh installation to complete")
@@ -158,7 +159,7 @@ func TestSMCPInstall(t *testing.T) {
 		util.KubeApplyContents(meshNamespace, smmr)
 
 		// patch SMCP identity if it's on a ROSA cluster
-		if util.Getenv("ROSA", "false") == "true" {
+		if env.Getenv("ROSA", "false") == "true" {
 			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
 		}
 		log.Log.Info("Waiting for mesh installation to complete")
@@ -172,7 +173,7 @@ func TestSMCPInstall(t *testing.T) {
 		util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV22_template, smcp))
 
 		// patch SMCP identity if it's on a ROSA cluster
-		if util.Getenv("ROSA", "false") == "true" {
+		if env.Getenv("ROSA", "false") == "true" {
 			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
 		}
 		log.Log.Info("Waiting for mesh installation to complete")
@@ -197,7 +198,7 @@ func TestSMCPInstall(t *testing.T) {
 		util.KubeApplyContents(meshNamespace, smmr)
 
 		// patch SMCP identity if it's on a ROSA cluster
-		if util.Getenv("ROSA", "false") == "true" {
+		if env.Getenv("ROSA", "false") == "true" {
 			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
 		}
 		log.Log.Info("Waiting for mesh installation to complete")
@@ -211,7 +212,7 @@ func TestSMCPInstall(t *testing.T) {
 		util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV23_template, smcp))
 
 		// patch SMCP identity if it's on a ROSA cluster
-		if util.Getenv("ROSA", "false") == "true" {
+		if env.Getenv("ROSA", "false") == "true" {
 			util.Shell(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'`, meshNamespace, smcpName)
 		}
 		log.Log.Info("Waiting for mesh installation to complete")

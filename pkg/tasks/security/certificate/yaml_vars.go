@@ -15,7 +15,7 @@
 package certificate
 
 import (
-	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 )
 
 const (
@@ -26,6 +26,6 @@ const (
 )
 
 var (
-	smcpName      string = util.Getenv("SMCPNAME", "basic")
-	meshNamespace string = util.Getenv("MESHNAMESPACE", "istio-system")
+	smcpName      string = env.Getenv("SMCPNAME", "basic")
+	meshNamespace string = env.Getenv("MESHNAMESPACE", "istio-system")
 )

@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
@@ -34,7 +35,7 @@ func installNightlyOperators() {
 // Initialize a default SMCP and SMMR
 func init() {
 
-	if util.Getenv("NIGHTLY", "false") == "true" {
+	if env.Getenv("NIGHTLY", "false") == "true" {
 		installNightlyOperators()
 	}
 

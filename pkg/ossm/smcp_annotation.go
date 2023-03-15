@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
@@ -49,9 +50,9 @@ func TestSMCPAnnotations(t *testing.T) {
 		defer util.RecoverPanic(t)
 
 		log.Log.Info("Test annotation sidecar.maistra.io/proxyEnv")
-		if util.Getenv("SAMPLEARCH", "x86") == "p" {
+		if env.Getenv("SAMPLEARCH", "x86") == "p" {
 			util.KubeApplyContents("bookinfo", testAnnotationProxyEnvP)
-		} else if util.Getenv("SAMPLEARCH", "x86") == "z" {
+		} else if env.Getenv("SAMPLEARCH", "x86") == "z" {
 			util.KubeApplyContents("bookinfo", testAnnotationProxyEnvZ)
 		} else {
 			util.KubeApplyContents("bookinfo", testAnnotationProxyEnv)
@@ -82,9 +83,9 @@ func TestSMCPAnnotations(t *testing.T) {
 		}
 
 		log.Log.Info("Check a pod annotations")
-		if util.Getenv("SAMPLEARCH", "x86") == "p" {
+		if env.Getenv("SAMPLEARCH", "x86") == "p" {
 			util.KubeApplyContents("bookinfo", testAnnotationProxyEnvP)
-		} else if util.Getenv("SAMPLEARCH", "x86") == "z" {
+		} else if env.Getenv("SAMPLEARCH", "x86") == "z" {
 			util.KubeApplyContents("bookinfo", testAnnotationProxyEnvZ)
 		} else {
 			util.KubeApplyContents("bookinfo", testAnnotationProxyEnv)

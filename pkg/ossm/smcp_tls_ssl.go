@@ -20,6 +20,7 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
@@ -105,9 +106,9 @@ func TestSSL(t *testing.T) {
 		bookinfo.Install(true)
 
 		log.Log.Info("Deploy testssl pod")
-		if util.Getenv("SAMPLEARCH", "x86") == "p" {
+		if env.Getenv("SAMPLEARCH", "x86") == "p" {
 			util.KubeApplyContents("bookinfo", testSSLDeploymentP)
-		} else if util.Getenv("SAMPLEARCH", "x86") == "z" {
+		} else if env.Getenv("SAMPLEARCH", "x86") == "z" {
 			util.KubeApplyContents("bookinfo", testSSLDeploymentZ)
 		} else {
 			util.KubeApplyContents("bookinfo", testSSLDeployment)

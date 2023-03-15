@@ -15,7 +15,7 @@
 package ossm
 
 import (
-	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 )
 
 type SMCP struct {
@@ -30,8 +30,8 @@ const (
 )
 
 var (
-	smcpName      string = util.Getenv("SMCPNAME", "basic")
-	meshNamespace string = util.Getenv("MESHNAMESPACE", "istio-system")
+	smcpName      string = env.Getenv("SMCPNAME", "basic")
+	meshNamespace string = env.Getenv("MESHNAMESPACE", "istio-system")
 	smcp          SMCP   = SMCP{smcpName, meshNamespace}
-	ipv6          string = util.Getenv("IPV6", "false")
+	ipv6          string = env.Getenv("IPV6", "false")
 )
