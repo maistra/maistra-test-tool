@@ -79,3 +79,41 @@ func TestIngressWithoutTLS(t *testing.T) {
 		}
 	})
 }
+
+const nginxIngressGateway = `
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: mygateway
+spec:
+  selector:
+    istio: ingressgateway # use istio default ingress gateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: PASSTHROUGH
+    hosts:
+    - nginx.example.com
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: nginx
+spec:
+  hosts:
+  - nginx.example.com
+  gateways:
+  - mygateway
+  tls:
+  - match:
+    - port: 443
+      sniHosts:
+      - nginx.example.com
+    route:
+    - destination:
+        host: my-nginx
+        port:
+          number: 443`

@@ -15,54 +15,6 @@
 package traffic
 
 const (
-	ratingsDelay2 = `
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: reviews
-spec:
-  hosts:
-    - reviews
-  http:
-  - route:
-    - destination:
-        host: reviews
-        subset: v2
-
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: ratings
-spec:
-  hosts:
-  - ratings
-  http:
-  - fault:
-      delay:
-        percent: 100
-        fixedDelay: 2s
-    route:
-    - destination:
-        host: ratings
-        subset: v1
-`
-
-	reviewTimeout = `
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: reviews
-spec:
-  hosts:
-    - reviews
-  http:
-  - route:
-    - destination:
-        host: reviews
-        subset: v2
-    timeout: 0.5s
-`
-
 	httpbinCircuitBreaker = `
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
@@ -154,6 +106,82 @@ spec:
     mirror:
       host: httpbin
       subset: v2
-    mirror_percent: 100
+    mirrorPercentage: 
+      value: 100
 `
 )
+
+const bookinfoVirtualServicesAllV1 = `
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: productpage
+spec:
+  hosts:
+  - productpage
+  http:
+  - route:
+    - destination:
+        host: productpage
+        subset: v1
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: reviews
+spec:
+  hosts:
+  - reviews
+  http:
+  - route:
+    - destination:
+        host: reviews
+        subset: v1
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: ratings
+spec:
+  hosts:
+  - ratings
+  http:
+  - route:
+    - destination:
+        host: ratings
+        subset: v1
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: details
+spec:
+  hosts:
+  - details
+  http:
+  - route:
+    - destination:
+        host: details
+        subset: v1`
+
+const bookinfoReviewsVirtualServiceV2 = `
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: reviews
+spec:
+  hosts:
+    - reviews
+  http:
+  - match:
+    - headers:
+        end-user:
+          exact: jason
+    route:
+    - destination:
+        host: reviews
+        subset: v2
+  - route:
+    - destination:
+        host: reviews
+        subset: v1`

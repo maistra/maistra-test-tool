@@ -15,163 +15,102 @@
 package authorizaton
 
 import (
-	"context"
 	"fmt"
-	"strings"
+	"net/http"
+	"strconv"
 	"testing"
-	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
-	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
+	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
+	"github.com/maistra/maistra-test-tool/pkg/util/shell"
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func cleanupTrustDomainMigration() {
-	log.Log.Info("Cleanup")
-	util.KubeDeleteContents("foo", TrustDomainPolicy)
-	sleep := examples.Sleep{Namespace: "foo"}
-	httpbin := examples.Httpbin{Namespace: "foo"}
-	sleep.Uninstall()
-	httpbin.Uninstall()
-	sleep = examples.Sleep{Namespace: "bar"}
-	sleep.Uninstall()
-	applyTrustDomain("cluster.local", "", false)
-}
-
 func TestTrustDomainMigration(t *testing.T) {
-	defer cleanupTrustDomainMigration()
-	defer util.RecoverPanic(t)
+	testing.Short()
+	NewTest(t).LegacyID("T24").Groups(Full, InterOp).Run(func(t TestHelper) {
+		fooNamespace := "foo"
+		barNamespace := "bar"
 
-	log.Log.Info("Trust Domain Migration")
-	applyTrustDomain("old-td", "", true)
+		defer func() {
+			t.Log("Cleanup")
+			oc.DeleteFromString(t, fooNamespace, TrustDomainPolicy)
+			app.Uninstall(t,
+				app.Httpbin(fooNamespace),
+				app.Sleep(fooNamespace),
+				app.Sleep(barNamespace))
+			applyTrustDomain(t, "cluster.local", "", false)
+		}()
 
-	// Deploy workloads
-	httpbin := examples.Httpbin{Namespace: "foo"}
-	util.Inspect(httpbin.Install(), "Failed to deploy httpbin", "", t)
-	sleep := examples.Sleep{Namespace: "foo"}
-	util.Inspect(sleep.Install(), "Failed to deploy sleep", "", t)
-	sleep = examples.Sleep{Namespace: "bar"}
-	util.Inspect(sleep.Install(), "Failed to deploy sleep", "", t)
+		t.Log("Trust Domain Migration")
+		applyTrustDomain(t, "old-td", "", true)
 
-	log.Log.Info("Apply deny all policy except sleep in bar namespace")
-	util.KubeApplyContents("foo", TrustDomainPolicy)
+		// Deploy workloads
+		app.InstallAndWaitReady(t,
+			app.Httpbin(fooNamespace),
+			app.Sleep(fooNamespace),
+			app.Sleep(barNamespace))
 
-	t.Run("Case 1: Verifying policy works", func(t *testing.T) {
-		sleepPod, err := util.GetPodName("foo", "app=sleep")
-		util.Inspect(err, "Failed to get sleep pod name", "", t)
-		cmd := fmt.Sprintf(`curl http://httpbin.%s:8000/ip -sS -o /dev/null -w "%%{http_code}\n"`, "foo")
-		if err := checkOutput("foo", sleepPod, "sleep", cmd, "403"); err != nil {
-			t.Fatal(err)
-		}
+		t.Log("Apply deny all policy except sleep in bar namespace")
+		oc.ApplyString(t, fooNamespace, TrustDomainPolicy)
 
-		sleepPod, err = util.GetPodName("bar", "app=sleep")
-		util.Inspect(err, "Failed to get sleep pod name", "", t)
-		cmd = fmt.Sprintf(`curl http://httpbin.%s:8000/ip -sS -o /dev/null -w "%%{http_code}\n"`, "foo")
-		if err := checkOutput("bar", sleepPod, "sleep", cmd, "200"); err != nil {
-			t.Fatal(err)
-		}
+		t.NewSubTest("Case 1: Verifying policy works").Run(func(t TestHelper) {
+			runCurlInSleepPod(t, fooNamespace, http.StatusForbidden)
+			runCurlInSleepPod(t, barNamespace, http.StatusOK)
+		})
+
+		t.NewSubTest("Case 2: Migrate trust domain without trust domain aliases").Run(func(t TestHelper) {
+			applyTrustDomain(t, "new-td", "", true)
+			oc.RestartAllPodsAndWaitReady(t, fooNamespace, barNamespace)
+
+			runCurlInSleepPod(t, fooNamespace, http.StatusForbidden)
+			runCurlInSleepPod(t, barNamespace, http.StatusForbidden)
+		})
+
+		t.NewSubTest("Case 3: Migrate trust domain with trust domain aliases").Run(func(t TestHelper) {
+			applyTrustDomain(t, "new-td", "old-td", true)
+			oc.RestartAllPodsAndWaitReady(t, fooNamespace, barNamespace)
+
+			runCurlInSleepPod(t, fooNamespace, http.StatusForbidden)
+			runCurlInSleepPod(t, barNamespace, http.StatusOK)
+		})
 	})
-
-	t.Run("Case 2: Migrate trust domain without trust domain aliases", func(t *testing.T) {
-		applyTrustDomain("new-td", "", true)
-
-		// Restart workload pods
-		util.Shell("oc -n foo delete pod --all")
-		util.Shell("oc -n bar delete pod --all")
-		util.Shell("oc -n foo wait --for condition=Ready --all pods --timeout 30s")
-		util.Shell("oc -n bar wait --for condition=Ready --all pods --timeout 30s")
-
-		// Both must return 403
-		sleepPod, err := util.GetPodName("foo", "app=sleep")
-		util.Inspect(err, "Failed to get sleep pod name", "", t)
-		cmd := fmt.Sprintf(`curl http://httpbin.%s:8000/ip -sS -o /dev/null -w "%%{http_code}\n"`, "foo")
-		if err := checkOutput("foo", sleepPod, "sleep", cmd, "403"); err != nil {
-			t.Fatal(err)
-		}
-
-		sleepPod, err = util.GetPodName("bar", "app=sleep")
-		util.Inspect(err, "Failed to get sleep pod name", "", t)
-		cmd = fmt.Sprintf(`curl http://httpbin.%s:8000/ip -sS -o /dev/null -w "%%{http_code}\n"`, "foo")
-		if err := checkOutput("bar", sleepPod, "sleep", cmd, "403"); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("Case 3: Migrate trust domain with trust domain aliases", func(t *testing.T) {
-		applyTrustDomain("new-td", "old-td", true)
-
-		// Restart workload pods
-		util.Shell("oc -n foo delete pod --all")
-		util.Shell("oc -n bar delete pod --all")
-		util.Shell("oc -n foo wait --for condition=Ready --all pods --timeout 30s")
-		util.Shell("oc -n bar wait --for condition=Ready --all pods --timeout 30s")
-
-		sleepPod, err := util.GetPodName("foo", "app=sleep")
-		util.Inspect(err, "Failed to get sleep pod name", "", t)
-		cmd := fmt.Sprintf(`curl http://httpbin.%s:8000/ip -sS -o /dev/null -w "%%{http_code}\n"`, "foo")
-		if err := checkOutput("foo", sleepPod, "sleep", cmd, "403"); err != nil {
-			t.Fatal(err)
-		}
-
-		// This must return 200, as in the first case
-		sleepPod, err = util.GetPodName("bar", "app=sleep")
-		util.Inspect(err, "Failed to get sleep pod name", "", t)
-		cmd = fmt.Sprintf(`curl http://httpbin.%s:8000/ip -sS -o /dev/null -w "%%{http_code}\n"`, "foo")
-		if err := checkOutput("bar", sleepPod, "sleep", cmd, "200"); err != nil {
-			t.Fatal(err)
-		}
-	})
-
 }
 
-func checkOutput(namespace, pod, container, cmd, expected string) error {
-	retry := util.Retrier{
-		BaseDelay: 5 * time.Second,
-		MaxDelay:  10 * time.Second,
-		Retries:   5,
-	}
-
-	log.Log.Infof("Verifying curl output, expecting %s", expected)
-
-	retryFn := func(_ context.Context, i int) error {
-		msg, err := util.PodExec(namespace, pod, container, cmd, true)
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(msg, expected) {
-			log.Log.Errorf("Attempt %d/%d - expected: %v; Got: %v", i, retry.Retries, expected, msg)
-			return fmt.Errorf("expected: %v; Got: %v", expected, msg)
-		}
-
-		log.Log.Infof("Attempt %d/%d - Success, got %s", i, retry.Retries, msg)
-		return nil
-	}
-
-	ctx := context.Background()
-	_, err := retry.Retry(ctx, retryFn)
-	return err
+func runCurlInSleepPod(t TestHelper, ns string, expectedStatus int) {
+	t.Logf("Verifying curl output, expecting %d", expectedStatus)
+	retry.UntilSuccess(t, func(t TestHelper) {
+		oc.Exec(t,
+			pod.MatchingSelector("app=sleep", ns),
+			"sleep",
+			`curl http://httpbin.foo:8000/ip -sS -o /dev/null -w "%%{http_code}\n"`,
+			assert.OutputContains(strconv.Itoa(expectedStatus), "", ""))
+	})
 }
 
-func applyTrustDomain(domain, alias string, mtls bool) {
-	log.Log.Infof("Configuring  spec.security.trust.domain to %q and alias %q", domain, alias)
+func applyTrustDomain(t TestHelper, domain, alias string, mtls bool) {
+	t.Logf("Configuring  spec.security.trust.domain to %q and alias %q", domain, alias)
 
 	if alias != "" {
 		alias = fmt.Sprintf("%q", alias)
 	}
 
-	util.Shell(`oc -n %s patch smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":%v}, "trust":{"domain":"%s", "additionalDomains": [%s]}}}}'`, meshNamespace, smcpName, mtls, domain, alias)
+	shell.Executef(t, `oc -n %s patch smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":%v}, "trust":{"domain":"%s", "additionalDomains": [%s]}}}}'`, meshNamespace, smcpName, mtls, domain, alias)
 
 	// Wait for the operator to reconcile the changes
-	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
+	oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
+	// TODO: figure out if restarting deployments is necessary; shouldn't the SMCP being ready indicate that the deployments were restarted?
 	// Restart istiod so it picks up the new trust domain
-	util.Shell(`oc -n %s rollout restart deployment istiod-%s`, meshNamespace, smcpName)
-	// wait 20 seconds and avoid a race condition checking wrong ingressgateway and istiod-basic pods
-	time.Sleep(time.Duration(20) * time.Second)
-	util.Shell(`oc -n %s wait --for condition=Ready --all pods --timeout 180s`, meshNamespace)
+	shell.Executef(t, `oc -n %s rollout restart deployment istiod-%s`, meshNamespace, smcpName)
 
 	// Restart ingress gateway since we changed the mtls setting
-	util.Shell(`oc -n %s rollout restart deployment istio-ingressgateway`, meshNamespace)
-	time.Sleep(time.Duration(20) * time.Second)
-	util.Shell(`oc -n %s wait --for condition=Ready --all pods --timeout 180s`, meshNamespace)
+	shell.Executef(t, `oc -n %s rollout restart deployment istio-ingressgateway`, meshNamespace)
+
+	// wait for both deployments to be restarted (the rollout status command blocks until pods are ready)
+	shell.Executef(t, `oc -n %s rollout status deployment istiod-%s`, meshNamespace, smcpName)
+	shell.Executef(t, `oc -n %s rollout status deployment istio-ingressgateway`, meshNamespace)
 }

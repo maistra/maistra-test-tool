@@ -44,6 +44,7 @@ func RunTemplate(tmpl string, input interface{}) string {
 
 // recover from panic if one occurred. This allows cleanup to be executed after panic.
 func RecoverPanic(t *testing.T) {
+	t.Helper()
 	if err := recover(); err != nil {
 		t.Errorf("Test panic: %v", err)
 	}
@@ -68,59 +69,6 @@ func CurlWithCA(url, ingressHost, secureIngressPort, host, cacertFile string) (*
 	// Setup HTTPS transport
 	tlsConfig := &tls.Config{
 		RootCAs: caCertPool,
-	}
-	tlsConfig.BuildNameToCertificate()
-	transport := &http.Transport{TLSClientConfig: tlsConfig}
-
-	// Custom DialContext
-	dialer := &net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
-		DualStack: true,
-	}
-
-	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
-		if addr == host+":"+secureIngressPort {
-			addr = ingressHost + ":" + secureIngressPort
-		}
-		return dialer.DialContext(ctx, network, addr)
-	}
-
-	// Setup HTTPS client
-	client := &http.Client{Transport: transport}
-
-	// GET something
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-	// Set host
-	req.Host = host
-	req.Header.Set("Host", req.Host)
-	// Get response
-	return client.Do(req)
-}
-
-// curl command with CA client
-func CurlWithCAClient(url, ingressHost, secureIngressPort, host, cacertFile, certFile, keyFile string) (*http.Response, error) {
-	// Load client cert
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
-		return nil, err
-	}
-
-	// Load CA cert
-	caCert, err := ioutil.ReadFile(cacertFile)
-	if err != nil {
-		return nil, err
-	}
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
-
-	// Setup HTTPS transport
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		RootCAs:      caCertPool,
 	}
 	tlsConfig.BuildNameToCertificate()
 	transport := &http.Transport{TLSClientConfig: tlsConfig}

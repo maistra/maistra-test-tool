@@ -1,7 +1,9 @@
 package env
 
 import (
+	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 
@@ -19,4 +21,13 @@ func Getenv(key, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func GetenvAsInt(key string, fallback int) int {
+	value := Getenv(key, strconv.Itoa(fallback))
+	num, err := strconv.Atoi(value)
+	if err != nil {
+		panic(fmt.Sprintf("env var %s must be an integer, but was: %s", key, value))
+	}
+	return num
 }

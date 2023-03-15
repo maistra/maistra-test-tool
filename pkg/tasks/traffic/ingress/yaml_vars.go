@@ -32,8 +32,6 @@ const (
 	nginxServerCertKey = "../sampleCerts/nginx.example.com/nginx.example.com.key"
 	nginxServerCert    = "../sampleCerts/nginx.example.com/nginx.example.com.crt"
 	nginxServerCACert  = "../sampleCerts/nginx.example.com/example.com.crt"
-
-	testUsername = "jason"
 )
 
 var (

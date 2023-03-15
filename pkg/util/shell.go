@@ -109,7 +109,7 @@ func Shell(format string, args ...interface{}) (string, error) {
 }
 
 // ShellContext run command on shell and get back output and error if get one
-func ShellContext(ctx context.Context, format string, args ...interface{}) (string, error) {
+func ShellCtx(ctx context.Context, format string, args ...interface{}) (string, error) {
 	return sh(ctx, format, true, true, true, args...)
 }
 

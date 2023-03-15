@@ -70,3 +70,7 @@ func (s *Sleep) Uninstall() {
 	util.KubeDelete(s.Namespace, sleepYaml)
 	util.Shell(`oc -n %s wait --for=delete -l app=sleep pods --timeout=30s`, s.Namespace)
 }
+
+func SleepConfigMap() string {
+	return sleepConfigmap
+}

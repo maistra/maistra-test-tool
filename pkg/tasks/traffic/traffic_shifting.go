@@ -15,147 +15,138 @@
 package traffic
 
 import (
-	"fmt"
-	"io/ioutil"
-	"sync"
+	"net/http"
 	"testing"
 	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
-	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
+	"github.com/maistra/maistra-test-tool/pkg/app"
+	. "github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func cleanupTrafficShifting() {
-	log.Log.Info("Cleanup")
-	app := examples.Bookinfo{"bookinfo"}
-	util.KubeDelete("bookinfo", bookinfoAllv1Yaml)
-	app.Uninstall()
-	time.Sleep(time.Duration(20) * time.Second)
-}
-
 func TestTrafficShifting(t *testing.T) {
-	defer cleanupTrafficShifting()
-	defer util.RecoverPanic(t)
+	NewTest(t).LegacyID("T3").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+		hack.DisableLogrusForThisTest(t)
+		ns := "bookinfo"
 
-	log.Log.Info("TestTrafficShifting")
-	app := examples.Bookinfo{"bookinfo"}
-	app.Install(false)
-	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
+		t.Cleanup(func() {
+			oc.RecreateNamespace(t, ns)
+		})
 
-	if err := util.KubeApply("bookinfo", bookinfoAllv1Yaml); err != nil {
-		t.Errorf("Failed to route traffic to all v1: %s", err)
-		log.Log.Errorf("Failed to route traffic to all v1: %s", err)
-	}
-	time.Sleep(time.Duration(5) * time.Second)
+		app.InstallAndWaitReady(t, app.Bookinfo(ns))
+		productpageURL := app.BookinfoProductPageURL(t, meshNamespace)
 
-	t.Run("TrafficManagement_shift_50_percent_v3_traffic", func(t *testing.T) {
-		defer util.RecoverPanic(t)
+		oc.ApplyString(t, ns, bookinfoVirtualServicesAllV1)
 
-		log.Log.Info("# Traffic shifting 50 percent v1 and 50 percent v3, tolerance 10 percent")
-		if err := util.KubeApply("bookinfo", bookinfoReview50V3Yaml); err != nil {
-			t.Errorf("Failed to route 50%% traffic to v3: %s", err)
-			log.Log.Errorf("Failed to route 50%% traffic to v3: %s", err)
-		}
-		time.Sleep(time.Duration(5) * time.Second)
+		t.NewSubTest("50 percent to v3").Run(func(t TestHelper) {
+			t.LogStep("configure VirtualService to split traffic 50% to v1 and 50% to v3")
+			oc.ApplyString(t, ns, splitReviews5050BetweenV1andV3)
 
-		tolerance := 0.40
-		totalShot := 100
-		once := sync.Once{}
-		c1, cVersionToMigrate := 0, 0
-
-		for i := 0; i < totalShot; i++ {
-			resp, _, err := util.GetHTTPResponse(productpageURL, nil)
-			util.Inspect(err, "Failed to get response", "", t)
-			if err := util.CheckHTTPResponse200(resp); err != nil {
-				log.Log.Errorf("Unexpected response status %d", resp.StatusCode)
-				continue
-			}
-
-			body, err := ioutil.ReadAll(resp.Body)
-			util.Inspect(err, "Failed to read response body", "", t)
-
-			var c1CompareError, cVersionToMigrateError error
-
-			if c1CompareError = util.CompareHTTPResponse(body, "productpage-normal-user-v1.html"); c1CompareError == nil {
-				c1++
-			} else if cVersionToMigrateError = util.CompareHTTPResponse(body, "productpage-normal-user-v3.html"); cVersionToMigrateError == nil {
-				cVersionToMigrate++
-			} else {
-				log.Log.Errorf("Received unexpected version")
-				once.Do(func() {
-					log.Log.Infof("Comparing to the original version: %v", c1CompareError)
-					log.Log.Infof("Comparing to the version to migrate to: %v", cVersionToMigrateError)
+			t.LogStep("make 100 requests and checking if v1 and v3 get 50% of requests each (tolerance: 20%)")
+			retry.UntilSuccess(t, func(t TestHelper) {
+				tolerance := 0.20
+				checkTrafficRatio(t, productpageURL, 100, tolerance, map[string]float64{
+					"productpage-normal-user-v1.html": 0.5,
+					"productpage-normal-user-v3.html": 0.5,
 				})
-			}
-			util.CloseResponseBody(resp)
-		}
+			})
+		})
 
-		if util.IsWithinPercentage(c1, totalShot, 0.5, tolerance) && util.IsWithinPercentage(cVersionToMigrate, totalShot, 0.5, tolerance) {
-			log.Log.Infof(
-				"Success. Traffic shifting acts as expected for 50 percent. "+
-					"old version hit %d of %d, new version hit %d of %d", c1, totalShot, cVersionToMigrate, totalShot)
-		} else {
-			t.Errorf(
-				"Failed traffic shifting test for 50 percent. "+
-					"old version hit %d of %d, new version hit %d of %d", c1, totalShot, cVersionToMigrate, totalShot)
-			log.Log.Errorf(
-				"Failed traffic shifting test for 50 percent. "+
-					"old version hit %d of %d, new version hit %d of %d", c1, totalShot, cVersionToMigrate, totalShot)
-		}
-	})
+		t.NewSubTest("100 percent to v3").Run(func(t TestHelper) {
+			t.LogStep("configure VirtualService to send all traffic to v3")
+			oc.ApplyString(t, ns, allReviewsToV3)
 
-	t.Run("TrafficManagement_shift_100_percent_v3_traffic", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-
-		log.Log.Info("# Traffic shifting 100 percent v3, tolerance 0 percent")
-		if err := util.KubeApply("bookinfo", bookinfoReviewV3Yaml); err != nil {
-			t.Errorf("Failed to route traffic to v3: %s", err)
-			log.Log.Errorf("Failed to route traffic to v3: %s", err)
-		}
-		time.Sleep(time.Duration(5) * time.Second)
-
-		tolerance := 0.0
-		totalShot := 10
-		once := sync.Once{}
-		cVersionToMigrate := 0
-
-		for i := 0; i < totalShot; i++ {
-			time.Sleep(time.Duration(1) * time.Second)
-			resp, _, err := util.GetHTTPResponse(productpageURL, nil)
-			util.Inspect(err, "Failed to get response", "", t)
-			if err := util.CheckHTTPResponse200(resp); err != nil {
-				log.Log.Errorf("Unexpected response status %d", resp.StatusCode)
-				continue
-			}
-
-			body, err := ioutil.ReadAll(resp.Body)
-			util.Inspect(err, "Failed to read response body", "", t)
-
-			var cVersionToMigrateError error
-
-			if cVersionToMigrateError = util.CompareHTTPResponse(body, "productpage-normal-user-v3.html"); cVersionToMigrateError == nil {
-				cVersionToMigrate++
-			} else {
-				log.Log.Errorf("Received unexpected version")
-				once.Do(func() {
-					log.Log.Infof("Comparing to the version to migrate to: %v", cVersionToMigrateError)
+			t.LogStep("make 100 requests and checking if all of them go to v3 (tolerance: 0%)")
+			retry.UntilSuccess(t, func(t TestHelper) {
+				tolerance := 0.0
+				checkTrafficRatio(t, productpageURL, 100, tolerance, map[string]float64{
+					"productpage-normal-user-v1.html": 0.0,
+					"productpage-normal-user-v3.html": 1.0,
 				})
-			}
-			util.CloseResponseBody(resp)
-		}
-
-		if util.IsWithinPercentage(cVersionToMigrate, totalShot, 1, tolerance) {
-			log.Log.Infof(
-				"Success. Traffic shifting acts as expected for 100 percent. "+
-					"new version hit %d of %d", cVersionToMigrate, totalShot)
-		} else {
-			t.Errorf(
-				"Failed traffic shifting test for 100 percent. "+
-					"new version hit %d of %d", cVersionToMigrate, totalShot)
-			log.Log.Errorf(
-				"Failed traffic shifting test for 100 percent. "+
-					"new version hit %d of %d", cVersionToMigrate, totalShot)
-		}
+			})
+		})
 	})
 }
+
+func checkTrafficRatio(t TestHelper, url string, numberOfRequests int, tolerance float64, ratios map[string]float64) {
+	counts := map[string]int{}
+	for i := 0; i < numberOfRequests; i++ {
+		curl.Request(t,
+			url, nil,
+			assert.ResponseStatus(http.StatusOK),
+			func(t TestHelper, response *http.Response, duration time.Duration) {
+				body := ReadAllAndClose(t, response.Body)
+				comparisonErrors := map[string]error{}
+				matched := false
+				for file, _ := range ratios {
+					err := CompareHTTPResponse(body, file)
+					if err == nil {
+						matched = true
+						counts[file]++
+					} else {
+						comparisonErrors[file] = err
+					}
+				}
+				if !matched {
+					// for file, err := range comparisonErrors {
+					// 	t.Logf("Diff with %s: %v", file, err)
+					// }
+					matchedFile := app.FindBookinfoProductPageResponseFile(body)
+					if matchedFile == "" {
+						t.Fatal("Response did not match any expected value and also didn't match any standard bookinfo productpage responses")
+					} else {
+						t.Fatalf("Response did not match any expected value, but matched file %q", matchedFile)
+					}
+				}
+			},
+		)
+	}
+
+	for file, count := range counts {
+		expectedRate := ratios[file]
+		actualRate := float64(count) / float64(numberOfRequests)
+		if IsWithinPercentage(count, numberOfRequests, expectedRate, tolerance) {
+			t.Logf("success: %d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, 100, file, actualRate, expectedRate, tolerance)
+		} else {
+			t.Errorf("failure: %d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, 100, file, actualRate, expectedRate, tolerance)
+		}
+	}
+}
+
+const splitReviews5050BetweenV1andV3 = `
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: reviews
+spec:
+  hosts:
+    - reviews
+  http:
+  - route:
+    - destination:
+        host: reviews
+        subset: v1
+      weight: 50
+    - destination:
+        host: reviews
+        subset: v3
+      weight: 50`
+
+const allReviewsToV3 = `
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: reviews
+spec:
+  hosts:
+    - reviews
+  http:
+  - route:
+    - destination:
+        host: reviews
+        subset: v3`

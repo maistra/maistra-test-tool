@@ -36,7 +36,7 @@ func NewTextLogger() *StandardLogger {
 	var baseLogger = logrus.New()
 	var standardLogger = &StandardLogger{baseLogger}
 	standardLogger.Formatter = &logrus.TextFormatter{
-		FullTimestamp: true,
+		FullTimestamp: false,
 	}
 
 	return standardLogger

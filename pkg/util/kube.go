@@ -225,7 +225,7 @@ func GetKubeMasterIP() (string, error) {
 func GetClusterSubnet() (string, error) {
 	cidr, err := ShellSilent("kubectl get nodes -o jsonpath='{.items[0].spec.podCIDR}'")
 	if err != nil {
-		// This command should never fail. If the field isn't found, it will just return and empty string.
+		// This command should never fail. If the field isn'T found, it will just return and empty string.
 		return "", err
 	}
 	parts := strings.Split(cidr, "/")
@@ -442,8 +442,8 @@ func GetPodStatus(n, pod string) string {
 }
 
 // GetPodName gets the pod name for the given namespace and label selector
-func GetPodName(n, labelSelector string) (pod string, err error) {
-	pod, err = Shell("kubectl -n %s get pod -l %s -o jsonpath='{.items[0].metadata.name}'", n, labelSelector)
+func GetPodName(ns, labelSelector string) (pod string, err error) {
+	pod, err = Shell("kubectl -n %s get pod -l %s -o jsonpath='{.items[0].metadata.name}'", ns, labelSelector)
 	if err != nil {
 		log.Log.Warnf("could not get %s pod: %v", labelSelector, err)
 		return
@@ -540,140 +540,10 @@ func PodExec(n, pod, container, command string, muteOutput bool) (string, error)
 }
 
 // CreateTLSSecret creates a secret from the provided cert and key files
-func CreateTLSSecret(secretName, n, keyFile, certFile string) (string, error) {
+func CreateTLSSecret(secretName, ns, keyFile, certFile string) (string, error) {
 	// cmd := fmt.Sprintf("kubectl create secret tls %s -n %s --key %s --cert %s", secretName, n, keyFile, certFile)
 	// return Shell(cmd)
-	return Shell("kubectl create secret tls %s -n %s --key %s --cert %s", secretName, n, keyFile, certFile)
-}
-
-// CheckPodsRunningWithMaxDuration returns if all pods in a namespace are in "Running" status
-// Also check container status to be running.
-func CheckPodsRunningWithMaxDuration(n string, maxDuration time.Duration) (ready bool) {
-	if err := WaitForDeploymentsReady(n, maxDuration); err != nil {
-		log.Log.Errorf("CheckPodsRunning: %v", err.Error())
-		return false
-	}
-
-	return true
-}
-
-// CheckPodsRunning returns readiness of all pods within a namespace. It will wait for upto 2 mins.
-// use WithMaxDuration to specify a duration.
-func CheckPodsRunning(n string) (ready bool) {
-	return CheckPodsRunningWithMaxDuration(n, 2*time.Minute)
-}
-
-// CheckDeployment gets status of a deployment from a namespace
-func CheckDeployment(ctx context.Context, namespace, deployment string) error {
-	if deployment == "deployments/istio-sidecar-injector" {
-		// This can be deployed by previous tests, but doesn't complete currently, blocking the test.
-		return nil
-	}
-	errc := make(chan error)
-	go func() {
-		if _, err := ShellMuteOutput("kubectl -n %s rollout status %s", namespace, deployment); err != nil {
-			errc <- fmt.Errorf("%s in namespace %s failed", deployment, namespace)
-		}
-		errc <- nil
-	}()
-	select {
-	case err := <-errc:
-		return err
-	case <-ctx.Done():
-		return ctx.Err()
-	}
-}
-
-// CheckDeploymentRemoved waits until a deployment is removed or times out
-func CheckDeploymentRemoved(namespace, deployment string) error {
-	retry := Retrier{
-		BaseDelay: 5 * time.Second,
-		MaxDelay:  5 * time.Second,
-		Retries:   60,
-	}
-
-	pod, err := GetPodName(namespace, "name="+deployment)
-	// Pod has been removed
-	if err != nil {
-		log.Log.Infof("pod %s is successfully removed", pod)
-		return nil
-	}
-	retryFn := func(_ context.Context, i int) error {
-		_, err := Shell("kubectl get pods %s -n %s", pod, namespace)
-		if err != nil {
-			log.Log.Infof("pod %s is successfully removed", pod)
-			return nil
-		}
-		return fmt.Errorf("%s in namespace %s still exists", pod, namespace)
-	}
-	ctx := context.Background()
-	_, err = retry.Retry(ctx, retryFn)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// WaitForDeploymentsReady wait up to 'timeout' duration
-// return an error if deployments are not ready
-func WaitForDeploymentsReady(ns string, timeout time.Duration) error {
-	retry := Retrier{
-		BaseDelay:   10 * time.Second,
-		MaxDelay:    10 * time.Second,
-		MaxDuration: timeout,
-		Retries:     20,
-	}
-
-	_, err := retry.Retry(context.Background(), func(_ context.Context, _ int) error {
-		nr, err := CheckDeploymentsReady(ns)
-		if err != nil {
-			return &Break{err}
-		}
-
-		if nr == 0 { // done
-			return nil
-		}
-		return fmt.Errorf("%d deployments not ready", nr)
-	})
-	return err
-}
-
-// CheckDeploymentsReady checks if deployment resources are ready.
-// get podsReady() sometimes gets pods created by the "Job" resource which never reach the "Running" steady state.
-func CheckDeploymentsReady(ns string) (int, error) {
-	CMD := "kubectl -n %s get deployments -o jsonpath='{range .items[*]}{@.metadata.name}{\" \"}" +
-		"{@.status.availableReplicas}{\"\\n\"}{end}'"
-	out, err := Shell(fmt.Sprintf(CMD, ns))
-
-	if err != nil {
-		return 0, fmt.Errorf("could not list deployments in namespace %q: %v", ns, err)
-	}
-
-	notReady := 0
-	for _, line := range strings.Split(out, "\n") {
-		flds := strings.Fields(line)
-		if len(flds) < 2 {
-			continue
-		}
-		if flds[1] == "0" { // no replicas ready
-			notReady++
-		}
-	}
-
-	if notReady == 0 {
-		log.Log.Infof("All deployments are ready")
-	}
-	return notReady, nil
-}
-
-// GetKubeConfig will create a kubeconfig file based on the active environment the test is run in
-func GetKubeConfig(filename string) error {
-	_, err := ShellMuteOutput("kubectl config view --raw=true --minify=true > %s", filename)
-	if err != nil {
-		return err
-	}
-	log.Log.Infof("kubeconfig file %s created\n", filename)
-	return nil
+	return Shell("kubectl create secret tls %s -n %s --key %s --cert %s", secretName, ns, keyFile, certFile)
 }
 
 // CheckPodRunning return if a given pod with labeled name in a namespace are in "Running" status
@@ -733,18 +603,6 @@ func CreateMultiClusterSecret(namespace string, remoteKubeConfig string, localKu
 
 	log.Log.Infof("Secret %s labelled with %s=%s\n", secretName, secretLabel, labelValue)
 	return nil
-}
-
-// DeleteMultiClusterSecret delete the remote cluster secret
-func DeleteMultiClusterSecret(namespace string, remoteKubeConfig string, localKubeConfig string) error {
-	secretName := filepath.Base(remoteKubeConfig)
-	_, err := ShellMuteOutput("kubectl delete secret %s -n %s --kubeconfig=%s", secretName, namespace, localKubeConfig)
-	if err != nil {
-		log.Log.Errorf("Failed to delete secret %s: %v", secretName, err)
-	} else {
-		log.Log.Infof("Deleted secret %s", secretName)
-	}
-	return err
 }
 
 // GetJsonObject get json string as input and returns a map of the json string

@@ -152,7 +152,7 @@ func TestRateLimiting(t *testing.T) {
 		t.Fatalf("error applying envoy filter: %v", err)
 	}
 	util.Shell(`kubectl -n %s get envoyfilter -o yaml > rrr.yaml`, meshNamespace)
-	//util.Log.Info(msg)
+	// util.Log.Info(msg)
 
 	// Give some time to envoy filters apply
 	time.Sleep(time.Second * 5)
@@ -176,7 +176,7 @@ func TestRateLimiting(t *testing.T) {
 	checkProductPageResponseCode(t, host, "200")
 
 	// Should fail
-	// time.Sleep(time.Second * 20)	
+	// time.Sleep(time.Second * 20)
 	// checkProductPageResponseCode(t, host, "429")
 }
 

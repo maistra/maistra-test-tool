@@ -34,11 +34,11 @@ var (
 )
 
 // Inspect error handling function
-func Inspect(err error, fMsg, sMsg string, t *testing.T) {
+func Inspect(err error, failureMsg, successMsg string, t *testing.T) {
 	if err != nil {
-		t.Fatalf("%s. Error %s", fMsg, err)
-	} else if sMsg != "" {
-		log.Log.Info(sMsg)
+		t.Fatalf("%s. Error %s", failureMsg, err)
+	} else if successMsg != "" {
+		log.Log.Info(successMsg)
 	}
 }
 
@@ -59,15 +59,31 @@ func SetupCookieJar(username, pass, gateway string) (*cookiejar.Jar, error) {
 		return nil, fmt.Errorf("failed building cookiejar: %v", err)
 	}
 	client := http.Client{Jar: jar}
-	resp, err := client.PostForm(fmt.Sprintf("%s/login", gateway), url.Values{
+	loginURL, err := url.Parse(fmt.Sprintf("%s/login", gateway))
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.PostForm(loginURL.String(), url.Values{
 		"password": {pass},
 		"username": {username},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed login for user '%s': %v", username, err)
 	}
+	if !containsSessionCookie(jar.Cookies(loginURL)) {
+		return nil, fmt.Errorf("no session cookie returned by login URL %s", loginURL)
+	}
 	resp.Body.Close()
 	return jar, nil
+}
+
+func containsSessionCookie(cookies []*http.Cookie) bool {
+	for _, c := range cookies {
+		if c.Name == "session" {
+			return true
+		}
+	}
+	return false
 }
 
 // GetWithCookieJar constructs reqeusts with login user cookie and returns a http response
@@ -80,38 +96,6 @@ func GetWithCookieJar(url string, jar *cookiejar.Jar) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	return client.Do(req)
-}
-
-// GetWithHost constructs a http request with Host and returns a http Response
-// it is equal to curl -HHost:
-func GetWithHost(url string, host string) (*http.Response, error) {
-	// Declare http client
-	client := &http.Client{}
-
-	// Declare HTTP Method and Url
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Host = host
-	req.Header.Set("Host", req.Host)
-	return client.Do(req)
-}
-
-// GetWithJWT constructs a http request with Host and JWT auth token in header
-func GetWithJWT(url, token, host string) (*http.Response, error) {
-	// Declare http client
-	client := &http.Client{}
-
-	// Declare HTTP Method and Url
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Host = host
-	req.Header.Set("Host", req.Host)
-	req.Header.Add("Authorization", "Bearer "+token)
 	return client.Do(req)
 }
 
@@ -172,4 +156,14 @@ func CompareHTTPResponse(body []byte, modelFile string) error {
 		return err
 	}
 	return nil
+}
+
+func Failf(t *testing.T, format string, a ...any) {
+	Fail(t, fmt.Sprintf(format, a...))
+}
+
+func Fail(t *testing.T, str string) {
+	t.Error(str)
+	log.Log.Error(str)
+
 }
