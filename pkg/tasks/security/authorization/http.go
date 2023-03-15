@@ -23,10 +23,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupAuthorHTTP() {
-	util.Log.Info("Cleanup")
+	log.Log.Info("Cleanup")
 	util.KubeDeleteContents("bookinfo", DetailsGETPolicy)
 	util.KubeDeleteContents("bookinfo", ReviewsGETPolicy)
 	util.KubeDeleteContents("bookinfo", RatingsGETPolicy)
@@ -44,8 +45,8 @@ func TestAuthorHTTP(t *testing.T) {
 	defer cleanupAuthorHTTP()
 	defer util.RecoverPanic(t)
 
-	util.Log.Info("Authorization for HTTP traffic")
-	util.Log.Info("Enable Control Plane MTLS")
+	log.Log.Info("Authorization for HTTP traffic")
+	log.Log.Info("Enable Control Plane MTLS")
 	util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}'`, meshNamespace, smcpName)
 	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
 
@@ -56,7 +57,7 @@ func TestAuthorHTTP(t *testing.T) {
 	t.Run("Security_authorization_rbac_deny_all_http", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Configure access control for workloads using HTTP traffic")
+		log.Log.Info("Configure access control for workloads using HTTP traffic")
 		util.KubeApplyContents("bookinfo", DenyAllPolicy)
 		time.Sleep(time.Duration(10) * time.Second)
 
@@ -65,10 +66,10 @@ func TestAuthorHTTP(t *testing.T) {
 		body, err := ioutil.ReadAll(resp.Body)
 		util.Inspect(err, "Failed to read response body", "", t)
 		if strings.Contains(string(body), "RBAC: access denied") {
-			util.Log.Infof("Got access denied as expected: %s", string(body))
+			log.Log.Infof("Got access denied as expected: %s", string(body))
 		} else {
 			t.Errorf("RBAC deny all failed. Got response: %s", string(body))
-			util.Log.Errorf("RBAC deny all failed. Got response: %s", string(body))
+			log.Log.Errorf("RBAC deny all failed. Got response: %s", string(body))
 		}
 		util.CloseResponseBody(resp)
 	})
@@ -76,7 +77,7 @@ func TestAuthorHTTP(t *testing.T) {
 	t.Run("Security_authorization_rbac_allow_GET_http", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Allow access with GET method to the productpage workload")
+		log.Log.Info("Allow access with GET method to the productpage workload")
 		util.KubeApplyContents("bookinfo", ProductpageGETPolicy)
 		time.Sleep(time.Duration(10) * time.Second)
 
@@ -86,14 +87,14 @@ func TestAuthorHTTP(t *testing.T) {
 		body, err := ioutil.ReadAll(resp.Body)
 		util.Inspect(err, "Failed to read response body", "", t)
 		if strings.Contains(string(body), "Error fetching product details") && strings.Contains(string(body), "Error fetching product reviews") {
-			util.Log.Infof("Got expected page with Error fetching product details and Error fetching product reviews")
+			log.Log.Infof("Got expected page with Error fetching product details and Error fetching product reviews")
 		} else {
 			t.Errorf("Productpage GET policy failed. Got response: %s", string(body))
-			util.Log.Errorf("Productpage GET policy failed. Got response: %s", string(body))
+			log.Log.Errorf("Productpage GET policy failed. Got response: %s", string(body))
 		}
 		util.CloseResponseBody(resp)
 
-		util.Log.Info("Allow other bookinfo services GET method")
+		log.Log.Info("Allow other bookinfo services GET method")
 		util.KubeApplyContents("bookinfo", DetailsGETPolicy)
 		util.KubeApplyContents("bookinfo", ReviewsGETPolicy)
 		util.KubeApplyContents("bookinfo", RatingsGETPolicy)
@@ -107,9 +108,9 @@ func TestAuthorHTTP(t *testing.T) {
 		util.Inspect(err, "Failed to read response body", "", t)
 		if strings.Contains(string(body), "Error fetching product details") || strings.Contains(string(body), "Error fetching product reviews") || strings.Contains(string(body), "Ratings service currently unavailable") {
 			t.Errorf("GET policy failed. Got response: %s", string(body))
-			util.Log.Errorf("GET policy failed. Got response: %s", string(body))
+			log.Log.Errorf("GET policy failed. Got response: %s", string(body))
 		} else {
-			util.Log.Infof("Got expected page.")
+			log.Log.Infof("Got expected page.")
 		}
 		util.CloseResponseBody(resp)
 	})

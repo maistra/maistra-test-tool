@@ -22,10 +22,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupRequestRouting() {
-	util.Log.Info("Cleanup")
+	log.Log.Info("Cleanup")
 	app := examples.Bookinfo{"bookinfo"}
 	util.KubeDelete("bookinfo", bookinfoAllv1Yaml)
 	app.Uninstall()
@@ -36,7 +37,7 @@ func TestRequestRouting(t *testing.T) {
 	defer cleanupRequestRouting()
 	defer util.RecoverPanic(t)
 
-	util.Log.Info("TestRequestRouting")
+	log.Log.Info("TestRequestRouting")
 	app := examples.Bookinfo{"bookinfo"}
 	app.Install(false)
 	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
@@ -45,17 +46,17 @@ func TestRequestRouting(t *testing.T) {
 	t.Run("TrafficManagement_test_the_new_routing_configuration", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Routing traffic to all v1")
+		log.Log.Info("Routing traffic to all v1")
 		if err := util.KubeApply("bookinfo", bookinfoAllv1Yaml); err != nil {
 			t.Errorf("Failed to route traffic to all v1: %s", err)
-			util.Log.Errorf("Failed to route traffic to all v1: %s", err)
+			log.Log.Errorf("Failed to route traffic to all v1: %s", err)
 		}
 		time.Sleep(time.Duration(20) * time.Second)
 
 		for i := 0; i <= 5; i++ {
 			resp, duration, err := util.GetHTTPResponse(productpageURL, nil)
 			util.Inspect(err, "Failed to get HTTP Response", "", t)
-			util.Log.Infof("bookinfo productpage returned in %d ms", duration)
+			log.Log.Infof("bookinfo productpage returned in %d ms", duration)
 			defer util.CloseResponseBody(resp)
 			body, err := ioutil.ReadAll(resp.Body)
 			util.Inspect(err, "Failed to read response body", "", t)
@@ -70,17 +71,17 @@ func TestRequestRouting(t *testing.T) {
 	t.Run("TrafficManagement_route_based_on_user_identity", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Traffic routing based on user identity")
+		log.Log.Info("Traffic routing based on user identity")
 		if err := util.KubeApply("bookinfo", bookinfoReviewV2Yaml); err != nil {
 			t.Errorf("Failed to route traffic based on user: %s", err)
-			util.Log.Errorf("Failed to route traffic based on user: %s", err)
+			log.Log.Errorf("Failed to route traffic based on user: %s", err)
 		}
 		time.Sleep(time.Duration(20) * time.Second)
 
 		for i := 0; i <= 5; i++ {
 			resp, duration, err := util.GetHTTPResponse(productpageURL, testUserJar)
 			util.Inspect(err, "Failed to get HTTP Response", "", t)
-			util.Log.Infof("bookinfo productpage returned in %d ms", duration)
+			log.Log.Infof("bookinfo productpage returned in %d ms", duration)
 			defer util.CloseResponseBody(resp)
 			body, err := ioutil.ReadAll(resp.Body)
 			util.Inspect(err, "Failed to read response body", "", t)

@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 type Echo struct {
@@ -25,7 +26,7 @@ type Echo struct {
 }
 
 func (e *Echo) Install() {
-	util.Log.Info("Deploy Echo")
+	log.Log.Info("Deploy Echo")
 	util.KubeApply(e.Namespace, echoYaml)
 	time.Sleep(time.Duration(5) * time.Second)
 	util.CheckPodRunning(e.Namespace, "app=tcp-echo,version=v1")
@@ -34,7 +35,7 @@ func (e *Echo) Install() {
 }
 
 func (e *Echo) InstallWithProxy() {
-	util.Log.Info("Deploy Echo")
+	log.Log.Info("Deploy Echo")
 	util.KubeApply(e.Namespace, echoWithProxy)
 	time.Sleep(time.Duration(5) * time.Second)
 	util.CheckPodRunning(e.Namespace, "app=tcp-echo,version=v1")
@@ -42,13 +43,13 @@ func (e *Echo) InstallWithProxy() {
 }
 
 func (e *Echo) Uninstall() {
-	util.Log.Info("Cleanup Echo")
+	log.Log.Info("Cleanup Echo")
 	util.KubeDelete(e.Namespace, echoYaml)
 	time.Sleep(time.Duration(10) * time.Second)
 }
 
 func (e *Echo) UninstallWithProxy() {
-	util.Log.Info("Cleanup Echo")
+	log.Log.Info("Cleanup Echo")
 	util.KubeDelete(e.Namespace, echoWithProxy)
 	time.Sleep(time.Duration(10) * time.Second)
 }

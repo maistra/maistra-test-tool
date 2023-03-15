@@ -22,10 +22,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupIstioPodsTest() {
-	util.Log.Info("Cleanup ...")
+	log.Log.Info("Cleanup ...")
 	bookinfo := examples.Bookinfo{"bookinfo"}
 	bookinfo.Uninstall()
 	util.Shell(`../scripts/smmr/clean_members_50.sh`)
@@ -37,43 +38,43 @@ func TestIstioPodProbesFails(t *testing.T) {
 	defer cleanupIstioPodsTest()
 	defer util.RecoverPanic(t)
 
-	util.Log.Info("Deploy bookinfo in bookinfo ns")
+	log.Log.Info("Deploy bookinfo in bookinfo ns")
 	bookinfo := examples.Bookinfo{"bookinfo"}
 	bookinfo.Install(false)
 
 	t.Run("smcp_test_istio_pod_probes_failure", func(t *testing.T) {
 		defer util.RecoverPanic(t)
-		util.Log.Info("Testing: Istio Pod get stuck with probes failure after restart")
-		util.Log.Info("Create 50 new namespaces")
+		log.Log.Info("Testing: Istio Pod get stuck with probes failure after restart")
+		log.Log.Info("Create 50 new namespaces")
 		util.Shell(`../scripts/smmr/create_members_50.sh`)
-		util.Log.Info("Namespaces created...")
+		log.Log.Info("Namespaces created...")
 		rand.Seed(time.Now().UnixNano())
 		// Random number of deletes for the pod between 4 and 10
 		randId := rand.Intn(10-4) + 4
-		util.Log.Info("Random number of deletes: ", randId)
+		log.Log.Info("Random number of deletes: ", randId)
 		count := 0
 		for count < randId {
-			util.Log.Info("*** Get the istiod pod name")
+			log.Log.Info("*** Get the istiod pod name")
 			istiod, _ := util.GetPodName(`istio-system`, `app=istiod`)
-			util.Log.Info("*** Delete Istio pod: ", istiod)
+			log.Log.Info("*** Delete Istio pod: ", istiod)
 			util.Shell(`oc delete pod %s -n istio-system`, istiod)
 			deleted, _ := util.CheckPodDeletion(`istio-system`, `app=istiod`, istiod, 60)
 			if deleted {
-				util.Log.Info("*** Istiod pod deleted: ", istiod)
+				log.Log.Info("*** Istiod pod deleted: ", istiod)
 				running := util.CheckPodRunning(`istio-system`, `app=istiod`)
 				if running == nil {
-					util.Log.Info("*** New Istiod pod is running")
+					log.Log.Info("*** New Istiod pod is running")
 					ready, _ := util.CheckPodReady(`istio-system`, `app=istiod`, 10)
 					if ready {
-						util.Log.Info("*** New Istiod pod is ready")
+						log.Log.Info("*** New Istiod pod is ready")
 					} else {
 						istiod, _ = util.GetPodName(`istio-system`, `app=istiod`)
-						//Get events that are not type = Normal from the pod
+						// Get events that are not type = Normal from the pod
 						event, _ := util.Shell(`kubectl get events  -n istio-system --field-selector type!=Normal,involvedObject.name=%s |tail -1`, istiod)
 						if strings.Contains(event, "Readiness probe failed") {
 							t.Fatalf("****** Istio pod is not running and fail because of readiness probe failure: %s", event)
 						} else if event == "No resources found in istio-system namespace." {
-							util.Log.Info("*** No eventss for pod: ", istiod)
+							log.Log.Info("*** No eventss for pod: ", istiod)
 						} else {
 							t.Errorf("*** Istio pod is not running but is not failing because of readiness probe failure: %s", event)
 						}
@@ -84,6 +85,6 @@ func TestIstioPodProbesFails(t *testing.T) {
 				t.Errorf("*** Istiod pod is not deleted: %s", istiod)
 			}
 		}
-		util.Log.Info("*** Test finished without errors after deletion of pods")
+		log.Log.Info("*** Test finished without errors after deletion of pods")
 	})
 }

@@ -22,10 +22,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupAuthorTCP() {
-	util.Log.Info("Cleanup")
+	log.Log.Info("Cleanup")
 	util.KubeDeleteContents("foo", TCPDenyGETPolicy)
 	util.KubeDeleteContents("foo", TCPAllowGETPolicy)
 	util.KubeDeleteContents("foo", TCPAllowPolicy)
@@ -40,14 +41,14 @@ func TestAuthorTCP(t *testing.T) {
 	defer cleanupAuthorTCP()
 	defer util.RecoverPanic(t)
 
-	util.Log.Info("Authorization for TCP traffic")
+	log.Log.Info("Authorization for TCP traffic")
 	sleep := examples.Sleep{"foo"}
 	sleep.Install()
 	echo := examples.Echo{"foo"}
 	echo.InstallWithProxy()
 	time.Sleep(time.Duration(20) * time.Second)
 
-	util.Log.Info("Verify echo hello port")
+	log.Log.Info("Verify echo hello port")
 	sleepPod, err := util.GetPodName("foo", "app=sleep")
 	util.Inspect(err, "Failed to get sleep pod name", "", t)
 	ports := []string{"9000", "9001", "9002"}
@@ -57,10 +58,10 @@ func TestAuthorTCP(t *testing.T) {
 			msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true)
 			util.Inspect(err, "Failed to get response", "", t)
 			if !strings.Contains(msg, "connection succeeded") {
-				util.Log.Errorf("Verify setup Unexpected response: %s", msg)
+				log.Log.Errorf("Verify setup Unexpected response: %s", msg)
 				t.Errorf("Verify setup Unexpected response: %s", msg)
 			} else {
-				util.Log.Infof("Success. Get expected response: %s", msg)
+				log.Log.Infof("Success. Get expected response: %s", msg)
 			}
 		} else {
 			tcpEchoPod, err := util.GetPodName("foo", "app=tcp-echo")
@@ -69,10 +70,10 @@ func TestAuthorTCP(t *testing.T) {
 			msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true)
 			util.Inspect(err, "Failed to get response", "", t)
 			if !strings.Contains(msg, "connection succeeded") {
-				util.Log.Errorf("Verify setup Unexpected response: %s", msg)
+				log.Log.Errorf("Verify setup Unexpected response: %s", msg)
 				t.Errorf("Verify setup Unexpected response: %s", msg)
 			} else {
-				util.Log.Infof("Success. Get expected response: %s", msg)
+				log.Log.Infof("Success. Get expected response: %s", msg)
 			}
 		}
 	}
@@ -80,7 +81,7 @@ func TestAuthorTCP(t *testing.T) {
 	t.Run("Security_authorization_rbac_allow_GET_tcp", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Apply a policy to allow requests to port 9000 and 9001")
+		log.Log.Info("Apply a policy to allow requests to port 9000 and 9001")
 		util.KubeApplyContents("foo", TCPAllowPolicy)
 		time.Sleep(time.Duration(10) * time.Second)
 
@@ -91,10 +92,10 @@ func TestAuthorTCP(t *testing.T) {
 				msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true)
 				util.Inspect(err, "Failed to get response", "", t)
 				if !strings.Contains(msg, "connection succeeded") {
-					util.Log.Errorf("Verify allow GET Unexpected response: %s", msg)
+					log.Log.Errorf("Verify allow GET Unexpected response: %s", msg)
 					t.Errorf("Verify allow GET Unexpected response: %s", msg)
 				} else {
-					util.Log.Infof("Success. Get expected response: %s", msg)
+					log.Log.Infof("Success. Get expected response: %s", msg)
 				}
 			} else {
 				tcpEchoPod, err := util.GetPodName("foo", "app=tcp-echo")
@@ -103,10 +104,10 @@ func TestAuthorTCP(t *testing.T) {
 				msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true)
 				util.Inspect(err, "Failed to get response", "", t)
 				if !strings.Contains(msg, "connection rejected") {
-					util.Log.Errorf("Verify allow GET Unexpected response: %s", msg)
+					log.Log.Errorf("Verify allow GET Unexpected response: %s", msg)
 					t.Errorf("Verify allow GET Unexpected response: %s", msg)
 				} else {
-					util.Log.Infof("Success. Get expected response: %s", msg)
+					log.Log.Infof("Success. Get expected response: %s", msg)
 				}
 			}
 		}
@@ -115,7 +116,7 @@ func TestAuthorTCP(t *testing.T) {
 	t.Run("Security_authorization_rbac_invalid_policy_tcp", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Apply a policy to allow requests to port 9000 and add an HTTP GET field")
+		log.Log.Info("Apply a policy to allow requests to port 9000 and add an HTTP GET field")
 		util.KubeApplyContents("foo", TCPAllowGETPolicy)
 		time.Sleep(time.Duration(10) * time.Second)
 
@@ -125,10 +126,10 @@ func TestAuthorTCP(t *testing.T) {
 			msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true)
 			util.Inspect(err, "Failed to get response", "", t)
 			if !strings.Contains(msg, "connection rejected") {
-				util.Log.Errorf("Verify invalid rule Unexpected response: %s", msg)
+				log.Log.Errorf("Verify invalid rule Unexpected response: %s", msg)
 				t.Errorf("Verify invalid rule Unexpected response: %s", msg)
 			} else {
-				util.Log.Infof("Success. Get expected response: %s", msg)
+				log.Log.Infof("Success. Get expected response: %s", msg)
 			}
 		}
 	})
@@ -136,7 +137,7 @@ func TestAuthorTCP(t *testing.T) {
 	t.Run("Security_authorization_rbac_deny_GET_tcp", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Apply a DENY policy")
+		log.Log.Info("Apply a DENY policy")
 		util.KubeApplyContents("foo", TCPDenyGETPolicy)
 		time.Sleep(time.Duration(10) * time.Second)
 
@@ -148,18 +149,18 @@ func TestAuthorTCP(t *testing.T) {
 
 			if port == "9000" {
 				if !strings.Contains(msg, "connection rejected") {
-					util.Log.Errorf("Verify DENY rule Unexpected response: %s", msg)
+					log.Log.Errorf("Verify DENY rule Unexpected response: %s", msg)
 					t.Errorf("Verify DENY rule Unexpected response: %s", msg)
 				} else {
-					util.Log.Infof("Success. Get expected response: %s", msg)
+					log.Log.Infof("Success. Get expected response: %s", msg)
 				}
 			}
 			if port == "9001" {
 				if !strings.Contains(msg, "connection succeeded") {
-					util.Log.Errorf("Verify DENY rule Unexpected response: %s", msg)
+					log.Log.Errorf("Verify DENY rule Unexpected response: %s", msg)
 					t.Errorf("Verify DENY rule Unexpected response: %s", msg)
 				} else {
-					util.Log.Infof("Success. Get expected response: %s", msg)
+					log.Log.Infof("Success. Get expected response: %s", msg)
 				}
 			}
 		}

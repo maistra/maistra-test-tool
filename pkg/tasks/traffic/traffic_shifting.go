@@ -23,10 +23,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupTrafficShifting() {
-	util.Log.Info("Cleanup")
+	log.Log.Info("Cleanup")
 	app := examples.Bookinfo{"bookinfo"}
 	util.KubeDelete("bookinfo", bookinfoAllv1Yaml)
 	app.Uninstall()
@@ -37,24 +38,24 @@ func TestTrafficShifting(t *testing.T) {
 	defer cleanupTrafficShifting()
 	defer util.RecoverPanic(t)
 
-	util.Log.Info("TestTrafficShifting")
+	log.Log.Info("TestTrafficShifting")
 	app := examples.Bookinfo{"bookinfo"}
 	app.Install(false)
 	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
 
 	if err := util.KubeApply("bookinfo", bookinfoAllv1Yaml); err != nil {
 		t.Errorf("Failed to route traffic to all v1: %s", err)
-		util.Log.Errorf("Failed to route traffic to all v1: %s", err)
+		log.Log.Errorf("Failed to route traffic to all v1: %s", err)
 	}
 	time.Sleep(time.Duration(5) * time.Second)
 
 	t.Run("TrafficManagement_shift_50_percent_v3_traffic", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("# Traffic shifting 50 percent v1 and 50 percent v3, tolerance 10 percent")
+		log.Log.Info("# Traffic shifting 50 percent v1 and 50 percent v3, tolerance 10 percent")
 		if err := util.KubeApply("bookinfo", bookinfoReview50V3Yaml); err != nil {
 			t.Errorf("Failed to route 50%% traffic to v3: %s", err)
-			util.Log.Errorf("Failed to route 50%% traffic to v3: %s", err)
+			log.Log.Errorf("Failed to route 50%% traffic to v3: %s", err)
 		}
 		time.Sleep(time.Duration(5) * time.Second)
 
@@ -67,7 +68,7 @@ func TestTrafficShifting(t *testing.T) {
 			resp, _, err := util.GetHTTPResponse(productpageURL, nil)
 			util.Inspect(err, "Failed to get response", "", t)
 			if err := util.CheckHTTPResponse200(resp); err != nil {
-				util.Log.Errorf("Unexpected response status %d", resp.StatusCode)
+				log.Log.Errorf("Unexpected response status %d", resp.StatusCode)
 				continue
 			}
 
@@ -81,24 +82,24 @@ func TestTrafficShifting(t *testing.T) {
 			} else if cVersionToMigrateError = util.CompareHTTPResponse(body, "productpage-normal-user-v3.html"); cVersionToMigrateError == nil {
 				cVersionToMigrate++
 			} else {
-				util.Log.Errorf("Received unexpected version")
+				log.Log.Errorf("Received unexpected version")
 				once.Do(func() {
-					util.Log.Infof("Comparing to the original version: %v", c1CompareError)
-					util.Log.Infof("Comparing to the version to migrate to: %v", cVersionToMigrateError)
+					log.Log.Infof("Comparing to the original version: %v", c1CompareError)
+					log.Log.Infof("Comparing to the version to migrate to: %v", cVersionToMigrateError)
 				})
 			}
 			util.CloseResponseBody(resp)
 		}
 
 		if util.IsWithinPercentage(c1, totalShot, 0.5, tolerance) && util.IsWithinPercentage(cVersionToMigrate, totalShot, 0.5, tolerance) {
-			util.Log.Infof(
+			log.Log.Infof(
 				"Success. Traffic shifting acts as expected for 50 percent. "+
 					"old version hit %d of %d, new version hit %d of %d", c1, totalShot, cVersionToMigrate, totalShot)
 		} else {
 			t.Errorf(
 				"Failed traffic shifting test for 50 percent. "+
 					"old version hit %d of %d, new version hit %d of %d", c1, totalShot, cVersionToMigrate, totalShot)
-			util.Log.Errorf(
+			log.Log.Errorf(
 				"Failed traffic shifting test for 50 percent. "+
 					"old version hit %d of %d, new version hit %d of %d", c1, totalShot, cVersionToMigrate, totalShot)
 		}
@@ -107,10 +108,10 @@ func TestTrafficShifting(t *testing.T) {
 	t.Run("TrafficManagement_shift_100_percent_v3_traffic", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("# Traffic shifting 100 percent v3, tolerance 0 percent")
+		log.Log.Info("# Traffic shifting 100 percent v3, tolerance 0 percent")
 		if err := util.KubeApply("bookinfo", bookinfoReviewV3Yaml); err != nil {
 			t.Errorf("Failed to route traffic to v3: %s", err)
-			util.Log.Errorf("Failed to route traffic to v3: %s", err)
+			log.Log.Errorf("Failed to route traffic to v3: %s", err)
 		}
 		time.Sleep(time.Duration(5) * time.Second)
 
@@ -124,7 +125,7 @@ func TestTrafficShifting(t *testing.T) {
 			resp, _, err := util.GetHTTPResponse(productpageURL, nil)
 			util.Inspect(err, "Failed to get response", "", t)
 			if err := util.CheckHTTPResponse200(resp); err != nil {
-				util.Log.Errorf("Unexpected response status %d", resp.StatusCode)
+				log.Log.Errorf("Unexpected response status %d", resp.StatusCode)
 				continue
 			}
 
@@ -136,23 +137,23 @@ func TestTrafficShifting(t *testing.T) {
 			if cVersionToMigrateError = util.CompareHTTPResponse(body, "productpage-normal-user-v3.html"); cVersionToMigrateError == nil {
 				cVersionToMigrate++
 			} else {
-				util.Log.Errorf("Received unexpected version")
+				log.Log.Errorf("Received unexpected version")
 				once.Do(func() {
-					util.Log.Infof("Comparing to the version to migrate to: %v", cVersionToMigrateError)
+					log.Log.Infof("Comparing to the version to migrate to: %v", cVersionToMigrateError)
 				})
 			}
 			util.CloseResponseBody(resp)
 		}
 
 		if util.IsWithinPercentage(cVersionToMigrate, totalShot, 1, tolerance) {
-			util.Log.Infof(
+			log.Log.Infof(
 				"Success. Traffic shifting acts as expected for 100 percent. "+
 					"new version hit %d of %d", cVersionToMigrate, totalShot)
 		} else {
 			t.Errorf(
 				"Failed traffic shifting test for 100 percent. "+
 					"new version hit %d of %d", cVersionToMigrate, totalShot)
-			util.Log.Errorf(
+			log.Log.Errorf(
 				"Failed traffic shifting test for 100 percent. "+
 					"new version hit %d of %d", cVersionToMigrate, totalShot)
 		}

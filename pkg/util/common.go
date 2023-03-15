@@ -25,6 +25,8 @@ import (
 	"time"
 
 	"golang.org/x/net/publicsuffix"
+
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 var (
@@ -36,7 +38,7 @@ func Inspect(err error, fMsg, sMsg string, t *testing.T) {
 	if err != nil {
 		t.Fatalf("%s. Error %s", fMsg, err)
 	} else if sMsg != "" {
-		Log.Info(sMsg)
+		log.Log.Info(sMsg)
 	}
 }
 
@@ -44,7 +46,7 @@ func Inspect(err error, fMsg, sMsg string, t *testing.T) {
 func GetCookieJar(username, pass, gateway string) *cookiejar.Jar {
 	jar, err := SetupCookieJar(username, pass, gateway)
 	if err != nil {
-		Log.Errorf("failed to get login user cookiejar: %v", err)
+		log.Log.Errorf("failed to get login user cookiejar: %v", err)
 		return nil
 	}
 	return jar
@@ -119,7 +121,7 @@ func CloseResponseBody(r *http.Response) {
 		return
 	}
 	if err := r.Body.Close(); err != nil {
-		Log.Error(err)
+		log.Log.Error(err)
 	}
 }
 
@@ -145,7 +147,7 @@ func GetHTTPResponse(url string, jar *cookiejar.Jar) (*http.Response, int, error
 // CheckHTTPResponse200 returns an error if Response code is not 200
 func CheckHTTPResponse200(resp *http.Response) error {
 	if resp.StatusCode != http.StatusOK {
-		Log.Errorf("Get response failed!")
+		log.Log.Errorf("Get response failed!")
 		return fmt.Errorf("status code is %d", resp.StatusCode)
 	}
 	return nil
@@ -153,7 +155,7 @@ func CheckHTTPResponse200(resp *http.Response) error {
 
 // SaveHTTPResponse writes  a Response body to a file dst
 func SaveHTTPResponse(body []byte, dst string) error {
-	Log.Infof("Write response body to file: %s", dst)
+	log.Log.Infof("Write response body to file: %s", dst)
 	if err := ioutil.WriteFile(dst, body, 0644); err != nil {
 		return err
 	}

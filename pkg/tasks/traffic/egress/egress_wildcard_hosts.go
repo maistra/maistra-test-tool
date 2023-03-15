@@ -21,10 +21,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupEgressWildcard() {
-	util.Log.Info("Cleanup")
+	log.Log.Info("Cleanup")
 	util.KubeDeleteContents("bookinfo", util.RunTemplate(EgressWildcardGatewayTemplate, smcp))
 	util.KubeDeleteContents("bookinfo", EgressWildcardEntry)
 	sleep := examples.Sleep{"bookinfo"}
@@ -36,7 +37,7 @@ func TestEgressWildcard(t *testing.T) {
 	defer cleanupEgressWildcard()
 	defer util.RecoverPanic(t)
 
-	util.Log.Info("Test Egress Wildcard Hosts")
+	log.Log.Info("Test Egress Wildcard Hosts")
 	sleep := examples.Sleep{"bookinfo"}
 	sleep.Install()
 	sleepPod, err := util.GetPodName("bookinfo", "app=sleep")
@@ -45,7 +46,7 @@ func TestEgressWildcard(t *testing.T) {
 	t.Run("TrafficManagement_egress_direct_traffic_wildcard_host", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Configure direct traffic to a wildcard host")
+		log.Log.Info("Configure direct traffic to a wildcard host")
 		util.KubeApplyContents("bookinfo", EgressWildcardEntry)
 		time.Sleep(time.Duration(10) * time.Second)
 
@@ -53,9 +54,9 @@ func TestEgressWildcard(t *testing.T) {
 		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "<title>Wikipedia, the free encyclopedia</title>\n<title>Wikipedia – Die freie Enzyklopädie</title>") {
-			util.Log.Infof("Success. Got Wikipedia response: %s", msg)
+			log.Log.Infof("Success. Got Wikipedia response: %s", msg)
 		} else {
-			util.Log.Infof("Error response: %s", msg)
+			log.Log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		}
 
@@ -65,7 +66,7 @@ func TestEgressWildcard(t *testing.T) {
 	t.Run("TrafficManagement_egress_gateway_wildcard_host", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Configure egress gateway to a wildcard host")
+		log.Log.Info("Configure egress gateway to a wildcard host")
 		util.KubeApplyContents("bookinfo", util.RunTemplate(EgressWildcardGatewayTemplate, smcp))
 		time.Sleep(time.Duration(10) * time.Second)
 
@@ -73,9 +74,9 @@ func TestEgressWildcard(t *testing.T) {
 		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "<title>Wikipedia, the free encyclopedia</title>\n<title>Wikipedia – Die freie Enzyklopädie</title>") {
-			util.Log.Infof("Success. Got Wikipedia response: %s", msg)
+			log.Log.Infof("Success. Got Wikipedia response: %s", msg)
 		} else {
-			util.Log.Infof("Error response: %s", msg)
+			log.Log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		}
 

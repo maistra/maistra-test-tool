@@ -23,10 +23,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupIngressWithoutTLS() {
-	util.Log.Info("Cleanup")
+	log.Log.Info("Cleanup")
 	util.KubeDeleteContents("bookinfo", nginxIngressGateway)
 	nginx := examples.Nginx{"bookinfo"}
 	nginx.Uninstall()
@@ -37,29 +38,29 @@ func TestIngressWithoutTLS(t *testing.T) {
 	defer cleanupIngressWithoutTLS()
 	defer util.RecoverPanic(t)
 
-	util.Log.Info("TestIngressWithOutTLS Termination")
+	log.Log.Info("TestIngressWithOutTLS Termination")
 	nginx := examples.Nginx{"bookinfo"}
 	nginx.Install("../testdata/examples/x86/nginx/nginx.conf")
 
-	util.Log.Info("Verify NGINX server")
+	log.Log.Info("Verify NGINX server")
 	pod, err := util.GetPodName("bookinfo", "run=my-nginx")
 	cmd := fmt.Sprintf(`curl -sS -v -k --resolve nginx.example.com:8443:127.0.0.1 https://nginx.example.com:8443`)
 	msg, err := util.PodExec("bookinfo", pod, "istio-proxy", cmd, true)
 	util.Inspect(err, "failed to get response", "", t)
 	if !strings.Contains(msg, "Welcome to nginx") {
 		t.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)
-		util.Log.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)
+		log.Log.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)
 	} else {
-		util.Log.Infof("Success. Get expected response: %s", msg)
+		log.Log.Infof("Success. Get expected response: %s", msg)
 	}
 
 	t.Run("TrafficManagement_ingress_configure_ingress_gateway_without_TLS_Termination", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Configure an ingress gateway")
+		log.Log.Info("Configure an ingress gateway")
 		if err := util.KubeApplyContents("bookinfo", nginxIngressGateway); err != nil {
 			t.Errorf("Failed to configure NGINX ingress gateway")
-			util.Log.Errorf("Failed to configure NGINX ingress gateway")
+			log.Log.Errorf("Failed to configure NGINX ingress gateway")
 		}
 		time.Sleep(time.Duration(30) * time.Second)
 
@@ -72,7 +73,7 @@ func TestIngressWithoutTLS(t *testing.T) {
 		util.Inspect(err, "Failed to read response body", "", t)
 
 		if strings.Contains(string(bodyByte), "Welcome to nginx") {
-			util.Log.Info(string(bodyByte))
+			log.Log.Info(string(bodyByte))
 		} else {
 			t.Errorf("Failed to get Welcome to nginx: %v", string(bodyByte))
 		}

@@ -28,13 +28,15 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 // getenv loads test.env file and returns an environment variable value.
 // If the environment variable is empty, it returns the fallback as a default value.
 func Getenv(key, fallback string) string {
 	if err := godotenv.Load("test.env"); err != nil {
-		Log.Fatal("Error loading .env file")
+		log.Log.Fatal("Error loading .env file")
 	}
 	value := os.Getenv(key)
 	if len(value) == 0 {
@@ -47,11 +49,11 @@ func Getenv(key, fallback string) string {
 func RunTemplate(tmpl string, input interface{}) string {
 	tt, err := template.New("").Parse(tmpl)
 	if err != nil {
-		Log.Fatal(err)
+		log.Log.Fatal(err)
 	}
 	var buf bytes.Buffer
 	if err := tt.Execute(&buf, input); err != nil {
-		Log.Fatal(err)
+		log.Log.Fatal(err)
 	}
 	return buf.String()
 }

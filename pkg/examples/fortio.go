@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 type Fortio struct {
@@ -25,7 +26,7 @@ type Fortio struct {
 }
 
 func (f *Fortio) Install() {
-	util.Log.Info("Deploy Fortio")
+	log.Log.Info("Deploy Fortio")
 	util.KubeApply(f.Namespace, fortioYaml)
 	time.Sleep(time.Duration(5) * time.Second)
 	util.CheckPodRunning(f.Namespace, "app=fortio")
@@ -33,7 +34,7 @@ func (f *Fortio) Install() {
 }
 
 func (f *Fortio) Uninstall() {
-	util.Log.Info("Cleanup Fortio")
+	log.Log.Info("Cleanup Fortio")
 	util.KubeDelete(f.Namespace, fortioYaml)
 	time.Sleep(time.Duration(10) * time.Second)
 }

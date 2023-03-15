@@ -23,10 +23,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupExternalCert() {
-	util.Log.Info("Cleanup")
+	log.Log.Info("Cleanup")
 
 	bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
 	bookinfo.Uninstall()
@@ -40,13 +41,13 @@ func cleanupExternalCert() {
 func TestExternalCert(t *testing.T) {
 	defer cleanupExternalCert()
 
-	util.Log.Info("Test External Certificates")
-	util.Log.Info("Enable Control Plane MTLS")
+	log.Log.Info("Test External Certificates")
+	log.Log.Info("Enable Control Plane MTLS")
 
 	t.Run("Security_plugging_external_cert_test", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Adding an external CA")
+		log.Log.Info("Adding an external CA")
 		util.Shell(`kubectl create -n %s secret generic cacerts --from-file=%s --from-file=%s --from-file=%s --from-file=%s`,
 			meshNamespace, sampleCACert, sampleCAKey, sampleCARoot, sampleCAChain)
 
@@ -71,7 +72,7 @@ func TestExternalCert(t *testing.T) {
 			util.Inspect(err, "Failed to get HTTP Response", "", t)
 			defer util.CloseResponseBody(resp)
 		} else {
-			util.Log.Info("Verify the new certificates")
+			log.Log.Info("Verify the new certificates")
 
 			// Generate the cert files
 			util.ShellMuteOutput(`oc -n bookinfo exec %s -c istio-proxy -- openssl s_client -showcerts -connect details:9080 > %s/bookinfo-proxy-cert.txt`, productPod, tmpDir)
@@ -81,7 +82,7 @@ func TestExternalCert(t *testing.T) {
 			util.Inspect(err, "Failed to split certs into separate files", "", t)
 
 			// Compare them with the original certs
-			util.Log.Info("Verifying the root certificate")
+			log.Log.Info("Verifying the root certificate")
 			_, err = util.ShellMuteOutput(`openssl x509 -in %s -text -noout > %s/root-cert.crt.txt`, sampleCARoot, tmpDir)
 			util.Inspect(err, "Failed to print cert", "", t)
 			_, err = util.ShellMuteOutput(`openssl x509 -in %s/proxy-cert-3.pem -text -noout > %s/pod-root-cert.crt.txt`, tmpDir, tmpDir)
@@ -90,7 +91,7 @@ func TestExternalCert(t *testing.T) {
 				t.Errorf("Root certs do not match: %v", err)
 			}
 
-			util.Log.Info("Verifying the CA certificate")
+			log.Log.Info("Verifying the CA certificate")
 			_, err = util.ShellMuteOutput(`openssl x509 -in %s -text -noout > %s/ca-cert.crt.txt`, sampleCACert, tmpDir)
 			util.Inspect(err, "Failed to print cert", "", t)
 			_, err = util.ShellMuteOutput(`openssl x509 -in %s/proxy-cert-2.pem -text -noout > %s/pod-cert-chain-ca.crt.txt`, tmpDir, tmpDir)
@@ -99,7 +100,7 @@ func TestExternalCert(t *testing.T) {
 				t.Errorf("CA certs do not match: %v", err)
 			}
 
-			util.Log.Info("Verifying the certificate chain")
+			log.Log.Info("Verifying the certificate chain")
 			output, err := util.ShellMuteOutput(`/bin/bash -c "openssl verify -CAfile <(cat %s %s) %s/proxy-cert-1.pem"`, sampleCACert, sampleCARoot, tmpDir)
 			util.Inspect(err, "Failed to verify the certificate chain", "", t)
 			expected := []byte(fmt.Sprintf("%s/proxy-cert-1.pem: OK", tmpDir))

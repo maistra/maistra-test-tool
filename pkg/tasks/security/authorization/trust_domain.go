@@ -23,10 +23,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupTrustDomainMigration() {
-	util.Log.Info("Cleanup")
+	log.Log.Info("Cleanup")
 	util.KubeDeleteContents("foo", TrustDomainPolicy)
 	sleep := examples.Sleep{Namespace: "foo"}
 	httpbin := examples.Httpbin{Namespace: "foo"}
@@ -41,7 +42,7 @@ func TestTrustDomainMigration(t *testing.T) {
 	defer cleanupTrustDomainMigration()
 	defer util.RecoverPanic(t)
 
-	util.Log.Info("Trust Domain Migration")
+	log.Log.Info("Trust Domain Migration")
 	applyTrustDomain("old-td", "", true)
 
 	// Deploy workloads
@@ -52,7 +53,7 @@ func TestTrustDomainMigration(t *testing.T) {
 	sleep = examples.Sleep{Namespace: "bar"}
 	util.Inspect(sleep.Install(), "Failed to deploy sleep", "", t)
 
-	util.Log.Info("Apply deny all policy except sleep in bar namespace")
+	log.Log.Info("Apply deny all policy except sleep in bar namespace")
 	util.KubeApplyContents("foo", TrustDomainPolicy)
 
 	t.Run("Case 1: Verifying policy works", func(t *testing.T) {
@@ -130,7 +131,7 @@ func checkOutput(namespace, pod, container, cmd, expected string) error {
 		Retries:   5,
 	}
 
-	util.Log.Infof("Verifying curl output, expecting %s", expected)
+	log.Log.Infof("Verifying curl output, expecting %s", expected)
 
 	retryFn := func(_ context.Context, i int) error {
 		msg, err := util.PodExec(namespace, pod, container, cmd, true)
@@ -138,11 +139,11 @@ func checkOutput(namespace, pod, container, cmd, expected string) error {
 			return err
 		}
 		if !strings.Contains(msg, expected) {
-			util.Log.Errorf("Attempt %d/%d - expected: %v; Got: %v", i, retry.Retries, expected, msg)
+			log.Log.Errorf("Attempt %d/%d - expected: %v; Got: %v", i, retry.Retries, expected, msg)
 			return fmt.Errorf("expected: %v; Got: %v", expected, msg)
 		}
 
-		util.Log.Infof("Attempt %d/%d - Success, got %s", i, retry.Retries, msg)
+		log.Log.Infof("Attempt %d/%d - Success, got %s", i, retry.Retries, msg)
 		return nil
 	}
 
@@ -152,7 +153,7 @@ func checkOutput(namespace, pod, container, cmd, expected string) error {
 }
 
 func applyTrustDomain(domain, alias string, mtls bool) {
-	util.Log.Infof("Configuring  spec.security.trust.domain to %q and alias %q", domain, alias)
+	log.Log.Infof("Configuring  spec.security.trust.domain to %q and alias %q", domain, alias)
 
 	if alias != "" {
 		alias = fmt.Sprintf("%q", alias)

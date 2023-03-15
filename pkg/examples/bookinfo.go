@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 // samples directory is github.com/maistra/maistra-test-tool/testdata/examples/x86
@@ -28,7 +29,7 @@ type Bookinfo struct {
 }
 
 func (b *Bookinfo) Install(mtls bool) {
-	util.Log.Info("Deploying Bookinfo")
+	log.Log.Info("Deploying Bookinfo")
 	util.KubeApply(b.Namespace, bookinfoYaml)
 	time.Sleep(time.Duration(5) * time.Second)
 	util.CheckPodRunning(b.Namespace, "app=details")
@@ -38,10 +39,10 @@ func (b *Bookinfo) Install(mtls bool) {
 	util.CheckPodRunning(b.Namespace, "app=reviews,version=v3")
 	util.CheckPodRunning(b.Namespace, "app=productpage")
 
-	util.Log.Info("Creating Gateway")
+	log.Log.Info("Creating Gateway")
 	util.KubeApply(b.Namespace, bookinfoGateway)
 
-	util.Log.Info("Creating destination rules all")
+	log.Log.Info("Creating destination rules all")
 	if mtls {
 		util.KubeApply(b.Namespace, bookinfoRuleAllTLSYaml)
 	} else {
@@ -51,7 +52,7 @@ func (b *Bookinfo) Install(mtls bool) {
 }
 
 func (b *Bookinfo) Uninstall() {
-	util.Log.Info("Cleanup Bookinfo")
+	log.Log.Info("Cleanup Bookinfo")
 	util.KubeDelete(b.Namespace, bookinfoRuleAllYaml)
 	util.KubeDelete(b.Namespace, bookinfoGateway)
 	util.KubeDelete(b.Namespace, bookinfoYaml)

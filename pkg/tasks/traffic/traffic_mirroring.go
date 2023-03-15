@@ -21,10 +21,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupMirroring() {
-	util.Log.Info("Cleanup")
+	log.Log.Info("Cleanup")
 	httpbin := examples.Httpbin{"bookinfo"}
 	sleep := examples.Sleep{"bookinfo"}
 	util.KubeDeleteContents("bookinfo", httpbinAllv1)
@@ -38,7 +39,7 @@ func TestMirroring(t *testing.T) {
 	defer cleanupMirroring()
 	defer util.RecoverPanic(t)
 
-	util.Log.Info("TestMirroring")
+	log.Log.Info("TestMirroring")
 	httpbin := examples.Httpbin{"bookinfo"}
 	sleep := examples.Sleep{"bookinfo"}
 	httpbin.InstallV1()
@@ -50,7 +51,7 @@ func TestMirroring(t *testing.T) {
 
 		if err := util.KubeApplyContents("bookinfo", httpbinAllv1); err != nil {
 			t.Errorf("Failed to apply httpbin all v1")
-			util.Log.Errorf("Failed to apply httpbin all v1")
+			log.Log.Errorf("Failed to apply httpbin all v1")
 		}
 		time.Sleep(time.Duration(10) * time.Second)
 
@@ -70,10 +71,10 @@ func TestMirroring(t *testing.T) {
 		v2msg, err := util.Shell("kubectl logs -n %s --follow=false %s -c %s", "bookinfo", v2Pod, "httpbin")
 		util.Inspect(err, "Failed to get httpbin v2 log", "", t)
 		if strings.Contains(v1msg, `"GET /headers HTTP/1.1" 200`) && !strings.Contains(v2msg, `"GET /headers HTTP/1.1" 200`) {
-			util.Log.Info("Success. v1 an v2 logs are expected")
+			log.Log.Info("Success. v1 an v2 logs are expected")
 		} else {
 			t.Errorf("Error. v1 log: %s\n v2 log: %s", v1msg, v2msg)
-			util.Log.Errorf("Error. v1 log: %s\n v2 log: %s", v1msg, v2msg)
+			log.Log.Errorf("Error. v1 log: %s\n v2 log: %s", v1msg, v2msg)
 		}
 	})
 
@@ -82,7 +83,7 @@ func TestMirroring(t *testing.T) {
 
 		if err := util.KubeApplyContents("bookinfo", httpbinMirrorv2); err != nil {
 			t.Errorf("Failed to apply httpbin mirror v2")
-			util.Log.Errorf("Failed to apply httpbin mirror v2")
+			log.Log.Errorf("Failed to apply httpbin mirror v2")
 		}
 		time.Sleep(time.Duration(10) * time.Second)
 
@@ -102,7 +103,7 @@ func TestMirroring(t *testing.T) {
 		v2msg, err := util.Shell("kubectl logs -n %s --follow=false %s -c %s", "bookinfo", v2Pod, "httpbin")
 		util.Inspect(err, "Failed to get httpbin v2 log", "", t)
 		if strings.Contains(v1msg, `"GET /headers HTTP/1.1" 200`) && strings.Contains(v2msg, `"GET /headers HTTP/1.1" 200`) {
-			util.Log.Info("Success. v1 an v2 logs are expected")
+			log.Log.Info("Success. v1 an v2 logs are expected")
 		} else {
 			t.Errorf("Error. v1 log: %s\n v2 log: %s", v1msg, v2msg)
 		}

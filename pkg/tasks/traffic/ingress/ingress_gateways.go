@@ -21,10 +21,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupIngressGateways() {
-	util.Log.Info("Cleanup")
+	log.Log.Info("Cleanup")
 	httpbin := examples.Httpbin{"bookinfo"}
 	util.KubeDeleteContents("bookinfo", httpbinGateway1)
 	httpbin.Uninstall()
@@ -35,7 +36,7 @@ func TestIngressGateways(t *testing.T) {
 	defer cleanupIngressGateways()
 	defer util.RecoverPanic(t)
 
-	util.Log.Info("TestIngressGateways")
+	log.Log.Info("TestIngressGateways")
 	httpbin := examples.Httpbin{"bookinfo"}
 	httpbin.Install()
 
@@ -44,7 +45,7 @@ func TestIngressGateways(t *testing.T) {
 
 		if err := util.KubeApplyContents("bookinfo", httpbinGateway1); err != nil {
 			t.Errorf("Failed to configure Gateway")
-			util.Log.Errorf("Failed to configure Gateway")
+			log.Log.Errorf("Failed to configure Gateway")
 		}
 		time.Sleep(time.Duration(20) * time.Second)
 
@@ -59,14 +60,14 @@ func TestIngressGateways(t *testing.T) {
 
 		if err := util.KubeApplyContents("bookinfo", httpbinGateway2); err != nil {
 			t.Errorf("Failed to configure Gateway")
-			util.Log.Errorf("Failed to configure Gateway")
+			log.Log.Errorf("Failed to configure Gateway")
 		}
 		time.Sleep(time.Duration(10) * time.Second)
 
 		resp, duration, err := util.GetHTTPResponse(fmt.Sprintf("http://%s/headers", gatewayHTTP), nil)
 		defer util.CloseResponseBody(resp)
 		util.Inspect(err, "Failed to get HTTP Response", "", t)
-		util.Log.Infof("httpbin headers page returned in %d ms", duration)
+		log.Log.Infof("httpbin headers page returned in %d ms", duration)
 		util.Inspect(util.CheckHTTPResponse200(resp), "Failed to get HTTP 200", resp.Status, t)
 	})
 }

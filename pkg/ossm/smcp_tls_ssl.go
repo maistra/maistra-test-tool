@@ -20,16 +20,17 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupTestTLSVersionSMCP() {
-	util.Log.Info("Cleanup ...")
+	log.Log.Info("Cleanup ...")
 	util.Shell(`kubectl patch -n %s smcp/%s --type=json -p='[{"op": "remove", "path": "/spec/security/controlPlane/tls"}]'`, meshNamespace, smcpName)
 	util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 180s`, meshNamespace, smcpName)
 }
 
 func cleanupTestSSL() {
-	util.Log.Info("Cleanup ...")
+	log.Log.Info("Cleanup ...")
 	bookinfo := examples.Bookinfo{"bookinfo"}
 	util.KubeDeleteContents("bookinfo", testSSLDeployment)
 	bookinfo.Uninstall()
@@ -45,7 +46,7 @@ func TestTLSVersionSMCP(t *testing.T) {
 	t.Run("Operator_test_smcp_global_tls_minVersion_TLSv1_0", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_0")
+		log.Log.Info("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_0")
 		_, err := util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"controlPlane":{"tls":{"minProtocolVersion":"TLSv1_0"}}}}}'`, meshNamespace, smcpName)
 		util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 180s`, meshNamespace, smcpName)
 		if err != nil {
@@ -56,7 +57,7 @@ func TestTLSVersionSMCP(t *testing.T) {
 	t.Run("Operator_test_smcp_global_tls_minVersion_TLSv1_1", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_1")
+		log.Log.Info("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_1")
 		_, err := util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"controlPlane":{"tls":{"minProtocolVersion":"TLSv1_1"}}}}}'`, meshNamespace, smcpName)
 		util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 180s`, meshNamespace, smcpName)
 		if err != nil {
@@ -67,7 +68,7 @@ func TestTLSVersionSMCP(t *testing.T) {
 	t.Run("Operator_test_smcp_global_tls_maxVersion_TLSv1_3", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_3")
+		log.Log.Info("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_3")
 		_, err := util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"controlPlane":{"tls":{"maxProtocolVersion":"TLSv1_3"}}}}}'`, meshNamespace, smcpName)
 		util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 180s`, meshNamespace, smcpName)
 		if err != nil {
@@ -83,11 +84,11 @@ func TestSSL(t *testing.T) {
 		defer util.RecoverPanic(t)
 
 		// update mtls to true
-		util.Log.Info("Update SMCP mtls to true")
+		log.Log.Info("Update SMCP mtls to true")
 		util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}'`, meshNamespace, smcpName)
 		util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 180s`, meshNamespace, smcpName)
 
-		util.Log.Info("Update SMCP spec.security.controlPlane.tls")
+		log.Log.Info("Update SMCP spec.security.controlPlane.tls")
 
 		util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{%s:{%s,%s,%s,%s}}}}}'`,
 			meshNamespace, smcpName,
@@ -99,11 +100,11 @@ func TestSSL(t *testing.T) {
 
 		util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 180s`, meshNamespace, smcpName)
 
-		util.Log.Info("Deploy bookinfo")
+		log.Log.Info("Deploy bookinfo")
 		bookinfo := examples.Bookinfo{"bookinfo"}
 		bookinfo.Install(true)
 
-		util.Log.Info("Deploy testssl pod")
+		log.Log.Info("Deploy testssl pod")
 		if util.Getenv("SAMPLEARCH", "x86") == "p" {
 			util.KubeApplyContents("bookinfo", testSSLDeploymentP)
 		} else if util.Getenv("SAMPLEARCH", "x86") == "z" {
@@ -113,7 +114,7 @@ func TestSSL(t *testing.T) {
 		}
 		util.CheckPodRunning("bookinfo", "app=testssl")
 
-		util.Log.Info("Check testssl.sh results. Ignore info	Command error")
+		log.Log.Info("Check testssl.sh results. Ignore info	Command error")
 		pod, err := util.GetPodName("bookinfo", "app=testssl")
 		util.Inspect(err, "failed to get testssl pod", "", t)
 
@@ -121,15 +122,15 @@ func TestSSL(t *testing.T) {
 		msg, err := util.PodExec("bookinfo", pod, "testssl", command, false)
 		if !strings.Contains(msg, "TLSv1.2") {
 			t.Errorf("Results not include: TLSv1.2")
-			util.Log.Errorf("Results not include: TLSv1.2")
+			log.Log.Errorf("Results not include: TLSv1.2")
 		}
 		if !strings.Contains(msg, "ECDHE-RSA-AES128-GCM-SHA256") {
 			t.Errorf("Results not include: ECDHE-RSA-AES128-GCM-SHA256")
-			util.Log.Errorf("Results not include: ECDHE-RSA-AES128-GCM-SHA256")
+			log.Log.Errorf("Results not include: ECDHE-RSA-AES128-GCM-SHA256")
 		}
 		if !strings.Contains(msg, "P-256") {
 			t.Errorf("Results not include: P-256")
-			util.Log.Errorf("Results not include: P-256")
+			log.Log.Errorf("Results not include: P-256")
 		}
 	})
 }

@@ -22,10 +22,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupRequestTimeouts() {
-	util.Log.Info("Cleanup")
+	log.Log.Info("Cleanup")
 	app := examples.Bookinfo{"bookinfo"}
 	util.KubeDelete("bookinfo", bookinfoAllv1Yaml)
 	app.Uninstall()
@@ -36,21 +37,21 @@ func TestRequestTimeouts(t *testing.T) {
 	defer cleanupRequestTimeouts()
 	defer util.RecoverPanic(t)
 
-	util.Log.Infof("TestRequestTimeouts")
+	log.Log.Infof("TestRequestTimeouts")
 	app := examples.Bookinfo{"bookinfo"}
 	app.Install(false)
 	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
 
 	if err := util.KubeApply("bookinfo", bookinfoAllv1Yaml); err != nil {
 		t.Errorf("Failed to route traffic to all v1")
-		util.Log.Errorf("Failed to route traffic to all v1")
+		log.Log.Errorf("Failed to route traffic to all v1")
 	}
 
 	t.Run("TrafficManagement_request_delay", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 		if err := util.KubeApplyContents("bookinfo", ratingsDelay2); err != nil {
 			t.Errorf("Failed to inject delay")
-			util.Log.Errorf("Failed to inject delay")
+			log.Log.Errorf("Failed to inject delay")
 		}
 		time.Sleep(time.Duration(5) * time.Second)
 	})
@@ -59,13 +60,13 @@ func TestRequestTimeouts(t *testing.T) {
 		defer util.RecoverPanic(t)
 		if err := util.KubeApplyContents("bookinfo", reviewTimeout); err != nil {
 			t.Errorf("Failed to set timeouts")
-			util.Log.Errorf("Failed to set timeouts")
+			log.Log.Errorf("Failed to set timeouts")
 		}
 		time.Sleep(time.Duration(5) * time.Second)
 
 		resp, duration, err := util.GetHTTPResponse(productpageURL, nil)
 		defer util.CloseResponseBody(resp)
-		util.Log.Infof("bookinfo productpage returned in %d ms", duration)
+		log.Log.Infof("bookinfo productpage returned in %d ms", duration)
 		body, err := ioutil.ReadAll(resp.Body)
 		util.Inspect(err, "Failed to read response body", "", t)
 		util.Inspect(

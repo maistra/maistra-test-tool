@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 // Install nightly build operators from quay.io. This is used in Jenkins daily build pipeline.
@@ -42,7 +43,7 @@ func init() {
 	util.KubeApplyContents(meshNamespace, smmr)
 	time.Sleep(time.Duration(30) * time.Second)
 	if ipv6 == "true" {
-		util.Log.Info("Running the test with IPv6 configuration")
+		log.Log.Info("Running the test with IPv6 configuration")
 	}
 
 }

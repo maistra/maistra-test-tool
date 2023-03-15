@@ -22,10 +22,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupMigration() {
-	util.Log.Info("Cleanup")
+	log.Log.Info("Cleanup")
 	util.KubeDeleteContents(meshNamespace, util.RunTemplate(MeshPolicyStrictTemplate, smcp))
 	util.KubeDeleteContents("foo", NamespacePolicyStrict)
 	sleep := examples.Sleep{"foo"}
@@ -45,7 +46,7 @@ func TestMigration(t *testing.T) {
 	defer cleanupMigration()
 	defer util.RecoverPanic(t)
 
-	util.Log.Info("Mutual TLS Migration")
+	log.Log.Info("Mutual TLS Migration")
 	httpbin := examples.Httpbin{"foo"}
 	httpbin.Install()
 	httpbin = examples.Httpbin{"bar"}
@@ -57,7 +58,7 @@ func TestMigration(t *testing.T) {
 	sleep = examples.Sleep{"legacy"}
 	sleep.InstallLegacy()
 
-	util.Log.Info("Verify setup")
+	log.Log.Info("Verify setup")
 	for _, from := range []string{"foo", "bar", "legacy"} {
 		for _, to := range []string{"foo", "bar"} {
 			sleepPod, err := util.GetPodName(from, "app=sleep")
@@ -67,9 +68,9 @@ func TestMigration(t *testing.T) {
 			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true)
 			util.Inspect(err, "Failed to get response", "", t)
 			if !strings.Contains(msg, "200") {
-				util.Log.Errorf("Verify setup -- Unexpected response code: %s", msg)
+				log.Log.Errorf("Verify setup -- Unexpected response code: %s", msg)
 			} else {
-				util.Log.Infof("Success. Get expected response: %s", msg)
+				log.Log.Infof("Success. Get expected response: %s", msg)
 			}
 		}
 	}
@@ -77,7 +78,7 @@ func TestMigration(t *testing.T) {
 	t.Run("Security_authentication_namespace_enable_mtls", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Lock down to mutual TLS by namespace")
+		log.Log.Info("Lock down to mutual TLS by namespace")
 		util.KubeApplyContents("foo", NamespacePolicyStrict)
 		time.Sleep(time.Duration(10) * time.Second)
 
@@ -91,17 +92,17 @@ func TestMigration(t *testing.T) {
 
 				if from == "legacy" && to == "foo" {
 					if err != nil {
-						util.Log.Infof("Expected fail from sleep.legacy to httpbin.foo: %v", err)
+						log.Log.Infof("Expected fail from sleep.legacy to httpbin.foo: %v", err)
 					} else {
 						t.Errorf("Expected fail from sleep.legacy to httpbin.foo; Got unexpected response: %s", msg)
-						util.Log.Errorf("Expected fail from sleep.legacy to httpbin.foo; Got unexpected response: %s", msg)
+						log.Log.Errorf("Expected fail from sleep.legacy to httpbin.foo; Got unexpected response: %s", msg)
 					}
 				} else {
 					if !strings.Contains(msg, "200") {
-						util.Log.Errorf("Namespace mTLS expected: 200; Got unexpected response code: %s", msg)
+						log.Log.Errorf("Namespace mTLS expected: 200; Got unexpected response code: %s", msg)
 						t.Errorf("Namespace mTLS expected: 200; Got unexpected response code: %s", msg)
 					} else {
-						util.Log.Infof("Success. Get expected response: %s", msg)
+						log.Log.Infof("Success. Get expected response: %s", msg)
 					}
 				}
 			}
@@ -111,7 +112,7 @@ func TestMigration(t *testing.T) {
 	t.Run("Security_authentication_globally_enable_mtls", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Lock down to mutual TLS for the entire mesh")
+		log.Log.Info("Lock down to mutual TLS for the entire mesh")
 		util.KubeApplyContents(meshNamespace, util.RunTemplate(MeshPolicyStrictTemplate, smcp))
 		time.Sleep(time.Duration(30) * time.Second)
 
@@ -123,19 +124,19 @@ func TestMigration(t *testing.T) {
 				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true)
 				if from == "legacy" && to == "foo" {
 					if err != nil {
-						util.Log.Infof("Expected sleep.legacy to httpbin.foo fails: %v", err)
+						log.Log.Infof("Expected sleep.legacy to httpbin.foo fails: %v", err)
 					} else {
 						t.Errorf("Expected sleep.legacy to httpbin.foo fails; Got unexpected response: %s", msg)
-						util.Log.Errorf("Expected sleep.legacy to httpbin.foo fails; Got unexpected response: %s", msg)
+						log.Log.Errorf("Expected sleep.legacy to httpbin.foo fails; Got unexpected response: %s", msg)
 					}
 					continue
 				}
 				if from == "legacy" && to == "bar" {
 					if err != nil {
-						util.Log.Infof("Expected sleep.legacy to httpbin.bar fails: %v", err)
+						log.Log.Infof("Expected sleep.legacy to httpbin.bar fails: %v", err)
 					} else {
 						t.Errorf("Expected sleep.legacy to httpbin.bar fails; Got unexpected response: %s", msg)
-						util.Log.Errorf("Expected sleep.legacy to httpbin.bar fails; Got unexpected response: %s", msg)
+						log.Log.Errorf("Expected sleep.legacy to httpbin.bar fails; Got unexpected response: %s", msg)
 					}
 					continue
 				}

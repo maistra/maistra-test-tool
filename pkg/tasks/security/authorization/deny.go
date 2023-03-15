@@ -22,10 +22,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupAuthorDeny() {
-	util.Log.Info("Cleanup")
+	log.Log.Info("Cleanup")
 	util.KubeDeleteContents("foo", AllowPathIPPolicy)
 	util.KubeDeleteContents("foo", DenyHeaderNotAdminPolicy)
 	util.KubeDeleteContents("foo", DenyGETPolicy)
@@ -41,7 +42,7 @@ func TestAuthorDeny(t *testing.T) {
 	defer cleanupAuthorDeny()
 	defer util.RecoverPanic(t)
 
-	util.Log.Info("Authorization policies with a deny action")
+	log.Log.Info("Authorization policies with a deny action")
 	httpbin := examples.Httpbin{"foo"}
 	httpbin.Install()
 	sleep := examples.Sleep{"foo"}
@@ -52,109 +53,109 @@ func TestAuthorDeny(t *testing.T) {
 	msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true)
 	util.Inspect(err, "Failed to get response", "", t)
 	if !strings.Contains(msg, "200") {
-		util.Log.Errorf("Verify setup -- Unexpected response code: %s", msg)
+		log.Log.Errorf("Verify setup -- Unexpected response code: %s", msg)
 	} else {
-		util.Log.Infof("Success. Get expected response: %s", msg)
+		log.Log.Infof("Success. Get expected response: %s", msg)
 	}
 
 	t.Run("Security_authorization_explicitly_deny_request", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Explicitly deny a request")
+		log.Log.Info("Explicitly deny a request")
 		util.KubeApplyContents("foo", DenyGETPolicy)
 		time.Sleep(time.Duration(50) * time.Second)
 
-		util.Log.Info("Verify GET requests are denied")
+		log.Log.Info("Verify GET requests are denied")
 		cmd := fmt.Sprintf(`curl "http://httpbin.%s:8000/get" -X GET -sS -o /dev/null -w "%%{http_code}\n"`, "foo")
 		msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true)
 		util.Inspect(err, "Failed to get response", "", t)
 		if !strings.Contains(msg, "403") {
-			util.Log.Errorf("Verify deny GET requests Unexpected response: %s", msg)
+			log.Log.Errorf("Verify deny GET requests Unexpected response: %s", msg)
 			t.Errorf("Verify  deny GET requests Unexpected response: %s", msg)
 		} else {
-			util.Log.Infof("Success. Get expected response: %s", msg)
+			log.Log.Infof("Success. Get expected response: %s", msg)
 		}
 
-		util.Log.Info("Verify POST requests are allowed")
+		log.Log.Info("Verify POST requests are allowed")
 		cmd = fmt.Sprintf(`curl "http://httpbin.%s:8000/post" -X POST -sS -o /dev/null -w "%%{http_code}\n"`, "foo")
 		msg, err = util.PodExec("foo", sleepPod, "sleep", cmd, true)
 		util.Inspect(err, "Failed to get response", "", t)
 		if !strings.Contains(msg, "200") {
-			util.Log.Errorf("Verify POST requests Unexpected response: %s", msg)
+			log.Log.Errorf("Verify POST requests Unexpected response: %s", msg)
 			t.Errorf("Verify POST requests Unexpected response: %s", msg)
 		} else {
-			util.Log.Infof("Success. Get expected response: %s", msg)
+			log.Log.Infof("Success. Get expected response: %s", msg)
 		}
 	})
 
 	t.Run("Security_authorization_deny_request_header_check", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Apply a deny policy when header x-token value is not admin")
+		log.Log.Info("Apply a deny policy when header x-token value is not admin")
 		util.KubeApplyContents("foo", DenyHeaderNotAdminPolicy)
 		time.Sleep(time.Duration(50) * time.Second)
 
-		util.Log.Info("Verify GET requests with HTTP header x-token: admin are allowed")
+		log.Log.Info("Verify GET requests with HTTP header x-token: admin are allowed")
 		cmd := fmt.Sprintf(`curl "http://httpbin.%s:8000/get" -X GET -H "x-token: admin" -sS -o /dev/null -w "%%{http_code}\n"`, "foo")
 		msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true)
 		util.Inspect(err, "Failed to get response", "", t)
 		if !strings.Contains(msg, "200") {
-			util.Log.Errorf("Verify GET requests with HTTP header x-token: admin Unexpected response: %s", msg)
+			log.Log.Errorf("Verify GET requests with HTTP header x-token: admin Unexpected response: %s", msg)
 			t.Errorf("Verify GET requests with HTTP header x-token: admin Unexpected response: %s", msg)
 		} else {
-			util.Log.Infof("Success. Get expected response: %s", msg)
+			log.Log.Infof("Success. Get expected response: %s", msg)
 		}
 
-		util.Log.Info("Verify GET requests with HTTP header x-token: guest are denied")
+		log.Log.Info("Verify GET requests with HTTP header x-token: guest are denied")
 		cmd = fmt.Sprintf(`curl "http://httpbin.%s:8000/get" -X GET -H "x-token: guest" -sS -o /dev/null -w "%%{http_code}\n"`, "foo")
 		msg, err = util.PodExec("foo", sleepPod, "sleep", cmd, true)
 		util.Inspect(err, "Failed to get response", "", t)
 		if !strings.Contains(msg, "403") {
-			util.Log.Errorf("Verify GET requests with HTTP header x-token: guest Unexpected response: %s", msg)
+			log.Log.Errorf("Verify GET requests with HTTP header x-token: guest Unexpected response: %s", msg)
 			t.Errorf("Verify GET requests with HTTP header x-token: guest Unexpected response: %s", msg)
 		} else {
-			util.Log.Infof("Success. Get expected response: %s", msg)
+			log.Log.Infof("Success. Get expected response: %s", msg)
 		}
 	})
 
 	t.Run("Security_authorization_allow_path_policy", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Apply a policy that allows requests at the ip path")
+		log.Log.Info("Apply a policy that allows requests at the ip path")
 		util.KubeApplyContents("foo", AllowPathIPPolicy)
 		time.Sleep(time.Duration(50) * time.Second)
 
-		util.Log.Info("Verify GET requests with the HTTP header x-token: guest at path /ip are denied")
+		log.Log.Info("Verify GET requests with the HTTP header x-token: guest at path /ip are denied")
 		cmd = fmt.Sprintf(`curl "http://httpbin.%s:8000/ip" -X GET -H "x-token: guest" -s -o /dev/null -w "%%{http_code}\n"`, "foo")
 		msg, err = util.PodExec("foo", sleepPod, "sleep", cmd, true)
 		util.Inspect(err, "Failed to get response", "", t)
 		if !strings.Contains(msg, "403") {
-			util.Log.Errorf("Verify GET requests with HTTP header x-token: guest Unexpected response: %s", msg)
+			log.Log.Errorf("Verify GET requests with HTTP header x-token: guest Unexpected response: %s", msg)
 			t.Errorf("Verify GET requests with HTTP header x-token: guest Unexpected response: %s", msg)
 		} else {
-			util.Log.Infof("Success. Get expected response: %s", msg)
+			log.Log.Infof("Success. Get expected response: %s", msg)
 		}
 
-		util.Log.Info("Verify GET requests with the HTTP header x-token: admin at path /ip are allowed")
+		log.Log.Info("Verify GET requests with the HTTP header x-token: admin at path /ip are allowed")
 		cmd = fmt.Sprintf(`curl "http://httpbin.%s:8000/ip" -X GET -H "x-token: admin" -s -o /dev/null -w "%%{http_code}\n"`, "foo")
 		msg, err = util.PodExec("foo", sleepPod, "sleep", cmd, true)
 		util.Inspect(err, "Failed to get response", "", t)
 		if !strings.Contains(msg, "200") {
-			util.Log.Errorf("Verify GET requests with HTTP header x-token: admin at path /ip Unexpected response: %s", msg)
+			log.Log.Errorf("Verify GET requests with HTTP header x-token: admin at path /ip Unexpected response: %s", msg)
 			t.Errorf("Verify GET requests with HTTP header x-token: admin at path /ip Unexpected response: %s", msg)
 		} else {
-			util.Log.Infof("Success. Get expected response: %s", msg)
+			log.Log.Infof("Success. Get expected response: %s", msg)
 		}
 
-		util.Log.Info("Verify GET requests with the HTTP header x-token: admin at path /get are denied")
+		log.Log.Info("Verify GET requests with the HTTP header x-token: admin at path /get are denied")
 		cmd = fmt.Sprintf(`curl "http://httpbin.%s:8000/get" -X GET -H "x-token: admin" -s -o /dev/null -w "%%{http_code}\n"`, "foo")
 		msg, err = util.PodExec("foo", sleepPod, "sleep", cmd, true)
 		util.Inspect(err, "Failed to get response", "", t)
 		if !strings.Contains(msg, "403") {
-			util.Log.Errorf("Verify GET requests with HTTP header x-token: admin at path /get Unexpected response: %s", msg)
+			log.Log.Errorf("Verify GET requests with HTTP header x-token: admin at path /get Unexpected response: %s", msg)
 			t.Errorf("Verify GET requests with HTTP header x-token: admin at path /get Unexpected response: %s", msg)
 		} else {
-			util.Log.Infof("Success. Get expected response: %s", msg)
+			log.Log.Infof("Success. Get expected response: %s", msg)
 		}
 	})
 }
