@@ -508,6 +508,28 @@ func CheckPodsRunningWithMaxDuration(n string, maxDuration time.Duration) (ready
 func CheckPodsRunning(n string) (ready bool) {
 	return CheckPodsRunningWithMaxDuration(n, 2*time.Minute)
 }
+// Check PodReady (Example: 2/2 container running on a pod) returns true if the pod is ready. Params: namespace, pod label and timeout to check ready pod.
+func CheckPodReady(ns, selector string, retries int) (bool, error) {
+	ready := false
+	retry := Retrier{
+		BaseDelay: 1 * time.Second,
+		MaxDelay:  1 * time.Second,
+		Retries:   retries,
+	}
+	_, err := retry.Retry(context.Background(), func(_ context.Context, _ int) error {
+		output, err := Shell(`oc get pods -n istio-system -l %s -o jsonpath='{range .items[*]}{.status.containerStatuses[*].ready}'`, selector)
+		if err != nil {
+			return fmt.Errorf("failed to get pod: %s", err)
+		}
+		if strings.Contains(output, "false") {
+			return fmt.Errorf("pod is not ready")
+		} else {
+			ready = true
+			return nil
+		}
+	})
+	return ready, err
+}
 // CheckPodDeletion returns true if the pod is deleted. Params: label of the pod, the Pod Name to check,  namespace and a timeout
 func CheckPodDeletion(n, labelSelector string, previousPodName string, timeout int) (deleted bool, err error) {
 	deleted = false
