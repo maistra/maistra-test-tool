@@ -1,4 +1,4 @@
-@Library('jenkins-common-library') _
+@Library('servicemesh-lib') _
 
 maistraTestTool(
     maistraVersion: '2.3'
