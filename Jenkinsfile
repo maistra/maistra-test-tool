@@ -1,4 +1,4 @@
-@Library('jenkins-common-library')
+@Library('servicemesh-lib')
 
 //Instanciate Objects from Libs
 def util = new libs.utils.Util()
