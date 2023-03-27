@@ -249,6 +249,10 @@ var full = []testing.InternalTest{
 		F:    authorizaton.TestExtAuth,
 	},
 	testing.InternalTest{
+		Name: "T39",
+		F:    ossm.TestSMMDelete,
+	},
+	testing.InternalTest{
 		Name: "T40",
 		F:    ossm.TestOperator,
 	},

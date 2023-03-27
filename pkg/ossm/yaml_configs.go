@@ -424,4 +424,35 @@ spec:
           command: ["/bin/sleep", "3650d"]
           imagePullPolicy: IfNotPresent
  `
+	ServiceMeshMember_1 = `
+ apiVersion: "v1" 
+ kind: "Namespace" 
+ metadata:
+  name: "bookinfo" 
+ ---
+ apiVersion: "maistra.io/v1"
+ kind: "ServiceMeshMember"
+ metadata:
+   name: "default" 
+ spec:
+  controlPlaneRef:
+    name: basic
+    namespace: istio-system
+  `
+
+	ServiceMeshMember_2 = `
+ apiVersion: "v1"
+ kind: "Namespace"
+ metadata:
+   name: "my-awesome-project"
+ ---
+ apiVersion: "maistra.io/v1"
+ kind: "ServiceMeshMember"
+ metadata:
+   name: "default"
+ spec:
+   controlPlaneRef:
+     name: basic
+     namespace: istio-system
+  `
 )
