@@ -37,7 +37,7 @@ log "Installing control plane for mesh2"
 oc2 apply -f import/smcp.yaml
 oc2 apply -f import/smmr.yaml
 if [ -z "$MESH1_CERT" ] || [ -z "$MESH2_CERT" ]; then
-  log "Fedeartion is Single cluster mode, setting identity type to ThirdParty"
+  log "Federation is Single cluster mode, setting identity type to ThirdParty"
   oc2 patch -n mesh2-system smcp/fed-import --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'
 fi
 log "Waiting for mesh1 installation to complete"
