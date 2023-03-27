@@ -61,7 +61,7 @@ func TestIOR(t *testing.T) {
 			} else {
 				//Need to enable ior on the smcp
 				util.Log.Info("Enabling IOR")
-				util.Shell(`oc patch smcp/%s -n %s --type json -p='[{"op": "add", "path": "/status/appliedValues/istio/gateways/istio-ingressgateway/ior_enabled", "value": true}]'`, smcpName, meshNamespace)
+				util.Shell(`oc patch smcp/%s -n %s --type json -p='[{"op": "add", "path": "/spec/gateways/openshiftRoute/enabled", "value": true}]'`, smcpName, meshNamespace)
 				_, err := util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
 				if err != nil {
 					t.Fatal("SMCP is not ready")
