@@ -52,7 +52,9 @@ func cleanupOperatorTest() {
 func TestOperator(t *testing.T) {
 	defer cleanupOperatorTest()
 	defer util.RecoverPanic(t)
-
+	if util.Getenv("ROSA", "false") == "true" {
+		t.Skip("Skipping test on ROSA")
+	}
 	util.Log.Info("Test cases related to OSSM Operators")
 	//Get and pick one worker node that does not have already installed the istio operator
 	workername = pickWorkerNode(t)
