@@ -32,7 +32,7 @@ log "Installing control plane for mesh1"
 oc1 apply -f export/smcp_new_cert.yaml
 oc1 apply -f export/smmr.yaml
 if [ -z "$MESH1_CERT" ] || [ -z "$MESH2_CERT" ]; then
-  log "Fedeartion is Single cluster mode, setting identity type to ThirdParty"
+  log "Federation is Single cluster mode, setting identity type to ThirdParty"
   oc1 patch -n mesh1-system smcp/fed-export --type merge -p '{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}'
 fi
 
