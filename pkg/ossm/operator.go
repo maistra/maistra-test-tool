@@ -17,6 +17,7 @@ package ossm
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
 )
@@ -113,6 +114,13 @@ func TestOperator(t *testing.T) {
 		util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 480s`, meshNamespace, smcpName)
 		util.Shell(`oc get pods -n %s -o wide`, meshNamespace)
 		_, err = util.Shell(`oc -n %s patch smcp/%s --type merge -p '{"spec":{"runtime":{"defaults":{"pod":{"nodeSelector":{"node-role.kubernetes.io/infra":""},"tolerations":[{"effect":"NoSchedule","key":"node-role.kubernetes.io/infra","value":"reserved"},{"effect":"NoExecute","key":"node-role.kubernetes.io/infra","value":"reserved"}]}}}}}'`, meshNamespace, smcpName)
+		if err != nil {
+			time.Sleep(time.Duration(30) * time.Second)
+			_, err = util.Shell(`oc -n %s patch smcp/%s --type merge -p '{"spec":{"runtime":{"defaults":{"pod":{"nodeSelector":{"node-role.kubernetes.io/infra":""},"tolerations":[{"effect":"NoSchedule","key":"node-role.kubernetes.io/infra","value":"reserved"},{"effect":"NoExecute","key":"node-role.kubernetes.io/infra","value":"reserved"}]}}}}}'`, meshNamespace, smcpName)
+			if err != nil {
+				t.Fatalf("Failed to patch the smcp")
+			}
+		}
 		util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 300s`, meshNamespace, smcpName)
 		if err != nil {
 			t.Fatalf("Failed to patch the smcp")
