@@ -109,6 +109,8 @@ func TestOperator(t *testing.T) {
 	t.Run("test_ossm_smcp_elements_deploy_infra_nodes", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 		util.Log.Info("Testing: Run all the SMCP elements on infra nodes")
+		util.Log.Info("Check SMCP status")
+		util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 300s`, meshNamespace, smcpName)
 		util.Shell(`oc get pods -n %s -o wide`, meshNamespace)
 		_, err = util.Shell(`oc -n %s patch smcp/%s --type merge -p '{"spec":{"runtime":{"defaults":{"pod":{"nodeSelector":{"node-role.kubernetes.io/infra":""},"tolerations":[{"effect":"NoSchedule","key":"node-role.kubernetes.io/infra","value":"reserved"},{"effect":"NoExecute","key":"node-role.kubernetes.io/infra","value":"reserved"}]}}}}}'`, meshNamespace, smcpName)
 		util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
