@@ -121,6 +121,18 @@ func DeleteDeployment(d string, n string) error {
 }
 
 // delete SMCP from specified namespace
+func DeleteSMMR(d string) error {
+	_, err := Shell("kubectl delete smmr/default -n %s", d)
+	return err
+}
+
+// delete SMC from specified namespace
+func DeleteSMM(d string) error {
+	_, err := Shell("kubectl delete smm/default -n %s", d)
+	return err
+}
+
+// delete SMCP from specified namespace
 func DeleteSMCP(d string, n string) error {
 	_, err := Shell("kubectl delete smcp/%s -n %s", d, n)
 	return err
