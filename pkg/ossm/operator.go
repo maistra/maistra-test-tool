@@ -52,7 +52,9 @@ func cleanupOperatorTest() {
 func TestOperator(t *testing.T) {
 	defer cleanupOperatorTest()
 	defer util.RecoverPanic(t)
-
+	if util.Getenv("ROSA", "false") == "true" {
+		t.Skip("Skipping test on ROSA")
+	}
 	util.Log.Info("Test cases related to OSSM Operators")
 	//Get and pick one worker node that does not have already installed the istio operator
 	workername = pickWorkerNode(t)
@@ -107,6 +109,8 @@ func TestOperator(t *testing.T) {
 	t.Run("test_ossm_smcp_elements_deploy_infra_nodes", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 		util.Log.Info("Testing: Run all the SMCP elements on infra nodes")
+		util.Log.Info("Check SMCP status")
+		util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 300s`, meshNamespace, smcpName)
 		util.Shell(`oc get pods -n %s -o wide`, meshNamespace)
 		_, err = util.Shell(`oc -n %s patch smcp/%s --type merge -p '{"spec":{"runtime":{"defaults":{"pod":{"nodeSelector":{"node-role.kubernetes.io/infra":""},"tolerations":[{"effect":"NoSchedule","key":"node-role.kubernetes.io/infra","value":"reserved"},{"effect":"NoExecute","key":"node-role.kubernetes.io/infra","value":"reserved"}]}}}}}'`, meshNamespace, smcpName)
 		util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
