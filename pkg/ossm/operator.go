@@ -111,6 +111,7 @@ func TestOperator(t *testing.T) {
 		defer util.RecoverPanic(t)
 		util.Log.Info("Testing: Run all the SMCP elements on infra nodes")
 		util.Log.Info("Check SMCP status")
+		util.Shell(`oc get smcp -A`)
 		util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 480s`, meshNamespace, smcpName)
 		util.Shell(`oc get pods -n %s -o wide`, meshNamespace)
 		_, err = util.Shell(`oc -n %s patch smcp/%s --type merge -p '{"spec":{"runtime":{"defaults":{"pod":{"nodeSelector":{"node-role.kubernetes.io/infra":""},"tolerations":[{"effect":"NoSchedule","key":"node-role.kubernetes.io/infra","value":"reserved"},{"effect":"NoExecute","key":"node-role.kubernetes.io/infra","value":"reserved"}]}}}}}'`, meshNamespace, smcpName)
@@ -127,6 +128,7 @@ func TestOperator(t *testing.T) {
 		}
 		//Verify that the smcp elements are running on the infra node
 		pods, err := util.GetAppPods(meshNamespace)
+		util.CheckDeploymentsReady(meshNamespace)
 		if err != nil {
 			t.Fatalf("Failed to get the pods")
 		}
