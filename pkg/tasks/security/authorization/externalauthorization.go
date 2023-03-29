@@ -36,7 +36,6 @@ func cleanupExtAuth() {
 	util.KubeDeleteContents("foo", ExternalAuthzService)
 	util.KubeDeleteContents("foo", ExternalRoute)
 	time.Sleep(time.Duration(20) * time.Second)
-	util.DeleteSMCP(smcpName, meshNamespace)
 }
 
 func TestExtAuth(t *testing.T) {
