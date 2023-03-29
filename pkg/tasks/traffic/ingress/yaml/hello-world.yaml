@@ -29,6 +29,7 @@ spec:
         app: helloworld-v1
         version: v1
     spec:
+      terminationGracePeriodSeconds: 0  # TODO: remove when helloworld honors SIGINT
       containers:
       - name: helloworld
         image: %s

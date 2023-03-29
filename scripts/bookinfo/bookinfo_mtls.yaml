@@ -125,6 +125,7 @@ spec:
         version: v1
     spec:
       serviceAccountName: bookinfo-ratings
+      terminationGracePeriodSeconds: 0  # TODO: remove when ratings honors SIGINT
       containers:
       - name: ratings
         image: maistra/examples-bookinfo-ratings-v1:2.0.0
