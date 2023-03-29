@@ -127,6 +127,7 @@ func TestOperator(t *testing.T) {
 		}
 		//Verify that the smcp elements are running on the infra node
 		pods, err := util.GetAppPods(meshNamespace)
+		util.CheckDeploymentsReady(meshNamespace)
 		if err != nil {
 			t.Fatalf("Failed to get the pods")
 		}
