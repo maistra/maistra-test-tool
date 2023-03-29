@@ -42,7 +42,8 @@ func init() {
 	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
 	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV23_template, smcp))
 	util.KubeApplyContents(meshNamespace, smmr)
-	time.Sleep(time.Duration(30) * time.Second)
+	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcp.Name)
+	util.Shell(`oc -n %s wait --for condition=Ready smmr/default --timeout 180s`, meshNamespace)
 	if ipv6 == "true" {
 		log.Log.Info("Running the test with IPv6 configuration")
 	}
