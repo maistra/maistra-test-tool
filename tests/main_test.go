@@ -24,6 +24,8 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 // Create namespaces. All test samples and configurations will be in those namespaces.
@@ -47,15 +49,22 @@ func TestMain(m *testing.M) {
 	// run test group defined by env variable 'TEST_GROUP'
 	// groups are defined in test_cases.go
 	// TODO check https://go.dev/blog/subtests if we want to use that instead of this
-	if util.Getenv("TEST_GROUP", "full") == "full" {
+	testGroup := test.TestGroup(env.Getenv("TEST_GROUP", string(test.Full)))
+	if env.Getenv("SAMPLEARCH", "x86") == "arm" {
+		testGroup = "arm"
+	}
+
+	switch testGroup {
+	case test.Full:
 		testing.Main(matchString, full, nil, nil)
-	} else if util.Getenv("SAMPLEARCH", "x86") == "arm" ||
-		util.Getenv("TEST_GROUP", "full") == "arm" {
+	case test.ARM:
 		testing.Main(matchString, arm, nil, nil)
-	} else if util.Getenv("TEST_GROUP", "full") == "smoke" {
+	case test.Smoke:
 		testing.Main(matchString, smoke, nil, nil)
-	} else if util.Getenv("TEST_GROUP", "full") == "interop" {
+	case test.InterOp:
 		testing.Main(matchString, interop, nil, nil)
+	default:
+		panic("unsupported TEST_GROUP: " + testGroup)
 	}
 
 }

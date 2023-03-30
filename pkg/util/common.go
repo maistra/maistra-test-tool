@@ -25,6 +25,8 @@ import (
 	"time"
 
 	"golang.org/x/net/publicsuffix"
+
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 var (
@@ -32,11 +34,11 @@ var (
 )
 
 // Inspect error handling function
-func Inspect(err error, fMsg, sMsg string, t *testing.T) {
+func Inspect(err error, failureMsg, successMsg string, t *testing.T) {
 	if err != nil {
-		t.Fatalf("%s. Error %s", fMsg, err)
-	} else if sMsg != "" {
-		Log.Info(sMsg)
+		t.Fatalf("%s. Error %s", failureMsg, err)
+	} else if successMsg != "" {
+		log.Log.Info(successMsg)
 	}
 }
 
@@ -44,7 +46,7 @@ func Inspect(err error, fMsg, sMsg string, t *testing.T) {
 func GetCookieJar(username, pass, gateway string) *cookiejar.Jar {
 	jar, err := SetupCookieJar(username, pass, gateway)
 	if err != nil {
-		Log.Errorf("failed to get login user cookiejar: %v", err)
+		log.Log.Errorf("failed to get login user cookiejar: %v", err)
 		return nil
 	}
 	return jar
@@ -57,15 +59,31 @@ func SetupCookieJar(username, pass, gateway string) (*cookiejar.Jar, error) {
 		return nil, fmt.Errorf("failed building cookiejar: %v", err)
 	}
 	client := http.Client{Jar: jar}
-	resp, err := client.PostForm(fmt.Sprintf("%s/login", gateway), url.Values{
+	loginURL, err := url.Parse(fmt.Sprintf("%s/login", gateway))
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.PostForm(loginURL.String(), url.Values{
 		"password": {pass},
 		"username": {username},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed login for user '%s': %v", username, err)
 	}
+	if !containsSessionCookie(jar.Cookies(loginURL)) {
+		return nil, fmt.Errorf("no session cookie returned by login URL %s", loginURL)
+	}
 	resp.Body.Close()
 	return jar, nil
+}
+
+func containsSessionCookie(cookies []*http.Cookie) bool {
+	for _, c := range cookies {
+		if c.Name == "session" {
+			return true
+		}
+	}
+	return false
 }
 
 // GetWithCookieJar constructs reqeusts with login user cookie and returns a http response
@@ -81,45 +99,13 @@ func GetWithCookieJar(url string, jar *cookiejar.Jar) (*http.Response, error) {
 	return client.Do(req)
 }
 
-// GetWithHost constructs a http request with Host and returns a http Response
-// it is equal to curl -HHost:
-func GetWithHost(url string, host string) (*http.Response, error) {
-	// Declare http client
-	client := &http.Client{}
-
-	// Declare HTTP Method and Url
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Host = host
-	req.Header.Set("Host", req.Host)
-	return client.Do(req)
-}
-
-// GetWithJWT constructs a http request with Host and JWT auth token in header
-func GetWithJWT(url, token, host string) (*http.Response, error) {
-	// Declare http client
-	client := &http.Client{}
-
-	// Declare HTTP Method and Url
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Host = host
-	req.Header.Set("Host", req.Host)
-	req.Header.Add("Authorization", "Bearer "+token)
-	return client.Do(req)
-}
-
 // CloseResponseBody ...
 func CloseResponseBody(r *http.Response) {
 	if r == nil {
 		return
 	}
 	if err := r.Body.Close(); err != nil {
-		Log.Error(err)
+		log.Log.Error(err)
 	}
 }
 
@@ -145,7 +131,7 @@ func GetHTTPResponse(url string, jar *cookiejar.Jar) (*http.Response, int, error
 // CheckHTTPResponse200 returns an error if Response code is not 200
 func CheckHTTPResponse200(resp *http.Response) error {
 	if resp.StatusCode != http.StatusOK {
-		Log.Errorf("Get response failed!")
+		log.Log.Errorf("Get response failed!")
 		return fmt.Errorf("status code is %d", resp.StatusCode)
 	}
 	return nil
@@ -153,7 +139,7 @@ func CheckHTTPResponse200(resp *http.Response) error {
 
 // SaveHTTPResponse writes  a Response body to a file dst
 func SaveHTTPResponse(body []byte, dst string) error {
-	Log.Infof("Write response body to file: %s", dst)
+	log.Log.Infof("Write response body to file: %s", dst)
 	if err := ioutil.WriteFile(dst, body, 0644); err != nil {
 		return err
 	}
@@ -170,4 +156,14 @@ func CompareHTTPResponse(body []byte, modelFile string) error {
 		return err
 	}
 	return nil
+}
+
+func Failf(t *testing.T, format string, a ...any) {
+	Fail(t, fmt.Sprintf(format, a...))
+}
+
+func Fail(t *testing.T, str string) {
+	t.Error(str)
+	log.Log.Error(str)
+
 }

@@ -22,10 +22,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupEgressTLSOrigination() {
-	util.Log.Info("Cleanup")
+	log.Log.Info("Cleanup")
 	sleep := examples.Sleep{"bookinfo"}
 	util.KubeDeleteContents("bookinfo", ExServiceEntryOriginate)
 	util.KubeDeleteContents("bookinfo", ExServiceEntry)
@@ -37,7 +38,7 @@ func TestEgressTLSOrigination(t *testing.T) {
 	defer cleanupEgressTLSOrigination()
 	defer util.RecoverPanic(t)
 
-	util.Log.Info("TestEgressTLSOrigination")
+	log.Log.Info("TestEgressTLSOrigination")
 	sleep := examples.Sleep{"bookinfo"}
 	sleep.Install()
 	sleepPod, err := util.GetPodName("bookinfo", "app=sleep")
@@ -46,13 +47,13 @@ func TestEgressTLSOrigination(t *testing.T) {
 	t.Run("TrafficManagement_egress_configure_access_to_external_service", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Create a ServiceEntry to external istio.io")
+		log.Log.Info("Create a ServiceEntry to external istio.io")
 		util.KubeApplyContents("bookinfo", ExServiceEntry)
 		time.Sleep(time.Duration(10) * time.Second)
 		proxy, _ := util.GetProxy()
 		curlParams := ""
 		if proxy.HTTPProxy == "" {
-			util.Log.Info("HTTP_PROXY is not set")
+			log.Log.Info("HTTP_PROXY is not set")
 		} else {
 			curlParams = curlParams + " -x " + proxy.HTTPProxy
 		}
@@ -60,9 +61,9 @@ func TestEgressTLSOrigination(t *testing.T) {
 		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "301 Moved Permanently") {
-			util.Log.Info("Success. Get http://istio.io response")
+			log.Log.Info("Success. Get http://istio.io response")
 		} else {
-			util.Log.Infof("Error response: %s", msg)
+			log.Log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		}
 	})
@@ -70,7 +71,7 @@ func TestEgressTLSOrigination(t *testing.T) {
 	t.Run("TrafficManagement_egress_tls_origination", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("TLS origination for egress traffic")
+		log.Log.Info("TLS origination for egress traffic")
 		util.KubeApplyContents("bookinfo", ExServiceEntryOriginate)
 		time.Sleep(time.Duration(10) * time.Second)
 
@@ -78,20 +79,20 @@ func TestEgressTLSOrigination(t *testing.T) {
 		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "301 Moved Permanently") || strings.Contains(msg, "503 Service Unavailable") {
-			util.Log.Infof("Error response: %s", msg)
+			log.Log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		} else {
-			util.Log.Infof("Success. Get http://istio.io response: %s", msg)
+			log.Log.Infof("Success. Get http://istio.io response: %s", msg)
 		}
 
 		command = `curl -sSL -o /dev/null -D - https://istio.io`
 		msg, err = util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "301 Moved Permanently") || strings.Contains(msg, "503 Service Unavailable") {
-			util.Log.Infof("Error response: %s", msg)
+			log.Log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		} else {
-			util.Log.Infof("Success. Get https://istio.io response: %s", msg)
+			log.Log.Infof("Success. Get https://istio.io response: %s", msg)
 		}
 	})
 }

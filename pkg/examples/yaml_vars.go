@@ -62,3 +62,37 @@ var (
 	sleepYaml       = fmt.Sprintf("%s/%s/sleep/sleep.yaml", basedir, branch)
 	sleepLegacyYaml = fmt.Sprintf("%s/%s/sleep/sleep_legacy.yaml", basedir, branch)
 )
+
+// TODO: remove these functions when the refactoring is done
+
+func HttpbinYamlFile() string {
+	return httpbinYaml
+}
+
+func HttpbinV1YamlFile() string {
+	return httpbinv1Yaml
+}
+
+func HttpbinV2YamlFile() string {
+	return httpbinv2Yaml
+}
+
+func SleepYamlFile() string {
+	return sleepYaml
+}
+
+func BookinfoYamlFile() string {
+	return bookinfoYaml
+}
+
+func BookinfoGatewayYamlFile() string {
+	return bookinfoGateway
+}
+
+func BookinfoRuleAllYamlFile() string {
+	return bookinfoRuleAllYaml
+}
+
+func BookinfoRuleAllMTLSYamlFile() string {
+	return bookinfoRuleAllTLSYaml
+}

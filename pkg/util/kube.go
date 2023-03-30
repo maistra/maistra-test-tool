@@ -28,6 +28,8 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 const (
@@ -85,7 +87,7 @@ func Fill(outFile, inFile string, values interface{}) error {
 	if err := ioutil.WriteFile(outFile, filled.Bytes(), 0644); err != nil {
 		return err
 	}
-	Log.Infof("Created %s from template %s", outFile, inFile)
+	log.Log.Infof("Created %s from template %s", outFile, inFile)
 	return nil
 }
 
@@ -93,11 +95,11 @@ func Fill(outFile, inFile string, values interface{}) error {
 func CreateAndFill(outDir, templateFile string, values interface{}) (string, error) {
 	outFile, err := CreateTempfile(outDir, filepath.Base(templateFile), "yaml")
 	if err != nil {
-		Log.Errorf("Failed to generate yaml %s: %v", templateFile, err)
+		log.Log.Errorf("Failed to generate yaml %s: %v", templateFile, err)
 		return "", err
 	}
 	if err := Fill(outFile, templateFile, values); err != nil {
-		Log.Errorf("Failed to generate yaml for template %s: %v", templateFile, err)
+		log.Log.Errorf("Failed to generate yaml for template %s: %v", templateFile, err)
 		return "", err
 	}
 	return outFile, nil
@@ -110,7 +112,7 @@ func DeleteNamespace(n string) error {
 			return err
 		}
 	}
-	Log.Infof("namespace %s deleted\n", n)
+	log.Log.Infof("namespace %s deleted\n", n)
 	return nil
 }
 
@@ -204,7 +206,7 @@ func KubeDeleteContents(namespace, yamlContents string) error {
 func removeFile(path string) {
 	err := os.Remove(path)
 	if err != nil {
-		Log.Errorf("Unable to remove %s: %v", path, err)
+		log.Log.Errorf("Unable to remove %s: %v", path, err)
 	}
 }
 
@@ -223,13 +225,13 @@ func GetKubeMasterIP() (string, error) {
 func GetClusterSubnet() (string, error) {
 	cidr, err := ShellSilent("kubectl get nodes -o jsonpath='{.items[0].spec.podCIDR}'")
 	if err != nil {
-		// This command should never fail. If the field isn't found, it will just return and empty string.
+		// This command should never fail. If the field isn'T found, it will just return and empty string.
 		return "", err
 	}
 	parts := strings.Split(cidr, "/")
 	if len(parts) != 2 {
 		// TODO(nmittler): Need a way to get the subnet on minikube. For now, just return a default value.
-		Log.Info("unable to identify cluster subnet. running on minikube?")
+		log.Log.Info("unable to identify cluster subnet. running on minikube?")
 		return defaultClusterSubnet, nil
 	}
 	return parts[1], nil
@@ -307,7 +309,7 @@ func getServicePort(serviceName, namespace string) (string, error) {
 	rp := regexp.MustCompile(`^[0-9]{1,5}$`)
 	if rp.FindString(port) == "" {
 		err = fmt.Errorf("unable to find the port of %s", serviceName)
-		Log.Warn(err)
+		log.Log.Warn(err)
 		return "", err
 	}
 	return port, nil
@@ -330,7 +332,7 @@ func GetAppPodsInfo(n string, label string) ([]string, map[string][]string, erro
 	res, err := Shell("kubectl -n %s -l=%s get pods -o=jsonpath='{range .items[*]}{.metadata.name}{\" \"}{"+
 		".metadata.labels.%s}{\" \"}{.status.podIP}{\"\\n\"}{end}'", n, label, label)
 	if err != nil {
-		Log.Infof("Failed to get pods by label %s in namespace %s: %s", label, n, err)
+		log.Log.Infof("Failed to get pods by label %s in namespace %s: %s", label, n, err)
 		return nil, nil, err
 	}
 
@@ -368,7 +370,7 @@ func GetPodLabelValues(n, label string) (map[string]string, error) {
 	res, err := Shell("kubectl -n %s -l=%s get pods -o=jsonpath='{range .items[*]}{.metadata.name}{\" \"}{"+
 		".metadata.labels.%s}{\"\\n\"}{end}'", n, label, label)
 	if err != nil {
-		Log.Infof("Failed to get pods by label %s in namespace %s: %s", label, n, err)
+		log.Log.Infof("Failed to get pods by label %s in namespace %s: %s", label, n, err)
 		return nil, err
 	}
 
@@ -395,7 +397,7 @@ func GetPodAnnotations(n, podName string, retries int) (map[string]string, error
 	_, err := retry.Retry(context.Background(), func(_ context.Context, _ int) error {
 		output, err := Shell("kubectl get pod %s -n %s -o jsonpath='{.metadata.annotations}'", podName, n)
 		if err != nil {
-			Log.Infof("Failed to get pods by label %s in namespace %s: %s", podName, n, err)
+			log.Log.Infof("Failed to get pods by label %s in namespace %s: %s", podName, n, err)
 			return fmt.Errorf("failed to get pod %s: %s", podName, err)
 		}
 		if output != "" {
@@ -413,12 +415,12 @@ func GetPodAnnotations(n, podName string, retries int) (map[string]string, error
 func GetPodNames(n string) (pods []string) {
 	res, err := Shell("kubectl -n %s get pods -o jsonpath='{.items[*].metadata.name}'", n)
 	if err != nil {
-		Log.Infof("Failed to get pods name in namespace %s: %s", n, err)
+		log.Log.Infof("Failed to get pods name in namespace %s: %s", n, err)
 		return
 	}
 	res = strings.Trim(res, "'")
 	pods = strings.Split(res, " ")
-	Log.Infof("Existing pods: %v", pods)
+	log.Log.Infof("Existing pods: %v", pods)
 	return
 }
 
@@ -429,7 +431,7 @@ func GetPodNames(n string) (pods []string) {
 func GetPodStatus(n, pod string) string {
 	status, err := Shell("kubectl -n %s get pods %s --no-headers", n, pod)
 	if err != nil {
-		Log.Infof("Failed to get status of pod %s in namespace %s: %s", pod, n, err)
+		log.Log.Infof("Failed to get status of pod %s in namespace %s: %s", pod, n, err)
 		status = podFailedGet
 	}
 	f := strings.Fields(status)
@@ -440,14 +442,14 @@ func GetPodStatus(n, pod string) string {
 }
 
 // GetPodName gets the pod name for the given namespace and label selector
-func GetPodName(n, labelSelector string) (pod string, err error) {
-	pod, err = Shell("kubectl -n %s get pod -l %s -o jsonpath='{.items[0].metadata.name}'", n, labelSelector)
+func GetPodName(ns, labelSelector string) (pod string, err error) {
+	pod, err = Shell("kubectl -n %s get pod -l %s -o jsonpath='{.items[0].metadata.name}'", ns, labelSelector)
 	if err != nil {
-		Log.Warnf("could not get %s pod: %v", labelSelector, err)
+		log.Log.Warnf("could not get %s pod: %v", labelSelector, err)
 		return
 	}
 	pod = strings.Trim(pod, "'")
-	Log.Infof("%s pod name: %s", labelSelector, pod)
+	log.Log.Infof("%s pod name: %s", labelSelector, pod)
 	return
 }
 
@@ -513,7 +515,7 @@ func GetPodLogs(n, pod, container string, tail, alsoShowPreviousPodLogs bool) st
 	}
 	o1 := ""
 	if alsoShowPreviousPodLogs {
-		Log.Info("Expect and ignore an error getting crash logs when there are no crash (-p invocation)")
+		log.Log.Info("Expect and ignore an error getting crash logs when there are no crash (-p invocation)")
 		// Do not use Shell. It dumps the entire log on the console and makes the test unusable due to very large amount of output
 		o1, _ = ShellMuteOutput("kubectl --namespace %s logs %s -c %s %s -p", n, pod, container, tailOption)
 		o1 += "\n"
@@ -538,140 +540,10 @@ func PodExec(n, pod, container, command string, muteOutput bool) (string, error)
 }
 
 // CreateTLSSecret creates a secret from the provided cert and key files
-func CreateTLSSecret(secretName, n, keyFile, certFile string) (string, error) {
-	//cmd := fmt.Sprintf("kubectl create secret tls %s -n %s --key %s --cert %s", secretName, n, keyFile, certFile)
-	//return Shell(cmd)
-	return Shell("kubectl create secret tls %s -n %s --key %s --cert %s", secretName, n, keyFile, certFile)
-}
-
-// CheckPodsRunningWithMaxDuration returns if all pods in a namespace are in "Running" status
-// Also check container status to be running.
-func CheckPodsRunningWithMaxDuration(n string, maxDuration time.Duration) (ready bool) {
-	if err := WaitForDeploymentsReady(n, maxDuration); err != nil {
-		Log.Errorf("CheckPodsRunning: %v", err.Error())
-		return false
-	}
-
-	return true
-}
-
-// CheckPodsRunning returns readiness of all pods within a namespace. It will wait for upto 2 mins.
-// use WithMaxDuration to specify a duration.
-func CheckPodsRunning(n string) (ready bool) {
-	return CheckPodsRunningWithMaxDuration(n, 2*time.Minute)
-}
-
-// CheckDeployment gets status of a deployment from a namespace
-func CheckDeployment(ctx context.Context, namespace, deployment string) error {
-	if deployment == "deployments/istio-sidecar-injector" {
-		// This can be deployed by previous tests, but doesn't complete currently, blocking the test.
-		return nil
-	}
-	errc := make(chan error)
-	go func() {
-		if _, err := ShellMuteOutput("kubectl -n %s rollout status %s", namespace, deployment); err != nil {
-			errc <- fmt.Errorf("%s in namespace %s failed", deployment, namespace)
-		}
-		errc <- nil
-	}()
-	select {
-	case err := <-errc:
-		return err
-	case <-ctx.Done():
-		return ctx.Err()
-	}
-}
-
-// CheckDeploymentRemoved waits until a deployment is removed or times out
-func CheckDeploymentRemoved(namespace, deployment string) error {
-	retry := Retrier{
-		BaseDelay: 5 * time.Second,
-		MaxDelay:  5 * time.Second,
-		Retries:   60,
-	}
-
-	pod, err := GetPodName(namespace, "name="+deployment)
-	// Pod has been removed
-	if err != nil {
-		Log.Infof("pod %s is successfully removed", pod)
-		return nil
-	}
-	retryFn := func(_ context.Context, i int) error {
-		_, err := Shell("kubectl get pods %s -n %s", pod, namespace)
-		if err != nil {
-			Log.Infof("pod %s is successfully removed", pod)
-			return nil
-		}
-		return fmt.Errorf("%s in namespace %s still exists", pod, namespace)
-	}
-	ctx := context.Background()
-	_, err = retry.Retry(ctx, retryFn)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// WaitForDeploymentsReady wait up to 'timeout' duration
-// return an error if deployments are not ready
-func WaitForDeploymentsReady(ns string, timeout time.Duration) error {
-	retry := Retrier{
-		BaseDelay:   10 * time.Second,
-		MaxDelay:    10 * time.Second,
-		MaxDuration: timeout,
-		Retries:     20,
-	}
-
-	_, err := retry.Retry(context.Background(), func(_ context.Context, _ int) error {
-		nr, err := CheckDeploymentsReady(ns)
-		if err != nil {
-			return &Break{err}
-		}
-
-		if nr == 0 { // done
-			return nil
-		}
-		return fmt.Errorf("%d deployments not ready", nr)
-	})
-	return err
-}
-
-// CheckDeploymentsReady checks if deployment resources are ready.
-// get podsReady() sometimes gets pods created by the "Job" resource which never reach the "Running" steady state.
-func CheckDeploymentsReady(ns string) (int, error) {
-	CMD := "kubectl -n %s get deployments -o jsonpath='{range .items[*]}{@.metadata.name}{\" \"}" +
-		"{@.status.availableReplicas}{\"\\n\"}{end}'"
-	out, err := Shell(fmt.Sprintf(CMD, ns))
-
-	if err != nil {
-		return 0, fmt.Errorf("could not list deployments in namespace %q: %v", ns, err)
-	}
-
-	notReady := 0
-	for _, line := range strings.Split(out, "\n") {
-		flds := strings.Fields(line)
-		if len(flds) < 2 {
-			continue
-		}
-		if flds[1] == "0" { // no replicas ready
-			notReady++
-		}
-	}
-
-	if notReady == 0 {
-		Log.Infof("All deployments are ready")
-	}
-	return notReady, nil
-}
-
-// GetKubeConfig will create a kubeconfig file based on the active environment the test is run in
-func GetKubeConfig(filename string) error {
-	_, err := ShellMuteOutput("kubectl config view --raw=true --minify=true > %s", filename)
-	if err != nil {
-		return err
-	}
-	Log.Infof("kubeconfig file %s created\n", filename)
-	return nil
+func CreateTLSSecret(secretName, ns, keyFile, certFile string) (string, error) {
+	// cmd := fmt.Sprintf("kubectl create secret tls %s -n %s --key %s --cert %s", secretName, n, keyFile, certFile)
+	// return Shell(cmd)
+	return Shell("kubectl create secret tls %s -n %s --key %s --cert %s", secretName, ns, keyFile, certFile)
 }
 
 // CheckPodRunning return if a given pod with labeled name in a namespace are in "Running" status
@@ -689,7 +561,7 @@ func CheckPodRunning(n, name string) error {
 		}
 		ready := true
 		if status := GetPodStatus(n, pod); status != "Running" {
-			Log.Infof("%s in namespace %s is not running: %s", pod, n, status)
+			log.Log.Infof("%s in namespace %s is not running: %s", pod, n, status)
 			ready = false
 		}
 
@@ -703,7 +575,7 @@ func CheckPodRunning(n, name string) error {
 	if err != nil {
 		return err
 	}
-	Log.Infof("Got the pod name=%s running!", name)
+	log.Log.Infof("Got the pod name=%s running!", name)
 	return nil
 }
 
@@ -717,10 +589,10 @@ func CreateMultiClusterSecret(namespace string, remoteKubeConfig string, localKu
 
 	_, err := ShellMuteOutput("kubectl create secret generic %s --from-file %s -n %s --kubeconfig=%s", secretName, remoteKubeConfig, namespace, localKubeConfig)
 	if err != nil {
-		Log.Infof("Failed to create secret %s\n", secretName)
+		log.Log.Infof("Failed to create secret %s\n", secretName)
 		return err
 	}
-	Log.Infof("Secret %s created\n", secretName)
+	log.Log.Infof("Secret %s created\n", secretName)
 
 	// label the secret for use as istio/multiCluster config
 	_, err = ShellMuteOutput("kubectl label secret %s %s=%s -n %s --kubeconfig=%s",
@@ -729,20 +601,8 @@ func CreateMultiClusterSecret(namespace string, remoteKubeConfig string, localKu
 		return err
 	}
 
-	Log.Infof("Secret %s labelled with %s=%s\n", secretName, secretLabel, labelValue)
+	log.Log.Infof("Secret %s labelled with %s=%s\n", secretName, secretLabel, labelValue)
 	return nil
-}
-
-// DeleteMultiClusterSecret delete the remote cluster secret
-func DeleteMultiClusterSecret(namespace string, remoteKubeConfig string, localKubeConfig string) error {
-	secretName := filepath.Base(remoteKubeConfig)
-	_, err := ShellMuteOutput("kubectl delete secret %s -n %s --kubeconfig=%s", secretName, namespace, localKubeConfig)
-	if err != nil {
-		Log.Errorf("Failed to delete secret %s: %v", secretName, err)
-	} else {
-		Log.Infof("Deleted secret %s", secretName)
-	}
-	return err
 }
 
 // GetJsonObject get json string as input and returns a map of the json string
@@ -760,12 +620,12 @@ func GetProxy() (*Proxy, error) {
 	Proxy := &Proxy{}
 	proxyString, err := ShellSilent(`oc get Proxy -o json`)
 	if err != nil {
-		Log.Error("Error getting proxy String")
+		log.Log.Error("Error getting proxy String")
 		return nil, err
 	}
 	proxyObject, err := GetJsonObject(proxyString)
 	if err != nil {
-		Log.Error("Error getting proxy object")
+		log.Log.Error("Error getting proxy object")
 		return nil, err
 	}
 	proxyObject = proxyObject["items"].([]interface{})[0].(map[string]interface{})
@@ -774,15 +634,15 @@ func GetProxy() (*Proxy, error) {
 		if proxyStatus["httpProxy"] != nil && proxyStatus["httpsProxy"] != nil {
 			Proxy.HTTPProxy = proxyStatus["httpProxy"].(string)
 			Proxy.HTTPSProxy = proxyStatus["httpsProxy"].(string)
-			Log.Info("Current httpProxy: ", Proxy.HTTPProxy)
-			Log.Info("Current httpsProxy: ", Proxy.HTTPSProxy)
+			log.Log.Info("Current httpProxy: ", Proxy.HTTPProxy)
+			log.Log.Info("Current httpsProxy: ", Proxy.HTTPSProxy)
 			if proxyStatus["noProxy"] != nil {
 				Proxy.NoProxy = proxyStatus["noProxy"].(string)
-				Log.Info("Current noProxy: ", Proxy.NoProxy)
+				log.Log.Info("Current noProxy: ", Proxy.NoProxy)
 			}
 		}
 	} else {
-		Log.Info("No proxy variables need to be configured")
+		log.Log.Info("No proxy variables need to be configured")
 		Proxy.HTTPProxy = ""
 		Proxy.HTTPSProxy = ""
 		Proxy.NoProxy = ""

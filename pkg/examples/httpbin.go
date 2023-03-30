@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 var _ ExampleInterface = &Httpbin{}
@@ -27,14 +28,14 @@ type Httpbin struct {
 }
 
 func (h *Httpbin) Install() error {
-	util.Log.Infof("Deploying Httpbin on namespace %s", h.Namespace)
+	log.Log.Infof("Deploying Httpbin on namespace %s", h.Namespace)
 	util.KubeApply(h.Namespace, httpbinYaml)
 	_, err := util.CheckDeploymentIsReady(h.Namespace, "httpbin", time.Second*180)
 	return err
 }
 
 func (h *Httpbin) InstallLegacy() {
-	util.Log.Info("Deploy Httpbin")
+	log.Log.Info("Deploy Httpbin")
 	util.KubeApply(h.Namespace, httpbinLegacyYaml)
 	time.Sleep(time.Duration(5) * time.Second)
 	util.CheckPodRunning(h.Namespace, "app=httpbin")
@@ -42,7 +43,7 @@ func (h *Httpbin) InstallLegacy() {
 }
 
 func (h *Httpbin) InstallV1() {
-	util.Log.Info("Deploy Httpbin-v1")
+	log.Log.Info("Deploy Httpbin-v1")
 	util.KubeApply(h.Namespace, httpbinv1Yaml)
 	time.Sleep(time.Duration(5) * time.Second)
 	util.CheckPodRunning(h.Namespace, "app=httpbin,version=v1")
@@ -50,7 +51,7 @@ func (h *Httpbin) InstallV1() {
 }
 
 func (h *Httpbin) InstallV2() {
-	util.Log.Info("Deploy Httpbin-v2")
+	log.Log.Info("Deploy Httpbin-v2")
 	util.KubeApply(h.Namespace, httpbinv2Yaml)
 	time.Sleep(time.Duration(5) * time.Second)
 	util.CheckPodRunning(h.Namespace, "app=httpbin,version=v2")
@@ -58,19 +59,19 @@ func (h *Httpbin) InstallV2() {
 }
 
 func (h *Httpbin) Uninstall() {
-	util.Log.Infof("Removing Httpbin on namespace %s", h.Namespace)
+	log.Log.Infof("Removing Httpbin on namespace %s", h.Namespace)
 	util.KubeDelete(h.Namespace, httpbinYaml)
 	util.Shell(`oc -n %s wait --for=delete -l app=httpbin pods --timeout=30s`, h.Namespace)
 }
 
 func (h *Httpbin) UninstallV1() {
-	util.Log.Info("Cleanup Httpbin-v1")
+	log.Log.Info("Cleanup Httpbin-v1")
 	util.KubeDelete(h.Namespace, httpbinv1Yaml)
 	time.Sleep(time.Duration(10) * time.Second)
 }
 
 func (h *Httpbin) UninstallV2() {
-	util.Log.Info("Cleanup Httpbin-v2")
+	log.Log.Info("Cleanup Httpbin-v2")
 	util.KubeDelete(h.Namespace, httpbinv2Yaml)
 	time.Sleep(time.Duration(10) * time.Second)
 }

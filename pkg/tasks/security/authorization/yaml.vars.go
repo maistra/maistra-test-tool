@@ -16,6 +16,7 @@ package authorizaton
 
 import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 )
 
 type SMCP struct {
@@ -24,8 +25,8 @@ type SMCP struct {
 }
 
 var (
-	smcpName       string = util.Getenv("SMCPNAME", "basic")
-	meshNamespace  string = util.Getenv("MESHNAMESPACE", "istio-system")
+	smcpName       string = env.Getenv("SMCPNAME", "basic")
+	meshNamespace  string = env.Getenv("MESHNAMESPACE", "istio-system")
 	smcp           SMCP   = SMCP{smcpName, meshNamespace}
 	gatewayHTTP, _        = util.ShellSilent(`kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'`, meshNamespace)
 )

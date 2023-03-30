@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 type Redis struct {
@@ -26,7 +27,7 @@ type Redis struct {
 }
 
 func (r *Redis) Install() error {
-	util.Log.Info("Deploy Redis")
+	log.Log.Info("Deploy Redis")
 
 	if err := util.CreateOCPNamespace(r.Namespace); err != nil {
 		return fmt.Errorf("error creating redis namespace: %v", err)
@@ -48,7 +49,7 @@ func (r *Redis) Install() error {
 }
 
 func (r *Redis) Uninstall() {
-	util.Log.Info("Cleanup Redis")
+	log.Log.Info("Cleanup Redis")
 	util.KubeDelete(r.Namespace, redisYaml)
 	util.DeleteNamespace(r.Namespace)
 	time.Sleep(time.Duration(10) * time.Second)

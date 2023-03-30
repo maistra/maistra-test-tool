@@ -20,6 +20,8 @@ import (
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 const (
@@ -36,7 +38,7 @@ spec:
 )
 
 func cleanupSMCPAnnotations() {
-	util.Log.Info("Cleanup ...")
+	log.Log.Info("Cleanup ...")
 	util.KubeDeleteContents("bookinfo", testAnnotationProxyEnv)
 	time.Sleep(time.Duration(20) * time.Second)
 }
@@ -47,10 +49,10 @@ func TestSMCPAnnotations(t *testing.T) {
 	t.Run("smcp_test_annotation_proxyEnv", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Test annotation sidecar.maistra.io/proxyEnv")
-		if util.Getenv("SAMPLEARCH", "x86") == "p" {
+		log.Log.Info("Test annotation sidecar.maistra.io/proxyEnv")
+		if env.Getenv("SAMPLEARCH", "x86") == "p" {
 			util.KubeApplyContents("bookinfo", testAnnotationProxyEnvP)
-		} else if util.Getenv("SAMPLEARCH", "x86") == "z" {
+		} else if env.Getenv("SAMPLEARCH", "x86") == "z" {
 			util.KubeApplyContents("bookinfo", testAnnotationProxyEnvZ)
 		} else {
 			util.KubeApplyContents("bookinfo", testAnnotationProxyEnv)
@@ -60,7 +62,7 @@ func TestSMCPAnnotations(t *testing.T) {
 		util.Inspect(err, "Failed to get variables", "", t)
 
 		if strings.Contains(msg, "env_value") {
-			util.Log.Info(msg)
+			log.Log.Info(msg)
 		} else {
 			t.Errorf("Failed to get env variable: %v", msg)
 		}
@@ -71,7 +73,7 @@ func TestSMCPAnnotations(t *testing.T) {
 	t.Run("smcp_test_annotation_quote_injection", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Test SMCP annotation quote value injection")
+		log.Log.Info("Test SMCP annotation quote value injection")
 		if _, err := util.Shell(`kubectl -n %s patch smcp/%s --type=merge --patch="%s"`, meshNamespace, smcpName, InjectedAnnotationsSMCPPath); err != nil {
 			t.Fatal(err)
 		}
@@ -80,10 +82,10 @@ func TestSMCPAnnotations(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		util.Log.Info("Check a pod annotations")
-		if util.Getenv("SAMPLEARCH", "x86") == "p" {
+		log.Log.Info("Check a pod annotations")
+		if env.Getenv("SAMPLEARCH", "x86") == "p" {
 			util.KubeApplyContents("bookinfo", testAnnotationProxyEnvP)
-		} else if util.Getenv("SAMPLEARCH", "x86") == "z" {
+		} else if env.Getenv("SAMPLEARCH", "x86") == "z" {
 			util.KubeApplyContents("bookinfo", testAnnotationProxyEnvZ)
 		} else {
 			util.KubeApplyContents("bookinfo", testAnnotationProxyEnv)
@@ -97,19 +99,19 @@ func TestSMCPAnnotations(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to get annotations: %v", err)
 		}
-		util.Log.Infof("Checking annotation: %", annotations["test1.annotation-from-smcp"])
+		log.Log.Infof("Checking annotation: %", annotations["test1.annotation-from-smcp"])
 		if _, ok := annotations["test1.annotation-from-smcp"]; !ok {
 			t.Errorf("Failed to get annotations: test1.annotation-from-smcp: test1")
 		} else if annotations["test1.annotation-from-smcp"] != "test1" {
 			t.Errorf("Failed to get annotations: test1.annotation-from-smcp: test1")
 		}
-		util.Log.Infof("Checking annotation: %", annotations["test2.annotation-from-smcp"])
+		log.Log.Infof("Checking annotation: %", annotations["test2.annotation-from-smcp"])
 		if _, ok := annotations["test2.annotation-from-smcp"]; !ok {
 			t.Errorf("Failed to get annotations: test2.annotation-from-smcp: '[test2]'")
 		} else if annotations["test2.annotation-from-smcp"] != "[test2]" {
 			t.Errorf("Failed to get annotations: test2.annotation-from-smcp: '[test2]'")
 		}
-		util.Log.Infof("Checking annotation: %", annotations["test3.annotation-from-smcp"])
+		log.Log.Infof("Checking annotation: %", annotations["test3.annotation-from-smcp"])
 		if _, ok := annotations["test3.annotation-from-smcp"]; !ok {
 			t.Errorf("Failed to get annotations: test3.annotation-from-smcp: '{test3}'")
 		} else if annotations["test3.annotation-from-smcp"] != "{test3}" {

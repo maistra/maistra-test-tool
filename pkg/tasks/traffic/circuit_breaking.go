@@ -24,10 +24,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupCircuitBreaking() {
-	util.Log.Info("Cleanup")
+	log.Log.Info("Cleanup")
 	util.KubeDeleteContents("bookinfo", httpbinCircuitBreaker)
 	fortio := examples.Fortio{"bookinfo"}
 	httpbin := examples.Httpbin{"bookinfo"}
@@ -40,7 +41,7 @@ func TestCircuitBreaking(t *testing.T) {
 	defer cleanupCircuitBreaking()
 	defer util.RecoverPanic(t)
 
-	util.Log.Info("TestCircuitBreaking")
+	log.Log.Info("TestCircuitBreaking")
 	fortio := examples.Fortio{"bookinfo"}
 	httpbin := examples.Httpbin{"bookinfo"}
 	httpbin.Install()
@@ -51,7 +52,7 @@ func TestCircuitBreaking(t *testing.T) {
 
 		if err := util.KubeApplyContents("bookinfo", httpbinCircuitBreaker); err != nil {
 			t.Errorf("Failed to configure circuit breaker")
-			util.Log.Errorf("Failed to configure circuit breaker")
+			log.Log.Errorf("Failed to configure circuit breaker")
 		}
 		time.Sleep(time.Duration(10) * time.Second)
 
@@ -63,13 +64,13 @@ func TestCircuitBreaking(t *testing.T) {
 		msg, err := util.PodExec("bookinfo", pod, "fortio", command, false)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "200 OK") {
-			util.Log.Infof("Success. Get correct response")
+			log.Log.Infof("Success. Get correct response")
 		} else {
 			t.Errorf("Error response: %v", msg)
-			util.Log.Errorf("Error response: %v", msg)
+			log.Log.Errorf("Error response: %v", msg)
 		}
 
-		util.Log.Info("Tripping the circuit breaker")
+		log.Log.Info("Tripping the circuit breaker")
 		connection := 2
 		reqCount := 50
 		tolerance := 0.5
@@ -93,7 +94,7 @@ func TestCircuitBreaking(t *testing.T) {
 		util.Inspect(err, "Failed to parse code 503 count", "", t)
 
 		if util.IsWithinPercentage(c200, reqCount, 0.6, tolerance) && util.IsWithinPercentage(c503, reqCount, 0.4, tolerance) {
-			util.Log.Infof(
+			log.Log.Infof(
 				"Success. Circuit breaking acts as expected. "+
 					"Code 200 hit %d of %d, Code 503 hit %d of %d", c200, reqCount, c503, reqCount)
 		} else {
@@ -102,9 +103,9 @@ func TestCircuitBreaking(t *testing.T) {
 					"Code 200 hit %d 0f %d, Code 503 hit %d of %d", c200, reqCount, c503, reqCount)
 		}
 
-		util.Log.Info("Query the istio-proxy stats")
+		log.Log.Info("Query the istio-proxy stats")
 		command = fmt.Sprintf(`pilot-agent request GET stats | grep httpbin | grep pending`)
 		msg, err = util.PodExec("bookinfo", pod, "istio-proxy", command, false)
-		util.Log.Infof("%s", msg)
+		log.Log.Infof("%s", msg)
 	})
 }

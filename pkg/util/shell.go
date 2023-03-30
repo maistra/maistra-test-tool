@@ -30,6 +30,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 // WriteTextFile overwrites the file on the given path with content
@@ -82,7 +84,7 @@ func CreateTempfile(tmpDir, prefix, suffix string) (string, error) {
 		return "", err
 	}
 	if err = os.Remove(tmpName); err != nil {
-		Log.Errorf("CreateTempfile unable to remove %s", tmpName)
+		log.Log.Errorf("CreateTempfile unable to remove %s", tmpName)
 		return "", err
 	}
 	return tmpName + suffix, nil
@@ -107,7 +109,7 @@ func Shell(format string, args ...interface{}) (string, error) {
 }
 
 // ShellContext run command on shell and get back output and error if get one
-func ShellContext(ctx context.Context, format string, args ...interface{}) (string, error) {
+func ShellCtx(ctx context.Context, format string, args ...interface{}) (string, error) {
 	return sh(ctx, format, true, true, true, args...)
 }
 
@@ -132,19 +134,19 @@ func ShellSilent(format string, args ...interface{}) (string, error) {
 func sh(ctx context.Context, format string, logCommand, logOutput, logError bool, args ...interface{}) (string, error) {
 	command := fmt.Sprintf(format, args...)
 	if logCommand {
-		Log.Infof("Running command %s", command)
+		log.Log.Infof("Running command %s", command)
 	}
 	c := exec.CommandContext(ctx, "sh", "-c", command) // #nosec
 	bytes, err := c.CombinedOutput()
 	if logOutput {
 		if output := strings.TrimSuffix(string(bytes), "\n"); len(output) > 0 {
-			Log.Infof("Command output: \n%s", output)
+			log.Log.Infof("Command output: \n%s", output)
 		}
 	}
 
 	if err != nil {
 		if logError {
-			Log.Infof("Command error: %v", err)
+			log.Log.Infof("Command error: %v", err)
 		}
 		return string(bytes), fmt.Errorf("command failed: %q %v", string(bytes), err)
 	}
@@ -154,12 +156,12 @@ func sh(ctx context.Context, format string, logCommand, logOutput, logError bool
 // RunBackground starts a background process and return the Process if succeed
 func RunBackground(format string, args ...interface{}) (*os.Process, error) {
 	command := fmt.Sprintf(format, args...)
-	Log.Info("RunBackground: ", command)
+	log.Log.Info("RunBackground: ", command)
 	parts := strings.Split(command, " ")
 	c := exec.Command(parts[0], parts[1:]...) // #nosec
 	err := c.Start()
 	if err != nil {
-		Log.Errorf("%s, command failed!", command)
+		log.Log.Errorf("%s, command failed!", command)
 		return nil, err
 	}
 	return c.Process, nil
@@ -177,7 +179,7 @@ func Record(command, record string) error {
 
 // HTTPDownload download from src(url) and store into dst(local file)
 func HTTPDownload(dst string, src string) error {
-	Log.Infof("Start downloading from %s to %s ...\n", src, dst)
+	log.Log.Infof("Start downloading from %s to %s ...\n", src, dst)
 	var err error
 	var out *os.File
 	var resp *http.Response
@@ -187,7 +189,7 @@ func HTTPDownload(dst string, src string) error {
 	}
 	defer func() {
 		if err = out.Close(); err != nil {
-			Log.Errorf("Error: close file %s, %s", dst, err)
+			log.Log.Errorf("Error: close file %s, %s", dst, err)
 		}
 	}()
 	resp, err = http.Get(src)
@@ -196,7 +198,7 @@ func HTTPDownload(dst string, src string) error {
 	}
 	defer func() {
 		if err = resp.Body.Close(); err != nil {
-			Log.Errorf("Error: close downloaded file from %s, %s", src, err)
+			log.Log.Errorf("Error: close downloaded file from %s, %s", src, err)
 		}
 	}()
 	if resp.StatusCode != 200 {
@@ -205,7 +207,7 @@ func HTTPDownload(dst string, src string) error {
 	if _, err = io.Copy(out, resp.Body); err != nil {
 		return err
 	}
-	Log.Info("Download successfully!")
+	log.Log.Info("Download successfully!")
 	return err
 }
 
@@ -233,7 +235,7 @@ func CopyFile(src, dst string) error {
 	}
 	defer func() {
 		if err = in.Close(); err != nil {
-			Log.Errorf("Error: close file from %s, %s", src, err)
+			log.Log.Errorf("Error: close file from %s, %s", src, err)
 		}
 	}()
 	out, err = os.Create(dst)
@@ -242,7 +244,7 @@ func CopyFile(src, dst string) error {
 	}
 	defer func() {
 		if err = out.Close(); err != nil {
-			Log.Errorf("Error: close file from %s, %s", dst, err)
+			log.Log.Errorf("Error: close file from %s, %s", dst, err)
 		}
 	}()
 	if _, err = io.Copy(out, in); err != nil {

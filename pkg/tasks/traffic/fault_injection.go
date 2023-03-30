@@ -15,99 +15,119 @@
 package traffic
 
 import (
-	"fmt"
-	"io/ioutil"
 	"testing"
 	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
-	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func cleanupFaultInjection() {
-	util.Log.Info("Cleanup")
-	app := examples.Bookinfo{"bookinfo"}
-	util.KubeDelete("bookinfo", bookinfoAllv1Yaml)
-	app.Uninstall()
-	time.Sleep(time.Duration(20) * time.Second)
-}
-
 func TestFaultInjection(t *testing.T) {
-	defer cleanupFaultInjection()
-	defer util.RecoverPanic(t)
+	NewTest(t).LegacyID("T2").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+		hack.DisableLogrusForThisTest(t)
+		ns := "bookinfo"
 
-	util.Log.Info("TestFaultInjection")
-	app := examples.Bookinfo{"bookinfo"}
-	app.Install(false)
-	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
-	testUserJar := util.GetCookieJar(testUsername, "", "http://"+gatewayHTTP)
+		t.Cleanup(func() {
+			oc.RecreateNamespace(t, ns)
+		})
 
-	if err := util.KubeApply("bookinfo", bookinfoAllv1Yaml); err != nil {
-		t.Errorf("Failed to route traffic to all v1: %s", err)
-		util.Log.Errorf("Failed to route traffic to all v1: %s", err)
-	}
-	if err := util.KubeApply("bookinfo", bookinfoReviewV2Yaml); err != nil {
-		t.Errorf("Failed to route traffic based on user: %s", err)
-		util.Log.Errorf("Failed to route traffic based on user: %s", err)
-	}
-	time.Sleep(time.Duration(5) * time.Second)
+		app.InstallAndWaitReady(t, app.Bookinfo(ns))
 
-	t.Run("TrafficManagement_injecting_an_HTTP_delay_fault", func(t *testing.T) {
-		defer util.RecoverPanic(t)
+		testUserCookieJar := app.BookinfoLogin(t, meshNamespace)
 
-		if err := util.KubeApply("bookinfo", bookinfoRatingDelayYaml); err != nil {
-			t.Errorf("Failed to inject http delay fault: %s", err)
-			util.Log.Errorf("Failed to inject http delay fault: %s", err)
-		}
-		time.Sleep(time.Duration(5) * time.Second)
+		oc.ApplyString(t, ns, bookinfoVirtualServicesAllV1)
+		oc.ApplyString(t, ns, bookinfoReviewsVirtualServiceV2)
 
-		minDuration := 4000
-		maxDuration := 14000
-		standby := 10
+		t.NewSubTest("ratings-fault-delay").Run(func(t TestHelper) {
+			oc.ApplyString(t, ns, ratingsVirtualServiceWithFixedDelay)
 
-		for i := 0; i < 5; i++ {
-			resp, duration, err := util.GetHTTPResponse(productpageURL, testUserJar)
-			defer util.CloseResponseBody(resp)
-			util.Log.Infof("bookinfo productpage returned in %d ms", duration)
-			body, err := ioutil.ReadAll(resp.Body)
-			util.Inspect(err, "Failed to read response body", "", t)
-			util.Inspect(
-				util.CompareHTTPResponse(body, "productpage-test-user-v2-review-timeout.html"),
-				"Didn't get expected response.",
-				"Success. HTTP_delay_fault.",
-				t)
+			t.LogStep("check if productpage shows 'error fetching product reviews' due to delay injection")
+			retry.UntilSuccess(t, func(t TestHelper) {
+				curl.Request(t,
+					app.BookinfoProductPageURL(t, meshNamespace),
+					curl.WithCookieJar(testUserCookieJar),
+					assert.DurationInRange(4*time.Second, 14*time.Second),
+					assert.ResponseMatchesFile(
+						"productpage-test-user-v2-review-timeout.html",
+						"productpage shows 'error fetching product reviews' as expected",
+						"expected productpage to show 'error fetching product reviews', but got a different response",
+						app.ProductPageResponseFiles...))
+			})
+		})
 
-			if err == nil && duration >= minDuration && duration <= maxDuration {
-				util.Log.Info("Success. Fault delay as expected")
-				break
-			} else if i >= 4 {
-				t.Errorf("Fault delay failed. Delay in %d ms while expected between %d ms and %d ms, %s",
-					duration, minDuration, maxDuration, err)
-				util.Log.Errorf("Fault delay failed. Delay in %d ms while expected between %d ms and %d ms, %s",
-					duration, minDuration, maxDuration, err)
-			}
-			time.Sleep(time.Duration(standby) * time.Second)
-		}
-	})
+		t.NewSubTest("ratings-fault-abort").Run(func(t TestHelper) {
+			oc.ApplyString(t, ns, ratingsVirtualServiceWithHttpStatus500)
 
-	t.Run("TrafficManagement_injecting_an_HTTP_abort_fault", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-
-		if err := util.KubeApply("bookinfo", bookinfoRatingAbortYaml); err != nil {
-			t.Errorf("Failed to inject http abort fault: %s", err)
-			util.Log.Errorf("Failed to inject http abort fault: %s", err)
-		}
-		time.Sleep(time.Duration(5) * time.Second)
-
-		resp, duration, err := util.GetHTTPResponse(productpageURL, testUserJar)
-		defer util.CloseResponseBody(resp)
-		util.Log.Infof("bookinfo productpage returned in %d ms", duration)
-		body, err := ioutil.ReadAll(resp.Body)
-		util.Inspect(err, "Failed to read response body", "", t)
-		util.Inspect(
-			util.CompareHTTPResponse(body, "productpage-test-user-v2-rating-unavailable.html"),
-			"Didn't get expected response.",
-			"Success. HTTP_abort_fault.",
-			t)
+			t.LogStep("check if productpage shows ratings service as unavailable due to abort injection")
+			retry.UntilSuccess(t, func(t TestHelper) {
+				curl.Request(t,
+					app.BookinfoProductPageURL(t, meshNamespace),
+					curl.WithCookieJar(testUserCookieJar),
+					assert.ResponseMatchesFile(
+						"productpage-test-user-v2-rating-unavailable.html",
+						"productpage shows 'ratings service is currently unavailable' as expected",
+						"expected productpage to show ratings service as unavailable, but got a different response",
+						app.ProductPageResponseFiles...))
+			})
+		})
 	})
 }
+
+const ratingsVirtualServiceWithFixedDelay = `
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: ratings
+spec:
+  hosts:
+  - ratings
+  http:
+  - match:
+    - headers:
+        end-user:
+          exact: jason
+    fault:
+      delay:
+        percentage:
+          value: 100.0
+        fixedDelay: 7s
+    route:
+    - destination:
+        host: ratings
+        subset: v1
+  - route:
+    - destination:
+        host: ratings
+        subset: v1`
+
+const ratingsVirtualServiceWithHttpStatus500 = `
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: ratings
+spec:
+  hosts:
+  - ratings
+  http:
+  - match:
+    - headers:
+        end-user:
+          exact: jason
+    fault:
+      abort:
+        percentage:
+          value: 100.0
+        httpStatus: 500
+    route:
+    - destination:
+        host: ratings
+        subset: v1
+  - route:
+    - destination:
+        host: ratings
+        subset: v1`

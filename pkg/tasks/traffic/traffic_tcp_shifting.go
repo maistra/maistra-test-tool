@@ -22,10 +22,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupTCPShifting() {
-	util.Log.Info("Cleanup")
+	log.Log.Info("Cleanup")
 	echo := examples.Echo{"bookinfo"}
 	sleep := examples.Sleep{"bookinfo"}
 	util.KubeDelete("bookinfo", echoAllv1Yaml)
@@ -38,7 +39,7 @@ func TestTCPShifting(t *testing.T) {
 	defer cleanupTCPShifting()
 	defer util.RecoverPanic(t)
 
-	util.Log.Info("TestTCPShifting")
+	log.Log.Info("TestTCPShifting")
 	echo := examples.Echo{"bookinfo"}
 	sleep := examples.Sleep{"bookinfo"}
 	echo.Install()
@@ -46,7 +47,7 @@ func TestTCPShifting(t *testing.T) {
 
 	t.Run("TrafficManagement_100_percent_v1_tcp_shift_test", func(t *testing.T) {
 		defer util.RecoverPanic(t)
-		util.Log.Info("Shifting all TCP traffic to v1")
+		log.Log.Info("Shifting all TCP traffic to v1")
 		util.KubeApply("bookinfo", echoAllv1Yaml)
 
 		sleepPod, err := util.GetPodName("bookinfo", "app=sleep")
@@ -57,9 +58,9 @@ func TestTCPShifting(t *testing.T) {
 			util.Inspect(err, "Failed to get response", "", t)
 			if !strings.Contains(msg, "one") {
 				t.Errorf("echo one; Got response: %s", msg)
-				util.Log.Errorf("echo one; Got response: %s", msg)
+				log.Log.Errorf("echo one; Got response: %s", msg)
 			} else {
-				util.Log.Infof("%s", msg)
+				log.Log.Infof("%s", msg)
 			}
 		}
 	})
@@ -67,7 +68,7 @@ func TestTCPShifting(t *testing.T) {
 	t.Run("TrafficManagement_20_percent_v2_tcp_shift_test", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Shifting 20%% TCP traffic to v2 tolerance 15%%")
+		log.Log.Info("Shifting 20%% TCP traffic to v2 tolerance 15%%")
 		util.KubeApply("bookinfo", echo20v2Yaml)
 
 		tolerance := 0.15
@@ -86,11 +87,11 @@ func TestTCPShifting(t *testing.T) {
 			} else if strings.Contains(msg, "two") {
 				c2++
 			} else {
-				util.Log.Errorf("Unexpected echo version: %s", msg)
+				log.Log.Errorf("Unexpected echo version: %s", msg)
 			}
 		}
 		if util.IsWithinPercentage(c1, totalShot, 0.8, tolerance) && util.IsWithinPercentage(c2, totalShot, 0.2, tolerance) {
-			util.Log.Infof("Success. Traffic shifting acts as expected. "+
+			log.Log.Infof("Success. Traffic shifting acts as expected. "+
 				"v1 version hit %d, v2 version hit %d", c1, c2)
 		} else {
 			t.Errorf("Failed traffic shifting test for 20 percent. "+

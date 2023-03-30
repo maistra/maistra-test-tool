@@ -22,10 +22,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupEgressGateways() {
-	util.Log.Info("Cleanup")
+	log.Log.Info("Cleanup")
 	sleep := examples.Sleep{"bookinfo"}
 	util.KubeDeleteContents("bookinfo", util.RunTemplate(ExGatewayHTTPSTemplate, smcp))
 	util.KubeDeleteContents("bookinfo", util.RunTemplate(ExGatewayTemplate, smcp))
@@ -39,7 +40,7 @@ func TestEgressGateways(t *testing.T) {
 	defer cleanupEgressGateways()
 	defer util.RecoverPanic(t)
 
-	util.Log.Info("TestEgressGateways")
+	log.Log.Info("TestEgressGateways")
 	sleep := examples.Sleep{"bookinfo"}
 	sleep.Install()
 	sleepPod, err := util.GetPodName("bookinfo", "app=sleep")
@@ -47,27 +48,27 @@ func TestEgressGateways(t *testing.T) {
 	proxy, _ := util.GetProxy()
 	curlParams := ""
 	if proxy.HTTPProxy == "" {
-		util.Log.Info("HTTP_PROXY is not set")
+		log.Log.Info("HTTP_PROXY is not set")
 	} else {
 		curlParams = curlParams + " -x " + proxy.HTTPProxy
 	}
 	t.Run("TrafficManagement_egress_gateway_for_http_traffic", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Create a ServiceEntry to external istio.io")
+		log.Log.Info("Create a ServiceEntry to external istio.io")
 		util.KubeApplyContents("bookinfo", ExServiceEntry)
 		time.Sleep(time.Duration(10) * time.Second)
 		command := fmt.Sprintf(`curl -sSL -o /dev/null %s -D - http://istio.io`, curlParams)
 		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "301 Moved Permanently") {
-			util.Log.Info("Success. Get http://istio.io response")
+			log.Log.Info("Success. Get http://istio.io response")
 		} else {
-			util.Log.Infof("Error response: %s", msg)
+			log.Log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		}
 
-		util.Log.Info("Create a Gateway to external istio.io")
+		log.Log.Info("Create a Gateway to external istio.io")
 		util.KubeApplyContents("bookinfo", util.RunTemplate(ExGatewayTemplate, smcp))
 		time.Sleep(time.Duration(20) * time.Second)
 
@@ -75,9 +76,9 @@ func TestEgressGateways(t *testing.T) {
 		msg, err = util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "301 Moved Permanently") {
-			util.Log.Infof("Success. Get http://istio.io response: %s", msg)
+			log.Log.Infof("Success. Get http://istio.io response: %s", msg)
 		} else {
-			util.Log.Infof("Error response: %s", msg)
+			log.Log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		}
 
@@ -89,7 +90,7 @@ func TestEgressGateways(t *testing.T) {
 	t.Run("TrafficManagement_egress_gateway_for_https_traffic", func(t *testing.T) {
 		defer util.RecoverPanic(t)
 
-		util.Log.Info("Create a TLS ServiceEntry to external istio.io")
+		log.Log.Info("Create a TLS ServiceEntry to external istio.io")
 		util.KubeApplyContents("bookinfo", ExServiceEntryTLS)
 		time.Sleep(time.Duration(10) * time.Second)
 
@@ -97,13 +98,13 @@ func TestEgressGateways(t *testing.T) {
 		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "301 Moved Permanently") || !strings.Contains(msg, "200") {
-			util.Log.Infof("Error response: %s", msg)
+			log.Log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		} else {
-			util.Log.Infof("Success. Get https://istio.io response: %s", msg)
+			log.Log.Infof("Success. Get https://istio.io response: %s", msg)
 		}
 
-		util.Log.Info("Create a https Gateway to external istio.io")
+		log.Log.Info("Create a https Gateway to external istio.io")
 		util.KubeApplyContents("bookinfo", util.RunTemplate(ExGatewayHTTPSTemplate, smcp))
 		time.Sleep(time.Duration(20) * time.Second)
 
@@ -111,10 +112,10 @@ func TestEgressGateways(t *testing.T) {
 		msg, err = util.PodExec("bookinfo", sleepPod, "sleep", command, false)
 		util.Inspect(err, "Failed to get response", "", t)
 		if strings.Contains(msg, "301 Moved Permanently") || !strings.Contains(msg, "200") {
-			util.Log.Infof("Error response: %s", msg)
+			log.Log.Infof("Error response: %s", msg)
 			t.Errorf("Error response: %s", msg)
 		} else {
-			util.Log.Infof("Success. Get https://istio.io response: %s", msg)
+			log.Log.Infof("Success. Get https://istio.io response: %s", msg)
 		}
 	})
 }

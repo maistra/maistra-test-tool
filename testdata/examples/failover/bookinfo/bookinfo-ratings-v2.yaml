@@ -39,6 +39,7 @@ spec:
         version: v2
     spec:
       serviceAccountName: bookinfo-ratings-v2
+      terminationGracePeriodSeconds: 0  # TODO: remove when ratings honors SIGINT
       containers:
       - name: ratings
         image: quay.io/maistra/examples-bookinfo-ratings-v2:2.1.0

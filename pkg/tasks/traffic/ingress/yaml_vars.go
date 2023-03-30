@@ -16,6 +16,7 @@ package ingress
 
 import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 )
 
 const (
@@ -31,14 +32,12 @@ const (
 	nginxServerCertKey = "../sampleCerts/nginx.example.com/nginx.example.com.key"
 	nginxServerCert    = "../sampleCerts/nginx.example.com/nginx.example.com.crt"
 	nginxServerCACert  = "../sampleCerts/nginx.example.com/example.com.crt"
-
-	testUsername = "jason"
 )
 
 var (
 	// OCP4.x
-	smcpName             string = util.Getenv("SMCPNAME", "basic")
-	meshNamespace        string = util.Getenv("MESHNAMESPACE", "istio-system")
+	smcpName             string = env.Getenv("SMCPNAME", "basic")
+	meshNamespace        string = env.Getenv("MESHNAMESPACE", "istio-system")
 	gatewayHTTP, _              = util.ShellSilent(`kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'`, meshNamespace)
 	ingressHTTPPort, _          = util.ShellSilent(`kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name=="http2")].port}'`, meshNamespace, "istio-ingressgateway")
 	secureIngressPort, _        = util.ShellSilent(`kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name=="https")].port}'`, meshNamespace, "istio-ingressgateway")

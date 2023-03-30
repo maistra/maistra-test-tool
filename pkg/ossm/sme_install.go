@@ -23,17 +23,18 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanUpTestExtensionInstall() {
 	httpbinPod, err := util.GetPodName("bookinfo", "app=httpbin")
 	if err == nil {
-		util.Log.Info("# httpbin proxy log: ")
-		util.Log.Info(util.GetPodLogs("bookinfo", httpbinPod, "istio-proxy", false, false))
-		util.Log.Info("# end of httpbin proxy log")
+		log.Log.Info("# httpbin proxy log: ")
+		log.Log.Info(util.GetPodLogs("bookinfo", httpbinPod, "istio-proxy", false, false))
+		log.Log.Info("# end of httpbin proxy log")
 	}
 
-	util.Log.Info("# Cleanup ...")
+	log.Log.Info("# Cleanup ...")
 	httpbin := examples.Httpbin{"bookinfo"}
 	sleep := examples.Sleep{"bookinfo"}
 	httpbin.Uninstall()
@@ -46,9 +47,9 @@ func TestExtensionInstall(t *testing.T) {
 	defer cleanUpTestExtensionInstall()
 	httpbin := examples.Httpbin{"bookinfo"}
 	sleep := examples.Sleep{"bookinfo"}
-	util.Log.Info("Deploy httpbin pod")
+	log.Log.Info("Deploy httpbin pod")
 	httpbin.Install()
-	util.Log.Info("Deploy sleep pod")
+	log.Log.Info("Deploy sleep pod")
 	sleep.Install()
 	sleepPod, err := util.GetPodName("bookinfo", "app=sleep")
 	util.Inspect(err, "failed to get sleep pod", "", t)
@@ -57,7 +58,7 @@ func TestExtensionInstall(t *testing.T) {
 		defer util.RecoverPanic(t)
 		util.CheckPodRunning(meshNamespace, "app=wasm-cacher")
 
-		util.Log.Info("Creating ServiceMeshExtension")
+		log.Log.Info("Creating ServiceMeshExtension")
 		util.KubeApplyContents("bookinfo", httpbinServiceMeshExtension)
 
 		if err := checkSMEReady("bookinfo", "header-append"); err != nil {

@@ -16,21 +16,15 @@ package federation
 
 import (
 	"os"
-	"strings"
 	"testing"
-	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/heredoc"
+	. "github.com/maistra/maistra-test-tool/pkg/util/log"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
+	"github.com/maistra/maistra-test-tool/pkg/util/shell"
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
-
-func cleanupSingleClusterFed() {
-	util.Log.Info("Cleanup ...")
-	util.Shell(`pushd ../testdata/examples/federation \
-			&& export MESH1_KUBECONFIG=~/.kube/config \
-			&& export MESH2_KUBECONFIG=~/.kube/config \
-			&& ./cleanup.sh`)
-	time.Sleep(time.Duration(20) * time.Second)
-}
 
 func getenv(key, fallback string) string {
 	value := os.Getenv(key)
@@ -41,58 +35,54 @@ func getenv(key, fallback string) string {
 }
 
 func TestSingleClusterFed(t *testing.T) {
-	defer cleanupSingleClusterFed()
+	NewTest(t).LegacyID("T31", "T8").Groups(ARM, Full).Run(func(t TestHelper) {
+		defer func() {
+			Log.Info("Cleanup ...")
+			shell.Execute(t, heredoc.Doc(`
+				pushd ../testdata/examples/federation \
+				&& export MESH1_KUBECONFIG=~/.kube/config \
+				&& export MESH2_KUBECONFIG=~/.kube/config \
+				&& ./cleanup.sh`))
+		}()
 
-	t.Run("federation_single_cluster_install", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-		util.Log.Info("Test federation install in a single cluster")
-		util.Log.Info("Reference: https://github.com/maistra/istio/blob/maistra-2.3/samples/federation/base/install.sh")
-		util.Log.Info("Running install.sh waiting 1 min...")
-		util.Shell(`pushd ../testdata/examples/federation \
+		t.Log("Test federation install in a single cluster")
+		t.Log("Reference: https://github.com/maistra/istio/blob/maistra-2.3/samples/federation/base/install.sh")
+
+		t.Log("Running install.sh...")
+		shell.Execute(t, `pushd ../testdata/examples/federation \
 			&& export MESH1_KUBECONFIG=~/.kube/config \
 			&& export MESH2_KUBECONFIG=~/.kube/config \
 			&& ./install.sh`)
 
-		util.Log.Info("Waiting 60s...")
-		time.Sleep(time.Duration(60) * time.Second)
+		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(60), func(t TestHelper) {
+			shell.Execute(t,
+				`oc -n mesh1-system get servicemeshpeer mesh2 -o json`,
+				assert.OutputContains(
+					`"connected": true`, // TODO: must also check for lastSyncTime, since the peer might be connected, but not synced
+					"mesh2 is connected in mesh1",
+					"mesh2 is not connected in mesh1"))
+		})
 
-		util.Log.Info("Verify mesh1 connection status")
-		msg, err := util.Shell(`oc -n mesh1-system get servicemeshpeer mesh2 -o json`)
-		if err != nil {
-			t.Error("Failed to get servicemeshpeer in mesh1-system")
-			util.Log.Error("Failed to get servicemeshpeer in mesh1-system")
-		}
-		if strings.Contains(msg, "\"connected\": true") {
-			util.Log.Info("mesh1-system connected true")
-		} else {
-			t.Error("Failed to get mesh1-system connected")
-			util.Log.Error("Failed to get mesh1-system connected")
-		}
+		retry.UntilSuccess(t, func(t TestHelper) {
+			shell.Execute(t,
+				`oc -n mesh2-system get servicemeshpeer mesh1 -o json`,
+				assert.OutputContains(
+					`"connected": true`, // TODO: must also check for lastSyncTime, since the peer might be connected, but not synced
+					"mesh1 is connected in mesh2",
+					"mesh1 is not connected in mesh2"))
+		})
 
-		util.Log.Info("Verify mesh2 connection status")
-		msg, err = util.Shell(`oc -n mesh2-system get servicemeshpeer mesh1 -o json`)
-		if err != nil {
-			t.Error("Failed to get servicemeshpeer in mesh2-system")
-			util.Log.Error("Failed to get servicemeshpeer in mesh2-system")
-		}
-		if strings.Contains(msg, "\"connected\": true") {
-			util.Log.Info("mesh2-system connected true")
-		} else {
-			t.Error("Failed to get mesh2-system connected")
-			util.Log.Error("Failed to get mesh2-system connected")
-		}
-
-		util.Log.Info("Verify if services from mesh1 are imported into mesh2")
-		msg, err = util.Shell(`oc -n mesh2-system get importedservicesets mesh1 -o json`)
-		if err != nil {
-			t.Error("Failed to find services from mesh1 to mesh2")
-			util.Log.Error("Failed to find services from mesh1 to mesh2")
-		}
-		if strings.Contains(msg, "mongodb.bookinfo.svc.mesh2-exports.local") && strings.Contains(msg, "ratings.bookinfo.svc.mesh2-exports.local") {
-			util.Log.Info("mesh2-system gets both mongodb and ratings services from mesh1")
-		} else {
-			t.Error("mesh2-system failed to get both mongodb and ratings services from mesh1")
-			util.Log.Error("mesh2-system failed to get both mongodb and ratings services from mesh1")
-		}
+		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(60), func(t TestHelper) {
+			shell.Execute(t,
+				`oc -n mesh2-system get importedservicesets mesh1 -o json`,
+				assert.OutputContains(
+					"mongodb.bookinfo.svc.mesh2-exports.local",
+					"mongodb service from mesh1 found in mesh2",
+					"mongodb service from mesh1 not found in mesh2"),
+				assert.OutputContains(
+					"ratings.bookinfo.svc.mesh2-exports.local",
+					"ratings service from mesh1 found in mesh2",
+					"ratings service from mesh1 not found in mesh2"))
+		})
 	})
 }

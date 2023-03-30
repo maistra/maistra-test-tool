@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 // Install nightly build operators from quay.io. This is used in Jenkins daily build pipeline.
@@ -33,16 +35,17 @@ func installNightlyOperators() {
 // Initialize a default SMCP and SMMR
 func init() {
 
-	if util.Getenv("NIGHTLY", "false") == "true" {
+	if env.Getenv("NIGHTLY", "false") == "true" {
 		installNightlyOperators()
 	}
 
 	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
 	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV23_template, smcp))
 	util.KubeApplyContents(meshNamespace, smmr)
-	time.Sleep(time.Duration(30) * time.Second)
+	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcp.Name)
+	util.Shell(`oc -n %s wait --for condition=Ready smmr/default --timeout 180s`, meshNamespace)
 	if ipv6 == "true" {
-		util.Log.Info("Running the test with IPv6 configuration")
+		log.Log.Info("Running the test with IPv6 configuration")
 	}
 
 }

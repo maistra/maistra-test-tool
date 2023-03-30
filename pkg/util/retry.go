@@ -17,6 +17,8 @@ package util
 import (
 	"context"
 	"time"
+
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 const (
@@ -77,7 +79,7 @@ func (r Retrier) Retry(ctx context.Context, fn func(ctx context.Context, retryIn
 	var err error
 	var i int
 	if r.Retries <= 0 {
-		Log.Warnf("retries must to be >= 1. Got %d, setting to 1", r.Retries)
+		log.Log.Warnf("retries must to be >= 1. Got %d, setting to 1", r.Retries)
 		r.Retries = 1
 	}
 	for i = 1; i <= r.Retries; i++ {

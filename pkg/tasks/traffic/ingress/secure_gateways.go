@@ -15,165 +15,133 @@
 package ingress
 
 import (
-	"io/ioutil"
-	"strings"
+	_ "embed"
+	"fmt"
+	"net/http"
 	"testing"
-	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
-	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	. "github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
+	"github.com/maistra/maistra-test-tool/pkg/util/request"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func cleanupSecureGateways() {
-	util.Log.Info("Cleanup")
-	httpbin := examples.Httpbin{"bookinfo"}
-	util.KubeDeleteContents("bookinfo", httpbinTLSGatewayMTLS)
-	util.KubeDeleteContents("bookinfo", multiHostsGateway)
-	util.KubeDeleteContents("bookinfo", httpbinTLSGatewayHTTPS)
-	util.ShellMuteOutput(`kubectl delete secret %s -n %s`, "httpbin-credential", meshNamespace)
-	util.ShellMuteOutput(`kubectl delete secret %s -n %s`, "helloworld-credential", meshNamespace)
-	util.KubeDeleteContents("bookinfo", helloworldv1)
-	httpbin.Uninstall()
-	time.Sleep(time.Duration(20) * time.Second)
-}
+var (
+	//go:embed yaml/httpbin-tls-gateway-https.yaml
+	httpbinTLSGatewayHTTPS string
+
+	//go:embed yaml/gateway-multiple-hosts.yaml
+	gatewayMultipleHosts string
+
+	//go:embed yaml/gateway-httpbin-mtls.yaml
+	gatewayHttpbinMTLSYaml string
+
+	//go:embed yaml/hello-world.yaml
+	helloWorldYaml string
+
+	helloWorldImages = map[string]string{
+		"p":   "quay.io/maistra/helloworld-v1:0.0-ibm-p",
+		"z":   "quay.io/maistra/helloworld-v1:0.0-ibm-z",
+		"x86": "istio/examples-helloworld-v1",
+	}
+)
 
 func TestSecureGateways(t *testing.T) {
-	defer cleanupSecureGateways()
-	defer util.RecoverPanic(t)
+	NewTest(t).LegacyID("T9").Groups(Full, InterOp).Run(func(t TestHelper) {
+		hack.DisableLogrusForThisTest(t)
+		ns := "bookinfo"
 
-	util.Log.Info("Test Secure Gateways")
-	httpbin := examples.Httpbin{"bookinfo"}
-	httpbin.Install()
+		t.Cleanup(func() {
+			oc.DeleteSecret(t, meshNamespace, "httpbin-credential")
+			oc.DeleteSecret(t, meshNamespace, "helloworld-credential")
+			oc.RecreateNamespace(t, ns)
+		})
 
-	if util.Getenv("SAMPLEARCH", "x86") == "p" {
-		util.KubeApplyContents("bookinfo", helloworldv1P)
-	} else if util.Getenv("SAMPLEARCH", "x86") == "z" {
-		util.KubeApplyContents("bookinfo", helloworldv1Z)
-	} else {
-		util.KubeApplyContents("bookinfo", helloworldv1)
-	}
-	util.CheckPodRunning("bookinfo", "app=helloworld-v1")
-	time.Sleep(time.Duration(10) * time.Second)
+		app.InstallAndWaitReady(t, app.Httpbin(ns))
+		oc.ApplyString(t, ns, helloWorldYAML())
+		oc.WaitPodReady(t, pod.MatchingSelector("app=helloworld-v1", ns))
 
-	util.Log.Info("Create TLS secrets")
-	if _, err := util.CreateTLSSecret("httpbin-credential", meshNamespace, httpbinSampleServerCertKey, httpbinSampleServerCert); err != nil {
-		t.Errorf("Failed to create secret %s\n", "httpbin-credential")
-		util.Log.Infof("Failed to create secret %s\n", "httpbin-credential")
-	}
-	if _, err := util.CreateTLSSecret("helloworld-credential", meshNamespace, helloworldServerCertKey, helloworldServerCert); err != nil {
-		t.Errorf("Failed to create secret %s\n", "helloworld-credential ")
-		util.Log.Infof("Failed to create secret %s\n", "helloworld-credential ")
-	}
-	time.Sleep(time.Duration(10) * time.Second)
+		t.LogStep("Create TLS secrets")
+		oc.CreateTLSSecret(t, meshNamespace, "httpbin-credential", httpbinSampleServerCertKey, httpbinSampleServerCert)
+		oc.CreateTLSSecret(t, meshNamespace, "helloworld-credential", helloworldServerCertKey, helloworldServerCert)
 
-	t.Run("TrafficManagement_ingress_single_host_tls_test", func(t *testing.T) {
-		defer util.RecoverPanic(t)
+		helloWorldURL := "https://helloworld-v1.example.com:" + secureIngressPort + "/hello"
+		teapotURL := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
 
-		util.Log.Info("Configure a TLS ingress gateway for a single host")
-		// config https gateway
-		if err := util.KubeApplyContents("bookinfo", httpbinTLSGatewayHTTPS); err != nil {
-			t.Errorf("Failed to configure Gateway")
-			util.Log.Errorf("Failed to configure Gateway")
-		}
-		time.Sleep(time.Duration(30) * time.Second)
+		t.NewSubTest("tls_single_host").Run(func(t TestHelper) {
+			t.LogStep("Configure a TLS ingress gateway for a single host")
+			oc.ApplyString(t, ns, httpbinTLSGatewayHTTPS)
 
-		// check teapot
-		url := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
-		resp, err := util.CurlWithCA(url, gatewayHTTP, secureIngressPort, "httpbin.example.com", httpbinSampleCACert)
-		defer util.CloseResponseBody(resp)
-		util.Inspect(err, "Failed to get response", "", t)
+			retry.UntilSuccess(t, func(t TestHelper) {
+				curl.Request(t,
+					teapotURL,
+					request.WithTLS(httpbinSampleCACert, "httpbin.example.com", gatewayHTTP, secureIngressPort),
+					assert.ResponseContains("-=[ teapot ]=-"),
+				)
+			})
+		})
 
-		bodyByte, err := ioutil.ReadAll(resp.Body)
-		util.Inspect(err, "Failed to read response body", "", t)
+		t.NewSubTest("tls_multiple_hosts").Run(func(t TestHelper) {
+			t.LogStep("configure Gateway with multiple TLS hosts")
+			oc.ApplyString(t, ns, gatewayMultipleHosts)
 
-		if strings.Contains(string(bodyByte), "-=[ teapot ]=-") {
-			util.Log.Info(string(bodyByte))
-		} else {
-			t.Errorf("Failed to get teapot: %v", string(bodyByte))
-		}
+			t.LogStep("check if helloworld-v1 responds with 200 OK")
+			retry.UntilSuccess(t, func(t TestHelper) {
+				curl.Request(t,
+					helloWorldURL,
+					request.WithTLS(httpbinSampleCACert, "helloworld-v1.example.com", gatewayHTTP, secureIngressPort),
+					assert.ResponseStatus(http.StatusOK))
+			})
+
+			t.LogStep("check if httpbin responds with teapot")
+			retry.UntilSuccess(t, func(t TestHelper) {
+				curl.Request(t,
+					teapotURL,
+					request.WithTLS(httpbinSampleCACert, "httpbin.example.com", gatewayHTTP, secureIngressPort),
+					assert.ResponseContains("-=[ teapot ]=-"))
+			})
+		})
+
+		t.NewSubTest("mutual_tls").Run(func(t TestHelper) {
+			t.LogStep("configure Gateway with tls.mode=Mutual")
+			oc.CreateTLSSecretWithCACert(t, meshNamespace, "httpbin-credential", httpbinSampleServerCertKey, httpbinSampleServerCert, httpbinSampleCACert)
+			oc.ApplyString(t, ns, gatewayHttpbinMTLSYaml)
+
+			t.LogStep("check if SSL handshake fails when no client certificate is given")
+			retry.UntilSuccess(t, func(t TestHelper) {
+				curl.Request(t,
+					teapotURL,
+					request.WithTLS(httpbinSampleCACert, "httpbin.example.com", gatewayHTTP, secureIngressPort),
+					assert.RequestFails(
+						"request failed as expected",
+						"expected request to fail because no client certificate was provided"))
+			})
+
+			t.LogStep("check if SSL handshake succeeds when client certificate is given")
+			retry.UntilSuccess(t, func(t TestHelper) {
+				curl.Request(t,
+					teapotURL,
+					request.
+						WithTLS(httpbinSampleCACert, "httpbin.example.com", gatewayHTTP, secureIngressPort).
+						WithClientCertificate(httpbinSampleClientCert, httpbinSampleClientCertKey),
+					assert.ResponseContains("-=[ teapot ]=-"))
+			})
+		})
 	})
+}
 
-	t.Run("TrafficManagement_ingress_multiple_hosts_tls_test", func(t *testing.T) {
-		defer util.RecoverPanic(t)
+func helloWorldYAML() string {
+	arch := Getenv("SAMPLEARCH", "x86")
+	image := helloWorldImages[arch]
+	if image == "" {
+		panic(fmt.Sprintf("unsupported SAMPLEARCH: %s", arch))
+	}
 
-		util.Log.Info("Configure multiple hosts Gateway")
-		if err := util.KubeApplyContents("bookinfo", multiHostsGateway); err != nil {
-			t.Errorf("Failed to configure multihosts Gateway")
-			util.Log.Errorf("Failed to configure multihosts Gateway")
-		}
-		time.Sleep(time.Duration(30) * time.Second)
-
-		util.Log.Info("Check helloworld")
-		url := "https://helloworld-v1.example.com:" + secureIngressPort + "/hello"
-		resp, err := util.CurlWithCA(url, gatewayHTTP, secureIngressPort, "helloworld-v1.example.com", httpbinSampleCACert)
-		defer util.CloseResponseBody(resp)
-		util.Inspect(err, "Failed to get response", "", t)
-		util.Inspect(util.CheckHTTPResponse200(resp), "Failed to get HTTP 200", resp.Status, t)
-
-		util.Log.Info("Check teapot")
-		url = "https://httpbin.example.com:" + secureIngressPort + "/status/418"
-		resp, err = util.CurlWithCA(url, gatewayHTTP, secureIngressPort, "httpbin.example.com", httpbinSampleCACert)
-		defer util.CloseResponseBody(resp)
-		util.Inspect(err, "Failed to get response", "", t)
-
-		bodyByte, err := ioutil.ReadAll(resp.Body)
-		util.Inspect(err, "Failed to read response body", "", t)
-
-		if strings.Contains(string(bodyByte), "-=[ teapot ]=-") {
-			util.Log.Info(string(bodyByte))
-		} else {
-			t.Errorf("Failed to get teapot: %v", string(bodyByte))
-		}
-	})
-
-	t.Run("TrafficManagement_ingress_mutual_tls_test", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-
-		util.Log.Info("Configure Mutual TLS Gateway")
-		util.ShellMuteOutput(`kubectl delete secret %s -n %s`, "httpbin-credential", meshNamespace)
-		// create ca secret
-		_, err := util.ShellMuteOutput(`kubectl create secret generic %s --from-file=tls.key=%s --from-file=tls.crt=%s --from-file=ca.crt=%s -n %s`,
-			"httpbin-credential", httpbinSampleServerCertKey, httpbinSampleServerCert, httpbinSampleCACert, meshNamespace)
-		if err != nil {
-			util.Log.Infof("Failed to create generic secret %s\n", "httpbin-credential")
-			t.Errorf("Failed to generic create secret %s\n", "httpbin-credential")
-		}
-		time.Sleep(time.Duration(10) * time.Second)
-
-		// config mutual tls
-		if err := util.KubeApplyContents("bookinfo", httpbinTLSGatewayMTLS); err != nil {
-			t.Errorf("Failed to configure Gateway")
-			util.Log.Errorf("Failed to configure Gateway")
-		}
-		time.Sleep(time.Duration(30) * time.Second)
-
-		util.Log.Info("Check SSL handshake failure as expected")
-		url := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
-		resp, err := util.CurlWithCA(url, gatewayHTTP, secureIngressPort, "httpbin.example.com", httpbinSampleCACert)
-		defer util.CloseResponseBody(resp)
-		if err != nil {
-			util.Log.Infof("Expected failure: %v", err)
-		} else {
-			bodyByte, err := ioutil.ReadAll(resp.Body)
-			util.Inspect(err, "Failed to read response body", "", t)
-
-			t.Errorf("Unexpected response: %s", string(bodyByte))
-			util.CloseResponseBody(resp)
-		}
-
-		util.Log.Info("Check SSL return a teapot again")
-		resp, err = util.CurlWithCAClient(url, gatewayHTTP, secureIngressPort, "httpbin.example.com",
-			httpbinSampleCACert, httpbinSampleClientCert, httpbinSampleClientCertKey)
-		defer util.CloseResponseBody(resp)
-		util.Inspect(err, "Failed to get response", "", t)
-		bodyByte, err := ioutil.ReadAll(resp.Body)
-		util.Inspect(err, "Failed to read response body", "", t)
-
-		if strings.Contains(string(bodyByte), "-=[ teapot ]=-") {
-			util.Log.Info(string(bodyByte))
-		} else {
-			util.Log.Info(string(bodyByte))
-			t.Errorf("Failed to get teapot: %v", string(bodyByte))
-		}
-	})
+	return fmt.Sprintf(helloWorldYaml, image)
 }

@@ -19,6 +19,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 var testRetryTimes = 5
@@ -30,7 +32,7 @@ func CreateOCPNamespace(n string) error {
 			return err
 		}
 	}
-	Log.Infof("namespace %s created\n", n)
+	log.Log.Infof("namespace %s created\n", n)
 	return nil
 }
 
@@ -41,14 +43,14 @@ func DeleteOCPNamespace(n string) error {
 			return err
 		}
 	}
-	Log.Infof("namespace %s deleted\n", n)
+	log.Log.Infof("namespace %s deleted\n", n)
 	return nil
 }
 
 // OcGrantPermission OCP cluster specific requirements for deploying an application with sidecar.
 // This is a temporary permission config
 func OcGrantPermission(account, namespace string) {
-	//Shell("oc adm policy add-scc-to-user privileged -z %s -n %s", account, namespace)
+	// Shell("oc adm policy add-scc-to-user privileged -z %s -n %s", account, namespace)
 	Shell("oc adm policy add-scc-to-user anyuid -z %s -n %s", account, namespace)
 }
 
@@ -91,7 +93,7 @@ func GetIngressPort(namespace, serviceName string) (string, error) {
 	rp := regexp.MustCompile(`^[0-9]{1,5}$`)
 	if rp.FindString(port) == "" {
 		err = fmt.Errorf("unable to find the http2 port of %s", serviceName)
-		Log.Warn(err)
+		log.Log.Warn(err)
 		return "", err
 	}
 	return port, nil
@@ -109,7 +111,7 @@ func GetSecureIngressPort(namespace, serviceName string) (string, error) {
 	rp := regexp.MustCompile(`^[0-9]{1,5}$`)
 	if rp.FindString(port) == "" {
 		err = fmt.Errorf("unable to find the https port of %s", serviceName)
-		Log.Warn(err)
+		log.Log.Warn(err)
 		return "", err
 	}
 	return port, nil
@@ -127,7 +129,7 @@ func GetTCPIngressPort(namespace, serviceName string) (string, error) {
 	rp := regexp.MustCompile(`^[0-9]{1,5}$`)
 	if rp.FindString(port) == "" {
 		err = fmt.Errorf("unable to find the tcp port of %s", serviceName)
-		Log.Warn(err)
+		log.Log.Warn(err)
 		return "", err
 	}
 	return port, nil

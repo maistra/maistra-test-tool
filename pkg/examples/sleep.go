@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 // Define the sleep configmap file
@@ -39,10 +40,10 @@ type Sleep struct {
 }
 
 func (s *Sleep) Install() error {
-	util.Log.Infof("Deploying Sleep in namespace %s", s.Namespace)
+	log.Log.Infof("Deploying Sleep in namespace %s", s.Namespace)
 	proxy, _ := util.GetProxy()
 	configmap := util.RunTemplate(sleepConfigmap, proxy)
-	util.Log.Infof("Creating configmap %s", configmap)
+	log.Log.Infof("Creating configmap %s", configmap)
 	util.KubeApplyContents(s.Namespace, configmap)
 	util.KubeApply(s.Namespace, sleepYaml)
 	_, err := util.CheckDeploymentIsReady(s.Namespace, "sleep", time.Second*180)
@@ -50,10 +51,10 @@ func (s *Sleep) Install() error {
 }
 
 func (s *Sleep) InstallLegacy() {
-	util.Log.Info("Deploy Sleep")
+	log.Log.Info("Deploy Sleep")
 	proxy, _ := util.GetProxy()
 	configmap := util.RunTemplate(sleepConfigmap, proxy)
-	util.Log.Infof("Creating configmap %s", configmap)
+	log.Log.Infof("Creating configmap %s", configmap)
 	util.KubeApplyContents(s.Namespace, configmap)
 	util.KubeApply(s.Namespace, sleepLegacyYaml)
 	time.Sleep(time.Duration(5) * time.Second)
@@ -62,10 +63,14 @@ func (s *Sleep) InstallLegacy() {
 }
 
 func (s *Sleep) Uninstall() {
-	util.Log.Infof("Removing Sleep on namespace %s", s.Namespace)
+	log.Log.Infof("Removing Sleep on namespace %s", s.Namespace)
 	proxy, _ := util.GetProxy()
 	configmap := util.RunTemplate(sleepConfigmap, proxy)
 	util.KubeDeleteContents(s.Namespace, configmap)
 	util.KubeDelete(s.Namespace, sleepYaml)
 	util.Shell(`oc -n %s wait --for=delete -l app=sleep pods --timeout=30s`, s.Namespace)
+}
+
+func SleepConfigMap() string {
+	return sleepConfigmap
 }

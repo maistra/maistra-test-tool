@@ -15,80 +15,64 @@
 package traffic
 
 import (
-	"fmt"
-	"io/ioutil"
 	"testing"
-	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
-	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
+	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func cleanupRequestRouting() {
-	util.Log.Info("Cleanup")
-	app := examples.Bookinfo{"bookinfo"}
-	util.KubeDelete("bookinfo", bookinfoAllv1Yaml)
-	app.Uninstall()
-	time.Sleep(time.Duration(20) * time.Second)
-}
-
 func TestRequestRouting(t *testing.T) {
-	defer cleanupRequestRouting()
-	defer util.RecoverPanic(t)
+	NewTest(t).LegacyID("T1").Groups(Smoke, Full, InterOp, ARM).Run(func(t TestHelper) {
+		hack.DisableLogrusForThisTest(t)
+		ns := "bookinfo"
 
-	util.Log.Info("TestRequestRouting")
-	app := examples.Bookinfo{"bookinfo"}
-	app.Install(false)
-	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
-	testUserJar := util.GetCookieJar(testUsername, "", "http://"+gatewayHTTP)
+		t.Cleanup(func() {
+			oc.RecreateNamespace(t, ns)
+		})
 
-	t.Run("TrafficManagement_test_the_new_routing_configuration", func(t *testing.T) {
-		defer util.RecoverPanic(t)
+		app.InstallAndWaitReady(t, app.Bookinfo(ns))
 
-		util.Log.Info("Routing traffic to all v1")
-		if err := util.KubeApply("bookinfo", bookinfoAllv1Yaml); err != nil {
-			t.Errorf("Failed to route traffic to all v1: %s", err)
-			util.Log.Errorf("Failed to route traffic to all v1: %s", err)
-		}
-		time.Sleep(time.Duration(20) * time.Second)
+		productpageURL := app.BookinfoProductPageURL(t, meshNamespace)
+		testUserCookieJar := app.BookinfoLogin(t, meshNamespace)
 
-		for i := 0; i <= 5; i++ {
-			resp, duration, err := util.GetHTTPResponse(productpageURL, nil)
-			util.Inspect(err, "Failed to get HTTP Response", "", t)
-			util.Log.Infof("bookinfo productpage returned in %d ms", duration)
-			defer util.CloseResponseBody(resp)
-			body, err := ioutil.ReadAll(resp.Body)
-			util.Inspect(err, "Failed to read response body", "", t)
-			util.Inspect(
-				util.CompareHTTPResponse(body, "productpage-normal-user-v1.html"),
-				"Didn't get expected response.",
-				"Success. Routing traffic to all v1.",
-				t)
-		}
-	})
+		t.NewSubTest("not-logged-in").Run(func(t TestHelper) {
+			oc.ApplyString(t, ns, bookinfoVirtualServicesAllV1)
 
-	t.Run("TrafficManagement_route_based_on_user_identity", func(t *testing.T) {
-		defer util.RecoverPanic(t)
+			t.LogStep("get productpage without logging in; expect to get reviews-v1 (5x)")
+			retry.UntilSuccess(t, func(t TestHelper) {
+				for i := 0; i < 5; i++ {
+					curl.Request(t,
+						productpageURL, nil,
+						require.ResponseMatchesFile(
+							"productpage-normal-user-v1.html",
+							"productpage called reviews-v1",
+							"expected productpage to call reviews-v1, but got an unexpected response",
+							app.ProductPageResponseFiles...))
+				}
+			})
+		})
 
-		util.Log.Info("Traffic routing based on user identity")
-		if err := util.KubeApply("bookinfo", bookinfoReviewV2Yaml); err != nil {
-			t.Errorf("Failed to route traffic based on user: %s", err)
-			util.Log.Errorf("Failed to route traffic based on user: %s", err)
-		}
-		time.Sleep(time.Duration(20) * time.Second)
+		t.NewSubTest("logged-in").Run(func(t TestHelper) {
+			oc.ApplyString(t, ns, bookinfoReviewsVirtualServiceV2)
 
-		for i := 0; i <= 5; i++ {
-			resp, duration, err := util.GetHTTPResponse(productpageURL, testUserJar)
-			util.Inspect(err, "Failed to get HTTP Response", "", t)
-			util.Log.Infof("bookinfo productpage returned in %d ms", duration)
-			defer util.CloseResponseBody(resp)
-			body, err := ioutil.ReadAll(resp.Body)
-			util.Inspect(err, "Failed to read response body", "", t)
-			util.Inspect(
-				util.CompareHTTPResponse(body, "productpage-test-user-v2.html"),
-				"Didn't get expected response.",
-				"Success. Route_based_on_user_identity.",
-				t)
-		}
+			t.LogStep("get productpage as logged-in user; expect to get reviews-v2 (5x)")
+			retry.UntilSuccess(t, func(t TestHelper) {
+				for i := 0; i < 5; i++ {
+					curl.Request(t,
+						productpageURL,
+						curl.WithCookieJar(testUserCookieJar),
+						require.ResponseMatchesFile(
+							"productpage-test-user-v2.html",
+							"productpage called reviews-v2",
+							"expected productpage to call reviews-v2, but got an unexpected response",
+							app.ProductPageResponseFiles...))
+				}
+			})
+		})
 	})
 }

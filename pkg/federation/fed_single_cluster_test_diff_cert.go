@@ -20,10 +20,11 @@ import (
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 func cleanupSingleClusterFedDiffCert() {
-	util.Log.Info("Cleanup ...")
+	log.Log.Info("Cleanup ...")
 	util.Shell(`kubectl -n mesh1-system delete secret cacerts`)
 	util.Shell(`pushd ../testdata/examples/federation \
 			&& export MESH1_KUBECONFIG=~/.kube/config \
@@ -37,54 +38,54 @@ func TestSingleClusterFedDiffCert(t *testing.T) {
 
 	t.Run("federation_single_cluster_different_cert_install", func(t *testing.T) {
 		defer util.RecoverPanic(t)
-		util.Log.Info("Test federation install in a single cluster")
-		util.Log.Info("Reference: https://github.com/maistra/istio/blob/maistra-2.1/pkg/servicemesh/federation/example/config-poc/install.sh")
-		util.Log.Info("Running install_diff_cert.sh waiting 1 min...")
+		log.Log.Info("Test federation install in a single cluster")
+		log.Log.Info("Reference: https://github.com/maistra/istio/blob/maistra-2.1/pkg/servicemesh/federation/example/config-poc/install.sh")
+		log.Log.Info("Running install_diff_cert.sh waiting 1 min...")
 		util.Shell(`pushd ../testdata/examples/federation \
 			&& export MESH1_KUBECONFIG=~/.kube/config \
 			&& export MESH2_KUBECONFIG=~/.kube/config \
 			&& ./install_diff_cert.sh`)
 
-		util.Log.Info("Waiting 2 minutes...")
+		log.Log.Info("Waiting 2 minutes...")
 		time.Sleep(time.Duration(120) * time.Second)
 
-		util.Log.Info("Verify mesh1 connection status")
+		log.Log.Info("Verify mesh1 connection status")
 		msg, err := util.Shell(`oc -n mesh1-system get servicemeshpeer mesh2 -o json`)
 		if err != nil {
 			t.Error("Failed to get servicemeshpeer in mesh1-system")
-			util.Log.Error("Failed to get servicemeshpeer in mesh1-system")
+			log.Log.Error("Failed to get servicemeshpeer in mesh1-system")
 		}
 		if strings.Contains(msg, "\"connected\": true") {
-			util.Log.Info("mesh1-system connected true")
+			log.Log.Info("mesh1-system connected true")
 		} else {
 			t.Error("Failed to get mesh1-system connected")
-			util.Log.Error("Failed to get mesh1-system connected")
+			log.Log.Error("Failed to get mesh1-system connected")
 		}
 
-		util.Log.Info("Verify mesh2 connection status")
+		log.Log.Info("Verify mesh2 connection status")
 		msg, err = util.Shell(`oc -n mesh2-system get servicemeshpeer mesh1 -o json`)
 		if err != nil {
 			t.Error("Failed to get servicemeshpeer in mesh2-system")
-			util.Log.Error("Failed to get servicemeshpeer in mesh2-system")
+			log.Log.Error("Failed to get servicemeshpeer in mesh2-system")
 		}
 		if strings.Contains(msg, "\"connected\": true") {
-			util.Log.Info("mesh2-system connected true")
+			log.Log.Info("mesh2-system connected true")
 		} else {
 			t.Error("Failed to get mesh2-system connected")
-			util.Log.Error("Failed to get mesh2-system connected")
+			log.Log.Error("Failed to get mesh2-system connected")
 		}
 
-		util.Log.Info("Verify if services from mesh1 are imported into mesh2")
+		log.Log.Info("Verify if services from mesh1 are imported into mesh2")
 		msg, err = util.Shell(`oc -n mesh2-system get importedservicesets mesh1 -o json`)
 		if err != nil {
 			t.Error("Failed to find services from mesh1 to mesh2")
-			util.Log.Error("Failed to find services from mesh1 to mesh2")
+			log.Log.Error("Failed to find services from mesh1 to mesh2")
 		}
 		if strings.Contains(msg, "mongodb.bookinfo.svc.mesh2-exports.local") && strings.Contains(msg, "ratings.bookinfo.svc.mesh2-exports.local") {
-			util.Log.Info("mesh2-system gets both mongodb and ratings services from mesh1")
+			log.Log.Info("mesh2-system gets both mongodb and ratings services from mesh1")
 		} else {
 			t.Error("mesh2-system failed to get both mongodb and ratings services from mesh1")
-			util.Log.Error("mesh2-system failed to get both mongodb and ratings services from mesh1")
+			log.Log.Error("mesh2-system failed to get both mongodb and ratings services from mesh1")
 		}
 	})
 }
