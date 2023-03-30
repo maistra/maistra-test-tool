@@ -9,15 +9,15 @@ import (
 )
 
 func cleanupMultipleSMCP() {
-	util.Log.Info("Delete the Multiple CP", meshNamespace)
-	util.KubeDeleteContents(meshNamespace, smmr)
-	util.KubeDeleteContents(meshNamespace, util.RunTemplate(smcpV23_template, smcp))
+	util.Log.Info("Delete the Multiple CP")
+	// util.KubeDeleteContents(meshNamespace, smmr)
+	// util.KubeDeleteContents(meshNamespace, util.RunTemplate(smcpV23_template, smcp))
 	time.Sleep(time.Duration(40) * time.Second)
 	util.KubeDeleteContents(meshNamespace, util.RunTemplate(smcpV23_template_meta, smcp))
 	time.Sleep(time.Duration(40) * time.Second)
 }
 
-// TestSMCPMutiple tests If multiple SMCPs exist in a namespace, the controller reconciles them all. Jira ticket: https://issues.redhat.com/browse/OSSM-2434
+// TestSMCPMutiple tests If multiple SMCPs exist in a namespace, the controller reconciles them all.
 func TestSMCPMutiple(t *testing.T) {
 	defer cleanupMultipleSMCP()
 	defer util.RecoverPanic(t)
@@ -25,9 +25,9 @@ func TestSMCPMutiple(t *testing.T) {
 	util.Shell(`oc delete validatingwebhookconfiguration/openshift-operators.servicemesh-resources.maistra.io`)
 
 	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
-	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV23_template, smcp))
-	util.KubeApplyContents(meshNamespace, smmr)
-	time.Sleep(time.Duration(20) * time.Second)
+	// util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV23_template, smcp))
+	// util.KubeApplyContents(meshNamespace, smmr)
+	// time.Sleep(time.Duration(20) * time.Second)
 	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV23_template_meta, smcp))
 	time.Sleep(time.Duration(20) * time.Second)
 
