@@ -15,7 +15,7 @@ type FailureFunc func(t test.TestHelper, msg string, detailedMsg string)
 
 func CheckResponseMatchesFile(t test.TestHelper, resp *http.Response, file, successMsg, failureMsg string, failure FailureFunc, otherFiles ...string) {
 	t.T().Helper()
-	requireNonNilResponse(t, resp, failure)
+	requireNonNilResponse(t, resp)
 
 	defer util.CloseResponseBody(resp)
 	body, err := io.ReadAll(resp.Body)
@@ -31,31 +31,32 @@ func CheckResponseMatchesFile(t test.TestHelper, resp *http.Response, file, succ
 	} else {
 		var detailMsg string
 		if len(otherFiles) > 0 {
-			matchedFile := ""
-			for _, otherFile := range otherFiles {
-				if matchesFile(body, otherFile) {
-					matchedFile = otherFile
-					break
-				}
-			}
+			matchedFile := findMatchingFile(body, otherFiles)
 			if matchedFile == "" {
-				if t.WillRetry() {
-					detailMsg = fmt.Sprintf("expected response to match file %q, but it didn't; it also didn't match any of the other files", file)
-				} else {
-					detailMsg = fmt.Sprintf("expected response to match file %q, but it didn't; it also didn't match any of the other files; diff:\n%s", file, err)
+				detailMsg = fmt.Sprintf("expected the response to match file %q, but it didn't match that or any other file", file)
+				if !t.WillRetry() {
+					detailMsg += "\ndiff between the expected and actual response:\n" + err.Error()
 				}
 			} else {
-				detailMsg = fmt.Sprintf("expected response to match file %q, but it matched %q", file, matchedFile)
+				detailMsg = fmt.Sprintf("expected the response to match file %q, but it matched %q", file, matchedFile)
 			}
 		} else {
-			if t.WillRetry() {
-				detailMsg = fmt.Sprintf("expected response to match file %q, but it didn't", file)
-			} else {
-				detailMsg = fmt.Sprintf("expected response to match file %q, but it differs:\n%s", file, err)
+			detailMsg = fmt.Sprintf("expected the response to match file %q, but it didn't", file)
+			if !t.WillRetry() {
+				detailMsg += "\ndiff between the expected and actual response:\n" + err.Error()
 			}
 		}
 		failure(t, failureMsg, detailMsg)
 	}
+}
+
+func findMatchingFile(body []byte, otherFiles []string) string {
+	for _, file := range otherFiles {
+		if matchesFile(body, file) {
+			return file
+		}
+	}
+	return ""
 }
 
 func matchesFile(body []byte, file string) bool {
@@ -65,7 +66,7 @@ func matchesFile(body []byte, file string) bool {
 
 func CheckResponseStatus(t test.TestHelper, resp *http.Response, expectedStatus int, failure FailureFunc) {
 	t.T().Helper()
-	requireNonNilResponse(t, resp, failure)
+	requireNonNilResponse(t, resp)
 	if resp.StatusCode != expectedStatus {
 		failure(t, fmt.Sprintf("expected status code %d but got %s", expectedStatus, resp.Status), "")
 	}
@@ -73,29 +74,33 @@ func CheckResponseStatus(t test.TestHelper, resp *http.Response, expectedStatus 
 
 func CheckResponseContains(t test.TestHelper, resp *http.Response, str string, failure FailureFunc) {
 	t.T().Helper()
-	requireNonNilResponse(t, resp, failure)
+	requireNonNilResponse(t, resp)
 
 	defer util.CloseResponseBody(resp)
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		failure(t, fmt.Sprintf("Failed to read response body: %v", err), "")
+		t.Fatalf("Failed to read response body: %v", err)
 	}
 	body := string(bodyBytes)
 	if strings.Contains(body, str) {
-		logSuccess(t, fmt.Sprintf("found %q in response", str))
+		logSuccess(t, fmt.Sprintf("string '%s' found in response", str))
 	} else {
-		failure(t, fmt.Sprintf("expected response to contain %q, but it didn't; the response was: %v", str, body), "")
+		detailMsg := fmt.Sprintf("expected to find the string '%s' in the response, but it wasn't found", str)
+		if !t.WillRetry() {
+			detailMsg += "\nfull response:\n" + body
+		}
+		failure(t, detailMsg, "")
 	}
 }
 
 func CheckDurationInRange(t test.TestHelper, resp *http.Response, duration, minDuration, maxDuration time.Duration, failure FailureFunc) {
 	t.T().Helper()
-	requireNonNilResponse(t, resp, failure)
+	requireNonNilResponse(t, resp)
 
 	if minDuration <= duration && duration <= maxDuration {
-		logSuccess(t, fmt.Sprintf("request duration was %v (within range %v - %v)", duration, minDuration, maxDuration))
+		logSuccess(t, fmt.Sprintf("request completed in %v, which is within the expected range %v - %v", duration.Truncate(time.Millisecond), minDuration, maxDuration))
 	} else {
-		failure(t, fmt.Sprintf("expected request duration to be between %v and %v, but was %v", minDuration, maxDuration, duration), "")
+		failure(t, fmt.Sprintf("expected request duration to be between %v and %v, but was %v", minDuration, maxDuration, duration.Truncate(time.Millisecond)), "")
 	}
 }
 
@@ -109,17 +114,20 @@ func CheckRequestFails(t test.TestHelper, resp *http.Response, successMsg, failu
 		defer util.CloseResponseBody(resp)
 		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
-			failure(t, fmt.Sprintf("Failed to read response body: %v", err), "")
+			t.Fatalf("Failed to read response body: %v", err)
 		}
 
-		detailMsg := fmt.Sprintf("expected request to fail, but it didn't; status: %s, body: %v", resp.Status, string(bodyBytes))
+		detailMsg := fmt.Sprintf("expected request to fail, but it succeeded with the following status: %s", resp.Status)
+		if !t.WillRetry() {
+			detailMsg += "\nfull response:\n" + string(bodyBytes)
+		}
 		failure(t, failureMsg, detailMsg)
 	}
 }
 
-func requireNonNilResponse(t test.TestHelper, resp *http.Response, failure FailureFunc) {
+func requireNonNilResponse(t test.TestHelper, resp *http.Response) {
 	t.T().Helper()
 	if resp == nil {
-		t.Fatalf("response is nil; the HTTP request must have failed")
+		t.Fatal("response is nil; the HTTP request must have failed")
 	}
 }

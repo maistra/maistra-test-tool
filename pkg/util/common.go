@@ -26,6 +26,7 @@ import (
 
 	"golang.org/x/net/publicsuffix"
 
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
@@ -150,7 +151,7 @@ func SaveHTTPResponse(body []byte, dst string) error {
 // modelFile is the file name. Not the file path.
 // resources directory is github.com/maistra/maistra-test-tool/testdata/resources
 func CompareHTTPResponse(body []byte, modelFile string) error {
-	modelPath := filepath.Join("../testdata/resources/html", modelFile)
+	modelPath := filepath.Join(env.GetRootDir()+"/testdata/resources/html", modelFile)
 	if err := CompareToFile(body, modelPath); err != nil {
 		ioutil.WriteFile("/tmp/diffbody", body, 0644)
 		return err

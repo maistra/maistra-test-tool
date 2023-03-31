@@ -24,12 +24,7 @@ sleep 20
 oc1 delete -n west-mesh-system servicemeshpeer/east-mesh
 oc2 delete -n east-mesh-system servicemeshpeer/west-mesh
 
-oc1 delete project west-mesh-system
-oc2 delete project east-mesh-system
-# oc1 delete project mesh1-exports
-# oc2 delete project mesh2-imports
-
-oc1 delete project bookinfo-ha
-oc2 delete project bookinfo-ha
+oc1 delete project west-mesh-system bookinfo-ha
+oc2 delete project east-mesh-system bookinfo-ha
 
 sleep 120

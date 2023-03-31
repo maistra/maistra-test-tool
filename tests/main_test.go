@@ -21,50 +21,23 @@
 package tests
 
 import (
+	"fmt"
+	"os"
 	"testing"
-
-	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-// Create namespaces. All test samples and configurations will be in those namespaces.
-func setupNamespaces() {
-	util.ShellSilent(`oc new-project bookinfo`)
-	util.ShellSilent(`oc new-project foo`)
-	util.ShellSilent(`oc new-project bar`)
-	util.ShellSilent(`oc new-project legacy`)
-	util.ShellSilent(`oc new-project mesh-external`)
-}
-
-// this function is used for matching command line argument <test case name>,
-// e.g. `go test -run <test case name>` with the names in the test_cases.go file.
-func matchString(a, b string) (bool, error) {
-	return a == b, nil
-}
-
 func TestMain(m *testing.M) {
-	setupNamespaces()
-
-	// run test group defined by env variable 'TEST_GROUP'
-	// groups are defined in test_cases.go
-	// TODO check https://go.dev/blog/subtests if we want to use that instead of this
-	testGroup := test.TestGroup(env.Getenv("TEST_GROUP", string(test.Full)))
-	if env.Getenv("SAMPLEARCH", "x86") == "arm" {
-		testGroup = "arm"
-	}
-
-	switch testGroup {
-	case test.Full:
-		testing.Main(matchString, full, nil, nil)
-	case test.ARM:
-		testing.Main(matchString, arm, nil, nil)
-	case test.Smoke:
-		testing.Main(matchString, smoke, nil, nil)
-	case test.InterOp:
-		testing.Main(matchString, interop, nil, nil)
-	default:
-		panic("unsupported TEST_GROUP: " + testGroup)
-	}
-
+	fmt.Println("*****************************************************************************************************************")
+	fmt.Println("*****************************************************************************************************************")
+	fmt.Println("ERROR: You can no longer run tests this way")
+	fmt.Println()
+	fmt.Println("The new way to run the tests is to execute the following command in the project's root directory (not in tests/):")
+	fmt.Println()
+	fmt.Println("    make test                  # to run all tests")
+	fmt.Println()
+	fmt.Println("    make test TestSomething    # to run a specific test")
+	fmt.Println()
+	fmt.Println("*****************************************************************************************************************")
+	fmt.Println("*****************************************************************************************************************")
+	os.Exit(1)
 }

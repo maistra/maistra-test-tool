@@ -17,6 +17,8 @@ package examples
 import (
 	"fmt"
 	"os"
+
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 )
 
 func getenv(key, fallback string) string {
@@ -29,8 +31,8 @@ func getenv(key, fallback string) string {
 
 var (
 	branch  = getenv("SAMPLEARCH", "x86")
-	basedir = "../testdata/examples"
-	certdir = "../sampleCerts"
+	basedir = env.GetRootDir() + "/testdata/examples"
+	certdir = env.GetRootDir() + "/sampleCerts"
 )
 
 var (

@@ -134,7 +134,7 @@ func ShellSilent(format string, args ...interface{}) (string, error) {
 func sh(ctx context.Context, format string, logCommand, logOutput, logError bool, args ...interface{}) (string, error) {
 	command := fmt.Sprintf(format, args...)
 	if logCommand {
-		log.Log.Infof("Running command %s", command)
+		log.Log.Infof("Running command: %s", command)
 	}
 	c := exec.CommandContext(ctx, "sh", "-c", command) // #nosec
 	bytes, err := c.CombinedOutput()

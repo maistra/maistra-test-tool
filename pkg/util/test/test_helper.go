@@ -3,6 +3,7 @@ package test
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 func NewTestContext(t *testing.T) TestHelper {
@@ -100,15 +101,19 @@ func (t *testHelper) Cleanup(f func()) {
 	t.t.Helper()
 	t.t.Cleanup(func() {
 		t.T().Helper()
+		start := time.Now()
 		t.Log("Performing cleanup")
 		f()
+		t.Logf("Cleanup completed in %.2fs", time.Now().Sub(start).Seconds())
 	})
 }
 
 func (t *testHelper) LogStep(str string) {
 	t.t.Helper()
-	t.Log("")
 	t.currentStep++
+	if t.currentStep > 1 {
+		t.Log("")
+	}
 	t.Logf("STEP %d: %s", t.currentStep, str)
 	t.Log("")
 }

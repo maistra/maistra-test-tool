@@ -76,5 +76,5 @@ func RecreateNamespace(t test.TestHelper, ns string) {
 
 func WaitSMCPReady(t test.TestHelper, ns string, name string) {
 	t.T().Helper()
-	shell.Executef(t, `oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, ns, name)
+	shell.Executef(t, `oc -n %s wait --for condition=Ready smcp/%s --timeout 300s`, ns, name)
 }

@@ -8,7 +8,8 @@ then
 else
   oc login -u ${OCP_CRED_USR} -p ${OCP_CRED_PSW} --server=${OCP_API_URL} --insecure-skip-tls-verify=true
 fi
-go test -timeout 3h -v 2>&1 | tee >($HOME/go/bin/go-junit-report > results.xml) test.log
+
+../runtests.sh
 
 echo "#Testing Completed#"
 sleep 90
