@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
+	"github.com/maistra/maistra-test-tool/pkg/util/template"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -12,6 +14,13 @@ func ApplyString(t test.TestHelper, ns string, yaml string) {
 	t.T().Helper()
 	if err := util.KubeApplyContents(ns, yaml); err != nil {
 		t.Fatalf("Failed to apply manifest: %v;\nYAML: %v", err, yaml)
+	}
+}
+func ApplyTemplate(t test.TestHelper, ns string, yaml string, vars interface{}) {
+	t.T().Helper()
+	template := template.Run(t, yaml, vars)
+	if err := util.KubeApplyContents(ns, template); err != nil {
+		t.Fatalf("Failed to apply manifest: %v;\nYAML: %v", err, template)
 	}
 }
 
@@ -78,3 +87,18 @@ func WaitSMCPReady(t test.TestHelper, ns string, name string) {
 	t.T().Helper()
 	shell.Executef(t, `oc -n %s wait --for condition=Ready smcp/%s --timeout 300s`, ns, name)
 }
+
+func AllResourcesDeleted(t test.TestHelper, ns string, checks ...assert.CheckFunc) {
+	t.T().Helper()
+	shell.Execute(t,
+		fmt.Sprintf(`oc get all -n %s`, ns),
+		checks...)
+}
+
+// func Exec(t test.TestHelper, podLocator PodLocatorFunc, container string, cmd string, checks ...assert.CheckFunc) {
+// 	t.T().Helper()
+// 	pod := podLocator(t)
+// 	shell.Execute(t,
+// 		fmt.Sprintf("kubectl exec -n %s %s -c %s -- %s", pod.Namespace, pod.Name, container, cmd),
+// 		checks...)
+// }

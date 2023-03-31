@@ -17,6 +17,9 @@ package ossm
 import _ "embed"
 
 var (
+	//go:embed yaml/smcp_v2.4.yaml
+	smcpV24_template string
+
 	//go:embed yaml/smcp_v2.3.yaml
 	smcpV23_template string
 

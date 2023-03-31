@@ -53,3 +53,7 @@ func GetRootDir() string {
 	}
 	return dir[:index]
 }
+
+func IsRosa() bool {
+	return Getenv("ROSA", "false") == "true"
+}

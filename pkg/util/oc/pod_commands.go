@@ -26,6 +26,13 @@ func Exec(t test.TestHelper, podLocator PodLocatorFunc, container string, cmd st
 		checks...)
 }
 
+func PatchWithMerge(t test.TestHelper, ns string, rs string, patch string, checks ...assert.CheckFunc) {
+	t.T().Helper()
+	shell.Execute(t,
+		fmt.Sprintf(`oc patch -n %s %s --type merge -p '%s'`, ns, rs, patch),
+		checks...)
+}
+
 func Logs(t test.TestHelper, podLocator PodLocatorFunc, container string, checks ...assert.CheckFunc) {
 	t.T().Helper()
 	pod := podLocator(t)
@@ -82,4 +89,8 @@ func RestartAllPodsAndWaitReady(t test.TestHelper, namespaces ...string) {
 func WaitAllPodsReady(t test.TestHelper, ns string) {
 	t.T().Helper()
 	shell.Executef(t, `oc -n %s wait --for condition=Ready --all pods --timeout 180s`, ns)
+}
+func WaitCondition(t test.TestHelper, ns string, kind string, name string, condition string) {
+	t.T().Helper()
+	shell.Executef(t, `oc wait -n %s %s/%s --for condition=%s  --timeout %s`, ns, kind, name, condition, "180s")
 }
