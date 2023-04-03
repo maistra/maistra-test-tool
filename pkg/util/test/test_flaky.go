@@ -9,9 +9,6 @@ import (
 
 const flakinessCheckUsingSubTests = false
 
-var stopFlakinessCheckOnFirstSuccess = env.Getenv("STOP_FLAKINESS_CHECK_ON_FIRST_SUCCESS", "false") == "true"
-var maxFlakinessCheckRuns = env.GetenvAsInt("MAX_FLAKINESS_CHECK_RUNS", 10)
-
 func NewTestWithFlakinessDetection(t *testing.T) Test {
 	return flakinessDetectorTest{t: t}
 }
@@ -29,6 +26,9 @@ type flakinessDetectorTest struct {
 func (t flakinessDetectorTest) Run(f func(t TestHelper)) {
 	t.t.Helper()
 	defer recoverPanic(t.t)
+
+	var stopFlakinessCheckOnFirstSuccess = env.Getenv("STOP_FLAKINESS_CHECK_ON_FIRST_SUCCESS", "false") == "true"
+	var maxFlakinessCheckRuns = env.GetenvAsInt("MAX_FLAKINESS_CHECK_RUNS", 10)
 
 	passCount := 0
 	failCount := 0

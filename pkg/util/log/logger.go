@@ -15,6 +15,11 @@
 package log
 
 import (
+	"bytes"
+	"fmt"
+	"path/filepath"
+	"strings"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,27 +31,49 @@ type Event struct {
 	message string
 }
 
-// StandardLogger a wrapper of logrus.Logger
-type StandardLogger struct {
-	*logrus.Logger
+type customFormatter struct {
+}
+
+func (c customFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+	var b *bytes.Buffer
+	if entry.Buffer != nil {
+		b = entry.Buffer
+	} else {
+		b = &bytes.Buffer{}
+	}
+
+	caller := entry.Caller
+	callerFile := "unknown"
+	callerLine := 0
+	if caller != nil {
+		callerFile = filepath.Base(caller.File)
+		callerLine = caller.Line
+	}
+
+	// Every line is indented at least 4 spaces.
+	b.WriteString("    ")
+	if _, err := fmt.Fprintf(b, "%s:%d: ", callerFile, callerLine); err != nil {
+		return b.Bytes(), err
+	}
+	lines := strings.Split(entry.Message, "\n")
+	if l := len(lines); l > 1 && lines[l-1] == "" {
+		lines = lines[:l-1]
+	}
+	for i, line := range lines {
+		if i > 0 {
+			// Second and subsequent lines are indented an additional 4 spaces.
+			b.WriteString("\n        ")
+		}
+		b.WriteString(line)
+	}
+	b.WriteByte('\n')
+	return b.Bytes(), nil
 }
 
 // NewTextLogger a StandardLogger with TextFormatter
-func NewTextLogger() *StandardLogger {
-	var baseLogger = logrus.New()
-	var standardLogger = &StandardLogger{baseLogger}
-	standardLogger.Formatter = &logrus.TextFormatter{
-		FullTimestamp: false,
-	}
-
-	return standardLogger
-}
-
-// NewJSONLogger a StandardLogger with JOSNFormatter
-func NewJSONLogger() *StandardLogger {
-	var baseLogger = logrus.New()
-	var standardLogger = &StandardLogger{baseLogger}
-	standardLogger.Formatter = &logrus.JSONFormatter{}
-
-	return standardLogger
+func NewTextLogger() *logrus.Logger {
+	var log = logrus.New()
+	log.ReportCaller = true
+	log.Formatter = &customFormatter{}
+	return log
 }

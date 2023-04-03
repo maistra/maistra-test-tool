@@ -10,4 +10,7 @@ require (
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
 )
 
-require golang.org/x/sys v0.5.0 // indirect
+require (
+	github.com/jstemmer/go-junit-report v1.0.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+)

@@ -1,6 +1,7 @@
 package heredoc
 
 import (
+	"fmt"
 	"math"
 	"strings"
 )
@@ -13,6 +14,10 @@ func Doc(indented string) string {
 	baseIndent := getBaseIndent(lines)
 	lines = removeBaseIndent(lines, baseIndent)
 	return strings.Join(lines, "\n")
+}
+
+func Docf(indentedFormat string, a ...any) string {
+	return Doc(fmt.Sprintf(indentedFormat, a))
 }
 
 func getBaseIndent(lines []string) int {

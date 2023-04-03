@@ -11,5 +11,4 @@ func assertFailure(t test.TestHelper, msg string, detailMsg string) {
 	} else {
 		t.Errorf("%s\n%s", msg, detailMsg)
 	}
-	// t.Errorf("FAILURE: %s\n%s", msg, detailMsg)
 }

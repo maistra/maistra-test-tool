@@ -30,8 +30,6 @@ The testing tasks are based on [istio.io Doc Tasks](https://istio.io/v1.9/docs/t
 3. RedHat Service Mesh Operator has been installed on the OpenShift cluster.
 
 ## Testing
-- A main test is in the `tests` directory. All test cases are in the `test_cases.go` and are mapped to the implementations in the `pkg` directory.
-
 - In order to save results in a XML report, we can run a go test command with "github.com/jstemmer/go-junit-report".
     ```
     $ go get -u github.com/jstemmer/go-junit-report
@@ -43,17 +41,15 @@ The testing tasks are based on [istio.io Doc Tasks](https://istio.io/v1.9/docs/t
     - For Power environment testing, a user can update the `tests/test.env` file `export SAMPLEARCH=p`
     - For Z environment testing, a user can update the `tests/test.env` file `export SAMPLEARCH=z`
 
-- To run all the test cases: `cd tests; go test -timeout 2h -v`.
+- To run all the test cases, run the following command:
+  ```
+  make test
+  ```
 
-    The `-timeout` flag is necessary when running all tests or several major test cases. Otherwise, a `go test` command falls into panic after 10 minutes.
-
-    ```
-    $ cd tests
-    $ go test -timeout 2h -v 2>&1 | tee >(${GOPATH}/bin/go-junit-report > results.xml) test.log
-    ```
-- To run a single test case: e.g. `cd tests; go test -run A1 -timeout 2h -v`
-
-    Test cases shortname and mapping are in the `tests/test_cases.go` file.
+- To run a single test case, run `make test <name>`. For example:
+  ```
+  make test TestFaultInjection
+  ```
 
 ## License
 

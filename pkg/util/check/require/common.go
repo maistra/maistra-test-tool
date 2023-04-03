@@ -11,5 +11,4 @@ func requireFailure(t test.TestHelper, msg string, detailMsg string) {
 	} else {
 		t.Fatalf("%s\n%s", msg, detailMsg)
 	}
-	// t.Errorf("FAILURE: %s\n%s", msg, detailMsg)
 }

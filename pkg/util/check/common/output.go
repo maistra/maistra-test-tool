@@ -11,11 +11,14 @@ func CheckOutputContains(t test.TestHelper, output, str, successMsg, failureMsg 
 	t.T().Helper()
 	if strings.Contains(output, str) {
 		if successMsg == "" {
-			successMsg = fmt.Sprintf("found %q in response", str)
+			successMsg = fmt.Sprintf("string '%s' found in output", str)
 		}
 		logSuccess(t, successMsg)
 	} else {
-		detailMsg := fmt.Sprintf("expected command output to contain `%s`, but the output was:\n%v", str, output)
+		detailMsg := fmt.Sprintf("expected to find the string '%s' in the command output, but it wasn't found", str)
+		if !t.WillRetry() {
+			detailMsg += "\nfull output:\n" + output
+		}
 		failure(t, failureMsg, detailMsg)
 	}
 }
@@ -23,11 +26,14 @@ func CheckOutputContains(t test.TestHelper, output, str, successMsg, failureMsg 
 func CheckOutputDoesNotContain(t test.TestHelper, output, str, successMsg, failureMsg string, failure FailureFunc) {
 	t.T().Helper()
 	if strings.Contains(output, str) {
-		detailMsg := fmt.Sprintf("expected command output to not contain `%s`, but the output was:\n%v", str, output)
+		detailMsg := fmt.Sprintf("expected the string '%s' to be absent from the command output, but it was present", str)
+		if !t.WillRetry() {
+			detailMsg += "\nfull output:\n" + output
+		}
 		failure(t, failureMsg, detailMsg)
 	} else {
 		if successMsg == "" {
-			successMsg = fmt.Sprintf("did not find %q in response", str)
+			successMsg = fmt.Sprintf("string '%s' not found in output", str)
 		}
 		logSuccess(t, successMsg)
 	}

@@ -23,10 +23,5 @@ oc2 delete -n mesh2-system servicemeshpeer/mesh1
 # Running `oc delete project` does not wait until deletion is finished,
 # even when using --wait flag, so we use `oc delete namespace`
 
-oc1 delete namespace mesh1-system
-oc2 delete namespace mesh2-system
-# oc1 delete namespace mesh1-exports
-# oc2 delete namespace mesh2-imports
-
-oc1 delete namespace mesh1-bookinfo
-oc2 delete namespace mesh2-bookinfo
+oc1 delete namespace mesh1-system mesh1-bookinfo
+oc2 delete namespace mesh2-system mesh2-bookinfo

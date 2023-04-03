@@ -43,7 +43,7 @@ func UntilSuccessWithOptions(t test.TestHelper, options RetryOptions, f func(t t
 			if i > 0 {
 				// there was at least one failed attempt, so let's log the current attempt as successful so that
 				// the user isn't left wondering
-				t.Logf("Attempt %d/%d successful; total time: %v", i+1, options.maxAttempts, time.Now().Sub(start))
+				t.Logf("Attempt %d/%d successful; total time: %.2fs", i+1, options.maxAttempts, time.Now().Sub(start).Seconds())
 			}
 			break
 		}
