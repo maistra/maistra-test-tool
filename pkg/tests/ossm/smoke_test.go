@@ -15,56 +15,40 @@
 package ossm
 
 import (
-	"strings"
+	"net/http"
 	"testing"
-	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
-	. "github.com/maistra/maistra-test-tool/pkg/examples"
-	. "github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
+	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	. "github.com/maistra/maistra-test-tool/pkg/util/log"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func cleanupBookinfo() {
-	Log.Info("Cleanup")
-	app := Bookinfo{Namespace: "bookinfo"}
-	app.Uninstall()
-	time.Sleep(time.Duration(30) * time.Second)
-}
-
 func TestBookinfo(t *testing.T) {
 	NewTest(t).Id("A2").Groups(ARM, Full, Smoke, InterOp).Run(func(t TestHelper) {
-		defer cleanupBookinfo()
-		Log.Info("Test Bookinfo Installation")
-		app.InstallAndWaitReady(t, app.Bookinfo("bookinfo"))
 
-		Log.Info("Check pods running 2/2 ready")
-		msg, _ := Shell(`oc get pods -n bookinfo`)
-		if strings.Contains(msg, "2/2") {
-			Log.Info("Success. proxy container is running.")
-		} else {
-			t.Error("Error. proxy container is not running.")
-		}
+		ns := "bookinfo"
 
-		Log.Info("Check istiod pod is ready and print istiod logs")
-		mesg, _ := Shell(`oc get pods -n istio-system | grep istiod`)
-		if strings.Contains(mesg, "1/1") {
-			Log.Info("Success. istiod pod is running with below logs:")
-			shell.Executef(t, `oc logs -n %s -l app=istiod | grep info`, meshNamespace)
-		} else {
-			t.Error("Error. istiod pod is not running.")
-		}
+		t.Cleanup(func() {
+			oc.RecreateNamespace(t, ns)
+		})
+
+		app.InstallAndWaitReady(t, app.Bookinfo(ns))
 
 		Log.Info("Check if bookinfo productpage is running")
-		GATEWAY_URL, _ := Shell(`oc -n %s get route istio-ingressgateway -o jsonpath='{.spec.host}'`, meshNamespace)
-		mes, _ := Shell(`curl -o /dev/null -s -w "%%{http_code}\n" http://%s/productpage`, GATEWAY_URL)
-		if strings.Contains(mes, "200") {
-			Log.Info("Success. bookinfo productpage is running")
-		} else {
-			t.Error("Error. bookinfo productpage is not running.")
-			Log.Error("Error. bookinfo productpage is not running.")
-		}
+
+		productpageURL := app.BookinfoProductPageURL(t, meshNamespace)
+
+		t.LogStep("check if productpage shows 'error fetching product reviews' due to delay injection")
+		retry.UntilSuccess(t, func(t TestHelper) {
+			for i := 0; i < 5; i++ {
+				curl.Request(t,
+					productpageURL, nil,
+					require.ResponseStatus(http.StatusOK))
+			}
+		})
 	})
 }
