@@ -34,7 +34,7 @@ func TestSMCPInstall(t *testing.T) {
 		hack.DisableLogrusForThisTest(t)
 		t.Cleanup(func() {
 			oc.DeleteNamespace(t, meshNamespace)
-			SetupNamespacesAndControlPlane()
+			oc.CreateNamespace(t, meshNamespace)
 		})
 		rosa := strconv.FormatBool(env.IsRosa())
 		vars := map[string]string{
