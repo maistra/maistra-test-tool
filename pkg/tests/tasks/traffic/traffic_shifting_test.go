@@ -48,7 +48,7 @@ func TestTrafficShifting(t *testing.T) {
 			t.LogStep("configure VirtualService to split traffic 50% to v1 and 50% to v3")
 			oc.ApplyString(t, ns, splitReviews5050BetweenV1andV3)
 
-			t.LogStep("make 100 requests and checking if v1 and v3 get 50% of requests each (tolerance: 20%)")
+			t.LogStep("Make 100 requests and check if v1 and v3 get 50% of requests each (tolerance: 20%)")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				tolerance := 0.20
 				checkTrafficRatio(t, productpageURL, 100, tolerance, map[string]float64{
@@ -62,7 +62,7 @@ func TestTrafficShifting(t *testing.T) {
 			t.LogStep("configure VirtualService to send all traffic to v3")
 			oc.ApplyString(t, ns, allReviewsToV3)
 
-			t.LogStep("make 100 requests and checking if all of them go to v3 (tolerance: 0%)")
+			t.LogStep("Make 100 requests and check if all of them go to v3 (tolerance: 0%)")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				tolerance := 0.0
 				checkTrafficRatio(t, productpageURL, 100, tolerance, map[string]float64{

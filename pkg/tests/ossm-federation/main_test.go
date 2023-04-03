@@ -9,6 +9,6 @@ import (
 
 func TestMain(m *testing.M) {
 	test.NewSuite(m).
-		Setup(ossm.SetupNamespacesAndControlPlane).
+		Setup(ossm.SetupEnvVars).
 		Run()
 }

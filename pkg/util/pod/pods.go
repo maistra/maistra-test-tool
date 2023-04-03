@@ -3,21 +3,20 @@ package pod
 import (
 	"strings"
 
-	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
+	ocpackage "github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func MatchingSelector(selector string, ns string) oc.PodLocatorFunc {
-	return func(t test.TestHelper) oc.NamespacedName {
+func MatchingSelector(selector string, ns string) ocpackage.PodLocatorFunc {
+	return func(t test.TestHelper, oc *ocpackage.OC) ocpackage.NamespacedName {
 		t.T().Helper()
-		output := shell.Executef(t, "kubectl -n %s get pods -l %q -o jsonpath='{.items[*].metadata.name}'", ns, selector)
+		output := oc.Invokef(t, "kubectl -n %s get pods -l %q -o jsonpath='{.items[*].metadata.name}'", ns, selector)
 		pods := strings.Split(output, " ")
 		switch len(pods) {
 		case 0:
 			t.Fatalf("no pods found using selector %s in namespace %s", selector, ns)
 		case 1:
-			return oc.NamespacedName{
+			return ocpackage.NamespacedName{
 				Namespace: ns,
 				Name:      pods[0],
 			}

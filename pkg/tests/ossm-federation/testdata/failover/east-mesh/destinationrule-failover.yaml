@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: failover
+  namespace: bookinfo-ha
+spec:
+  host: ratings.bookinfo-ha.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      simple: LEAST_CONN
+      localityLbSetting:
+        enabled: true
+        failover:
+          - from: {{ .EastMeshRegion }}
+            to: {{ .WestMeshRegion }}
+    outlierDetection:
+      consecutive5xxErrors: 2
+      interval: 10s
+      baseEjectionTime: 1m

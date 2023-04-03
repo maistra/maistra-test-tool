@@ -109,6 +109,14 @@ func CheckDurationInRange(t test.TestHelper, resp *http.Response, duration, minD
 	}
 }
 
+func CheckRequestSucceeds(t test.TestHelper, resp *http.Response, responseBody []byte, successMsg, failureMsg string, failure FailureFunc) {
+	if resp == nil {
+		failure(t, failureMsg, "expected request to succeed, but it failed")
+	} else if successMsg != "" {
+		logSuccess(t, successMsg)
+	}
+}
+
 func CheckRequestFails(t test.TestHelper, resp *http.Response, responseBody []byte, successMsg, failureMsg string, failure FailureFunc) {
 	t.T().Helper()
 	if resp == nil {

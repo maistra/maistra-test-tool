@@ -3,19 +3,29 @@ package shell
 import (
 	"fmt"
 	"os"
+	"os/exec"
 
-	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func ExecuteIgnoreError(t test.TestHelper, cmd string) {
-	_, _ = util.Shell(cmd)
+	_, _ = execShellCommand(cmd, nil)
+}
+
+func Executef(t test.TestHelper, format string, args ...any) string {
+	t.T().Helper()
+	return Execute(t, fmt.Sprintf(format, args...))
 }
 
 func Execute(t test.TestHelper, cmd string, checks ...common.CheckFunc) string {
 	t.T().Helper()
-	output, err := util.Shell(cmd)
+	return ExecuteWithEnv(t, nil, cmd, checks...)
+}
+
+func ExecuteWithEnv(t test.TestHelper, env []string, cmd string, checks ...common.CheckFunc) string {
+	t.T().Helper()
+	output, err := execShellCommand(cmd, env)
 	if err != nil {
 		t.Fatalf("Command failed: %q\nError: %s", cmd, err)
 	}
@@ -25,9 +35,11 @@ func Execute(t test.TestHelper, cmd string, checks ...common.CheckFunc) string {
 	return output
 }
 
-func Executef(t test.TestHelper, format string, args ...any) string {
-	t.T().Helper()
-	return Execute(t, fmt.Sprintf(format, args...))
+func execShellCommand(command string, env []string) (string, error) {
+	cmd := exec.Command("sh", "-c", command)
+	cmd.Env = env
+	bytes, err := cmd.CombinedOutput()
+	return string(bytes), err
 }
 
 func CreateTempDir(t test.TestHelper, namePrefix string) string {

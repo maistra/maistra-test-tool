@@ -23,6 +23,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
@@ -41,9 +42,12 @@ func TestBookinfoInjection(t *testing.T) {
 		t.LogStep("Check pods running 2/2 ready and with Sidecar Injection")
 		assertSidecarInjectedInAllPods(t, ns)
 
+		app.InstallAndWaitReady(t, app.SleepNoSidecar(ns))
+
 		t.LogStep("Check if bookinfo productpage is running through the Proxy")
-		shell.Execute(t,
-			fmt.Sprintf(`oc -n %s run -i --restart=Never --rm curl --image curlimages/curl -- curl -sI http://productpage:9080`, ns),
+		oc.Exec(t,
+			pod.MatchingSelector("app=sleep", ns), "sleep",
+			"curl -sI http://productpage:9080",
 			assert.OutputContains(
 				"HTTP/1.1 200 OK",
 				"ProductPage returns 200 OK",
