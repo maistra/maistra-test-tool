@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ossm
+package non_dependant
 
 import (
 	_ "embed"
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
@@ -28,11 +29,53 @@ import (
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-type vars struct {
-	Name      string
-	Namespace string
-}
+func TestSMCPInstall(t *testing.T) {
+	NewTest(t).Id("A1").Groups(Smoke, Full, InterOp, ARM).Run(func(t TestHelper) {
+		hack.DisableLogrusForThisTest(t)
+		t.Cleanup(func() {
+			oc.DeleteNamespace(t, meshNamespace)
+			SetupNamespacesAndControlPlane()
+		})
+		rosa := strconv.FormatBool(env.IsRosa())
+		vars := map[string]string{
+			"Name":      smcpName,
+			"Namespace": meshNamespace,
+			"Rosa":      rosa,
+		}
+		versionTemplates := map[string]string{
+			"2.1": smcpV21_template,
+			"2.2": smcpV22_template,
+			"2.3": smcpV23_template,
+			// "2.4": smcpV24_template,
+		}
+		smcpVersion := env.GetDefaultSMCPVersion()
+		_, ok := versionTemplates[smcpVersion]
+		if !ok {
+			t.Fatal("Unsupported SMCP version: " + smcpVersion)
+		}
+		for version, smcpTemplate := range versionTemplates {
+			t.NewSubTest("smcp_test_install_" + version).Run(func(t TestHelper) {
+				t.LogStep("Delete Namespace, Create Namespace and Install SMCP v" + version)
+				oc.RecreateNamespace(t, meshNamespace)
+				installSMCPVersion(t, smcpTemplate, vars)
+				uninstallSMCPVersion(t, smcpTemplate, vars)
+			})
+		}
+		// Testing upgrade of SMCP to all supported version
+		versions := []string{"2.1", "2.2", "2.3", "2.4"}
+		for i := 0; i < len(versions)-1; i++ {
+			fromVersion := versions[i]
+			toVersion := versions[i+1]
 
+			t.NewSubTest(fmt.Sprintf("smcp_test_upgrade_%s_to_%s", fromVersion, toVersion)).Run(func(t TestHelper) {
+				oc.RecreateNamespace(t, meshNamespace)
+				installSMCPVersion(t, fromVersion, vars)
+				t.LogStep(fmt.Sprintf("Upgrade SMCP from v%s to v%s", fromVersion, toVersion))
+				installSMCPVersion(t, toVersion, vars)
+			})
+		}
+	})
+}
 func installSMCPVersion(t test.TestHelper, smcpTemplate string, vars interface{}) {
 	t.LogStep("Install SMCP")
 	oc.ApplyTemplate(t, meshNamespace, smcpTemplate, vars)
@@ -60,56 +103,5 @@ func uninstallSMCPVersion(t test.TestHelper, smcpTemplate string, vars interface
 			assert.OutputContains("No resources found in",
 				"All resources deleted from namespace",
 				"Still waiting for resources to be deleted from namespace"))
-	})
-}
-
-func TestSMCPInstall(t *testing.T) {
-	NewTest(t).Id("A1").Groups(Smoke, Full, InterOp, ARM).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
-		t.Cleanup(func() {
-			oc.DeleteNamespace(t, meshNamespace)
-			SetupNamespacesAndControlPlane()
-		})
-		vars := vars{
-			Name:      smcpName,
-			Namespace: meshNamespace,
-		}
-		versionTemplates := map[string]string{
-			"2.1": smcpV21_template,
-			"2.2": smcpV22_template,
-			"2.3": smcpV23_template,
-			// "2.4": smcpV24_template,
-		}
-		smcpVersion := env.GetDefaultSMCPVersion()
-		_, ok := versionTemplates[smcpVersion]
-		if !ok {
-			t.Errorf("Unsupported SMCP version: %s", smcpVersion)
-			return
-		}
-		for version, smcpTemplate := range versionTemplates {
-			t.NewSubTest("smcp_test_install_" + version).Run(func(t TestHelper) {
-				t.LogStep("Create Namespace and Install SMCP v" + version)
-				installSMCPVersion(t, smcpTemplate, vars)
-				uninstallSMCPVersion(t, smcpTemplate, vars)
-			})
-		}
-
-		t.NewSubTest("smcp_test_upgrade_2.1_to_2.2").Run(func(t TestHelper) {
-			installSMCPVersion(t, "2.1", vars)
-			t.LogStep("Upgrade SMCP from v2.1 to v2.2")
-			installSMCPVersion(t, "2.2", vars)
-		})
-
-		t.NewSubTest("smcp_test_upgrade_2.2_to_2.3").Run(func(t TestHelper) {
-			installSMCPVersion(t, "2.2", vars)
-			t.LogStep("Upgrade SMCP from v2.2 to v2.3")
-			installSMCPVersion(t, "2.3", vars)
-		})
-
-		t.NewSubTest("smcp_test_upgrade_2.3_to_2.4").Run(func(t TestHelper) {
-			installSMCPVersion(t, "2.3", vars)
-			t.LogStep("Upgrade SMCP from v2.3 to v2.4")
-			installSMCPVersion(t, "2.4", vars)
-		})
 	})
 }
