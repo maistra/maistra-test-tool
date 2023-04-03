@@ -65,6 +65,7 @@ func TestSMCPInstall(t *testing.T) {
 			Name:      smcp.Name,
 			Namespace: smcp.Namespace,
 		}
+
 		t.NewSubTest("smcp_test_install_2.4").Run(func(t TestHelper) {
 			t.LogStep("Crete Namespace and Install SMCP v2.4")
 			oc.CreateNamespace(t, meshNamespace)
@@ -80,6 +81,7 @@ func TestSMCPInstall(t *testing.T) {
 			t.LogStep("Check SMCP is Ready")
 			oc.WaitCondition(t, meshNamespace, "smcp", smcpName, "Ready")
 		})
+
 		t.NewSubTest("smcp_test_uninstall_2.4").Run(func(t TestHelper) {
 			t.LogStep("Delete SMCP v2.4 in namespace " + meshNamespace)
 			oc.DeleteFromString(t, meshNamespace, smmr)
@@ -92,6 +94,7 @@ func TestSMCPInstall(t *testing.T) {
 						"Still waiting for resources to be deleted from namespace"))
 			})
 		})
+
 		t.NewSubTest("smcp_test_install_2.3").Run(func(t TestHelper) {
 			t.LogStep("Crete Namespace and Install SMCP v2.3")
 			oc.CreateNamespace(t, meshNamespace)
@@ -107,6 +110,7 @@ func TestSMCPInstall(t *testing.T) {
 			t.LogStep("Check SMCP is Ready")
 			oc.WaitCondition(t, meshNamespace, "smcp", smcpName, "Ready")
 		})
+
 		t.NewSubTest("smcp_test_uninstall_2.3").Run(func(t TestHelper) {
 			t.LogStep("Delete SMCP v2.3 in namespace " + meshNamespace)
 			oc.DeleteFromString(t, meshNamespace, smmr)
@@ -119,6 +123,7 @@ func TestSMCPInstall(t *testing.T) {
 						"Still waiting for resources to be deleted from namespace"))
 			})
 		})
+
 		t.NewSubTest("smcp_test_install_2.2").Run(func(t TestHelper) {
 			t.LogStep("Crete Namespace and Install SMCP v2.2")
 			oc.CreateNamespace(t, meshNamespace)
@@ -134,6 +139,7 @@ func TestSMCPInstall(t *testing.T) {
 			t.LogStep("Check SMCP is Ready")
 			oc.WaitCondition(t, meshNamespace, "smcp", smcpName, "Ready")
 		})
+
 		t.NewSubTest("smcp_test_uninstall_2.2").Run(func(t TestHelper) {
 			t.LogStep("Delete SMCP v2.2 in namespace " + meshNamespace)
 			oc.DeleteFromString(t, meshNamespace, smmr)
@@ -146,6 +152,7 @@ func TestSMCPInstall(t *testing.T) {
 						"Still waiting for resources to be deleted from namespace"))
 			})
 		})
+
 		t.NewSubTest("smcp_test_install_2.1").Run(func(t TestHelper) {
 			t.LogStep("Crete Namespace and Install SMCP v2.1")
 			oc.CreateNamespace(t, meshNamespace)
@@ -161,6 +168,7 @@ func TestSMCPInstall(t *testing.T) {
 			t.LogStep("Check SMCP is Ready")
 			oc.WaitCondition(t, meshNamespace, "smcp", smcpName, "Ready")
 		})
+
 		t.NewSubTest("smcp_test_uninstall_2.1").Run(func(t TestHelper) {
 			t.LogStep("Delete SMCP v2.1 in namespace " + meshNamespace)
 			oc.DeleteFromString(t, meshNamespace, smmr)
@@ -173,6 +181,7 @@ func TestSMCPInstall(t *testing.T) {
 						"Still waiting for resources to be deleted from namespace"))
 			})
 		})
+
 		t.NewSubTest("smcp_test_upgrade_2.1_to_2.2").Run(func(t TestHelper) {
 			t.LogStep("Crete Namespace and Install SMCP v2.1")
 			oc.CreateNamespace(t, meshNamespace)
@@ -200,6 +209,7 @@ func TestSMCPInstall(t *testing.T) {
 			t.LogStep("Check SMCP is Ready")
 			oc.WaitCondition(t, meshNamespace, "smcp", smcpName, "Ready")
 		})
+
 		t.NewSubTest("smcp_test_upgrade_2.2_to_2.3").Run(func(t TestHelper) {
 			t.LogStep("Crete Namespace and Install SMCP v2.2")
 			oc.CreateNamespace(t, meshNamespace)
@@ -227,6 +237,7 @@ func TestSMCPInstall(t *testing.T) {
 			t.LogStep("Check SMCP is Ready")
 			oc.WaitCondition(t, meshNamespace, "smcp", smcpName, "Ready")
 		})
+
 		t.NewSubTest("smcp_test_upgrade_2.3_to_2.4").Run(func(t TestHelper) {
 			t.LogStep("Crete Namespace and Install SMCP v2.3")
 			oc.CreateNamespace(t, meshNamespace)
