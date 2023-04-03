@@ -59,9 +59,20 @@ func SetupNamespacesAndControlPlane() {
 	if env.Getenv("NIGHTLY", "false") == "true" {
 		installNightlyOperators()
 	}
-
+	versionTemplates := map[string]string{
+		"2.1": smcpV21_template,
+		"2.2": smcpV22_template,
+		"2.3": smcpV23_template,
+		// "2.4": smcpV24_template,
+	}
+	smcpVersion := env.GetDefaultSMCPVersion()
+	template, ok := versionTemplates[smcpVersion]
+	if !ok {
+		log.Log.Errorf("Unsupported SMCP version: %s", smcpVersion)
+		return
+	}
 	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
-	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV23_template, smcp))
+	util.KubeApplyContents(meshNamespace, util.RunTemplate(template, smcp))
 	util.KubeApplyContents(meshNamespace, smmr)
 	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcp.Name)
 	util.Shell(`oc -n %s wait --for condition=Ready smmr/default --timeout 180s`, meshNamespace)

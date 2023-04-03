@@ -92,5 +92,5 @@ func WaitAllPodsReady(t test.TestHelper, ns string) {
 }
 func WaitCondition(t test.TestHelper, ns string, kind string, name string, condition string) {
 	t.T().Helper()
-	shell.Executef(t, `oc wait -n %s %s/%s --for condition=%s  --timeout %s`, ns, kind, name, condition, "180s")
+	shell.Executef(t, `oc wait -n %s %s/%s --for condition=%s  --timeout %s`, ns, kind, name, condition, "10s")
 }
