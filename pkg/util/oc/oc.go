@@ -16,11 +16,13 @@ func ApplyString(t test.TestHelper, ns string, yaml string) {
 		t.Fatalf("Failed to apply manifest: %v;\nYAML: %v", err, yaml)
 	}
 }
+
 func ApplyTemplate(t test.TestHelper, ns string, yaml string, data interface{}) {
 	t.T().Helper()
 	template := template.Run(t, yaml, data)
 	ApplyString(t, ns, template)
 }
+
 func DeleteFromTemplate(t test.TestHelper, ns string, yaml string, data interface{}) {
 	t.T().Helper()
 	template := template.Run(t, yaml, data)

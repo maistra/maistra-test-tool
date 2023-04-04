@@ -9,6 +9,6 @@ import (
 
 func TestMain(m *testing.M) {
 	test.NewSuite(m).
-		Setup(ossm.SetupOnlyNamespaces).
+		Setup(ossm.BasicSetup).
 		Run()
 }

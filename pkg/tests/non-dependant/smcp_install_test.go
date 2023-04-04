@@ -50,7 +50,7 @@ func TestSMCPInstall(t *testing.T) {
 				t.LogStep("Delete Namespace, Create Namespace and Install SMCP v" + version)
 				oc.RecreateNamespace(t, meshNamespace)
 				assertSMCPDeploysAndIsReady(t, smcpTemplate, smcp)
-				assertSMCPUninstallComplete(t, smcpTemplate, smcp)
+				assertUninstallDeletesAllResources(t, smcpTemplate, smcp)
 			})
 		}
 
@@ -79,7 +79,7 @@ func assertSMCPDeploysAndIsReady(t test.TestHelper, smcpTemplate string, data in
 	oc.WaitSMCPReady(t, meshNamespace, smcpName)
 }
 
-func assertSMCPUninstallComplete(t test.TestHelper, smcpTemplate string, data interface{}) {
+func assertUninstallDeletesAllResources(t test.TestHelper, smcpTemplate string, data interface{}) {
 	t.LogStep("Delete SMCP in namespace " + meshNamespace)
 	oc.DeleteFromString(t, meshNamespace, smmr)
 	oc.DeleteFromTemplate(t, meshNamespace, smcpTemplate, data)

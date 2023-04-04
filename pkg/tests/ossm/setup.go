@@ -52,7 +52,7 @@ func installNightlyOperators() {
 }
 
 func BasicSetup() {
-	log.Log.Info("Setting up namespaces and OSSM control plane")
+	log.Log.Info("Starting Basic Setup")
 	createNamespaces()
 	if env.Getenv("NIGHTLY", "false") == "true" {
 		installNightlyOperators()
@@ -77,10 +77,4 @@ func SetupNamespacesAndControlPlane() {
 	if ipv6 == "true" {
 		log.Log.Info("Running the test with IPv6 configuration")
 	}
-}
-
-// Initialize a default SMCP and SMMR
-func SetupOnlyNamespaces() {
-	BasicSetup()
-	// TODO: add more setup steps for test who do not need SMCP. If you need to add more steps, please add them here. If not we can remove this function.
 }
