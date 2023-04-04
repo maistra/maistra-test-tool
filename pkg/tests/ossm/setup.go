@@ -80,3 +80,14 @@ func SetupNamespacesAndControlPlane() {
 		log.Log.Info("Running the test with IPv6 configuration")
 	}
 }
+
+// Initialize a default SMCP and SMMR
+func SetupOnlyNamespaces() {
+	log.Log.Info("Setting up only namespaces")
+	createNamespaces()
+	if env.Getenv("NIGHTLY", "false") == "true" {
+		installNightlyOperators()
+	}
+	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
+	// TODO: add more setup steps for test who do not need SMCP
+}

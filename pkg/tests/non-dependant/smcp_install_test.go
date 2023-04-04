@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
@@ -29,24 +30,21 @@ import (
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
+var (
+	smmr             string            = ossm.GetSMMRTemplate()
+	versionTemplates map[string]string = ossm.GetSMCPTemplates()
+)
+
 func TestSMCPInstall(t *testing.T) {
 	NewTest(t).Id("A1").Groups(Smoke, Full, InterOp, ARM).Run(func(t TestHelper) {
 		hack.DisableLogrusForThisTest(t)
 		t.Cleanup(func() {
-			oc.DeleteNamespace(t, meshNamespace)
-			oc.CreateNamespace(t, meshNamespace)
+			oc.RecreateNamespace(t, meshNamespace)
 		})
-		rosa := strconv.FormatBool(env.IsRosa())
 		vars := map[string]string{
 			"Name":      smcpName,
 			"Namespace": meshNamespace,
-			"Rosa":      rosa,
-		}
-		versionTemplates := map[string]string{
-			"2.1": smcpV21_template,
-			"2.2": smcpV22_template,
-			"2.3": smcpV23_template,
-			// "2.4": smcpV24_template,
+			"Rosa":      strconv.FormatBool(env.IsRosa()),
 		}
 		smcpVersion := env.GetDefaultSMCPVersion()
 		_, ok := versionTemplates[smcpVersion]
@@ -54,7 +52,7 @@ func TestSMCPInstall(t *testing.T) {
 			t.Fatal("Unsupported SMCP version: " + smcpVersion)
 		}
 		for version, smcpTemplate := range versionTemplates {
-			t.NewSubTest("smcp_test_install_" + version).Run(func(t TestHelper) {
+			t.NewSubTest("install_" + version).Run(func(t TestHelper) {
 				t.LogStep("Delete Namespace, Create Namespace and Install SMCP v" + version)
 				oc.RecreateNamespace(t, meshNamespace)
 				installSMCPVersion(t, smcpTemplate, vars)
@@ -68,7 +66,7 @@ func TestSMCPInstall(t *testing.T) {
 			fromVersion := versions[i]
 			toVersion := versions[i+1]
 
-			t.NewSubTest(fmt.Sprintf("smcp_test_upgrade_%s_to_%s", fromVersion, toVersion)).Run(func(t TestHelper) {
+			t.NewSubTest(fmt.Sprintf("upgrade_%s_to_%s", fromVersion, toVersion)).Run(func(t TestHelper) {
 				oc.RecreateNamespace(t, meshNamespace)
 				installSMCPVersion(t, fromVersion, vars)
 				t.LogStep(fmt.Sprintf("Upgrade SMCP from v%s to v%s", fromVersion, toVersion))
@@ -80,18 +78,10 @@ func TestSMCPInstall(t *testing.T) {
 func installSMCPVersion(t test.TestHelper, smcpTemplate string, vars interface{}) {
 	t.LogStep("Install SMCP")
 	oc.ApplyTemplate(t, meshNamespace, smcpTemplate, vars)
-	if env.IsRosa() {
-		oc.PatchWithMerge(
-			t, meshNamespace,
-			fmt.Sprintf("smcp/%s", smcpName),
-			`{"spec":{"security":{"identity":{"type":"ThirdParty"}}}}`)
-	}
 	oc.WaitSMCPReady(t, meshNamespace, smcpName)
 	oc.ApplyString(t, meshNamespace, smmr)
 	t.LogStep("Check SMCP is Ready")
-	retry.UntilSuccess(t, func(t TestHelper) {
-		oc.WaitCondition(t, meshNamespace, "smcp", smcpName, "Ready")
-	})
+	oc.WaitSMCPReady(t, meshNamespace, smcpName)
 }
 
 func uninstallSMCPVersion(t test.TestHelper, smcpTemplate string, vars interface{}) {
@@ -99,7 +89,7 @@ func uninstallSMCPVersion(t test.TestHelper, smcpTemplate string, vars interface
 	oc.DeleteFromString(t, meshNamespace, smmr)
 	oc.DeleteFromTemplate(t, meshNamespace, smcpTemplate, vars)
 	retry.UntilSuccess(t, func(t TestHelper) {
-		oc.AllResourcesDeleted(t,
+		oc.GetAllResources(t,
 			meshNamespace,
 			assert.OutputContains("No resources found in",
 				"All resources deleted from namespace",

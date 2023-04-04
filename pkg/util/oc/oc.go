@@ -16,14 +16,14 @@ func ApplyString(t test.TestHelper, ns string, yaml string) {
 		t.Fatalf("Failed to apply manifest: %v;\nYAML: %v", err, yaml)
 	}
 }
-func ApplyTemplate(t test.TestHelper, ns string, yaml string, vars interface{}) {
+func ApplyTemplate(t test.TestHelper, ns string, yaml string, data interface{}) {
 	t.T().Helper()
-	template := template.Run(t, yaml, vars)
+	template := template.Run(t, yaml, data)
 	ApplyString(t, ns, template)
 }
-func DeleteFromTemplate(t test.TestHelper, ns string, template string, data interface{}) {
+func DeleteFromTemplate(t test.TestHelper, ns string, yaml string, data interface{}) {
 	t.T().Helper()
-	template := template.Run(t, yaml, vars)
+	template := template.Run(t, yaml, data)
 	DeleteFromString(t, ns, template)
 }
 
@@ -91,17 +91,9 @@ func WaitSMCPReady(t test.TestHelper, ns string, name string) {
 	shell.Executef(t, `oc -n %s wait --for condition=Ready smcp/%s --timeout 300s`, ns, name)
 }
 
-func AllResourcesDeleted(t test.TestHelper, ns string, checks ...assert.CheckFunc) {
+func GetAllResources(t test.TestHelper, ns string, checks ...assert.CheckFunc) {
 	t.T().Helper()
 	shell.Execute(t,
 		fmt.Sprintf(`oc get all -n %s`, ns),
 		checks...)
 }
-
-// func Exec(t test.TestHelper, podLocator PodLocatorFunc, container string, cmd string, checks ...assert.CheckFunc) {
-// 	t.T().Helper()
-// 	pod := podLocator(t)
-// 	shell.Execute(t,
-// 		fmt.Sprintf("kubectl exec -n %s %s -c %s -- %s", pod.Namespace, pod.Name, container, cmd),
-// 		checks...)
-// }

@@ -32,3 +32,16 @@ var (
 	//go:embed yaml/smmr.yaml
 	smmr string
 )
+
+func GetSMCPTemplates() map[string]string {
+	return map[string]string{
+		"smcpV24_template": smcpV24_template,
+		"smcpV23_template": smcpV23_template,
+		"smcpV22_template": smcpV22_template,
+		"smcpV21_template": smcpV21_template,
+		"smmr":             smmr,
+	}
+}
+func GetSMMRTemplate() string {
+	return smmr
+}

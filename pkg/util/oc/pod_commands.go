@@ -26,10 +26,10 @@ func Exec(t test.TestHelper, podLocator PodLocatorFunc, container string, cmd st
 		checks...)
 }
 
-func PatchWithMerge(t test.TestHelper, ns string, rs string, patch string, checks ...assert.CheckFunc) {
+func MergePatch(t test.TestHelper, ns string, rs string, ptype string, patch string, checks ...assert.CheckFunc) {
 	t.T().Helper()
 	shell.Execute(t,
-		fmt.Sprintf(`oc patch -n %s %s --type merge -p '%s'`, ns, rs, patch),
+		fmt.Sprintf(`oc patch -n %s %s --type %s -p '%s'`, ns, rs, ptype, patch),
 		checks...)
 }
 
@@ -92,5 +92,11 @@ func WaitAllPodsReady(t test.TestHelper, ns string) {
 }
 func WaitCondition(t test.TestHelper, ns string, kind string, name string, condition string) {
 	t.T().Helper()
-	shell.Executef(t, `oc wait -n %s %s/%s --for condition=%s  --timeout %s`, ns, kind, name, condition, "10s")
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		shell.Executef(t,
+			fmt.Sprintf(`oc wait -n %s %s/%s --for condition=%s  --timeout %s`, ns, kind, name, condition, "10s"),
+			assert.OutputContains(condition,
+				"Condition met",
+				"Condition not met, retrying"))
+	})
 }
