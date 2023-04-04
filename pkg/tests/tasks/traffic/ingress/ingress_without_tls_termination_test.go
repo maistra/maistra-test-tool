@@ -43,7 +43,7 @@ func TestIngressWithoutTLS(t *testing.T) {
 	defer util.RecoverPanic(t)
 
 	log.Log.Info("TestIngressWithOutTLS Termination")
-	nginx := examples.Nginx{Namespace: "bookinfo"}
+	nginx := examples.Nginx{"bookinfo"}
 	nginx.Install(env.GetRootDir() + "/testdata/examples/x86/nginx/nginx.conf")
 
 	log.Log.Info("Verify NGINX server")

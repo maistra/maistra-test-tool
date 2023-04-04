@@ -96,7 +96,7 @@ func TestCircuitBreaking(t *testing.T) {
 		c503, err := strconv.Atoi(strings.TrimLeft(word, ": "))
 		util.Inspect(err, "Failed to parse code 503 count", "", t)
 
-		if util.IsWithinPercentage(c200, reqCount, 0.6, tolerance) && util.IsWithinPercentage(c503, reqCount, 0.4, tolerance) {
+		if util.IsWithinPercentage(c200, reqCount, 0.6, tolerance) && util.IsWithinPercentage(c503, reqCount, 0.4, tolerance {
 			log.Log.Infof(
 				"Success. Circuit breaking acts as expected. "+
 					"Code 200 hit %d of %d, Code 503 hit %d of %d", c200, reqCount, c503, reqCount)
