@@ -74,7 +74,7 @@ var (
 
 func cleanupTLSOriginationFileMount() {
 	log.Log.Info("Cleanup")
-	sleep := examples.Sleep{"bookinfo"}
+	sleep := examples.Sleep{Namespace: "bookinfo"}
 	nginx := examples.Nginx{Namespace: "mesh-external"}
 	util.KubeDeleteContents(meshNamespace, nginxMeshRule)
 	util.KubeDeleteContents(meshNamespace, meshExternalServiceEntry)
@@ -101,7 +101,7 @@ func TestTLSOriginationFileMount(t *testing.T) {
 	defer util.RecoverPanic(t)
 
 	log.Log.Info("TestEgressGatewaysTLSOrigination File Mount")
-	sleep := examples.Sleep{"bookinfo"}
+	sleep := examples.Sleep{Namespace: "bookinfo"}
 	sleep.Install()
 	sleepPod, err := util.GetPodName("bookinfo", "app=sleep")
 	util.Inspect(err, "Failed to get sleep pod name", "", t)

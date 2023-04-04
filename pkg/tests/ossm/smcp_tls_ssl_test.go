@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
+	examples "github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
@@ -45,7 +45,7 @@ func cleanupTestTLSVersionSMCP() {
 
 func cleanupTestSSL() {
 	log.Log.Info("Cleanup ...")
-	bookinfo := examples.Bookinfo{"bookinfo"}
+	bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
 	util.KubeDeleteContents("bookinfo", testSSLDeployment)
 	bookinfo.Uninstall()
 
@@ -119,7 +119,7 @@ func TestSSL(t *testing.T) {
 		util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 180s`, meshNamespace, smcpName)
 
 		log.Log.Info("Deploy bookinfo")
-		bookinfo := examples.Bookinfo{"bookinfo"}
+		bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
 		bookinfo.Install(true)
 
 		log.Log.Info("Deploy testssl pod")

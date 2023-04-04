@@ -29,7 +29,7 @@ import (
 
 func cleanupBookinfo() {
 	Log.Info("Cleanup")
-	app := Bookinfo{"bookinfo"}
+	app := Bookinfo{Namespace: "bookinfo"}
 	app.Uninstall()
 	time.Sleep(time.Duration(30) * time.Second)
 }

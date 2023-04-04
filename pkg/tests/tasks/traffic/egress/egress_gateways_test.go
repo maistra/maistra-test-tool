@@ -28,7 +28,7 @@ import (
 
 func cleanupEgressGateways() {
 	log.Log.Info("Cleanup")
-	sleep := examples.Sleep{"bookinfo"}
+	sleep := examples.Sleep{Namespace: "bookinfo"}
 	util.KubeDeleteContents("bookinfo", util.RunTemplate(ExGatewayHTTPSTemplate, smcp))
 	util.KubeDeleteContents("bookinfo", util.RunTemplate(ExGatewayTemplate, smcp))
 	util.KubeDeleteContents("bookinfo", ExServiceEntryTLS)
@@ -44,7 +44,7 @@ func TestEgressGateways(t *testing.T) {
 	defer util.RecoverPanic(t)
 
 	log.Log.Info("TestEgressGateways")
-	sleep := examples.Sleep{"bookinfo"}
+	sleep := examples.Sleep{Namespace: "bookinfo"}
 	sleep.Install()
 	sleepPod, err := util.GetPodName("bookinfo", "app=sleep")
 	util.Inspect(err, "Failed to get sleep pod name", "", t)

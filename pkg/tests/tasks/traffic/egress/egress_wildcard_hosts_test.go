@@ -29,7 +29,7 @@ func cleanupEgressWildcard() {
 	log.Log.Info("Cleanup")
 	util.KubeDeleteContents("bookinfo", util.RunTemplate(EgressWildcardGatewayTemplate, smcp))
 	util.KubeDeleteContents("bookinfo", EgressWildcardEntry)
-	sleep := examples.Sleep{"bookinfo"}
+	sleep := examples.Sleep{Namespace: "bookinfo"}
 	sleep.Uninstall()
 	time.Sleep(time.Duration(20) * time.Second)
 }
@@ -41,7 +41,7 @@ func TestEgressWildcard(t *testing.T) {
 	defer util.RecoverPanic(t)
 
 	log.Log.Info("Test Egress Wildcard Hosts")
-	sleep := examples.Sleep{"bookinfo"}
+	sleep := examples.Sleep{Namespace: "bookinfo"}
 	sleep.Install()
 	sleepPod, err := util.GetPodName("bookinfo", "app=sleep")
 	util.Inspect(err, "Failed to get sleep pod name", "", t)

@@ -30,15 +30,15 @@ func cleanupMigration() {
 	log.Log.Info("Cleanup")
 	util.KubeDeleteContents(meshNamespace, util.RunTemplate(MeshPolicyStrictTemplate, smcp))
 	util.KubeDeleteContents("foo", NamespacePolicyStrict)
-	sleep := examples.Sleep{"foo"}
-	httpbin := examples.Httpbin{"foo"}
+	sleep := examples.Sleep{Namespace: "foo"}
+	httpbin := examples.Httpbin{Namespace: "foo"}
 	sleep.Uninstall()
 	httpbin.Uninstall()
-	sleep = examples.Sleep{"bar"}
-	httpbin = examples.Httpbin{"bar"}
+	sleep = examples.Sleep{Namespace: "bar"}
+	httpbin = examples.Httpbin{Namespace: "bar"}
 	sleep.Uninstall()
 	httpbin.Uninstall()
-	sleep = examples.Sleep{"legacy"}
+	sleep = examples.Sleep{Namespace: "legacy"}
 	sleep.Uninstall()
 	time.Sleep(time.Duration(20) * time.Second)
 }
@@ -50,15 +50,15 @@ func TestMigration(t *testing.T) {
 	defer util.RecoverPanic(t)
 
 	log.Log.Info("Mutual TLS Migration")
-	httpbin := examples.Httpbin{"foo"}
+	httpbin := examples.Httpbin{Namespace: "foo"}
 	httpbin.Install()
-	httpbin = examples.Httpbin{"bar"}
+	httpbin = examples.Httpbin{Namespace: "bar"}
 	httpbin.Install()
-	sleep := examples.Sleep{"foo"}
+	sleep := examples.Sleep{Namespace: "foo"}
 	sleep.Install()
-	sleep = examples.Sleep{"bar"}
+	sleep = examples.Sleep{Namespace: "bar"}
 	sleep.Install()
-	sleep = examples.Sleep{"legacy"}
+	sleep = examples.Sleep{Namespace: "legacy"}
 	sleep.InstallLegacy()
 
 	log.Log.Info("Verify setup")
