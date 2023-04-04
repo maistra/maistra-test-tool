@@ -97,7 +97,7 @@ func WaitCondition(t test.TestHelper, ns string, kind string, name string, condi
 		shell.Executef(t,
 			fmt.Sprintf(`oc wait -n %s %s/%s --for condition=%s  --timeout %s`, ns, kind, name, condition, "10s"),
 			assert.OutputContains(condition,
-				"Condition met",
-				"Condition not met, retrying"))
+				fmt.Sprintf("Condition %s met by %s %s/%s", condition, kind, namespace, name),
+				fmt.Sprintf("Condition %s not met %s %s/%s, retrying", condition, kind, namespace, name))
 	})
 }
