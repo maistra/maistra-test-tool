@@ -59,12 +59,7 @@ func SetupNamespacesAndControlPlane() {
 	if env.Getenv("NIGHTLY", "false") == "true" {
 		installNightlyOperators()
 	}
-	versionTemplates := map[string]string{
-		"2.1": smcpV21_template,
-		"2.2": smcpV22_template,
-		"2.3": smcpV23_template,
-		// "2.4": smcpV24_template,
-	}
+	versionTemplates := GetSMCPTemplates()
 	smcpVersion := env.GetDefaultSMCPVersion()
 	template, ok := versionTemplates[smcpVersion]
 	if !ok {

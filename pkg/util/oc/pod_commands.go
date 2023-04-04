@@ -90,6 +90,7 @@ func WaitAllPodsReady(t test.TestHelper, ns string) {
 	t.T().Helper()
 	shell.Executef(t, `oc -n %s wait --for condition=Ready --all pods --timeout 180s`, ns)
 }
+
 func WaitCondition(t test.TestHelper, ns string, kind string, name string, condition string) {
 	t.T().Helper()
 	retry.UntilSuccess(t, func(t test.TestHelper) {

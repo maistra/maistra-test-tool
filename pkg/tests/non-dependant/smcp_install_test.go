@@ -60,17 +60,16 @@ func TestSMCPInstall(t *testing.T) {
 			})
 		}
 		// Testing upgrade of SMCP to all supported version
-		// versions := []string{"2.1", "2.2", "2.3", "2.4"}
-		versions := []string{"2.1", "2.2", "2.3"}
+		versions := []string{"2.1", "2.2", "2.3", "2.4"}
 		for i := 0; i < len(versions)-1; i++ {
 			fromVersion := versions[i]
 			toVersion := versions[i+1]
 
 			t.NewSubTest(fmt.Sprintf("upgrade_%s_to_%s", fromVersion, toVersion)).Run(func(t TestHelper) {
 				oc.RecreateNamespace(t, meshNamespace)
-				installSMCPVersion(t, fromVersion, vars)
+				installSMCPVersion(t, versionTemplates[fromVersion], vars)
 				t.LogStep(fmt.Sprintf("Upgrade SMCP from v%s to v%s", fromVersion, toVersion))
-				installSMCPVersion(t, toVersion, vars)
+				installSMCPVersion(t, versionTemplates[toVersion], vars)
 			})
 		}
 	})

@@ -7,6 +7,5 @@ import (
 
 func Run(t test.TestHelper, yaml string, vars interface{}) string {
 	t.T().Helper()
-	template := util.RunTemplate(yaml, vars)
-	return template
+	return util.RunTemplate(yaml, vars)
 }
