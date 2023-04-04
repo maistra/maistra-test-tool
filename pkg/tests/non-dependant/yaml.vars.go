@@ -21,10 +21,11 @@ import (
 type SMCP struct {
 	Name      string `default:"basic"`
 	Namespace string `default:"istio-system"`
+	Rosa      bool   `default:"false"`
 }
 
 var (
 	smcpName      = env.Getenv("SMCPNAME", "basic")
 	meshNamespace = env.Getenv("MESHNAMESPACE", "istio-system")
-	smcp          = SMCP{smcpName, meshNamespace}
+	smcp          = SMCP{smcpName, meshNamespace, env.IsRosa()}
 )
