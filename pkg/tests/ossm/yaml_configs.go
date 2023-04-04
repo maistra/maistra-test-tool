@@ -35,11 +35,10 @@ var (
 
 func GetSMCPTemplates() map[string]string {
 	return map[string]string{
-		"smcpV24_template": smcpV24_template,
-		"smcpV23_template": smcpV23_template,
-		"smcpV22_template": smcpV22_template,
-		"smcpV21_template": smcpV21_template,
-		"smmr":             smmr,
+		"2.4": smcpV24_template,
+		"2.3": smcpV23_template,
+		"2.2": smcpV22_template,
+		"2.1": smcpV21_template,
 	}
 }
 func GetSMMRTemplate() string {
