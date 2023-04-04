@@ -31,7 +31,7 @@ var mustGatherTag string = env.Getenv("MUSTGATHERTAG", "2.3")
 
 func cleanupMustGatherTest() {
 	log.Log.Info("Cleanup ...")
-	bookinfo := examples.Bookinfo{"bookinfo"}
+	bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
 	bookinfo.Uninstall()
 	time.Sleep(time.Duration(20) * time.Second)
 }
@@ -43,7 +43,7 @@ func TestMustGather(t *testing.T) {
 	defer util.RecoverPanic(t)
 
 	log.Log.Info("Deploy bookinfo in bookinfo ns")
-	bookinfo := examples.Bookinfo{"bookinfo"}
+	bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
 	bookinfo.Install(false)
 
 	t.Run("smcp_test_must_gather", func(t *testing.T) {

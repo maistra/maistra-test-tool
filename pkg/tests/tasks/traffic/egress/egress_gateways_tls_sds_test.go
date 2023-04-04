@@ -35,8 +35,8 @@ func cleanupTLSOriginationSDS() {
 	util.Shell(`kubectl delete -n %s secret client-credential`, meshNamespace)
 	util.KubeDeleteContents("bookinfo", util.RunTemplate(ExGatewayTLSFileTemplate, smcp))
 	util.KubeDeleteContents("bookinfo", ExServiceEntry)
-	sleep := examples.Sleep{"bookinfo"}
-	nginx := examples.Nginx{"mesh-external"}
+	sleep := examples.Sleep{Namespace: "bookinfo"}
+	nginx := examples.Nginx{Namespace: "mesh-external"}
 	sleep.Uninstall()
 	nginx.Uninstall()
 	time.Sleep(time.Duration(20) * time.Second)
@@ -49,7 +49,7 @@ func TestTLSOriginationSDS(t *testing.T) {
 	defer util.RecoverPanic(t)
 
 	log.Log.Info("TestEgressGatewaysTLSOrigination SDS")
-	sleep := examples.Sleep{"bookinfo"}
+	sleep := examples.Sleep{Namespace: "bookinfo"}
 	sleep.Install()
 	sleepPod, _ := util.GetPodName("bookinfo", "app=sleep")
 

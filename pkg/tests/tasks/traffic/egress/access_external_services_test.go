@@ -27,7 +27,7 @@ import (
 
 func cleanupAccessExternalServices() {
 	log.Log.Info("Cleanup")
-	sleep := examples.Sleep{"bookinfo"}
+	sleep := examples.Sleep{Namespace: "bookinfo"}
 	util.KubeDeleteContents("bookinfo", httpbinextTimeout)
 	util.KubeDeleteContents("bookinfo", redhatextServiceEntry)
 	util.KubeDeleteContents("bookinfo", httbinextServiceEntry)
@@ -42,7 +42,7 @@ func TestAccessExternalServices(t *testing.T) {
 	defer util.RecoverPanic(t)
 
 	log.Log.Info("TestAccessExternalServices")
-	sleep := examples.Sleep{"bookinfo"}
+	sleep := examples.Sleep{Namespace: "bookinfo"}
 	sleep.Install()
 	sleepPod, err := util.GetPodName("bookinfo", "app=sleep")
 	util.Inspect(err, "Failed to get sleep pod name", "", t)

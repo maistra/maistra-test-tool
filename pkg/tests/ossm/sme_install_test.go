@@ -40,8 +40,8 @@ func cleanUpTestExtensionInstall() {
 	}
 
 	log.Log.Info("# Cleanup ...")
-	httpbin := examples.Httpbin{"bookinfo"}
-	sleep := examples.Sleep{"bookinfo"}
+	httpbin := examples.Httpbin{Namespace: "bookinfo"}
+	sleep := examples.Sleep{Namespace: "bookinfo"}
 	httpbin.Uninstall()
 	sleep.Uninstall()
 	util.KubeDeleteContents("bookinfo", httpbinServiceMeshExtension)
@@ -53,8 +53,8 @@ func TestExtensionInstall(t *testing.T) {
 	t.Skip()
 
 	defer cleanUpTestExtensionInstall()
-	httpbin := examples.Httpbin{"bookinfo"}
-	sleep := examples.Sleep{"bookinfo"}
+	httpbin := examples.Httpbin{Namespace: "bookinfo"}
+	sleep := examples.Sleep{Namespace: "bookinfo"}
 	log.Log.Info("Deploy httpbin pod")
 	httpbin.Install()
 	log.Log.Info("Deploy sleep pod")

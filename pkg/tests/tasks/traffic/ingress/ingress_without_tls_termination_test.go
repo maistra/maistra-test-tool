@@ -31,7 +31,7 @@ import (
 func cleanupIngressWithoutTLS() {
 	log.Log.Info("Cleanup")
 	util.KubeDeleteContents("bookinfo", nginxIngressGateway)
-	nginx := examples.Nginx{"bookinfo"}
+	nginx := examples.Nginx{Namespace: "bookinfo"}
 	nginx.Uninstall()
 	time.Sleep(time.Duration(20) * time.Second)
 }
@@ -43,7 +43,7 @@ func TestIngressWithoutTLS(t *testing.T) {
 	defer util.RecoverPanic(t)
 
 	log.Log.Info("TestIngressWithOutTLS Termination")
-	nginx := examples.Nginx{"bookinfo"}
+	nginx := examples.Nginx{Namespace: "bookinfo"}
 	nginx.Install(env.GetRootDir() + "/testdata/examples/x86/nginx/nginx.conf")
 
 	log.Log.Info("Verify NGINX server")

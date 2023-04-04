@@ -35,14 +35,14 @@ func TestIstioPodProbesFails(t *testing.T) {
 	const numberOfNamespaces = 50
 	defer func() {
 		log.Log.Info("Cleanup ...")
-		bookinfo := examples.Bookinfo{"bookinfo"}
+		bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
 		bookinfo.Uninstall()
 		util.Shell(fmt.Sprintf(env.GetRootDir()+"/scripts/smmr/clean_members.sh %d", numberOfNamespaces))
 	}()
 	defer util.RecoverPanic(t)
 
 	log.Log.Info("Deploy bookinfo in bookinfo ns")
-	bookinfo := examples.Bookinfo{"bookinfo"}
+	bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
 	bookinfo.Install(false)
 
 	t.Run("smcp_test_istio_pod_probes_failure", func(t *testing.T) {

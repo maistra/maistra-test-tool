@@ -32,8 +32,8 @@ func cleanupAuthorDeny() {
 	util.KubeDeleteContents("foo", DenyHeaderNotAdminPolicy)
 	util.KubeDeleteContents("foo", DenyGETPolicy)
 	time.Sleep(time.Duration(40) * time.Second)
-	sleep := examples.Sleep{"foo"}
-	httpbin := examples.Httpbin{"foo"}
+	sleep := examples.Sleep{Namespace: "foo"}
+	httpbin := examples.Httpbin{Namespace: "foo"}
 	sleep.Uninstall()
 	httpbin.Uninstall()
 	time.Sleep(time.Duration(20) * time.Second)
@@ -46,9 +46,9 @@ func TestAuthorDeny(t *testing.T) {
 	defer util.RecoverPanic(t)
 
 	log.Log.Info("Authorization policies with a deny action")
-	httpbin := examples.Httpbin{"foo"}
+	httpbin := examples.Httpbin{Namespace: "foo"}
 	httpbin.Install()
-	sleep := examples.Sleep{"foo"}
+	sleep := examples.Sleep{Namespace: "foo"}
 	sleep.Install()
 	sleepPod, err := util.GetPodName("foo", "app=sleep")
 	util.Inspect(err, "Failed to get sleep pod name", "", t)
