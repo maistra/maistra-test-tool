@@ -23,7 +23,7 @@ func ApplyTemplate(t test.TestHelper, ns string, yaml string, vars interface{}) 
 		t.Fatalf("Failed to apply manifest: %v;\nYAML: %v", err, template)
 	}
 }
-func DeleteFromTemplate(t test.TestHelper, ns string, yaml string, vars interface{}) {
+func DeleteFromTemplate(t test.TestHelper, ns string, template string, data interface{}) {
 	t.T().Helper()
 	template := template.Run(t, yaml, vars)
 	DeleteFromString(t, ns, template)
