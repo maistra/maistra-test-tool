@@ -12,36 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ossm
+package non_dependant
 
-import _ "embed"
-
-var (
-	//go:embed yaml/smcp_v2.4.yaml
-	smcpV24_template string
-
-	//go:embed yaml/smcp_v2.3.yaml
-	smcpV23_template string
-
-	//go:embed yaml/smcp_v2.2.yaml
-	smcpV22_template string
-
-	//go:embed yaml/smcp_v2.1.yaml
-	smcpV21_template string
-
-	//go:embed yaml/smmr.yaml
-	smmr string
+import (
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 )
 
-func GetSMCPTemplates() map[string]string {
-	return map[string]string{
-		"2.4": smcpV24_template,
-		"2.3": smcpV23_template,
-		"2.2": smcpV22_template,
-		"2.1": smcpV21_template,
-	}
+type SMCP struct {
+	Name      string `default:"basic"`
+	Namespace string `default:"istio-system"`
+	Rosa      bool   `default:"false"`
 }
 
-func GetSMMRTemplate() string {
-	return smmr
-}
+var (
+	smcpName      = env.Getenv("SMCPNAME", "basic")
+	meshNamespace = env.Getenv("MESHNAMESPACE", "istio-system")
+	smcp          = SMCP{smcpName, meshNamespace, env.IsRosa()}
+)

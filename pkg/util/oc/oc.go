@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
+	"github.com/maistra/maistra-test-tool/pkg/util/template"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -13,6 +15,18 @@ func ApplyString(t test.TestHelper, ns string, yaml string) {
 	if err := util.KubeApplyContents(ns, yaml); err != nil {
 		t.Fatalf("Failed to apply manifest: %v;\nYAML: %v", err, yaml)
 	}
+}
+
+func ApplyTemplate(t test.TestHelper, ns string, yaml string, data interface{}) {
+	t.T().Helper()
+	template := template.Run(t, yaml, data)
+	ApplyString(t, ns, template)
+}
+
+func DeleteFromTemplate(t test.TestHelper, ns string, yaml string, data interface{}) {
+	t.T().Helper()
+	template := template.Run(t, yaml, data)
+	DeleteFromString(t, ns, template)
 }
 
 func ApplyFile(t test.TestHelper, ns string, file string) {
@@ -77,4 +91,11 @@ func RecreateNamespace(t test.TestHelper, ns string) {
 func WaitSMCPReady(t test.TestHelper, ns string, name string) {
 	t.T().Helper()
 	shell.Executef(t, `oc -n %s wait --for condition=Ready smcp/%s --timeout 300s`, ns, name)
+}
+
+func GetAllResources(t test.TestHelper, ns string, checks ...assert.CheckFunc) {
+	t.T().Helper()
+	shell.Execute(t,
+		fmt.Sprintf(`oc get all -n %s`, ns),
+		checks...)
 }

@@ -22,3 +22,8 @@ spec:
       enabled: true
   telemetry:
     type: Istiod
+  {{ if .Rosa }} 
+  security:
+    identity:
+      type: ThirdParty
+  {{ end }}

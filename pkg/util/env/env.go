@@ -53,3 +53,11 @@ func GetRootDir() string {
 	}
 	return dir[:index]
 }
+
+func IsRosa() bool {
+	return Getenv("ROSA", "false") == "true"
+}
+
+func GetDefaultSMCPVersion() string {
+	return Getenv("SMCPVERSION", "2.4")
+}
