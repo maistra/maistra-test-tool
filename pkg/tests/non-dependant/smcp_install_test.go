@@ -70,6 +70,7 @@ func TestSMCPInstall(t *testing.T) {
 		}
 	})
 }
+
 func assertSMCPDeploysAndIsReady(t test.TestHelper, smcpTemplate string, data interface{}) {
 	t.LogStep("Install SMCP")
 	oc.ApplyTemplate(t, meshNamespace, smcpTemplate, data)
