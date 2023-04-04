@@ -31,6 +31,12 @@ var (
 
 	//go:embed yaml/smmr.yaml
 	smmr string
+
+	//go:embed yaml/multiple-namespaces
+	multiple_namespaces string
+
+	//go:embed yaml/multiple-test-smmr
+	multiple_smmr string
 )
 
 func GetSMCPTemplates() map[string]string {

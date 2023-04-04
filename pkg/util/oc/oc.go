@@ -82,6 +82,18 @@ func CreateNamespace(t test.TestHelper, ns string) {
 	shell.Executef(t, "oc new-project %s", ns)
 }
 
+func CreateNamespaces(t test.TestHelper, yaml string, data interface{}) {
+	t.T().Helper()
+	t.Logf("Creating namespaces")
+	ApplyTemplate(t, "default", yaml, data)
+}
+
+func UpdateSMMRMultipleNamespaces(t test.TestHelper, yaml string, data interface{}) {
+	t.T().Helper()
+	t.Logf("Creating smmr")
+	ApplyTemplate(t, "default", yaml, data)
+}
+
 func RecreateNamespace(t test.TestHelper, ns string) {
 	t.T().Helper()
 	DeleteNamespace(t, ns)

@@ -15,41 +15,48 @@
 package ossm
 
 import (
-	"fmt"
 	"math/rand"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
+	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-// TestIstioPodProbesFails tests that Istio pod get stuck with probes failure after restart. Jira ticket: https://issues.redhat.com/browse/OSSM-2434
+// TestIstioPodProbesFails tests that Istio pod get stuck with probes failure after restart. Jira ticket bug: https://issues.redhat.com/browse/OSSM-2434
 func TestIstioPodProbesFails(t *testing.T) {
-	test.NewTest(t).Id("T35").Groups(test.Full).NotRefactoredYet()
+	NewTest(t).Id("T35").Groups(Full).Run(func(t TestHelper) {
+		hack.DisableLogrusForThisTest(t)
+		ns := "bookinfo"
+		data := map[string]string{
+			"Count":     "50",
+			"Namespace": meshNamespace,
+		}
 
-	const numberOfNamespaces = 50
-	defer func() {
-		log.Log.Info("Cleanup ...")
-		bookinfo := examples.Bookinfo{"bookinfo"}
-		bookinfo.Uninstall()
-		util.Shell(fmt.Sprintf(env.GetRootDir()+"/scripts/smmr/clean_members.sh %d", numberOfNamespaces))
-	}()
-	defer util.RecoverPanic(t)
+		t.Cleanup(func() {
+			//need to define wich cleanup is needed
+			// log.Log.Info("Cleanup ...")
+			// bookinfo := examples.Bookinfo{"bookinfo"}
+			// bookinfo.Uninstall()
+			// util.Shell(fmt.Sprintf(env.GetRootDir()+"/scripts/smmr/clean_members.sh %d", numberOfNamespaces))
+			oc.RecreateNamespace(t, meshNamespace)
+		})
 
-	log.Log.Info("Deploy bookinfo in bookinfo ns")
-	bookinfo := examples.Bookinfo{"bookinfo"}
-	bookinfo.Install(false)
+		t.LogStep("Install Bookinfo application")
+		app.InstallAndWaitReady(t, app.Bookinfo(ns))
+
+		t.LogStep("Create Namespaces and SMMR")
+		oc.CreateNamespaces(t, multiple_namespaces, data)
+		oc.UpdateSMMRMultipleNamespaces(t, multiple_smmr, data)
+
+	})
 
 	t.Run("smcp_test_istio_pod_probes_failure", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-		log.Log.Info("Testing: Istio Pod get stuck with probes failure after restart")
-		log.Log.Infof("Create %d new namespaces", numberOfNamespaces)
-		util.Shell(fmt.Sprintf(env.GetRootDir()+"/scripts/smmr/create_members.sh %d", numberOfNamespaces))
 		log.Log.Info("Namespaces created...")
 		rand.Seed(time.Now().UnixNano())
 		// Random number of deletes for the pod between 4 and 10
