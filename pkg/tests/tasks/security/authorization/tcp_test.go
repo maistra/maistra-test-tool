@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package authorizaton
+package authorization
 
 import (
 	"fmt"
@@ -67,8 +67,8 @@ func TestAuthorTCP(t *testing.T) {
 				log.Log.Infof("Success. Get expected response: %s", msg)
 			}
 		} else {
-			tcpEchoPod, err := util.GetPodName("foo", "app=tcp-echo")
-			podIP, err := util.Shell(`kubectl get pod %s -n foo -o jsonpath="{.status.podIP}"`, tcpEchoPod)
+			tcpEchoPod, _ := util.GetPodName("foo", "app=tcp-echo")
+			podIP, _ := util.Shell(`kubectl get pod %s -n foo -o jsonpath="{.status.podIP}"`, tcpEchoPod)
 			cmd := fmt.Sprintf(`sh -c 'echo "port %s" | nc %s %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`, port, podIP, port)
 			msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true)
 			util.Inspect(err, "Failed to get response", "", t)
@@ -101,8 +101,8 @@ func TestAuthorTCP(t *testing.T) {
 					log.Log.Infof("Success. Get expected response: %s", msg)
 				}
 			} else {
-				tcpEchoPod, err := util.GetPodName("foo", "app=tcp-echo")
-				podIP, err := util.Shell(`kubectl get pod %s -n foo -o jsonpath="{.status.podIP}"`, tcpEchoPod)
+				tcpEchoPod, _ := util.GetPodName("foo", "app=tcp-echo")
+				podIP, _ := util.Shell(`kubectl get pod %s -n foo -o jsonpath="{.status.podIP}"`, tcpEchoPod)
 				cmd := fmt.Sprintf(`sh -c 'echo "port %s" | nc %s %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`, port, podIP, port)
 				msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true)
 				util.Inspect(err, "Failed to get response", "", t)

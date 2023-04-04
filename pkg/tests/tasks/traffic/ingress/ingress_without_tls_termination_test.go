@@ -47,7 +47,7 @@ func TestIngressWithoutTLS(t *testing.T) {
 	nginx.Install(env.GetRootDir() + "/testdata/examples/x86/nginx/nginx.conf")
 
 	log.Log.Info("Verify NGINX server")
-	pod, err := util.GetPodName("bookinfo", "run=my-nginx")
+	pod, _ := util.GetPodName("bookinfo", "run=my-nginx")
 	cmd := fmt.Sprintf(`curl -sS -v -k --resolve nginx.example.com:8443:127.0.0.1 https://nginx.example.com:8443`)
 	msg, err := util.PodExec("bookinfo", pod, "istio-proxy", cmd, true)
 	util.Inspect(err, "failed to get response", "", t)

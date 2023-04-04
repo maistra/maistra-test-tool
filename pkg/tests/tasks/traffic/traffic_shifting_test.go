@@ -84,7 +84,7 @@ func checkTrafficRatio(t TestHelper, url string, numberOfRequests int, tolerance
 				body := ReadAllAndClose(t, response.Body)
 				comparisonErrors := map[string]error{}
 				matched := false
-				for file, _ := range ratios {
+				for file := range ratios {
 					err := CompareHTTPResponse(body, file)
 					if err == nil {
 						matched = true

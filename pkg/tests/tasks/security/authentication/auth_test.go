@@ -128,7 +128,7 @@ func TestAuthPolicy(t *testing.T) {
 			util.Inspect(err, "Failed to get sleep pod name", "", t)
 			cmd := fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%{http_code}"`,
 				to, from, to)
-			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true)
+			msg, _ := util.PodExec(from, sleepPod, "sleep", cmd, true)
 			if strings.Contains(msg, "200") {
 				t.Errorf("Global mTLS expected 000; Got response code: %s", msg)
 				log.Log.Errorf("Global mTLS expected: 000; Got response code: %s", msg)
@@ -202,7 +202,7 @@ func TestAuthPolicy(t *testing.T) {
 		util.Inspect(err, "Failed to get sleep pod name", "", t)
 		cmd = fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%{http_code}"`,
 			"bar", "legacy", "bar")
-		msg, err = util.PodExec("legacy", sleepPod, "sleep", cmd, true)
+		msg, _ = util.PodExec("legacy", sleepPod, "sleep", cmd, true)
 		if strings.Contains(msg, "200") {
 			log.Log.Infof("Expected 200 from sleep.legacy to httpbin.bar: %s", msg)
 		} else {

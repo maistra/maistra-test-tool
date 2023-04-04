@@ -19,12 +19,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"text/template"
 	"time"
@@ -50,14 +48,6 @@ type Proxy struct {
 	HTTPSProxy string `json:"httpsProxy"`
 	NoProxy    string `json:"noProxy"`
 }
-
-var (
-	logDumpResources = []string{
-		"pod",
-		"service",
-		"ingress",
-	}
-)
 
 // PodInfo contains pod's information such as name and IP address
 type PodInfo struct {
@@ -235,155 +225,6 @@ func GetClusterSubnet() (string, error) {
 		return defaultClusterSubnet, nil
 	}
 	return parts[1], nil
-}
-
-func getRetrier(serviceType string) Retrier {
-	baseDelay := 1 * time.Second
-	maxDelay := 1 * time.Second
-	retries := 300 // ~5 minutes
-
-	if serviceType == NodePortServiceType {
-		baseDelay = 5 * time.Second
-		maxDelay = 5 * time.Second
-		retries = 20
-	}
-
-	return Retrier{
-		BaseDelay: baseDelay,
-		MaxDelay:  maxDelay,
-		Retries:   retries,
-	}
-}
-
-func getServiceLoadBalancer(name, namespace string) (string, error) {
-	ip, err := ShellSilent(
-		"kubectl get svc %s -n %s -o jsonpath='{.status.loadBalancer.ingress[*].ip}'",
-		name, namespace)
-
-	if err != nil {
-		return "", err
-	}
-
-	ip = strings.Trim(ip, "'")
-	ri := regexp.MustCompile(`^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$`)
-	if ri.FindString(ip) == "" {
-		return "", errors.New("ingress ip not available yet")
-	}
-
-	return ip, nil
-}
-
-func getServiceNodePort(serviceName, podLabel, namespace string) (string, error) {
-	ip, err := Shell(
-		"kubectl get po -l istio=%s -n %s -o jsonpath='{.items[0].status.hostIP}'",
-		podLabel, namespace)
-
-	if err != nil {
-		return "", err
-	}
-
-	ip = strings.Trim(ip, "'")
-	ri := regexp.MustCompile(`^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$`)
-	if ri.FindString(ip) == "" {
-		return "", fmt.Errorf("the ip of %s is not available yet", serviceName)
-	}
-
-	port, err := getServicePort(serviceName, namespace)
-	if err != nil {
-		return "", err
-	}
-
-	return ip + ":" + port, nil
-}
-
-func getServicePort(serviceName, namespace string) (string, error) {
-	port, err := Shell(
-		"kubectl get svc %s -n %s -o jsonpath='{.spec.ports[0].nodePort}'",
-		serviceName, namespace)
-
-	if err != nil {
-		return "", err
-	}
-
-	port = strings.Trim(port, "'")
-	rp := regexp.MustCompile(`^[0-9]{1,5}$`)
-	if rp.FindString(port) == "" {
-		err = fmt.Errorf("unable to find the port of %s", serviceName)
-		log.Log.Warn(err)
-		return "", err
-	}
-	return port, nil
-}
-
-// GetIngressPodNames get the pod names for the Istio ingress deployment.
-func GetIngressPodNames(n string) ([]string, error) {
-	res, err := Shell("kubectl get pod -l istio=ingress -n %s -o jsonpath='{.items[*].metadata.name}'", n)
-	if err != nil {
-		return nil, err
-	}
-	res = strings.Trim(res, "'")
-	return strings.Split(res, " "), nil
-}
-
-// GetAppPodsInfo returns a map of a list of PodInfo
-func GetAppPodsInfo(n string, label string) ([]string, map[string][]string, error) {
-	// This will return a table where c0=pod_name and c1=label_value and c2=IPAddr.
-	// The columns are separated by a space and each result is on a separate line (separated by '\n').
-	res, err := Shell("kubectl -n %s -l=%s get pods -o=jsonpath='{range .items[*]}{.metadata.name}{\" \"}{"+
-		".metadata.labels.%s}{\" \"}{.status.podIP}{\"\\n\"}{end}'", n, label, label)
-	if err != nil {
-		log.Log.Infof("Failed to get pods by label %s in namespace %s: %s", label, n, err)
-		return nil, nil, err
-	}
-
-	var podNames []string
-	eps := make(map[string][]string)
-	for _, line := range strings.Split(res, "\n") {
-		f := strings.Fields(line)
-		if len(f) >= 3 {
-			podNames = append(podNames, f[0])
-			eps[f[1]] = append(eps[f[1]], f[2])
-		}
-	}
-
-	return podNames, eps, nil
-}
-
-// GetAppPods gets a map of app names to the pods for the app, for the given namespace
-func GetAppPods(n string) (map[string][]string, error) {
-	podLabels, err := GetPodLabelValues(n, "app")
-	if err != nil {
-		return nil, err
-	}
-
-	m := make(map[string][]string)
-	for podName, app := range podLabels {
-		m[app] = append(m[app], podName)
-	}
-	return m, nil
-}
-
-// GetPodLabelValues gets a map of pod name to label value for the given label and namespace
-func GetPodLabelValues(n, label string) (map[string]string, error) {
-	// This will return a table where c0=pod_name and c1=label_value.
-	// The columns are separated by a space and each result is on a separate line (separated by '\n').
-	res, err := Shell("kubectl -n %s -l=%s get pods -o=jsonpath='{range .items[*]}{.metadata.name}{\" \"}{"+
-		".metadata.labels.%s}{\"\\n\"}{end}'", n, label, label)
-	if err != nil {
-		log.Log.Infof("Failed to get pods by label %s in namespace %s: %s", label, n, err)
-		return nil, err
-	}
-
-	// Split the lines in the result
-	m := make(map[string]string)
-	for _, line := range strings.Split(res, "\n") {
-		f := strings.Fields(line)
-		if len(f) >= 2 {
-			m[f[0]] = f[1]
-		}
-	}
-
-	return m, nil
 }
 
 // GetPodAnnotations gets a map annotations from a pod name for the given: namespace, pod label and retry times for checking the pod annotations
@@ -601,7 +442,7 @@ func CreateMultiClusterSecret(namespace string, remoteKubeConfig string, localKu
 		return err
 	}
 
-	log.Log.Infof("Secret %s labelled with %s=%s\n", secretName, secretLabel, labelValue)
+	log.Log.Infof("Secret %s labeled with %s=%s\n", secretName, secretLabel, labelValue)
 	return nil
 }
 

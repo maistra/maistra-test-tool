@@ -138,6 +138,7 @@ func TestSSL(t *testing.T) {
 
 		command := "./testssl/testssl.sh -6 productpage:9080"
 		msg, err := util.PodExec("bookinfo", pod, "testssl", command, false)
+		util.Inspect(err, "failed to execute testssl in pod", "", t)
 		if !strings.Contains(msg, "TLSv1.2") {
 			t.Errorf("Results not include: TLSv1.2")
 			log.Log.Errorf("Results not include: TLSv1.2")

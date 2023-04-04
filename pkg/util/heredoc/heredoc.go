@@ -17,7 +17,7 @@ func Doc(indented string) string {
 }
 
 func Docf(indentedFormat string, a ...any) string {
-	return Doc(fmt.Sprintf(indentedFormat, a))
+	return Doc(fmt.Sprintf(indentedFormat, a...))
 }
 
 func getBaseIndent(lines []string) int {

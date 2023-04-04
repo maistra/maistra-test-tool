@@ -69,7 +69,7 @@ func TestExtensionInstall(t *testing.T) {
 		log.Log.Info("Creating ServiceMeshExtension")
 		util.KubeApplyContents("bookinfo", httpbinServiceMeshExtension)
 
-		if err := checkSMEReady("bookinfo", "header-append"); err != nil {
+		if err := checkSMEReady("bookinfo"); err != nil {
 			t.Fatalf("error checking for SME header-append: %v", err)
 		}
 
@@ -85,7 +85,7 @@ func TestExtensionInstall(t *testing.T) {
 	})
 }
 
-func checkSMEReady(n, name string) error {
+func checkSMEReady(n string) error {
 	retry := util.Retrier{
 		BaseDelay: 30 * time.Second,
 		MaxDelay:  30 * time.Second,
