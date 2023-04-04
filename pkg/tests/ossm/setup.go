@@ -51,14 +51,18 @@ func installNightlyOperators() {
 	time.Sleep(time.Duration(30) * time.Second)
 }
 
-// Initialize a default SMCP and SMMR
-func SetupNamespacesAndControlPlane() {
+func BasicSetup() {
 	log.Log.Info("Setting up namespaces and OSSM control plane")
 	createNamespaces()
-
 	if env.Getenv("NIGHTLY", "false") == "true" {
 		installNightlyOperators()
 	}
+	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
+}
+
+// Initialize a default SMCP and SMMR
+func SetupNamespacesAndControlPlane() {
+	BasicSetup()
 	versionTemplates := GetSMCPTemplates()
 	smcpVersion := env.GetDefaultSMCPVersion()
 	template, ok := versionTemplates[smcpVersion]
@@ -66,7 +70,6 @@ func SetupNamespacesAndControlPlane() {
 		log.Log.Errorf("Unsupported SMCP version: %s", smcpVersion)
 		return
 	}
-	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
 	util.KubeApplyContents(meshNamespace, util.RunTemplate(template, smcp))
 	util.KubeApplyContents(meshNamespace, smmr)
 	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcp.Name)
@@ -78,11 +81,6 @@ func SetupNamespacesAndControlPlane() {
 
 // Initialize a default SMCP and SMMR
 func SetupOnlyNamespaces() {
-	log.Log.Info("Setting up only namespaces")
-	createNamespaces()
-	if env.Getenv("NIGHTLY", "false") == "true" {
-		installNightlyOperators()
-	}
-	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
-	// TODO: add more setup steps for test who do not need SMCP
+	BasicSetup()
+	// TODO: add more setup steps for test who do not need SMCP. If you need to add more steps, please add them here. If not we can remove this function.
 }

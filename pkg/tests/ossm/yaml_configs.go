@@ -41,6 +41,7 @@ func GetSMCPTemplates() map[string]string {
 		"2.1": smcpV21_template,
 	}
 }
+
 func GetSMMRTemplate() string {
 	return smmr
 }

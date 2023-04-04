@@ -46,11 +46,6 @@ func TestSMCPInstall(t *testing.T) {
 			"Namespace": meshNamespace,
 			"Rosa":      strconv.FormatBool(env.IsRosa()),
 		}
-		smcpVersion := env.GetDefaultSMCPVersion()
-		_, ok := versionTemplates[smcpVersion]
-		if !ok {
-			t.Fatal("Unsupported SMCP version: " + smcpVersion)
-		}
 		for version, smcpTemplate := range versionTemplates {
 			t.NewSubTest("install_" + version).Run(func(t TestHelper) {
 				t.LogStep("Delete Namespace, Create Namespace and Install SMCP v" + version)
