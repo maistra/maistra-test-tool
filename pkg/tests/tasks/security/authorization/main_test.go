@@ -1,4 +1,4 @@
-package authorizaton
+package authorization
 
 import (
 	"testing"

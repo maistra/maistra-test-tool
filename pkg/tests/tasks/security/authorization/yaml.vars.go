@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package authorizaton
+package authorization
 
 import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
@@ -27,6 +27,5 @@ type SMCP struct {
 var (
 	smcpName       string = env.Getenv("SMCPNAME", "basic")
 	meshNamespace  string = env.Getenv("MESHNAMESPACE", "istio-system")
-	smcp           SMCP   = SMCP{smcpName, meshNamespace}
 	gatewayHTTP, _        = util.ShellSilent(`kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'`, meshNamespace)
 )

@@ -29,16 +29,12 @@ var (
 	helloworldServerCertKey = env.GetRootDir() + "/sampleCerts/helloworldv1/helloworld-v1.example.com.key"
 	helloworldServerCert    = env.GetRootDir() + "/sampleCerts/helloworldv1/helloworld-v1.example.com.crt"
 
-	nginxServerCertKey = env.GetRootDir() + "/sampleCerts/nginx.example.com/nginx.example.com.key"
-	nginxServerCert    = env.GetRootDir() + "/sampleCerts/nginx.example.com/nginx.example.com.crt"
-	nginxServerCACert  = env.GetRootDir() + "/sampleCerts/nginx.example.com/example.com.crt"
+	nginxServerCACert = env.GetRootDir() + "/sampleCerts/nginx.example.com/example.com.crt"
 )
 
 var (
 	// OCP4.x
-	smcpName             string = env.Getenv("SMCPNAME", "basic")
 	meshNamespace        string = env.Getenv("MESHNAMESPACE", "istio-system")
 	gatewayHTTP, _              = util.ShellSilent(`kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'`, meshNamespace)
-	ingressHTTPPort, _          = util.ShellSilent(`kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name=="http2")].port}'`, meshNamespace, "istio-ingressgateway")
 	secureIngressPort, _        = util.ShellSilent(`kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name=="https")].port}'`, meshNamespace, "istio-ingressgateway")
 )

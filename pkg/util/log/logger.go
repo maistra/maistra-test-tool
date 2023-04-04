@@ -25,12 +25,6 @@ import (
 
 var Log = NewTextLogger()
 
-// Event contains log id and log message.
-type Event struct {
-	id      int
-	message string
-}
-
 type customFormatter struct {
 }
 

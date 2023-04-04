@@ -36,6 +36,7 @@ func cleanupBookinfo() {
 
 func TestBookinfo(t *testing.T) {
 	NewTest(t).Id("A2").Groups(ARM, Full, Smoke, InterOp).Run(func(t TestHelper) {
+		defer cleanupBookinfo()
 		Log.Info("Test Bookinfo Installation")
 		app.InstallAndWaitReady(t, app.Bookinfo("bookinfo"))
 

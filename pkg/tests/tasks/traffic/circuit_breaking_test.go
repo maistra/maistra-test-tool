@@ -108,7 +108,7 @@ func TestCircuitBreaking(t *testing.T) {
 
 		log.Log.Info("Query the istio-proxy stats")
 		command = fmt.Sprintf(`pilot-agent request GET stats | grep httpbin | grep pending`)
-		msg, err = util.PodExec("bookinfo", pod, "istio-proxy", command, false)
+		msg, _ = util.PodExec("bookinfo", pod, "istio-proxy", command, false)
 		log.Log.Infof("%s", msg)
 	})
 }
