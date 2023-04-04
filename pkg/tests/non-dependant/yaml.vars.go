@@ -24,7 +24,7 @@ type SMCP struct {
 }
 
 var (
-	smcpName      string = env.Getenv("SMCPNAME", "basic")
-	meshNamespace string = env.Getenv("MESHNAMESPACE", "istio-system")
-	smcp          SMCP   = SMCP{smcpName, meshNamespace}
+	smcpName      = env.Getenv("SMCPNAME", "basic")
+	meshNamespace = env.Getenv("MESHNAMESPACE", "istio-system")
+	smcp          = SMCP{smcpName, meshNamespace}
 )
