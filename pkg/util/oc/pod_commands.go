@@ -93,7 +93,7 @@ func WaitAllPodsReady(t test.TestHelper, ns string) {
 
 func WaitCondition(t test.TestHelper, ns string, kind string, name string, condition string) {
 	t.T().Helper()
-	retry.UntilSuccess(t, func(t test.TestHelper) {
+	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(30), func(t test.TestHelper) {
 		shell.Executef(t,
 			fmt.Sprintf(`oc wait -n %s %s/%s --for condition=%s  --timeout %s`, ns, kind, name, condition, "10s"),
 			assert.OutputContains(condition,
