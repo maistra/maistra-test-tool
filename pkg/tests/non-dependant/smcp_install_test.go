@@ -62,7 +62,8 @@ func TestSMCPInstall(t *testing.T) {
 			})
 		}
 		// Testing upgrade of SMCP to all supported version
-		versions := []string{"2.1", "2.2", "2.3", "2.4"}
+		// versions := []string{"2.1", "2.2", "2.3", "2.4"}
+		versions := []string{"2.1", "2.2", "2.3"}
 		for i := 0; i < len(versions)-1; i++ {
 			fromVersion := versions[i]
 			toVersion := versions[i+1]

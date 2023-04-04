@@ -38,6 +38,7 @@ func createNamespaces() {
 	util.ShellSilent(`oc new-project bar`)
 	util.ShellSilent(`oc new-project legacy`)
 	util.ShellSilent(`oc new-project mesh-external`)
+	util.ShellSilent(`oc new-project %s`, meshNamespace)
 }
 
 // Install nightly build operators from quay.io. This is used in Jenkins daily build pipeline.
@@ -50,11 +51,10 @@ func installNightlyOperators() {
 	time.Sleep(time.Duration(30) * time.Second)
 }
 
-// Initialize a default SMCP and SMMR
+// Initialize a Namespace for the Mesh
 func SetupNamespacesAndControlPlane() {
 	log.Log.Info("Setting up namespaces and OSSM control plane")
 	createNamespaces()
-
 	if env.Getenv("NIGHTLY", "false") == "true" {
 		installNightlyOperators()
 	}

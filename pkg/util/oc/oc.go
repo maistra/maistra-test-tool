@@ -19,9 +19,7 @@ func ApplyString(t test.TestHelper, ns string, yaml string) {
 func ApplyTemplate(t test.TestHelper, ns string, yaml string, vars interface{}) {
 	t.T().Helper()
 	template := template.Run(t, yaml, vars)
-	if err := util.KubeApplyContents(ns, template); err != nil {
-		t.Fatalf("Failed to apply manifest: %v;\nYAML: %v", err, template)
-	}
+	ApplyString(t, ns, template)
 }
 func DeleteFromTemplate(t test.TestHelper, ns string, template string, data interface{}) {
 	t.T().Helper()
