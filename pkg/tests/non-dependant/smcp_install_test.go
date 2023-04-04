@@ -31,8 +31,8 @@ import (
 )
 
 var (
-	smmr             string            = ossm.GetSMMRTemplate()
-	versionTemplates map[string]string = ossm.GetSMCPTemplates()
+	smmr             = ossm.GetSMMRTemplate()
+	versionTemplates = ossm.GetSMCPTemplates()
 )
 
 func TestSMCPInstall(t *testing.T) {
