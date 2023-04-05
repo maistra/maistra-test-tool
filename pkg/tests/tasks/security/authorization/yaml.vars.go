@@ -19,11 +19,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 )
 
-type SMCP struct {
-	Name      string `default:"basic"`
-	Namespace string `default:"istio-system"`
-}
-
 var (
 	smcpName       string = env.Getenv("SMCPNAME", "basic")
 	meshNamespace  string = env.Getenv("MESHNAMESPACE", "istio-system")
