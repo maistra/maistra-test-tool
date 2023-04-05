@@ -48,7 +48,7 @@ func TestIstioPodProbesFails(t *testing.T) {
 		t.LogStep("Create Namespaces and SMMR")
 		oc.CreateNamespaces(t, multiple_namespaces, data)
 		oc.UpdateSMMRMultipleNamespaces(t, meshNamespace, multiple_smmr, data)
-    
+
 		t.LogStep("Delete Istio pod and check that it is running again")
 		assertIstiodPodReadyAfterDeletion(t, meshNamespace, 10)
 	})
