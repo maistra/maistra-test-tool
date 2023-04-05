@@ -240,10 +240,10 @@ var full = []testing.InternalTest{
 		Name: "T35",
 		F:    ossm.TestIstioPodProbesFails,
 	},
-	// testing.InternalTest{
-	// 	Name: "T36",
-	// 	F:    ossm.TestSMCPMutiple,
-	// },
+	testing.InternalTest{
+		Name: "T36",
+		F:    ossm.TestSMCPMutiple,
+	},
 	testing.InternalTest{
 		Name: "T37",
 		F:    authorizaton.TestExtAuth,
