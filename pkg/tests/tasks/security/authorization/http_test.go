@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package authorizaton
+package authorization
 
 import (
 	"fmt"
@@ -35,7 +35,7 @@ func cleanupAuthorHTTP() {
 	util.KubeDeleteContents("bookinfo", ProductpageGETPolicy)
 	util.KubeDeleteContents("bookinfo", DenyAllPolicy)
 	time.Sleep(time.Duration(20) * time.Second)
-	bookinfo := examples.Bookinfo{"bookinfo"}
+	bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
 	bookinfo.Uninstall()
 	util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":false},"controlPlane":{"mtls":false}}}}'`, meshNamespace, smcpName)
 	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
@@ -53,7 +53,7 @@ func TestAuthorHTTP(t *testing.T) {
 	util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}'`, meshNamespace, smcpName)
 	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
 
-	bookinfo := examples.Bookinfo{"bookinfo"}
+	bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
 	bookinfo.Install(true)
 	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
 

@@ -48,16 +48,16 @@ func TestIstioPodProbesFails(t *testing.T) {
 		t.LogStep("Create Namespaces and SMMR")
 		oc.CreateNamespaces(t, multiple_namespaces, data)
 		oc.UpdateSMMRMultipleNamespaces(t, meshNamespace, multiple_smmr, data)
+    
 		t.LogStep("Delete Istio pod and check that it is running again")
 		assertIstiodPodReadyAfterDeletion(t, meshNamespace, 10)
-
 	})
 }
+
 func assertIstiodPodReadyAfterDeletion(t test.TestHelper, ns string, deletionTimes int) {
 	for i := 0; i < deletionTimes; i++ {
 		oc.DeletePod(t, pod.MatchingSelector("app=istiod", ns))
 		oc.WaitPodRunning(t, pod.MatchingSelector("app=istiod", ns))
 		oc.WaitPodReady(t, pod.MatchingSelector("app=istiod", ns))
 	}
-
 }

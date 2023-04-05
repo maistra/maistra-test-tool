@@ -31,8 +31,8 @@ import (
 func cleanupCircuitBreaking() {
 	log.Log.Info("Cleanup")
 	util.KubeDeleteContents("bookinfo", httpbinCircuitBreaker)
-	fortio := examples.Fortio{"bookinfo"}
-	httpbin := examples.Httpbin{"bookinfo"}
+	fortio := examples.Fortio{Namespace: "bookinfo"}
+	httpbin := examples.Httpbin{Namespace: "bookinfo"}
 	fortio.Uninstall()
 	httpbin.Uninstall()
 	time.Sleep(time.Duration(20) * time.Second)
@@ -45,8 +45,8 @@ func TestCircuitBreaking(t *testing.T) {
 	defer util.RecoverPanic(t)
 
 	log.Log.Info("TestCircuitBreaking")
-	fortio := examples.Fortio{"bookinfo"}
-	httpbin := examples.Httpbin{"bookinfo"}
+	fortio := examples.Fortio{Namespace: "bookinfo"}
+	httpbin := examples.Httpbin{Namespace: "bookinfo"}
 	httpbin.Install()
 	fortio.Install()
 
@@ -108,7 +108,7 @@ func TestCircuitBreaking(t *testing.T) {
 
 		log.Log.Info("Query the istio-proxy stats")
 		command = fmt.Sprintf(`pilot-agent request GET stats | grep httpbin | grep pending`)
-		msg, err = util.PodExec("bookinfo", pod, "istio-proxy", command, false)
+		msg, _ = util.PodExec("bookinfo", pod, "istio-proxy", command, false)
 		log.Log.Infof("%s", msg)
 	})
 }

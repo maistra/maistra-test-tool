@@ -40,8 +40,8 @@ func cleanUpTestExtensionInstall() {
 	}
 
 	log.Log.Info("# Cleanup ...")
-	httpbin := examples.Httpbin{"bookinfo"}
-	sleep := examples.Sleep{"bookinfo"}
+	httpbin := examples.Httpbin{Namespace: "bookinfo"}
+	sleep := examples.Sleep{Namespace: "bookinfo"}
 	httpbin.Uninstall()
 	sleep.Uninstall()
 	util.KubeDeleteContents("bookinfo", httpbinServiceMeshExtension)
@@ -53,8 +53,8 @@ func TestExtensionInstall(t *testing.T) {
 	t.Skip()
 
 	defer cleanUpTestExtensionInstall()
-	httpbin := examples.Httpbin{"bookinfo"}
-	sleep := examples.Sleep{"bookinfo"}
+	httpbin := examples.Httpbin{Namespace: "bookinfo"}
+	sleep := examples.Sleep{Namespace: "bookinfo"}
 	log.Log.Info("Deploy httpbin pod")
 	httpbin.Install()
 	log.Log.Info("Deploy sleep pod")
@@ -69,7 +69,7 @@ func TestExtensionInstall(t *testing.T) {
 		log.Log.Info("Creating ServiceMeshExtension")
 		util.KubeApplyContents("bookinfo", httpbinServiceMeshExtension)
 
-		if err := checkSMEReady("bookinfo", "header-append"); err != nil {
+		if err := checkSMEReady("bookinfo"); err != nil {
 			t.Fatalf("error checking for SME header-append: %v", err)
 		}
 
@@ -85,7 +85,7 @@ func TestExtensionInstall(t *testing.T) {
 	})
 }
 
-func checkSMEReady(n, name string) error {
+func checkSMEReady(n string) error {
 	retry := util.Retrier{
 		BaseDelay: 30 * time.Second,
 		MaxDelay:  30 * time.Second,

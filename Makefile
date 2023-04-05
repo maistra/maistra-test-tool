@@ -1,9 +1,26 @@
 
 .PHONY: all
+.PHONY: build
+.PHONY: check
+.PHONY: lint
+.PHONY: lint-go
 .PHONY: test
 .PHONY: Test%
 
+FINDFILES=find . \( -path ./.git -o -path ./.github -o -path ./tmp \) -prune -o -type f
+
 all: test
+
+build:
+	scripts/compiletests.sh
+
+# perform all the pre-commit checks
+check: build lint
+
+lint: lint-go
+
+lint-go:
+	@${FINDFILES} -name '*.go' -print0 | ${XARGS} scripts/lint_go.sh
 
 # You can use this target in two ways:
 #     make test                       # runs all tests

@@ -38,16 +38,16 @@ func cleanupAuthPolicy() {
 	util.KubeDeleteContents("foo", NamespacePolicyStrict)
 	util.KubeDeleteContents(meshNamespace, util.RunTemplate(PeerAuthPolicyStrictTemplate, smcp))
 
-	sleep := examples.Sleep{"foo"}
-	httpbin := examples.Httpbin{"foo"}
+	sleep := examples.Sleep{Namespace: "foo"}
+	httpbin := examples.Httpbin{Namespace: "foo"}
 	sleep.Uninstall()
 	httpbin.Uninstall()
-	sleep = examples.Sleep{"bar"}
-	httpbin = examples.Httpbin{"bar"}
+	sleep = examples.Sleep{Namespace: "bar"}
+	httpbin = examples.Httpbin{Namespace: "bar"}
 	sleep.Uninstall()
 	httpbin.Uninstall()
-	sleep = examples.Sleep{"legacy"}
-	httpbin = examples.Httpbin{"legacy"}
+	sleep = examples.Sleep{Namespace: "legacy"}
+	httpbin = examples.Httpbin{Namespace: "legacy"}
 	sleep.Uninstall()
 	httpbin.Uninstall()
 	time.Sleep(time.Duration(20) * time.Second)
@@ -60,18 +60,18 @@ func TestAuthPolicy(t *testing.T) {
 	defer util.RecoverPanic(t)
 
 	log.Log.Info("Test Authentication Policy")
-	httpbin := examples.Httpbin{"foo"}
+	httpbin := examples.Httpbin{Namespace: "foo"}
 	httpbin.Install()
-	httpbin = examples.Httpbin{"bar"}
+	httpbin = examples.Httpbin{Namespace: "bar"}
 	httpbin.Install()
-	httpbin = examples.Httpbin{"legacy"}
+	httpbin = examples.Httpbin{Namespace: "legacy"}
 	httpbin.InstallLegacy()
 
-	sleep := examples.Sleep{"foo"}
+	sleep := examples.Sleep{Namespace: "foo"}
 	sleep.Install()
-	sleep = examples.Sleep{"bar"}
+	sleep = examples.Sleep{Namespace: "bar"}
 	sleep.Install()
-	sleep = examples.Sleep{"legacy"}
+	sleep = examples.Sleep{Namespace: "legacy"}
 	sleep.InstallLegacy()
 
 	log.Log.Info("Verify setup")
@@ -128,7 +128,7 @@ func TestAuthPolicy(t *testing.T) {
 			util.Inspect(err, "Failed to get sleep pod name", "", t)
 			cmd := fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%{http_code}"`,
 				to, from, to)
-			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true)
+			msg, _ := util.PodExec(from, sleepPod, "sleep", cmd, true)
 			if strings.Contains(msg, "200") {
 				t.Errorf("Global mTLS expected 000; Got response code: %s", msg)
 				log.Log.Errorf("Global mTLS expected: 000; Got response code: %s", msg)
@@ -202,7 +202,7 @@ func TestAuthPolicy(t *testing.T) {
 		util.Inspect(err, "Failed to get sleep pod name", "", t)
 		cmd = fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%{http_code}"`,
 			"bar", "legacy", "bar")
-		msg, err = util.PodExec("legacy", sleepPod, "sleep", cmd, true)
+		msg, _ = util.PodExec("legacy", sleepPod, "sleep", cmd, true)
 		if strings.Contains(msg, "200") {
 			log.Log.Infof("Expected 200 from sleep.legacy to httpbin.bar: %s", msg)
 		} else {

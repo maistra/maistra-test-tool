@@ -38,8 +38,8 @@ var (
 
 func cleanupTCPShifting() {
 	log.Log.Info("Cleanup")
-	echo := examples.Echo{"bookinfo"}
-	sleep := examples.Sleep{"bookinfo"}
+	echo := examples.Echo{Namespace: "bookinfo"}
+	sleep := examples.Sleep{Namespace: "bookinfo"}
 	util.KubeDeleteContents("bookinfo", echoAllv1Yaml)
 	echo.Uninstall()
 	sleep.Uninstall()
@@ -53,8 +53,8 @@ func TestTCPShifting(t *testing.T) {
 	defer util.RecoverPanic(t)
 
 	log.Log.Info("TestTCPShifting")
-	echo := examples.Echo{"bookinfo"}
-	sleep := examples.Sleep{"bookinfo"}
+	echo := examples.Echo{Namespace: "bookinfo"}
+	sleep := examples.Sleep{Namespace: "bookinfo"}
 	echo.Install()
 	sleep.Install()
 
