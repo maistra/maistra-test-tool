@@ -39,7 +39,7 @@ func TestIstioPodProbesFails(t *testing.T) {
 			oc.DeleteNamespaces(t, multiple_namespaces, data)
 			oc.DeleteNamespace(t, ns)
 			oc.RecreateNamespace(t, meshNamespace)
-
+			oc.ApplyString(t, meshNamespace, smmr)
 		})
 
 		t.LogStep("Install Bookinfo application")
