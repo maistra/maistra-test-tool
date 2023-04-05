@@ -12,7 +12,7 @@ FINDFILES=find . \( -path ./.git -o -path ./.github -o -path ./tmp \) -prune -o 
 all: test
 
 build:
-	go build ./...
+	scripts/compiletests.sh
 
 # perform all the pre-commit checks
 check: build lint
