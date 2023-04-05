@@ -101,3 +101,23 @@ func WaitCondition(t test.TestHelper, ns string, kind string, name string, condi
 				fmt.Sprintf("Condition %s not met %s %s/%s, retrying", condition, kind, ns, name)))
 	})
 }
+
+func DeletePod(t test.TestHelper, podLocator PodLocatorFunc) {
+	t.T().Helper()
+	var pod NamespacedName
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		pod = podLocator(t)
+	})
+	shell.Executef(t,
+		fmt.Sprintf(`oc delete pod %s -n %s `, pod.Name, pod.Namespace),
+		assert.OutputContains("deleted",
+			fmt.Sprintf("Pod %s is being deleted", pod.Name),
+			fmt.Sprintf("Pod %s deletion return an error", pod.Name)))
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		shell.Executef(t,
+			fmt.Sprintf(`oc get pod %s -n %s || true`, pod.Name, pod.Namespace), // TODO: modify the shell package to support this without failing when the pod does not exist
+			assert.OutputContains("NotFound",
+				fmt.Sprintf("Pod %s is deleted", pod.Name),
+				fmt.Sprintf("Pod %s is not deleted yet", pod.Name)))
+	})
+}

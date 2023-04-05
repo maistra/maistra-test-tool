@@ -32,10 +32,10 @@ var (
 	//go:embed yaml/smmr.yaml
 	smmr string
 
-	//go:embed yaml/multiple-namespaces
+	//go:embed yaml/multiple-namespaces.yaml
 	multiple_namespaces string
 
-	//go:embed yaml/multiple-test-smmr
+	//go:embed yaml/multiple-test-smmr.yaml
 	multiple_smmr string
 )
 

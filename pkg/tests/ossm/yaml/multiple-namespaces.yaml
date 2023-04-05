@@ -5,5 +5,5 @@ items:
 - apiVersion: v1
   kind: Namespace
   metadata:
-      name: test{{ $i }}
+    name: test{{ $i }}
 {{- end }}

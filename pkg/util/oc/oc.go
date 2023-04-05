@@ -88,10 +88,16 @@ func CreateNamespaces(t test.TestHelper, yaml string, data interface{}) {
 	ApplyTemplate(t, "default", yaml, data)
 }
 
-func UpdateSMMRMultipleNamespaces(t test.TestHelper, yaml string, data interface{}) {
+func DeleteNamespaces(t test.TestHelper, yaml string, data interface{}) {
+	t.T().Helper()
+	t.Logf("Deleting multiple namespaces")
+	DeleteFromTemplate(t, "default", yaml, data)
+}
+
+func UpdateSMMRMultipleNamespaces(t test.TestHelper, ns string, yaml string, data interface{}) {
 	t.T().Helper()
 	t.Logf("Creating smmr")
-	ApplyTemplate(t, "default", yaml, data)
+	ApplyTemplate(t, ns, yaml, data)
 }
 
 func RecreateNamespace(t test.TestHelper, ns string) {

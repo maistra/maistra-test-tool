@@ -31,7 +31,13 @@ import (
 
 // RunTemplate renders a yaml template string in the yaml_configs.go file
 func RunTemplate(tmpl string, input interface{}) string {
-	tt, err := template.New("").Parse(tmpl)
+	if input == nil {
+		log.Log.Fatal("input is nil")
+	}
+	temp := template.New("")
+	tt, err := temp.Funcs(template.FuncMap{
+		"until": Until,
+	}).Parse(tmpl)
 	if err != nil {
 		log.Log.Fatal(err)
 	}
@@ -116,4 +122,13 @@ func CheckUserGroup(url, ingress, ingressPort, user string) (*http.Response, err
 	req.Header.Set("user", user)
 	// Get response
 	return client.Do(req)
+}
+
+// Define an until function for template
+func Until(n int) []int {
+	nums := make([]int, n)
+	for i := 0; i < n; i++ {
+		nums[i] = i
+	}
+	return nums
 }
