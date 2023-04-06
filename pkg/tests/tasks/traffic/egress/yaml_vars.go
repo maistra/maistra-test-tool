@@ -16,6 +16,7 @@ package egress
 
 import (
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/template"
 )
 
 var (
@@ -24,13 +25,11 @@ var (
 	nginxServerCACert  = env.GetRootDir() + "/sampleCerts/nginx.example.com/example.com.crt"
 )
 
-type SMCP struct {
-	Name      string `default:"basic"`
-	Namespace string `default:"istio-system"`
-}
-
 var (
-	smcpName      string = env.Getenv("SMCPNAME", "basic")
-	meshNamespace string = env.Getenv("MESHNAMESPACE", "istio-system")
-	smcp          SMCP   = SMCP{smcpName, meshNamespace}
+	smcpName      = env.Getenv("SMCPNAME", "basic")
+	meshNamespace = env.Getenv("MESHNAMESPACE", "istio-system")
+	smcp          = template.SMCP{
+		Name:      smcpName,
+		Namespace: meshNamespace,
+		Rosa:      env.IsRosa()}
 )

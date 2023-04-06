@@ -9,3 +9,9 @@ func Run(t test.TestHelper, yaml string, vars interface{}) string {
 	t.T().Helper()
 	return util.RunTemplate(yaml, vars)
 }
+
+type SMCP struct {
+	Name      string `default:"basic"`
+	Namespace string `default:"istio-system"`
+	Rosa      bool   `default:"false"`
+}

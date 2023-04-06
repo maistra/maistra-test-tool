@@ -16,16 +16,14 @@ package non_dependant
 
 import (
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/template"
 )
-
-type SMCP struct {
-	Name      string `default:"basic"`
-	Namespace string `default:"istio-system"`
-	Rosa      bool   `default:"false"`
-}
 
 var (
 	smcpName      = env.Getenv("SMCPNAME", "basic")
 	meshNamespace = env.Getenv("MESHNAMESPACE", "istio-system")
-	smcp          = SMCP{smcpName, meshNamespace, env.IsRosa()}
+	smcp          = template.SMCP{
+		Name:      smcpName,
+		Namespace: meshNamespace,
+		Rosa:      env.IsRosa()}
 )
