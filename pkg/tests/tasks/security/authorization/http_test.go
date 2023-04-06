@@ -34,12 +34,12 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 
 		ns := "bookinfo"
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns)
 			oc.MergePatch(t, meshNamespace,
 				fmt.Sprintf(`smcp/%s`, smcpName),
 				"merge",
 				`{"spec":{"security":{"dataPlane":{"mtls":false},"controlPlane":{"mtls":false}}}}`,
 			)
+			oc.RecreateNamespace(t, ns)
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 		})
 
@@ -52,10 +52,11 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 			"merge",
 			`{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}`,
 		)
-		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Install bookinfo with mTLS")
 		app.InstallAndWaitReady(t, app.BookinfoWithMTLS(ns))
+		oc.WaitSMCPReady(t, meshNamespace, smcpName)
+
 		productPageURL := app.BookinfoProductPageURL(t, meshNamespace)
 
 		t.NewSubTest("deny all http traffic to bookinfo").Run(func(t test.TestHelper) {
