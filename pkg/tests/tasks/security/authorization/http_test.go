@@ -20,43 +20,43 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func TestAuthoriztionHTTPTraffic(t *testing.T) {
+// TestAuthorizationHTTPTraffic validates authorization policies for HTTP traffic.
+func TestAuthorizationHTTPTraffic(t *testing.T) {
 	test.NewTest(t).Id("T20").Groups(test.Full, test.ARM, test.InterOp).Run(func(t test.TestHelper) {
 		hack.DisableLogrusForThisTest(t)
 
 		ns := "bookinfo"
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns)
-			shell.Execute(t,
-				fmt.Sprintf(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":false},"controlPlane":{"mtls":false}}}}'`,
-					meshNamespace, smcpName))
-			shell.Execute(t,
-				fmt.Sprintf(`kubectl -n %s wait --for condition=Ready smcp/%s --timeout 180s`,
-					meshNamespace, smcpName))
+			oc.MergePatch(t, meshNamespace,
+				fmt.Sprintf(`smcp/%s`, smcpName),
+				"merge",
+				`{"spec":{"security":{"dataPlane":{"mtls":false},"controlPlane":{"mtls":false}}}}`,
+			)
+			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 		})
 
 		t.Log("This test validates authorization policies for HTTP traffic.")
 		t.Log("Doc reference: https://istio.io/v1.14/docs/tasks/security/authorization/authz-http/")
 
 		t.LogStep("Enable Service Mesh Control Plane mTLS")
-		shell.Execute(t,
-			fmt.Sprintf(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}'`,
-				meshNamespace, smcpName))
-		shell.Execute(t,
-			fmt.Sprintf(`kubectl -n %s wait --for condition=Ready smcp/%s --timeout 180s`,
-				meshNamespace, smcpName))
+		oc.MergePatch(t, meshNamespace,
+			fmt.Sprintf(`smcp/%s`, smcpName),
+			"merge",
+			`{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}`,
+		)
+		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Install bookinfo with mTLS")
 		app.InstallAndWaitReady(t, app.BookinfoWithMTLS(ns))
-		GATEWAY_URL := shell.Execute(t,
-			fmt.Sprintf(`kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'`, meshNamespace))
+		ProductPage_URL := app.BookinfoProductPageURL(t, meshNamespace)
 
 		t.NewSubTest("deny all http traffic to bookinfo").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
@@ -67,12 +67,10 @@ func TestAuthoriztionHTTPTraffic(t *testing.T) {
 
 			t.LogStep("Verify that GET request is denied")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				shell.Execute(t,
-					fmt.Sprintf(`curl http://%s/productpage`, GATEWAY_URL),
-					assert.OutputContains(
-						"RBAC: access denied",
-						"ProductPage returns expected message: 'RBAC: access denied'",
-						"ProductPage didn't return 'RBAC: access denied'"),
+				curl.Request(t,
+					ProductPage_URL,
+					nil,
+					assert.ResponseContains("RBAC: access denied"),
 				)
 			})
 		})
@@ -88,19 +86,15 @@ func TestAuthoriztionHTTPTraffic(t *testing.T) {
 
 			t.LogStep("Verify that GET request to the productpage is allowed and fetching other services is denied")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				shell.Execute(t,
-					fmt.Sprintf(`curl http://%s/productpage`, GATEWAY_URL),
-					assert.OutputContains(
-						"Error fetching product details",
-						"ProductPage returns expected message: 'Error fetching product details'",
-						"ProductPage didn't return 'Error fetching product details'"),
+				curl.Request(t,
+					ProductPage_URL,
+					nil,
+					assert.ResponseContains("Error fetching product details"),
 				)
-				shell.Execute(t,
-					fmt.Sprintf(`curl http://%s/productpage`, GATEWAY_URL),
-					assert.OutputContains(
-						"Error fetching product reviews",
-						"ProductPage returns expected message: 'Error fetching product reviews'",
-						"ProductPage didn't return 'Error fetching product reviews'"),
+				curl.Request(t,
+					ProductPage_URL,
+					nil,
+					assert.ResponseContains("Error fetching product reviews"),
 				)
 			})
 		})
@@ -122,33 +116,25 @@ func TestAuthoriztionHTTPTraffic(t *testing.T) {
 
 			t.LogStep("Verify that GET requests are allowed to all bookinfo workloads")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				shell.Execute(t,
-					fmt.Sprintf(`curl http://%s/productpage`, GATEWAY_URL),
-					assert.OutputDoesNotContain(
-						"RBAC: access denied",
-						"ProductPage returns successfully",
-						"ProductPage returns unexpected message: 'RBAC: access denied'"),
+				curl.Request(t,
+					ProductPage_URL,
+					nil,
+					assert.ResponseDoesNotContain("RBAC: access denied"),
 				)
-				shell.Execute(t,
-					fmt.Sprintf(`curl http://%s/productpage`, GATEWAY_URL),
-					assert.OutputDoesNotContain(
-						"Error fetching product details",
-						"ProductPage details returns successfully",
-						"ProductPage returns unexpected message: 'Error fetching product details'"),
+				curl.Request(t,
+					ProductPage_URL,
+					nil,
+					assert.ResponseDoesNotContain("Error fetching product details"),
 				)
-				shell.Execute(t,
-					fmt.Sprintf(`curl http://%s/productpage`, GATEWAY_URL),
-					assert.OutputDoesNotContain(
-						"Error fetching product reviews",
-						"ProductPage reviews returns successfully",
-						"ProductPage returns unexpected message: 'Error fetching product reviews'"),
+				curl.Request(t,
+					ProductPage_URL,
+					nil,
+					assert.ResponseDoesNotContain("Error fetching product reviews"),
 				)
-				shell.Execute(t,
-					fmt.Sprintf(`curl http://%s/productpage`, GATEWAY_URL),
-					assert.OutputDoesNotContain(
-						"Ratings service currently unavailable",
-						"ProductPage ratings returns successfully",
-						"ProductPage returns unexpected message: 'Ratings service currently unavailable'"),
+				curl.Request(t,
+					ProductPage_URL,
+					nil,
+					assert.ResponseDoesNotContain("Ratings service currently unavailable"),
 				)
 			})
 		})

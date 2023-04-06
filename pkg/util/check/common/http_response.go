@@ -93,6 +93,27 @@ func CheckResponseContains(t test.TestHelper, resp *http.Response, str string, f
 	}
 }
 
+func CheckResponseDoesNotContain(t test.TestHelper, resp *http.Response, str string, failure FailureFunc) {
+	t.T().Helper()
+	requireNonNilResponse(t, resp)
+
+	defer util.CloseResponseBody(resp)
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("Failed to read response body: %v", err)
+	}
+	body := string(bodyBytes)
+	if strings.Contains(body, str) {
+		detailMsg := fmt.Sprintf("expected the string '%s' to be absent from the response, but it was present", str)
+		if !t.WillRetry() {
+			detailMsg += "\nfull response:\n" + body
+		}
+		failure(t, detailMsg, "")
+	} else {
+		logSuccess(t, fmt.Sprintf("string '%s' not found in response", str))
+	}
+}
+
 func CheckDurationInRange(t test.TestHelper, resp *http.Response, duration, minDuration, maxDuration time.Duration, failure FailureFunc) {
 	t.T().Helper()
 	requireNonNilResponse(t, resp)

@@ -30,6 +30,13 @@ func ResponseContains(str string) curl.HTTPResponseCheckFunc {
 	}
 }
 
+func ResponseDoesNotContain(str string) curl.HTTPResponseCheckFunc {
+	return func(t test.TestHelper, resp *http.Response, duration time.Duration) {
+		t.T().Helper()
+		common.CheckResponseDoesNotContain(t, resp, str, assertFailure)
+	}
+}
+
 func DurationInRange(minDuration, maxDuration time.Duration) curl.HTTPResponseCheckFunc {
 	return func(t test.TestHelper, resp *http.Response, duration time.Duration) {
 		t.T().Helper()
