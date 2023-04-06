@@ -15,19 +15,17 @@
 package ossm
 
 import (
-	"net/http"
+	"fmt"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
-	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
-	"github.com/maistra/maistra-test-tool/pkg/util/curl"
-	. "github.com/maistra/maistra-test-tool/pkg/util/log"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/retry"
+	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func TestBookinfo(t *testing.T) {
+func TestBookinfoInjection(t *testing.T) {
 	NewTest(t).Id("A2").Groups(ARM, Full, Smoke, InterOp).Run(func(t TestHelper) {
 
 		ns := "bookinfo"
@@ -36,19 +34,18 @@ func TestBookinfo(t *testing.T) {
 			oc.RecreateNamespace(t, ns)
 		})
 
-		app.InstallAndWaitReady(t, app.Bookinfo(ns))
+		x := app.Bookinfo
+		app.InstallAndWaitReady(t, x(ns))
 
-		Log.Info("Check if bookinfo productpage is running")
+		t.LogStep("Check pods running 2/2 ready and with Sidecar Injection")
+		oc.VerifyAllPodsSidecarInjection(t, ns)
 
-		productpageURL := app.BookinfoProductPageURL(t, meshNamespace)
-
-		t.LogStep("check if productpage shows 'error fetching product reviews' due to delay injection")
-		retry.UntilSuccess(t, func(t TestHelper) {
-			for i := 0; i < 5; i++ {
-				curl.Request(t,
-					productpageURL, nil,
-					require.ResponseStatus(http.StatusOK))
-			}
-		})
+		t.LogStep("Check if bookinfo productpage is running through the Proxy")
+		cmd := fmt.Sprintf(`oc -n %s run -it --restart=Never --rm curl --image curlimages/curl -- curl -I http://productpage:9080`, ns)
+		shell.Execute(t, cmd,
+			assert.OutputContains(
+				"HTTP/1.1 200 OK",
+				"server: istio-envoy",
+				"x-envoy-decorator-operation: productpage.bookinfo.svc.cluster.local:9080"))
 	})
 }
