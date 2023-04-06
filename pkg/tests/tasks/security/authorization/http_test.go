@@ -20,7 +20,7 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
-	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	Curl "github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -67,7 +67,7 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 
 			t.LogStep("Verify that GET request is denied")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				curl.Request(t,
+				Curl.Request(t,
 					ProductPage_URL,
 					nil,
 					assert.ResponseContains("RBAC: access denied"),
@@ -86,12 +86,12 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 
 			t.LogStep("Verify that GET request to the productpage is allowed and fetching other services is denied")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				curl.Request(t,
+				Curl.Request(t,
 					ProductPage_URL,
 					nil,
 					assert.ResponseContains("Error fetching product details"),
 				)
-				curl.Request(t,
+				Curl.Request(t,
 					ProductPage_URL,
 					nil,
 					assert.ResponseContains("Error fetching product reviews"),
@@ -116,22 +116,22 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 
 			t.LogStep("Verify that GET requests are allowed to all bookinfo workloads")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				curl.Request(t,
+				Curl.Request(t,
 					ProductPage_URL,
 					nil,
 					assert.ResponseDoesNotContain("RBAC: access denied"),
 				)
-				curl.Request(t,
+				Curl.Request(t,
 					ProductPage_URL,
 					nil,
 					assert.ResponseDoesNotContain("Error fetching product details"),
 				)
-				curl.Request(t,
+				Curl.Request(t,
 					ProductPage_URL,
 					nil,
 					assert.ResponseDoesNotContain("Error fetching product reviews"),
 				)
-				curl.Request(t,
+				Curl.Request(t,
 					ProductPage_URL,
 					nil,
 					assert.ResponseDoesNotContain("Ratings service currently unavailable"),
