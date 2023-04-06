@@ -99,17 +99,3 @@ func GetAllResources(t test.TestHelper, ns string, checks ...assert.CheckFunc) {
 		fmt.Sprintf(`oc get all -n %s`, ns),
 		checks...)
 }
-
-func VerifyAllPodsSidecarInjection(t test.TestHelper, ns string) {
-	t.T().Helper()
-	response := util.GetPodNames(ns)
-	t.Log(response)
-	for _, podName := range response {
-		cmd := fmt.Sprintf(`oc get pod %s -n %s`, podName, ns)
-		shell.Execute(t, cmd,
-			assert.OutputContains(
-				"2/2",
-				"Success. proxy container is running",
-				"Error. proxy container is not running"))
-	}
-}

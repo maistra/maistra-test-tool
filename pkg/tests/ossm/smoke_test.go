@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
@@ -34,18 +35,30 @@ func TestBookinfoInjection(t *testing.T) {
 			oc.RecreateNamespace(t, ns)
 		})
 
-		x := app.Bookinfo
-		app.InstallAndWaitReady(t, x(ns))
+		app.InstallAndWaitReady(t, app.Bookinfo(ns))
 
 		t.LogStep("Check pods running 2/2 ready and with Sidecar Injection")
-		oc.VerifyAllPodsSidecarInjection(t, ns)
+		assertSidecarInjectedInAllPods(t, ns)
 
 		t.LogStep("Check if bookinfo productpage is running through the Proxy")
-		cmd := fmt.Sprintf(`oc -n %s run -it --restart=Never --rm curl --image curlimages/curl -- curl -I http://productpage:9080`, ns)
-		shell.Execute(t, cmd,
+		shell.Execute(t,
+			fmt.Sprintf(`oc -n %s run -it --restart=Never --rm curl --image curlimages/curl -- curl -I http://productpage:9080`, ns),
 			assert.OutputContains(
 				"HTTP/1.1 200 OK",
 				"server: istio-envoy",
 				"x-envoy-decorator-operation: productpage.bookinfo.svc.cluster.local:9080"))
 	})
+}
+
+func assertSidecarInjectedInAllPods(t TestHelper, ns string) {
+	response := util.GetPodNames(ns)
+	t.Log(response)
+	for _, podName := range response {
+		shell.Execute(t,
+			fmt.Sprintf(`oc get pod %s -n %s`, podName, ns),
+			assert.OutputContains(
+				"2/2",
+				"Proxy container is injected and running",
+				"Proxy container is not running"))
+	}
 }
