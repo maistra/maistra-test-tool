@@ -56,7 +56,7 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 
 		t.LogStep("Install bookinfo with mTLS")
 		app.InstallAndWaitReady(t, app.BookinfoWithMTLS(ns))
-		ProductPage_URL := app.BookinfoProductPageURL(t, meshNamespace)
+		productPageURL := app.BookinfoProductPageURL(t, meshNamespace)
 
 		t.NewSubTest("deny all http traffic to bookinfo").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
@@ -68,7 +68,7 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 			t.LogStep("Verify that GET request is denied")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				Curl.Request(t,
-					ProductPage_URL,
+					productPageURL,
 					nil,
 					assert.ResponseContains("RBAC: access denied"),
 				)
@@ -87,13 +87,9 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 			t.LogStep("Verify that GET request to the productpage is allowed and fetching other services is denied")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				Curl.Request(t,
-					ProductPage_URL,
+					productPageURL,
 					nil,
 					assert.ResponseContains("Error fetching product details"),
-				)
-				Curl.Request(t,
-					ProductPage_URL,
-					nil,
 					assert.ResponseContains("Error fetching product reviews"),
 				)
 			})
@@ -117,23 +113,11 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 			t.LogStep("Verify that GET requests are allowed to all bookinfo workloads")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				Curl.Request(t,
-					ProductPage_URL,
+					productPageURL,
 					nil,
 					assert.ResponseDoesNotContain("RBAC: access denied"),
-				)
-				Curl.Request(t,
-					ProductPage_URL,
-					nil,
 					assert.ResponseDoesNotContain("Error fetching product details"),
-				)
-				Curl.Request(t,
-					ProductPage_URL,
-					nil,
 					assert.ResponseDoesNotContain("Error fetching product reviews"),
-				)
-				Curl.Request(t,
-					ProductPage_URL,
-					nil,
 					assert.ResponseDoesNotContain("Ratings service currently unavailable"),
 				)
 			})
