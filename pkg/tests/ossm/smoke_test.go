@@ -21,6 +21,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -28,7 +29,7 @@ import (
 
 func TestBookinfoInjection(t *testing.T) {
 	NewTest(t).Id("A2").Groups(ARM, Full, Smoke, InterOp).Run(func(t TestHelper) {
-
+		hack.DisableLogrusForThisTest(t)
 		ns := "bookinfo"
 
 		t.Cleanup(func() {
@@ -42,23 +43,30 @@ func TestBookinfoInjection(t *testing.T) {
 
 		t.LogStep("Check if bookinfo productpage is running through the Proxy")
 		shell.Execute(t,
-			fmt.Sprintf(`oc -n %s run -it --restart=Never --rm curl --image curlimages/curl -- curl -I http://productpage:9080`, ns),
+			fmt.Sprintf(`oc -n %s run -i --restart=Never --rm curl --image curlimages/curl -- curl -sI http://productpage:9080`, ns),
 			assert.OutputContains(
 				"HTTP/1.1 200 OK",
+				"ProductPage returns 200 OK",
+				"ProductPage didn't return 200 OK"),
+			assert.OutputContains(
 				"server: istio-envoy",
-				"x-envoy-decorator-operation: productpage.bookinfo.svc.cluster.local:9080"))
+				"HTTP header 'server: istio-envoy' is present in the response",
+				"HTTP header 'server: istio-envoy' is missing from the response"),
+			assert.OutputContains(
+				"x-envoy-decorator-operation",
+				"HTTP header 'x-envoy-decorator-operation' is present in the response",
+				"HTTP header 'x-envoy-decorator-operation' is missing from the response"))
 	})
 }
 
 func assertSidecarInjectedInAllPods(t TestHelper, ns string) {
 	response := util.GetPodNames(ns)
-	t.Log(response)
 	for _, podName := range response {
 		shell.Execute(t,
 			fmt.Sprintf(`oc get pod %s -n %s`, podName, ns),
 			assert.OutputContains(
 				"2/2",
-				"Proxy container is injected and running",
-				"Proxy container is not running"))
+				fmt.Sprintf("Proxy container is injected and running in pod %s", podName),
+				fmt.Sprintf("Proxy container is not running in pod %s", podName)))
 	}
 }
