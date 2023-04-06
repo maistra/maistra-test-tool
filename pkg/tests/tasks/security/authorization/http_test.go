@@ -20,7 +20,7 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
-	Curl "github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -67,7 +67,7 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 
 			t.LogStep("Verify that GET request is denied")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				Curl.Request(t,
+				curl.Request(t,
 					productPageURL,
 					nil,
 					assert.ResponseContains("RBAC: access denied"),
@@ -86,7 +86,7 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 
 			t.LogStep("Verify that GET request to the productpage is allowed and fetching other services is denied")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				Curl.Request(t,
+				curl.Request(t,
 					productPageURL,
 					nil,
 					assert.ResponseContains("Error fetching product details"),
@@ -112,7 +112,7 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 
 			t.LogStep("Verify that GET requests are allowed to all bookinfo workloads")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				Curl.Request(t,
+				curl.Request(t,
 					productPageURL,
 					nil,
 					assert.ResponseDoesNotContain("RBAC: access denied"),
