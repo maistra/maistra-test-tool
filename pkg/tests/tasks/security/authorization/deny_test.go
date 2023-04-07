@@ -46,7 +46,7 @@ func TestAuthorizationDenyAllow(t *testing.T) {
 			oc.Exec(t,
 				pod.MatchingSelector("app=sleep", ns),
 				"sleep",
-				httbinRequest("GET", "/ip"),
+				httpbinRequest("GET", "/ip"),
 				assert.OutputContains(
 					"200",
 					"Got expected 200 OK from httpbin",
@@ -61,10 +61,10 @@ func TestAuthorizationDenyAllow(t *testing.T) {
 			oc.ApplyString(t, ns, DenyGETPolicy)
 
 			t.LogStep("Verify that GET request is denied")
-			assertRequestDenied(t, ns, httbinRequest("GET", "/get"))
+			assertRequestDenied(t, ns, httpbinRequest("GET", "/get"))
 
 			t.LogStep("Verify that POST request is allowed")
-			assertRequestAccepted(t, ns, httbinRequest("POST", "/post"))
+			assertRequestAccepted(t, ns, httpbinRequest("POST", "/post"))
 		})
 
 		t.NewSubTest("deny request header").Run(func(t test.TestHelper) {
@@ -75,10 +75,10 @@ func TestAuthorizationDenyAllow(t *testing.T) {
 			oc.ApplyString(t, ns, DenyHeaderNotAdminPolicy)
 
 			t.LogStep("Verify that GET request with HTTP header 'x-token: admin' is allowed")
-			assertRequestAccepted(t, ns, httbinRequest("GET", "/get", "x-token: admin"))
+			assertRequestAccepted(t, ns, httpbinRequest("GET", "/get", "x-token: admin"))
 
 			t.LogStep("Verify that GET request with HTTP header 'x-token: guest' is denied")
-			assertRequestDenied(t, ns, httbinRequest("GET", "/get", "x-token: guest"))
+			assertRequestDenied(t, ns, httpbinRequest("GET", "/get", "x-token: guest"))
 		})
 
 		t.NewSubTest("allow request path").Run(func(t test.TestHelper) {
@@ -93,18 +93,18 @@ func TestAuthorizationDenyAllow(t *testing.T) {
 			oc.ApplyString(t, ns, AllowPathIPPolicy)
 
 			t.LogStep("Verify that GET request with the HTTP header 'x-token: guest' at path '/ip' is denied")
-			assertRequestDenied(t, ns, httbinRequest("GET", "/ip", "x-token: guest"))
+			assertRequestDenied(t, ns, httpbinRequest("GET", "/ip", "x-token: guest"))
 
 			t.LogStep("Verify that GET request with HTTP header 'x-token: admin' at path '/ip' is allowed")
-			assertRequestAccepted(t, ns, httbinRequest("GET", "/ip", "x-token: admin"))
+			assertRequestAccepted(t, ns, httpbinRequest("GET", "/ip", "x-token: admin"))
 
 			t.LogStep("Verify that GET request with HTTP header 'x-token: admin' at path '/get' is denied")
-			assertRequestDenied(t, ns, httbinRequest("GET", "/get", "x-token: admin"))
+			assertRequestDenied(t, ns, httpbinRequest("GET", "/get", "x-token: admin"))
 		})
 	})
 }
 
-func httbinRequest(method string, path string, headers ...string) string {
+func httpbinRequest(method string, path string, headers ...string) string {
 	headerArgs := ""
 	for _, header := range headers {
 		headerArgs += fmt.Sprintf(` -H "%s"`, header)
