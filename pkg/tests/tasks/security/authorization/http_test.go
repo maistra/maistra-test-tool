@@ -16,105 +16,201 @@ package authorization
 
 import (
 	"fmt"
-	"io/ioutil"
-	"strings"
 	"testing"
-	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
-	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
+	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func cleanupAuthorHTTP() {
-	log.Log.Info("Cleanup")
-	util.KubeDeleteContents("bookinfo", DetailsGETPolicy)
-	util.KubeDeleteContents("bookinfo", ReviewsGETPolicy)
-	util.KubeDeleteContents("bookinfo", RatingsGETPolicy)
-	util.KubeDeleteContents("bookinfo", ProductpageGETPolicy)
-	util.KubeDeleteContents("bookinfo", DenyAllPolicy)
-	time.Sleep(time.Duration(20) * time.Second)
-	bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
-	bookinfo.Uninstall()
-	util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":false},"controlPlane":{"mtls":false}}}}'`, meshNamespace, smcpName)
-	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
-	time.Sleep(time.Duration(20) * time.Second)
+// TestAuthorizationHTTPTraffic validates authorization policies for HTTP traffic.
+func TestAuthorizationHTTPTraffic(t *testing.T) {
+	test.NewTest(t).Id("T20").Groups(test.Full, test.ARM, test.InterOp).Run(func(t test.TestHelper) {
+		hack.DisableLogrusForThisTest(t)
+
+		ns := "bookinfo"
+		t.Cleanup(func() {
+			oc.MergePatch(t, meshNamespace,
+				fmt.Sprintf(`smcp/%s`, smcpName),
+				"merge",
+				`{"spec":{"security":{"dataPlane":{"mtls":false},"controlPlane":{"mtls":false}}}}`,
+			)
+			oc.RecreateNamespace(t, ns)
+			oc.WaitSMCPReady(t, meshNamespace, smcpName)
+		})
+
+		t.Log("This test validates authorization policies for HTTP traffic.")
+		t.Log("Doc reference: https://istio.io/v1.14/docs/tasks/security/authorization/authz-http/")
+
+		t.LogStep("Enable Service Mesh Control Plane mTLS")
+		oc.MergePatch(t, meshNamespace,
+			fmt.Sprintf(`smcp/%s`, smcpName),
+			"merge",
+			`{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}`,
+		)
+
+		t.LogStep("Install bookinfo with mTLS")
+		app.InstallAndWaitReady(t, app.BookinfoWithMTLS(ns))
+		oc.WaitSMCPReady(t, meshNamespace, smcpName)
+
+		productPageURL := app.BookinfoProductPageURL(t, meshNamespace)
+
+		t.NewSubTest("deny all http traffic to bookinfo").Run(func(t test.TestHelper) {
+			t.Cleanup(func() {
+				oc.DeleteFromString(t, ns, DenyAllPolicy)
+			})
+			t.LogStep("Apply policy that denies all HTTP requests to bookinfo workloads")
+			oc.ApplyString(t, ns, DenyAllPolicy)
+
+			t.LogStep("Verify that GET request is denied")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				curl.Request(t,
+					productPageURL,
+					nil,
+					assert.ResponseContains("RBAC: access denied"),
+				)
+			})
+		})
+
+		t.NewSubTest("only allow HTTP GET request to the productpage workload").Run(func(t test.TestHelper) {
+			t.Cleanup(func() {
+				oc.DeleteFromString(t, ns, ProductpageGETPolicy)
+				oc.DeleteFromString(t, ns, DenyAllPolicy)
+			})
+			t.LogStep("Apply policies that allow access with GET method to the productpage workload and deny requests to other workloads")
+			oc.ApplyString(t, ns, DenyAllPolicy)
+			oc.ApplyString(t, ns, ProductpageGETPolicy)
+
+			t.LogStep("Verify that GET request to the productpage is allowed and fetching other services is denied")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				curl.Request(t,
+					productPageURL,
+					nil,
+					assert.ResponseContains("Error fetching product details"),
+					assert.ResponseContains("Error fetching product reviews"),
+				)
+			})
+		})
+
+		t.NewSubTest("allow HTTP GET requests to all bookinfo workloads").Run(func(t test.TestHelper) {
+			t.Cleanup(func() {
+				oc.DeleteFromString(t, ns, RatingsGETPolicy)
+				oc.DeleteFromString(t, ns, ReviewsGETPolicy)
+				oc.DeleteFromString(t, ns, DetailsGETPolicy)
+				oc.DeleteFromString(t, ns, ProductpageGETPolicy)
+				oc.DeleteFromString(t, ns, DenyAllPolicy)
+			})
+			t.LogStep("Apply policies that allow HTTP GET requests to all bookinfo workloads")
+			oc.ApplyString(t, ns, DenyAllPolicy)
+			oc.ApplyString(t, ns, ProductpageGETPolicy)
+			oc.ApplyString(t, ns, DetailsGETPolicy)
+			oc.ApplyString(t, ns, ReviewsGETPolicy)
+			oc.ApplyString(t, ns, RatingsGETPolicy)
+
+			t.LogStep("Verify that GET requests are allowed to all bookinfo workloads")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				curl.Request(t,
+					productPageURL,
+					nil,
+					assert.ResponseDoesNotContain("RBAC: access denied"),
+					assert.ResponseDoesNotContain("Error fetching product details"),
+					assert.ResponseDoesNotContain("Error fetching product reviews"),
+					assert.ResponseDoesNotContain("Ratings service currently unavailable"),
+				)
+			})
+		})
+	})
 }
 
-func TestAuthorHTTP(t *testing.T) {
-	test.NewTest(t).Id("T20").Groups(test.Full, test.ARM, test.InterOp).NotRefactoredYet()
+const (
+	DenyAllPolicy = `
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-nothing
+  namespace: bookinfo
+spec:
+  {}
+`
 
-	defer cleanupAuthorHTTP()
-	defer util.RecoverPanic(t)
+	ProductpageGETPolicy = `
+apiVersion: "security.istio.io/v1beta1"
+kind: "AuthorizationPolicy"
+metadata:
+  name: "productpage-viewer"
+  namespace: bookinfo
+spec:
+  selector:
+    matchLabels:
+      app: productpage
+  action: ALLOW
+  rules:
+  - to:
+    - operation:
+        methods: ["GET"]
+`
 
-	log.Log.Info("Authorization for HTTP traffic")
-	log.Log.Info("Enable Control Plane MTLS")
-	util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}'`, meshNamespace, smcpName)
-	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
+	DetailsGETPolicy = `
+apiVersion: "security.istio.io/v1beta1"
+kind: "AuthorizationPolicy"
+metadata:
+  name: "details-viewer"
+  namespace: bookinfo
+spec:
+  selector:
+    matchLabels:
+      app: details
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/bookinfo/sa/bookinfo-productpage"]
+    to:
+    - operation:
+        methods: ["GET"]
+`
 
-	bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
-	bookinfo.Install(true)
-	productpageURL := fmt.Sprintf("http://%s/productpage", gatewayHTTP)
+	ReviewsGETPolicy = `
+apiVersion: "security.istio.io/v1beta1"
+kind: "AuthorizationPolicy"
+metadata:
+  name: "reviews-viewer"
+  namespace: bookinfo
+spec:
+  selector:
+    matchLabels:
+      app: reviews
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/bookinfo/sa/bookinfo-productpage"]
+    to:
+    - operation:
+        methods: ["GET"]
+`
 
-	t.Run("Security_authorization_rbac_deny_all_http", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-
-		log.Log.Info("Configure access control for workloads using HTTP traffic")
-		util.KubeApplyContents("bookinfo", DenyAllPolicy)
-		time.Sleep(time.Duration(10) * time.Second)
-
-		resp, _, err := util.GetHTTPResponse(productpageURL, nil)
-		util.Inspect(err, "Failed to get HTTP Response", "", t)
-		body, err := ioutil.ReadAll(resp.Body)
-		util.Inspect(err, "Failed to read response body", "", t)
-		if strings.Contains(string(body), "RBAC: access denied") {
-			log.Log.Infof("Got access denied as expected: %s", string(body))
-		} else {
-			t.Errorf("RBAC deny all failed. Got response: %s", string(body))
-			log.Log.Errorf("RBAC deny all failed. Got response: %s", string(body))
-		}
-		util.CloseResponseBody(resp)
-	})
-
-	t.Run("Security_authorization_rbac_allow_GET_http", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-
-		log.Log.Info("Allow access with GET method to the productpage workload")
-		util.KubeApplyContents("bookinfo", ProductpageGETPolicy)
-		time.Sleep(time.Duration(10) * time.Second)
-
-		util.GetHTTPResponse(productpageURL, nil) // dummy request to refresh previous page
-		resp, _, err := util.GetHTTPResponse(productpageURL, nil)
-		util.Inspect(err, "Failed to get HTTP Response", "", t)
-		body, err := ioutil.ReadAll(resp.Body)
-		util.Inspect(err, "Failed to read response body", "", t)
-		if strings.Contains(string(body), "Error fetching product details") && strings.Contains(string(body), "Error fetching product reviews") {
-			log.Log.Infof("Got expected page with Error fetching product details and Error fetching product reviews")
-		} else {
-			t.Errorf("Productpage GET policy failed. Got response: %s", string(body))
-			log.Log.Errorf("Productpage GET policy failed. Got response: %s", string(body))
-		}
-		util.CloseResponseBody(resp)
-
-		log.Log.Info("Allow other bookinfo services GET method")
-		util.KubeApplyContents("bookinfo", DetailsGETPolicy)
-		util.KubeApplyContents("bookinfo", ReviewsGETPolicy)
-		util.KubeApplyContents("bookinfo", RatingsGETPolicy)
-		time.Sleep(time.Duration(50) * time.Second)
-
-		util.GetHTTPResponse(productpageURL, nil) // dummy request to refresh previous page
-		resp, _, err = util.GetHTTPResponse(productpageURL, nil)
-		util.Inspect(err, "Failed to get HTTP Response", "", t)
-
-		body, err = ioutil.ReadAll(resp.Body)
-		util.Inspect(err, "Failed to read response body", "", t)
-		if strings.Contains(string(body), "Error fetching product details") || strings.Contains(string(body), "Error fetching product reviews") || strings.Contains(string(body), "Ratings service currently unavailable") {
-			t.Errorf("GET policy failed. Got response: %s", string(body))
-			log.Log.Errorf("GET policy failed. Got response: %s", string(body))
-		} else {
-			log.Log.Infof("Got expected page.")
-		}
-		util.CloseResponseBody(resp)
-	})
-}
+	RatingsGETPolicy = `
+apiVersion: "security.istio.io/v1beta1"
+kind: "AuthorizationPolicy"
+metadata:
+  name: "ratings-viewer"
+  namespace: bookinfo
+spec:
+  selector:
+    matchLabels:
+      app: ratings
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/bookinfo/sa/bookinfo-reviews"]
+    to:
+    - operation:
+        methods: ["GET"]
+`
+)
