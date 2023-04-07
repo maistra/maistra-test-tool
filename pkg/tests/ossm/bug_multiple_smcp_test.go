@@ -17,9 +17,9 @@ var smcpV23_template_meta string
 func cleanupMultipleSMCP() {
 	log.Log.Info("Delete the Multiple CP", meshNamespace)
 	util.KubeDeleteContents(meshNamespace, smmr)
-	util.KubeDeleteContents(meshNamespace, util.RunTemplate(smcpV23_template, smcp))
+	util.KubeDeleteContents(meshNamespace, util.RunTemplate(smcpV23_template, Smcp))
 	time.Sleep(time.Duration(40) * time.Second)
-	util.KubeDeleteContents(meshNamespace, util.RunTemplate(smcpV23_template_meta, smcp))
+	util.KubeDeleteContents(meshNamespace, util.RunTemplate(smcpV23_template_meta, Smcp))
 	time.Sleep(time.Duration(40) * time.Second)
 }
 
@@ -34,10 +34,10 @@ func TestSMCPMutiple(t *testing.T) {
 	util.Shell(`oc delete validatingwebhookconfiguration/openshift-operators.servicemesh-resources.maistra.io`)
 
 	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
-	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV23_template, smcp))
+	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV23_template, Smcp))
 	util.KubeApplyContents(meshNamespace, smmr)
 	time.Sleep(time.Duration(20) * time.Second)
-	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV23_template_meta, smcp))
+	util.KubeApplyContents(meshNamespace, util.RunTemplate(smcpV23_template_meta, Smcp))
 	time.Sleep(time.Duration(20) * time.Second)
 
 	log.Log.Info("Verify SMCP status and pods")
