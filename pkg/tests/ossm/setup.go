@@ -27,7 +27,7 @@ var (
 var (
 	smcpName      = env.GetDefaultSMCPName()
 	meshNamespace = env.GetDefaultMeshNamespace()
-	smcp          = template.SMCP{
+	Smcp          = template.SMCP{
 		Name:      smcpName,
 		Namespace: meshNamespace,
 		Rosa:      env.IsRosa()}
@@ -66,9 +66,9 @@ func BasicSetup() {
 func SetupNamespacesAndControlPlane() {
 	BasicSetup()
 	tmpl := getSMCPTemplate(env.GetDefaultSMCPVersion())
-	util.KubeApplyContents(meshNamespace, util.RunTemplate(tmpl, smcp))
+	util.KubeApplyContents(meshNamespace, util.RunTemplate(tmpl, Smcp))
 	util.KubeApplyContents(meshNamespace, smmr)
-	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcp.Name)
+	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, Smcp.Name)
 	util.Shell(`oc -n %s wait --for condition=Ready smmr/default --timeout 180s`, meshNamespace)
 	if ipv6 == "true" {
 		log.Log.Info("Running the test with IPv6 configuration")
@@ -86,5 +86,5 @@ func getSMCPTemplate(version string) string {
 }
 
 func InstallSMCP(t test.TestHelper, ns, version string) {
-	oc.ApplyTemplate(t, ns, getSMCPTemplate(version), smcp)
+	oc.ApplyTemplate(t, ns, getSMCPTemplate(version), Smcp)
 }

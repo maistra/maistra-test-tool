@@ -36,7 +36,7 @@ var (
 func cleanupRateLimiting(redisDeploy examples.Redis, bookinfoDeploy examples.Bookinfo) {
 	util.Shell(`kubectl -n %s patch smcp/%s --type=json -p='[{"op": "remove", "path": "/spec/techPreview/rateLimiting"}]'`, meshNamespace, smcpName)
 	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
-	util.KubeDeleteContents(meshNamespace, util.RunTemplate(rateLimitFilterYaml_template, smcp))
+	util.KubeDeleteContents(meshNamespace, util.RunTemplate(rateLimitFilterYaml_template, Smcp))
 	time.Sleep(time.Second * 5)
 	util.KubeDeleteContents(meshNamespace, rateLimitSMCPPatch)
 	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
@@ -68,7 +68,7 @@ func TestRateLimiting(t *testing.T) {
 		t.Fatalf("rls deployment not ready: %v", err)
 	}
 
-	if err := util.KubeApplyContents(meshNamespace, util.RunTemplate(rateLimitFilterYaml_template, smcp)); err != nil {
+	if err := util.KubeApplyContents(meshNamespace, util.RunTemplate(rateLimitFilterYaml_template, Smcp)); err != nil {
 		t.Fatalf("error applying envoy filter: %v", err)
 	}
 	util.Shell(`kubectl -n %s get envoyfilter -o yaml > rrr.yaml`, meshNamespace)

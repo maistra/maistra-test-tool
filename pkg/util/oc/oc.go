@@ -3,6 +3,7 @@ package oc
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
@@ -76,16 +77,26 @@ func DeleteSecret(t test.TestHelper, ns string, name string) {
 	shell.ExecuteIgnoreError(t, fmt.Sprintf(`kubectl -n %s delete secret %s`, ns, name))
 }
 
-func DeleteNamespace(t test.TestHelper, ns string) {
+func DeleteNamespace(t test.TestHelper, namespaces ...string) {
 	t.T().Helper()
-	t.Logf("Deleting namespace %q", ns)
-	shell.Executef(t, "kubectl delete ns %s", ns)
+	t.Logf("Deleting namespaces: %v", namespaces)
+	shell.Executef(t, "kubectl delete ns %s", strings.Join(namespaces, " "))
 }
 
-func CreateNamespace(t test.TestHelper, ns string) {
+func CreateNamespace(t test.TestHelper, namespaces ...string) {
 	t.T().Helper()
-	t.Logf("Creating namespace %q", ns)
-	shell.Executef(t, "oc new-project %s", ns)
+	t.Logf("Creating namespaces: %v", namespaces)
+
+	yaml := ""
+	for _, ns := range namespaces {
+		yaml += fmt.Sprintf(`
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: %s
+---`, ns)
+	}
+	ApplyString(t, "", yaml)
 }
 
 func RecreateNamespace(t test.TestHelper, ns string) {
@@ -97,6 +108,11 @@ func RecreateNamespace(t test.TestHelper, ns string) {
 func WaitSMCPReady(t test.TestHelper, ns string, name string) {
 	t.T().Helper()
 	shell.Executef(t, `oc -n %s wait --for condition=Ready smcp/%s --timeout 300s`, ns, name)
+}
+
+func WaitSMMRReady(t test.TestHelper, ns string) {
+	t.T().Helper()
+	shell.Executef(t, `oc -n %s wait --for condition=Ready smmr/default --timeout 300s`, ns)
 }
 
 func GetAllResources(t test.TestHelper, ns string, checks ...common.CheckFunc) {
@@ -116,4 +132,23 @@ func ScaleDeploymentAndWait(t test.TestHelper, ns string, name string, replicas 
 func TouchSMCP(t test.TestHelper, ns string, name string) {
 	t.T().Helper()
 	Patch(t, ns, "smcp", name, "merge", fmt.Sprintf(`{"spec":{"techPreview":{"foo":"foo%d"}}}`, rand.Int()))
+}
+
+func Label(t test.TestHelper, ns string, kind string, name string, labels string) {
+	t.T().Helper()
+	nsFlag := ""
+	if ns != "" {
+		nsFlag = "-n " + ns
+	}
+	shell.Executef(t, "oc %slabel %s %s %s", nsFlag, kind, name, labels)
+}
+
+func Get(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) {
+	t.T().Helper()
+	shell.Execute(t, fmt.Sprintf("oc -n %s get %s/%s", ns, kind, name), checks...)
+}
+
+func GetYaml(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) {
+	t.T().Helper()
+	shell.Execute(t, fmt.Sprintf("oc -n %s get %s/%s -oyaml", ns, kind, name), checks...)
 }

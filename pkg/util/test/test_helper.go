@@ -30,6 +30,10 @@ type TestHelper interface {
 	NewSubTest(name string) Test
 
 	LogStep(str string)
+	LogStepf(format string, args ...any)
+
+	LogSuccess(str string)
+	LogSuccessf(format string, args ...any)
 
 	T() *testing.T
 
@@ -116,6 +120,21 @@ func (t *testHelper) LogStep(str string) {
 	}
 	t.Logf("STEP %d: %s", t.currentStep, str)
 	t.Log("")
+}
+
+func (t *testHelper) LogSuccess(str string) {
+	t.t.Helper()
+	t.Logf("SUCCESS: " + str)
+}
+
+func (t *testHelper) LogSuccessf(format string, args ...any) {
+	t.t.Helper()
+	t.LogSuccess(fmt.Sprintf(format, args...))
+}
+
+func (t *testHelper) LogStepf(format string, args ...any) {
+	t.t.Helper()
+	t.LogStep(fmt.Sprintf(format, args...))
 }
 
 func (t *testHelper) NewSubTest(name string) Test {
