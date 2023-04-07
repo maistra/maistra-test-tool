@@ -59,7 +59,7 @@ func TestMirroring(t *testing.T) {
 					assert.OutputContains(
 						"GET /headers?nonce="+nonce,
 						"request received by httpbin-v1",
-						"request not received by httbin-v1"))
+						"request not received by httpbin-v1"))
 
 				oc.Logs(t,
 					pod.MatchingSelector("app=httpbin,version=v2", ns),
