@@ -2,13 +2,19 @@ package oc
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/template"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func ApplyString(t test.TestHelper, ns string, yaml string) {
 	t.T().Helper()
@@ -93,9 +99,21 @@ func WaitSMCPReady(t test.TestHelper, ns string, name string) {
 	shell.Executef(t, `oc -n %s wait --for condition=Ready smcp/%s --timeout 300s`, ns, name)
 }
 
-func GetAllResources(t test.TestHelper, ns string, checks ...assert.CheckFunc) {
+func GetAllResources(t test.TestHelper, ns string, checks ...common.CheckFunc) {
 	t.T().Helper()
 	shell.Execute(t,
 		fmt.Sprintf(`oc get all -n %s`, ns),
 		checks...)
+}
+
+func ScaleDeploymentAndWait(t test.TestHelper, ns string, name string, replicas int) {
+	t.T().Helper()
+	shell.Executef(t, `oc -n %s scale deployment %s --replicas %d`, ns, name, replicas)
+	WaitDeploymentRolloutComplete(t, ns, name)
+}
+
+// TouchSMCP causes the SMCP to be fully reconciled
+func TouchSMCP(t test.TestHelper, ns string, name string) {
+	t.T().Helper()
+	Patch(t, ns, "smcp", name, "merge", fmt.Sprintf(`{"spec":{"techPreview":{"foo":"foo%d"}}}`, rand.Int()))
 }

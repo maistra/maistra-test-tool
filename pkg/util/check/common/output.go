@@ -7,6 +7,8 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
+type CheckFunc func(t test.TestHelper, input string)
+
 func CheckOutputContains(t test.TestHelper, output, str, successMsg, failureMsg string, failure FailureFunc) {
 	t.T().Helper()
 	if strings.Contains(output, str) {
