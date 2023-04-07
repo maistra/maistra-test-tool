@@ -15,42 +15,79 @@
 package ossm
 
 import (
-	_ "embed"
-	"strings"
 	"testing"
 
-	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
+func TestInitContainerNotRemovedDuringInjection(t *testing.T) {
+	const ns = "bookinfo"
+	const goldString = "[init worked]"
+	const podSelector = "app=sleep-init"
+
+	test.NewTest(t).Id("T33").Groups(test.Full).Run(func(t test.TestHelper) {
+
+		hack.DisableLogrusForThisTest(t)
+
+		t.Log("Checking init container not removed during sidecar injection.")
+
+		t.Cleanup(func() {
+			oc.DeleteFromString(t, ns, testInitContainerYAML)
+			oc.DeleteNamespace(t, ns)
+		})
+
+		oc.RecreateNamespace(t, ns)
+
+		t.LogStep("Deploying test pod.")
+
+		oc.ApplyString(t, ns, testInitContainerYAML)
+
+		oc.WaitPodReady(t, pod.MatchingSelector(podSelector, ns))
+
+		t.LogStep("Checking pod logs for init message.")
+
+		oc.Logs(t,
+			pod.MatchingSelector(podSelector, ns),
+			"init",
+			assert.OutputContains(goldString,
+				"Init container executed successfully.",
+				"Init container did not execute."))
+	})
+}
+
 const (
-	initContainerNS         = "bookinfo"
-	initContainerGoldString = "init worked"
+	testInitContainerYAML = `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sleep-init
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sleep-init
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+      labels:
+        app: sleep-init
+    spec:
+      terminationGracePeriodSeconds: 0
+
+      initContainers:
+      - name: init
+        image: curlimages/curl
+        command: ["/bin/echo", "[init worked]"]
+        imagePullPolicy: IfNotPresent
+
+      containers:
+      - name: sleep
+        image: curlimages/curl
+        command: ["/bin/sleep", "3650d"]
+        imagePullPolicy: IfNotPresent`
 )
-
-var (
-	//go:embed yaml/deployment-sleep-init.yaml
-	testInitContainerYAML string
-)
-
-func cleanupInitContainer() {
-	util.KubeDeleteContents(initContainerNS, testInitContainerYAML)
-}
-
-func TestInitContainer(t *testing.T) {
-	test.NewTest(t).Id("T33").Groups(test.Full).NotRefactoredYet()
-
-	defer cleanupInitContainer()
-
-	if err := util.KubeApplyContents(initContainerNS, testInitContainerYAML); err != nil {
-		t.Fatalf("error creating the pod: %v", err)
-	}
-	if err := util.CheckPodRunning(initContainerNS, "app=sleep-init"); err != nil {
-		t.Fatalf("sleep-init pod is not running: %v", err)
-	}
-
-	logs := util.GetPodLogsForLabel(initContainerNS, "app=sleep-init", "init", false, false)
-	if !strings.Contains(logs, initContainerGoldString) {
-		t.Fatalf("expected init container log to contain the string %q, but got %q", initContainerGoldString, logs)
-	}
-}
