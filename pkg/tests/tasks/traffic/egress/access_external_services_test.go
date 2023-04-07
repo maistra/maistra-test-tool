@@ -30,7 +30,7 @@ func cleanupAccessExternalServices() {
 	sleep := examples.Sleep{Namespace: "bookinfo"}
 	util.KubeDeleteContents("bookinfo", httpbinextTimeout)
 	util.KubeDeleteContents("bookinfo", redhatextServiceEntry)
-	util.KubeDeleteContents("bookinfo", httbinextServiceEntry)
+	util.KubeDeleteContents("bookinfo", httpbinextServiceEntry)
 	sleep.Uninstall()
 	time.Sleep(time.Duration(20) * time.Second)
 }
@@ -68,7 +68,7 @@ func TestAccessExternalServices(t *testing.T) {
 
 		log.Log.Info("Skip update global.outboundTrafficPolicy.mode")
 		log.Log.Info("Create a ServiceEntry to external httpbin")
-		util.KubeApplyContents("bookinfo", httbinextServiceEntry)
+		util.KubeApplyContents("bookinfo", httpbinextServiceEntry)
 		time.Sleep(time.Duration(10) * time.Second)
 		command := `curl -sS http://httpbin.org/headers`
 		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
