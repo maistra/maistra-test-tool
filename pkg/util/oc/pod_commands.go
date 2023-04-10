@@ -6,6 +6,7 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -18,7 +19,7 @@ type NamespacedName struct {
 
 type PodLocatorFunc func(t test.TestHelper) NamespacedName
 
-func Exec(t test.TestHelper, podLocator PodLocatorFunc, container string, cmd string, checks ...assert.CheckFunc) {
+func Exec(t test.TestHelper, podLocator PodLocatorFunc, container string, cmd string, checks ...common.CheckFunc) {
 	t.T().Helper()
 	pod := podLocator(t)
 	shell.Execute(t,
@@ -26,14 +27,14 @@ func Exec(t test.TestHelper, podLocator PodLocatorFunc, container string, cmd st
 		checks...)
 }
 
-func MergePatch(t test.TestHelper, ns string, rs string, ptype string, patch string, checks ...assert.CheckFunc) {
+func Patch(t test.TestHelper, ns string, kind string, name string, patchType string, patch string, checks ...common.CheckFunc) {
 	t.T().Helper()
 	shell.Execute(t,
-		fmt.Sprintf(`oc patch -n %s %s --type %s -p '%s'`, ns, rs, ptype, patch),
+		fmt.Sprintf(`oc patch -n %s %s/%s --type %s -p '%s'`, ns, kind, name, patchType, patch),
 		checks...)
 }
 
-func Logs(t test.TestHelper, podLocator PodLocatorFunc, container string, checks ...assert.CheckFunc) {
+func Logs(t test.TestHelper, podLocator PodLocatorFunc, container string, checks ...common.CheckFunc) {
 	t.T().Helper()
 	pod := podLocator(t)
 	shell.Execute(t,
@@ -43,16 +44,23 @@ func Logs(t test.TestHelper, podLocator PodLocatorFunc, container string, checks
 
 func WaitPodRunning(t test.TestHelper, podLocator PodLocatorFunc) {
 	t.T().Helper()
-	retry.UntilSuccess(t, func(t test.TestHelper) {
-		t.T().Helper()
+	maxAttempts := 60
+	for i := 0; i < maxAttempts; i++ {
+		lastAttempt := i == maxAttempts-1
 		pod := podLocator(t)
 		status := util.GetPodStatus(pod.Namespace, pod.Name)
 		if status == "Running" {
-			t.Logf("Pod %s in namespace %s is running!", pod.Name, pod.Namespace)
+			t.Logf("Pod %s/%s is running!", pod.Namespace, pod.Name)
+			return
 		} else {
-			t.Fatalf("%s in namespace %s is not running: %s", pod.Name, pod.Namespace, status)
+			if lastAttempt {
+				t.Fatalf("Pod %s/%s is not running: %s", pod.Namespace, pod.Name, status)
+			} else {
+				t.Logf("Pod %s/%s is still not running: %s", pod.Namespace, pod.Name, status)
+				time.Sleep(1 * time.Second)
+			}
 		}
-	})
+	}
 }
 
 func WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
@@ -84,6 +92,12 @@ func RestartAllPodsAndWaitReady(t test.TestHelper, namespaces ...string) {
 	for _, ns := range namespaces {
 		WaitAllPodsReady(t, ns)
 	}
+}
+
+func DeletePodNoWait(t test.TestHelper, podLocator PodLocatorFunc) {
+	t.T().Helper()
+	pod := podLocator(t)
+	shell.Executef(t, `oc -n %s delete pod %s --wait=false`, pod.Namespace, pod.Name)
 }
 
 func WaitAllPodsReady(t test.TestHelper, ns string) {

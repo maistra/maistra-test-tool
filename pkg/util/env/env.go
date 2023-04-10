@@ -58,6 +58,18 @@ func IsRosa() bool {
 	return Getenv("ROSA", "false") == "true"
 }
 
+func GetDefaultSMCPName() string {
+	return Getenv("SMCPNAME", "basic")
+}
+
+func GetDefaultMeshNamespace() string {
+	return Getenv("MESHNAMESPACE", "istio-system")
+}
+
 func GetDefaultSMCPVersion() string {
 	return Getenv("SMCPVERSION", "2.4")
+}
+
+func GetOperatorNamespace() string {
+	return "openshift-operators"
 }

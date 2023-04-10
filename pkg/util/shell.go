@@ -148,7 +148,7 @@ func sh(ctx context.Context, format string, logCommand, logOutput, logError bool
 		if logError {
 			log.Log.Infof("Command error: %v", err)
 		}
-		return string(bytes), fmt.Errorf("command failed: %q %v", string(bytes), err)
+		return string(bytes), fmt.Errorf("command failed: %s", string(bytes))
 	}
 	return string(bytes), nil
 }
