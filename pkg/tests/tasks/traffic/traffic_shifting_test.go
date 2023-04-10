@@ -80,12 +80,11 @@ func checkTrafficRatio(t TestHelper, url string, numberOfRequests int, tolerance
 		curl.Request(t,
 			url, nil,
 			assert.ResponseStatus(http.StatusOK),
-			func(t TestHelper, response *http.Response, duration time.Duration) {
-				body := ReadAllAndClose(t, response.Body)
+			func(t TestHelper, response *http.Response, responseBody []byte, duration time.Duration) {
 				comparisonErrors := map[string]error{}
 				matched := false
 				for file := range ratios {
-					err := CompareHTTPResponse(body, file)
+					err := CompareHTTPResponse(responseBody, file)
 					if err == nil {
 						matched = true
 						counts[file]++
@@ -97,7 +96,7 @@ func checkTrafficRatio(t TestHelper, url string, numberOfRequests int, tolerance
 					// for file, err := range comparisonErrors {
 					// 	t.Logf("Diff with %s: %v", file, err)
 					// }
-					matchedFile := app.FindBookinfoProductPageResponseFile(body)
+					matchedFile := app.FindBookinfoProductPageResponseFile(responseBody)
 					if matchedFile == "" {
 						t.Fatal("Response did not match any expected value and also didn't match any standard bookinfo productpage responses")
 					} else {

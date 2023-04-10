@@ -7,6 +7,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
+	"github.com/maistra/maistra-test-tool/pkg/util/template"
 )
 
 type SMCP struct {
@@ -29,8 +30,11 @@ var (
 var (
 	smcpName      = env.Getenv("SMCPNAME", "basic")
 	meshNamespace = env.Getenv("MESHNAMESPACE", "istio-system")
-	smcp          = SMCP{smcpName, meshNamespace, env.IsRosa()}
-	ipv6          = env.Getenv("IPV6", "false")
+	smcp          = template.SMCP{
+		Name:      smcpName,
+		Namespace: meshNamespace,
+		Rosa:      env.IsRosa()}
+	ipv6 = env.Getenv("IPV6", "false")
 )
 
 func createNamespaces() {

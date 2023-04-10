@@ -1,14 +1,16 @@
 package curl
 
 import (
+	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"time"
 
+	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-type HTTPResponseCheckFunc func(t test.TestHelper, response *http.Response, duration time.Duration)
+type HTTPResponseCheckFunc func(t test.TestHelper, response *http.Response, responseBody []byte, duration time.Duration)
 
 func Request(t test.TestHelper, url string, requestOption RequestOption, checks ...HTTPResponseCheckFunc) time.Duration {
 	t.T().Helper()
@@ -37,11 +39,21 @@ func Request(t test.TestHelper, url string, requestOption RequestOption, checks 
 	if err != nil {
 		t.Logf("failed to get HTTP Response: %v", err)
 	}
+
+	var responseBody []byte
+	if resp != nil {
+		defer util.CloseResponseBody(resp)
+		responseBody, err = io.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("Failed to read response body: %v", err)
+		}
+	}
+
 	duration := time.Since(startT)
 	// t.Logf("response received in %d ms", duration.Milliseconds())
 
 	for _, check := range checks {
-		check(t, resp, duration)
+		check(t, resp, responseBody, duration)
 	}
 	return duration
 }
