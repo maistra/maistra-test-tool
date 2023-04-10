@@ -36,59 +36,6 @@ spec:
       app: httpbin
 `
 
-	TCPAllowPolicy = `
-apiVersion: security.istio.io/v1beta1
-kind: AuthorizationPolicy
-metadata:
-  name: tcp-policy
-  namespace: foo
-spec:
-  selector:
-    matchLabels:
-      app: tcp-echo
-  action: ALLOW
-  rules:
-  - to:
-    - operation:
-       ports: ["9000", "9001"]
-`
-
-	TCPAllowGETPolicy = `
-apiVersion: security.istio.io/v1beta1
-kind: AuthorizationPolicy
-metadata:
-  name: tcp-policy
-  namespace: foo
-spec:
-  selector:
-    matchLabels:
-      app: tcp-echo
-  action: ALLOW
-  rules:
-  - to:
-    - operation:
-        methods: ["GET"]
-        ports: ["9000"]
-`
-
-	TCPDenyGETPolicy = `
-apiVersion: security.istio.io/v1beta1
-kind: AuthorizationPolicy
-metadata:
-  name: tcp-policy
-  namespace: foo
-spec:
-  selector:
-    matchLabels:
-      app: tcp-echo
-  action: DENY
-  rules:
-  - to:
-    - operation:
-        methods: ["GET"]
-        ports: ["9000"]
-`
-
 	JWTExampleRule = `
 apiVersion: "security.istio.io/v1beta1"
 kind: "RequestAuthentication"
