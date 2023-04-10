@@ -15,6 +15,7 @@
 package ossm
 
 import (
+	_ "embed"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
@@ -22,6 +23,14 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+)
+
+var (
+	//go:embed yaml/multiple-namespaces.yaml
+	multiple_namespaces string
+
+	//go:embed yaml/smmr-test-multiple-members.yaml
+	smmr_multiple_members string
 )
 
 // TestIstiodPodFailsAfterRestarts tests that Istio pod get stuck with probes failure after restart. Jira ticket bug: https://issues.redhat.com/browse/OSSM-2434
