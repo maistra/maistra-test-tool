@@ -69,7 +69,7 @@ func updateSMMRMultipleNamespaces(t test.TestHelper, ns string, yaml string, dat
 
 func createMultipleNamespaces(t test.TestHelper, data interface{}) {
 	t.T().Helper()
-	t.Logf("Creating multiple namespaces: %s", data.(map[string]interface{})["Count"])
+	t.Logf("Creating multiple namespaces: %d", data.(map[string]interface{})["Count"])
 	oc.ApplyTemplate(t, "default", multiple_namespaces, data)
 }
 
