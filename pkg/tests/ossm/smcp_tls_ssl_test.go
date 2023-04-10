@@ -34,7 +34,7 @@ func TestTLSVersionSMCP(t *testing.T) {
 		})
 
 		t.NewSubTest("minVersion_TLSv1_0").Run(func(t TestHelper) {
-			t.LogStep("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLS_v1_0")
+			t.LogStep("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_0")
 			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `{"spec":{"security":{"controlPlane":{"tls":{"minProtocolVersion":"TLSv1_0"}}}}}`)
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 		})
@@ -45,9 +45,9 @@ func TestTLSVersionSMCP(t *testing.T) {
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 		})
 
-		t.NewSubTest("minVersion_TLSv1_3").Run(func(t TestHelper) {
-			t.LogStep("Check to see if the SMCP minProtocolVersion is TLSv1_3")
-			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `{"spec":{"security":{"controlPlane":{"tls":{"minProtocolVersion":"TLSv1_3"}}}}}`)
+		t.NewSubTest("maxVersion_TLSv1_3").Run(func(t TestHelper) {
+			t.LogStep("Check to see if the SMCP maxProtocolVersion is TLSv1_3")
+			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `{"spec":{"security":{"controlPlane":{"tls":{"maxProtocolVersion":"TLSv1_3"}}}}}`)
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 		})
 	})
