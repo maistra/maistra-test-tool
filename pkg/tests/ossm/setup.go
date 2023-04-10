@@ -2,12 +2,15 @@ package ossm
 
 import (
 	_ "embed"
+	"fmt"
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/template"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 type SMCP struct {
@@ -28,9 +31,9 @@ var (
 )
 
 var (
-	smcpName      = env.Getenv("SMCPNAME", "basic")
-	meshNamespace = env.Getenv("MESHNAMESPACE", "istio-system")
-	smcp          = template.SMCP{
+	smcpName      = env.GetDefaultSMCPName()
+	meshNamespace = env.GetDefaultMeshNamespace()
+	Smcp          = template.SMCP{
 		Name:      smcpName,
 		Namespace: meshNamespace,
 		Rosa:      env.IsRosa()}
@@ -48,11 +51,11 @@ func createNamespaces() {
 
 // Install nightly build operators from quay.io. This is used in Jenkins daily build pipeline.
 func installNightlyOperators() {
-	util.KubeApplyContents("openshift-operators", jaegerSubscription)
-	util.KubeApplyContents("openshift-operators", kialiSubscription)
-	util.KubeApplyContents("openshift-operators", ossmSubscription)
+	util.KubeApplyContents(env.GetOperatorNamespace(), jaegerSubscription)
+	util.KubeApplyContents(env.GetOperatorNamespace(), kialiSubscription)
+	util.KubeApplyContents(env.GetOperatorNamespace(), ossmSubscription)
 	time.Sleep(time.Duration(60) * time.Second)
-	util.CheckPodRunning("openshift-operators", "name=istio-operator")
+	util.CheckPodRunning(env.GetOperatorNamespace(), "name=istio-operator")
 	time.Sleep(time.Duration(30) * time.Second)
 }
 
@@ -68,18 +71,26 @@ func BasicSetup() {
 // Initialize a default SMCP and SMMR
 func SetupNamespacesAndControlPlane() {
 	BasicSetup()
-	versionTemplates := GetSMCPTemplates()
-	smcpVersion := env.GetDefaultSMCPVersion()
-	template, ok := versionTemplates[smcpVersion]
-	if !ok {
-		log.Log.Errorf("Unsupported SMCP version: %s", smcpVersion)
-		return
-	}
-	util.KubeApplyContents(meshNamespace, util.RunTemplate(template, smcp))
+	tmpl := getSMCPTemplate(env.GetDefaultSMCPVersion())
+	util.KubeApplyContents(meshNamespace, util.RunTemplate(tmpl, Smcp))
 	util.KubeApplyContents(meshNamespace, smmr)
-	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcp.Name)
+	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, Smcp.Name)
 	util.Shell(`oc -n %s wait --for condition=Ready smmr/default --timeout 180s`, meshNamespace)
 	if ipv6 == "true" {
 		log.Log.Info("Running the test with IPv6 configuration")
 	}
+}
+
+func getSMCPTemplate(version string) string {
+	versionTemplates := GetSMCPTemplates()
+
+	if tmpl, ok := versionTemplates[version]; ok {
+		return tmpl
+	} else {
+		panic(fmt.Sprintf("Unsupported SMCP version: %s", version))
+	}
+}
+
+func InstallSMCP(t test.TestHelper, ns, version string) {
+	oc.ApplyTemplate(t, ns, getSMCPTemplate(version), Smcp)
 }

@@ -16,134 +16,111 @@ package authentication
 
 import (
 	"fmt"
-	"strings"
 	"testing"
-	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
-	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
+	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func cleanupMigration() {
-	log.Log.Info("Cleanup")
-	util.KubeDeleteContents(meshNamespace, util.RunTemplate(MeshPolicyStrictTemplate, smcp))
-	util.KubeDeleteContents("foo", NamespacePolicyStrict)
-	sleep := examples.Sleep{Namespace: "foo"}
-	httpbin := examples.Httpbin{Namespace: "foo"}
-	sleep.Uninstall()
-	httpbin.Uninstall()
-	sleep = examples.Sleep{Namespace: "bar"}
-	httpbin = examples.Httpbin{Namespace: "bar"}
-	sleep.Uninstall()
-	httpbin.Uninstall()
-	sleep = examples.Sleep{Namespace: "legacy"}
-	sleep.Uninstall()
-	time.Sleep(time.Duration(20) * time.Second)
-}
+func TestMTlsMigration(t *testing.T) {
+	test.NewTest(t).Id("T19").Groups(test.Full, test.InterOp).Run(func(t test.TestHelper) {
+		hack.DisableLogrusForThisTest(t)
 
-func TestMigration(t *testing.T) {
-	test.NewTest(t).Id("T19").Groups(test.Full, test.InterOp).NotRefactoredYet()
+		t.Cleanup(func() {
+			oc.RecreateNamespace(t, "foo", "bar", "legacy") // TODO: recreate all three namespaces with a single call to RecreateNamespace
+		})
 
-	defer cleanupMigration()
-	defer util.RecoverPanic(t)
+		app.InstallAndWaitReady(t,
+			app.Httpbin("foo"),
+			app.Httpbin("bar"),
+			app.Sleep("foo"),
+			app.Sleep("bar"),
+			app.SleepNoSidecar("legacy"))
 
-	log.Log.Info("Mutual TLS Migration")
-	httpbin := examples.Httpbin{Namespace: "foo"}
-	httpbin.Install()
-	httpbin = examples.Httpbin{Namespace: "bar"}
-	httpbin.Install()
-	sleep := examples.Sleep{Namespace: "foo"}
-	sleep.Install()
-	sleep = examples.Sleep{Namespace: "bar"}
-	sleep.Install()
-	sleep = examples.Sleep{Namespace: "legacy"}
-	sleep.InstallLegacy()
+		fromNamespaces := []string{"foo", "bar", "legacy"}
+		toNamespaces := []string{"foo", "bar"}
 
-	log.Log.Info("Verify setup")
-	for _, from := range []string{"foo", "bar", "legacy"} {
-		for _, to := range []string{"foo", "bar"} {
-			sleepPod, err := util.GetPodName(from, "app=sleep")
-			util.Inspect(err, "Failed to get sleep pod name", "", t)
-			cmd := fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%{http_code}"`,
-				to, from, to)
-			msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true)
-			util.Inspect(err, "Failed to get response", "", t)
-			if !strings.Contains(msg, "200") {
-				log.Log.Errorf("Verify setup -- Unexpected response code: %s", msg)
-			} else {
-				log.Log.Infof("Success. Get expected response: %s", msg)
+		t.LogStep("Check connectivity from namespaces foo, bar, and legacy to namespace foo and bar")
+		for _, from := range fromNamespaces {
+			for _, to := range toNamespaces {
+				assertConnectionSucessful(t, from, to)
 			}
 		}
-	}
 
-	t.Run("Security_authentication_namespace_enable_mtls", func(t *testing.T) {
-		defer util.RecoverPanic(t)
+		t.NewSubTest("mTLS enabled in foo").Run(func(t test.TestHelper) {
+			t.LogStep("Apply strict mTLS in namespace foo")
+			oc.ApplyString(t, "foo", NamespacePolicyStrict)
 
-		log.Log.Info("Lock down to mutual TLS by namespace")
-		util.KubeApplyContents("foo", NamespacePolicyStrict)
-		time.Sleep(time.Duration(10) * time.Second)
-
-		for _, from := range []string{"legacy"} {
-			for _, to := range []string{"foo", "bar"} {
-				sleepPod, err := util.GetPodName(from, "app=sleep")
-				util.Inspect(err, "Failed to get sleep pod name", "", t)
-				cmd := fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%{http_code}"`,
-					to, from, to)
-				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true)
-
-				if from == "legacy" && to == "foo" {
-					if err != nil {
-						log.Log.Infof("Expected fail from sleep.legacy to httpbin.foo: %v", err)
-					} else {
-						t.Errorf("Expected fail from sleep.legacy to httpbin.foo; Got unexpected response: %s", msg)
-						log.Log.Errorf("Expected fail from sleep.legacy to httpbin.foo; Got unexpected response: %s", msg)
-					}
-				} else {
-					if !strings.Contains(msg, "200") {
-						log.Log.Errorf("Namespace mTLS expected: 200; Got unexpected response code: %s", msg)
-						t.Errorf("Namespace mTLS expected: 200; Got unexpected response code: %s", msg)
-					} else {
-						log.Log.Infof("Success. Get expected response: %s", msg)
+			t.LogStep("Check connectivity from namespaces foo, bar, and legacy to namespace foo and bar (expect failure only from legacy to foo)")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				for _, from := range fromNamespaces {
+					for _, to := range toNamespaces {
+						if from == "legacy" && to == "foo" {
+							assertConnectionFailure(t, from, to)
+						} else {
+							assertConnectionSucessful(t, from, to)
+						}
 					}
 				}
-			}
-		}
-	})
+			})
+		})
 
-	t.Run("Security_authentication_globally_enable_mtls", func(t *testing.T) {
-		defer util.RecoverPanic(t)
+		t.NewSubTest("mTLS enabled globally").Run(func(t test.TestHelper) {
+			t.LogStep("Apply strict mTLS for the entire mesh")
+			oc.ApplyTemplate(t, meshNamespace, MeshPolicyStrictTemplate, smcp)
+			t.Cleanup(func() {
+				oc.DeleteFromTemplate(t, meshNamespace, MeshPolicyStrictTemplate, smcp)
+			})
 
-		log.Log.Info("Lock down to mutual TLS for the entire mesh")
-		util.KubeApplyContents(meshNamespace, util.RunTemplate(MeshPolicyStrictTemplate, smcp))
-		time.Sleep(time.Duration(30) * time.Second)
-
-		for _, from := range []string{"legacy"} {
-			for _, to := range []string{"foo", "bar"} {
-				sleepPod, err := util.GetPodName(from, "app=sleep")
-				util.Inspect(err, "Failed to get sleep pod name", "", t)
-				cmd := fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%{http_code}"`, to, from, to)
-				msg, err := util.PodExec(from, sleepPod, "sleep", cmd, true)
-				if from == "legacy" && to == "foo" {
-					if err != nil {
-						log.Log.Infof("Expected sleep.legacy to httpbin.foo fails: %v", err)
-					} else {
-						t.Errorf("Expected sleep.legacy to httpbin.foo fails; Got unexpected response: %s", msg)
-						log.Log.Errorf("Expected sleep.legacy to httpbin.foo fails; Got unexpected response: %s", msg)
+			t.LogStep("Check connectivity from namespaces foo, bar, and legacy to namespace foo and bar (expect failure from legacy)")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				for _, from := range fromNamespaces {
+					for _, to := range toNamespaces {
+						if from == "legacy" {
+							assertConnectionFailure(t, from, to)
+						} else {
+							assertConnectionSucessful(t, from, to)
+						}
 					}
-					continue
 				}
-				if from == "legacy" && to == "bar" {
-					if err != nil {
-						log.Log.Infof("Expected sleep.legacy to httpbin.bar fails: %v", err)
-					} else {
-						t.Errorf("Expected sleep.legacy to httpbin.bar fails; Got unexpected response: %s", msg)
-						log.Log.Errorf("Expected sleep.legacy to httpbin.bar fails; Got unexpected response: %s", msg)
-					}
-					continue
-				}
-			}
-		}
+			})
+		})
 	})
 }
+
+func assertConnectionSucessful(t test.TestHelper, from string, to string) {
+	curlFromTo(t, from, to,
+		assert.OutputContains("200",
+			fmt.Sprintf("%s connects to %s", from, to),
+			fmt.Sprintf("%s can't connect to %s", from, to)))
+}
+
+func assertConnectionFailure(t test.TestHelper, from string, to string) {
+	curlFromTo(t, from, to,
+		assert.OutputContains("failed to connect",
+			fmt.Sprintf("%s can't conect to %s", from, to),
+			fmt.Sprintf("%s can connect to %s, but shouldn't", from, to)))
+}
+
+func curlFromTo(t test.TestHelper, from string, to string, checks ...common.CheckFunc) {
+	oc.Exec(t,
+		pod.MatchingSelector("app=sleep", from),
+		"sleep",
+		fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%%%{http_code}" || echo "failed to connect"`, to, from, to),
+		checks...)
+}
+
+const MeshPolicyStrictTemplate = `
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+spec:
+  mtls:
+    mode: STRICT`

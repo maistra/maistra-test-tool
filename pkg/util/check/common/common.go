@@ -6,5 +6,5 @@ import (
 
 func logSuccess(t test.TestHelper, msg string) {
 	t.T().Helper()
-	t.Log("SUCCESS:", msg)
+	t.LogSuccess(msg)
 }

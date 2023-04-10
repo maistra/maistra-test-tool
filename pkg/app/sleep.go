@@ -8,13 +8,18 @@ import (
 )
 
 type sleep struct {
-	ns string
+	ns            string
+	injectSidecar bool
 }
 
 var _ App = &sleep{}
 
 func Sleep(ns string) App {
-	return &sleep{ns: ns}
+	return &sleep{ns: ns, injectSidecar: true}
+}
+
+func SleepNoSidecar(ns string) App {
+	return &sleep{ns: ns, injectSidecar: false}
 }
 
 func (a *sleep) Name() string {
@@ -30,7 +35,11 @@ func (a *sleep) Install(t test.TestHelper) {
 	proxy, _ := util.GetProxy()
 	configMapYAML := util.RunTemplate(examples.SleepConfigMap(), proxy)
 	oc.ApplyString(t, a.ns, configMapYAML)
-	oc.ApplyFile(t, a.ns, examples.SleepYamlFile())
+	if a.injectSidecar {
+		oc.ApplyFile(t, a.ns, examples.SleepYamlFile())
+	} else {
+		oc.ApplyFile(t, a.ns, examples.SleepLegacyYamlFile())
+	}
 }
 
 func (a *sleep) Uninstall(t test.TestHelper) {
