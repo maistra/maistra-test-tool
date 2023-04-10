@@ -7,13 +7,18 @@ import (
 )
 
 type httpbin struct {
-	ns string
+	ns            string
+	injectSidecar bool
 }
 
 var _ App = &httpbin{}
 
 func Httpbin(ns string) App {
-	return &httpbin{ns: ns}
+	return &httpbin{ns: ns, injectSidecar: true}
+}
+
+func HttpbinNoSidecar(ns string) App {
+	return &httpbin{ns: ns, injectSidecar: false}
 }
 
 func (a *httpbin) Name() string {
@@ -26,7 +31,11 @@ func (a *httpbin) Namespace() string {
 
 func (a *httpbin) Install(t test.TestHelper) {
 	t.T().Helper()
-	oc.ApplyFile(t, a.ns, examples.HttpbinYamlFile())
+	if a.injectSidecar {
+		oc.ApplyFile(t, a.ns, examples.HttpbinYamlFile())
+	} else {
+		oc.ApplyFile(t, a.ns, examples.HttpbinLegacyYamlFile())
+	}
 }
 
 func (a *httpbin) Uninstall(t test.TestHelper) {

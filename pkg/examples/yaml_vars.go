@@ -71,6 +71,10 @@ func HttpbinYamlFile() string {
 	return httpbinYaml
 }
 
+func HttpbinLegacyYamlFile() string {
+	return httpbinLegacyYaml
+}
+
 func HttpbinV1YamlFile() string {
 	return httpbinv1Yaml
 }

@@ -12,7 +12,7 @@ import (
 
 type HTTPResponseCheckFunc func(t test.TestHelper, response *http.Response, responseBody []byte, duration time.Duration)
 
-func Request(t test.TestHelper, url string, requestOption RequestOption, checks ...HTTPResponseCheckFunc) time.Duration {
+func Request(t test.TestHelper, url string, requestOption RequestOption, checks ...HTTPResponseCheckFunc) []byte {
 	t.T().Helper()
 	if requestOption == nil {
 		requestOption = NilRequestOption{}
@@ -55,7 +55,7 @@ func Request(t test.TestHelper, url string, requestOption RequestOption, checks 
 	for _, check := range checks {
 		check(t, resp, responseBody, duration)
 	}
-	return duration
+	return responseBody
 }
 
 type RequestOption interface {
