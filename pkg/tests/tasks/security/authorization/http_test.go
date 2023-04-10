@@ -34,7 +34,7 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 
 		ns := "bookinfo"
 		t.Cleanup(func() {
-			oc.MergePatch(t, meshNamespace,
+			oc.Patch(t, meshNamespace,
 				fmt.Sprintf(`smcp/%s`, smcpName),
 				"merge",
 				`{"spec":{"security":{"dataPlane":{"mtls":false},"controlPlane":{"mtls":false}}}}`,
@@ -47,7 +47,7 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 		t.Log("Doc reference: https://istio.io/v1.14/docs/tasks/security/authorization/authz-http/")
 
 		t.LogStep("Enable Service Mesh Control Plane mTLS")
-		oc.MergePatch(t, meshNamespace,
+		oc.Patch(t, meshNamespace,
 			fmt.Sprintf(`smcp/%s`, smcpName),
 			"merge",
 			`{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}`,
