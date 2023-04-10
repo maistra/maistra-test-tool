@@ -26,7 +26,6 @@ func Exec(t test.TestHelper, podLocator PodLocatorFunc, container string, cmd st
 		checks...)
 }
 
-// TODO: avoidError is a hack to avoid error when patching a resource that doesn't exist
 func Patch(t test.TestHelper, ns string, rs string, ptype string, patch string, checks ...assert.CheckFunc) {
 	t.T().Helper()
 	shell.Execute(t,
