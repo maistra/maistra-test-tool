@@ -17,7 +17,6 @@ package ossm
 import (
 	"testing"
 
-	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -25,39 +24,48 @@ import (
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-// TestIstioPodProbesFails tests that Istio pod get stuck with probes failure after restart. Jira ticket bug: https://issues.redhat.com/browse/OSSM-2434
-func TestIstioPodProbesFails(t *testing.T) {
+// TestIstiodPodFailsAfterRestarts tests that Istio pod get stuck with probes failure after restart. Jira ticket bug: https://issues.redhat.com/browse/OSSM-2434
+func TestIstiodPodFailsAfterRestarts(t *testing.T) {
 	NewTest(t).Id("T35").Groups(Full).Run(func(t TestHelper) {
 		hack.DisableLogrusForThisTest(t)
-		ns := "bookinfo"
 		data := map[string]interface{}{
 			"Count":     50,
 			"Namespace": meshNamespace,
 		}
 
 		t.Cleanup(func() {
-			oc.DeleteNamespaces(t, multiple_namespaces, data)
-			oc.DeleteNamespace(t, ns)
+			DeleteNamespaces(t, data)
 			oc.RecreateNamespace(t, meshNamespace)
 			oc.ApplyString(t, meshNamespace, smmr)
 		})
 
-		t.LogStep("Install Bookinfo application")
-		app.InstallAndWaitReady(t, app.Bookinfo(ns))
-
 		t.LogStep("Create Namespaces and SMMR")
-		oc.CreateNamespaces(t, multiple_namespaces, data)
-		oc.UpdateSMMRMultipleNamespaces(t, meshNamespace, multiple_smmr, data)
+		CreateNamespaces(t, data)
+		UpdateSMMRMultipleNamespaces(t, meshNamespace, smmr_multiple_members, data)
 
-		t.LogStep("Delete Istio pod and check that it is running again")
-		assertIstiodPodReadyAfterDeletion(t, meshNamespace, 10)
+		t.LogStep("Delete Istio pod 10 times and check that it is running and ready after the deletions")
+		for i := 0; i < 10; i++ {
+			oc.DeletePod(t, pod.MatchingSelector("app=istiod", meshNamespace))
+			oc.WaitPodRunning(t, pod.MatchingSelector("app=istiod", meshNamespace))
+			oc.WaitPodReady(t, pod.MatchingSelector("app=istiod", meshNamespace))
+		}
 	})
 }
 
-func assertIstiodPodReadyAfterDeletion(t test.TestHelper, ns string, deletionTimes int) {
-	for i := 0; i < deletionTimes; i++ {
-		oc.DeletePod(t, pod.MatchingSelector("app=istiod", ns))
-		oc.WaitPodRunning(t, pod.MatchingSelector("app=istiod", ns))
-		oc.WaitPodReady(t, pod.MatchingSelector("app=istiod", ns))
-	}
+func UpdateSMMRMultipleNamespaces(t test.TestHelper, ns string, yaml string, data interface{}) {
+	t.T().Helper()
+	t.Logf("Creating smmr")
+	oc.ApplyTemplate(t, ns, yaml, data)
+}
+
+func CreateNamespaces(t test.TestHelper, data interface{}) {
+	t.T().Helper()
+	t.Logf("Creating multiple namespaces: %s", data.(map[string]interface{})["Count"])
+	oc.ApplyTemplate(t, "default", multiple_namespaces, data)
+}
+
+func DeleteNamespaces(t test.TestHelper, data interface{}) {
+	t.T().Helper()
+	t.Logf("Deleting multiple namespaces")
+	oc.DeleteFromTemplate(t, "default", multiple_namespaces, data)
 }

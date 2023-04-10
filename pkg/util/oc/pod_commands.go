@@ -2,6 +2,7 @@ package oc
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
@@ -61,8 +62,12 @@ func WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		pod = podLocator(t)
 	})
-
-	shell.Executef(t, "kubectl -n %s wait --for condition=Ready pod %s --timeout 30s", pod.Namespace, pod.Name)
+	condition := shell.Executef(t, "kubectl -n %s wait --for condition=Ready pod %s --timeout 30s", pod.Namespace, pod.Name)
+	if strings.Contains(condition, "condition met") {
+		t.Logf("Pod %s in namespace %s is ready!", pod.Name, pod.Namespace)
+	} else {
+		t.Fatalf("Error: %s in namespace %s is not ready: %s", pod.Name, pod.Namespace, condition)
+	}
 }
 
 func WaitDeploymentRolloutComplete(t test.TestHelper, ns string, deploymentNames ...string) {
@@ -94,9 +99,8 @@ func WaitAllPodsReady(t test.TestHelper, ns string) {
 func WaitCondition(t test.TestHelper, ns string, kind string, name string, condition string) {
 	t.T().Helper()
 	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(30), func(t test.TestHelper) {
-		cmd := fmt.Sprintf(`oc wait -n %s %s/%s --for condition=%s  --timeout %s`, ns, kind, name, condition, "10s")
 		shell.Execute(t,
-			cmd,
+			fmt.Sprintf(`oc wait -n %s %s/%s --for condition=%s  --timeout %s`, ns, kind, name, condition, "10s"),
 			assert.OutputContains(condition,
 				fmt.Sprintf("Condition %s met by %s %s/%s", condition, kind, ns, name),
 				fmt.Sprintf("Condition %s not met %s %s/%s, retrying", condition, kind, ns, name)))
@@ -109,18 +113,11 @@ func DeletePod(t test.TestHelper, podLocator PodLocatorFunc) {
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		pod = podLocator(t)
 	})
-	cmd := fmt.Sprintf(`oc delete pod %s -n %s`, pod.Name, pod.Namespace)
-	shell.Execute(t,
-		cmd,
-		assert.OutputContains("deleted",
-			fmt.Sprintf("Pod %s is being deleted", pod.Name),
-			fmt.Sprintf("Pod %s deletion return an error", pod.Name)))
 	retry.UntilSuccess(t, func(t test.TestHelper) {
-		cmd = fmt.Sprintf(`oc get pod %s -n %s || true`, pod.Name, pod.Namespace) // TODO: modify the shell package to support this without failing when the pod does not exist
 		shell.Execute(t,
-			cmd,
-			assert.OutputContains("NotFound",
-				fmt.Sprintf("Pod %s is deleted", pod.Name),
-				fmt.Sprintf("Pod %s is not deleted yet", pod.Name)))
+			fmt.Sprintf(`oc delete pod %s -n %s`, pod.Name, pod.Namespace),
+			assert.OutputContains("deleted",
+				fmt.Sprintf("Pod %s is being deleted", pod.Name),
+				fmt.Sprintf("Pod %s deletion return an error", pod.Name)))
 	})
 }
