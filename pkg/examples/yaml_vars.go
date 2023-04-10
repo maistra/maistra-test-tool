@@ -97,6 +97,10 @@ func SleepYamlFile() string {
 	return sleepYaml
 }
 
+func SleepLegacyYamlFile() string {
+	return sleepLegacyYaml
+}
+
 func BookinfoYamlFile() string {
 	return bookinfoYaml
 }

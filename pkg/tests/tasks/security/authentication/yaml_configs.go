@@ -16,33 +16,32 @@ package authentication
 
 var (
 	PeerAuthPolicyStrictTemplate = `
-apiVersion: "security.istio.io/v1beta1"
-kind: "PeerAuthentication"
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
 metadata:
-  name: "default"
-  namespace: "{{ .Namespace }}"
+  name: default
+  namespace: {{ .Namespace }}
 spec:
   mtls:
     mode: STRICT
 `
 
 	NamespacePolicyStrict = `
-apiVersion: "security.istio.io/v1beta1"
-kind: "PeerAuthentication"
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
 metadata:
-  name: "default"
-  namespace: "foo"
+  name: default
 spec:
   mtls:
     mode: STRICT
 `
 
 	WorkloadPolicyStrict = `
-apiVersion: "security.istio.io/v1beta1"
-kind: "PeerAuthentication"
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
 metadata:
-  name: "httpbin"
-  namespace: "bar"
+  name: httpbin
+  namespace: bar
 spec:
   selector:
     matchLabels:
@@ -50,23 +49,23 @@ spec:
   mtls:
     mode: STRICT
 ---
-apiVersion: "networking.istio.io/v1alpha3"
-kind: "DestinationRule"
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
 metadata:
-  name: "httpbin"
+  name: httpbin
 spec:
-  host: "httpbin.bar.svc.cluster.local"
+  host: httpbin.bar.svc.cluster.local
   trafficPolicy:
     tls:
       mode: ISTIO_MUTUAL
 `
 
 	PortPolicy = `
-apiVersion: "security.istio.io/v1beta1"
-kind: "PeerAuthentication"
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
 metadata:
-  name: "httpbin"
-  namespace: "bar"
+  name: httpbin
+  namespace: bar
 spec:
   selector:
     matchLabels:
@@ -77,10 +76,10 @@ spec:
     8000:
       mode: DISABLE
 ---
-apiVersion: "networking.istio.io/v1alpha3"
-kind: "DestinationRule"
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
 metadata:
-  name: "httpbin"
+  name: httpbin
 spec:
   host: httpbin.bar.svc.cluster.local
   trafficPolicy:
@@ -94,11 +93,11 @@ spec:
 `
 
 	OverwritePolicy = `
-apiVersion: "security.istio.io/v1beta1"
-kind: "PeerAuthentication"
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
 metadata:
-  name: "overwrite-example"
-  namespace: "foo"
+  name: overwrite-example
+  namespace: foo
 spec:
   selector:
     matchLabels:
@@ -106,10 +105,10 @@ spec:
   mtls:
     mode: DISABLE
 ---
-apiVersion: "networking.istio.io/v1alpha3"
-kind: "DestinationRule"
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
 metadata:
-  name: "overwrite-example"
+  name: overwrite-example
 spec:
   host: httpbin.foo.svc.cluster.local
   trafficPolicy:
@@ -153,11 +152,11 @@ spec:
 `
 
 	JWTAuthPolicyTemplate = `
-apiVersion: "security.istio.io/v1beta1"
-kind: "RequestAuthentication"
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
 metadata:
-  name: "jwt-example"
-  namespace: "{{ .Namespace }}"
+  name: jwt-example
+  namespace: {{ .Namespace }}
 spec:
   selector:
     matchLabels:
@@ -169,11 +168,11 @@ spec:
 `
 
 	RequireTokenPolicyTemplate = `
-apiVersion: "security.istio.io/v1beta1"
-kind: "AuthorizationPolicy"
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
 metadata:
-  name: "frontend-ingress"
-  namespace: "{{ .Namespace }}"
+  name: frontend-ingress
+  namespace: {{ .Namespace }}
 spec:
   selector:
     matchLabels:
@@ -186,11 +185,11 @@ spec:
 `
 
 	RequireTokenPathPolicyTemplate = `
-apiVersion: "security.istio.io/v1beta1"
-kind: "AuthorizationPolicy"
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
 metadata:
-  name: "frontend-ingress"
-  namespace: "{{ .Namespace }}"
+  name: frontend-ingress
+  namespace: {{ .Namespace }}
 spec:
   selector:
     matchLabels:
@@ -203,16 +202,5 @@ spec:
     to:
     - operation:
         paths: ["/headers"]
-`
-
-	MeshPolicyStrictTemplate = `
-apiVersion: "security.istio.io/v1beta1"
-kind: "PeerAuthentication"
-metadata:
-  name: "default"
-  namespace: "{{ .Namespace }}"
-spec:
-  mtls:
-    mode: STRICT
 `
 )
