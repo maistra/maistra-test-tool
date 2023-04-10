@@ -34,10 +34,12 @@ func RunTemplate(tmpl string, input interface{}) string {
 	if input == nil {
 		log.Log.Fatal("input is nil")
 	}
-	temp := template.New("")
-	tt, err := temp.Funcs(template.FuncMap{
-		"until": Until,
-	}).Parse(tmpl)
+
+	tt, err := template.New("").
+		Funcs(template.FuncMap{
+			"until": Until,
+		}).
+		Parse(tmpl)
 	if err != nil {
 		log.Log.Fatal(err)
 	}
