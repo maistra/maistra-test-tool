@@ -70,7 +70,7 @@ func WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		pod = podLocator(t)
 	})
-	condition := shell.Executef(t, "kubectl -n %s wait --for condition=Ready pod %s --timeout 30s", pod.Namespace, pod.Name)
+	condition := shell.Executef(t, "kubectl -n %s wait --for condition=Ready pod %s --timeout 30s || true", pod.Namespace, pod.Name) // TODO: Change shell execute to do not fail on error
 	if strings.Contains(condition, "condition met") {
 		t.Logf("Pod %s in namespace %s is ready!", pod.Name, pod.Namespace)
 	} else {
