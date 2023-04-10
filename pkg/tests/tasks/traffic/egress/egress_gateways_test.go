@@ -21,6 +21,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -52,6 +53,13 @@ func TestEgressGateways(t *testing.T) {
 			t.Cleanup(func() {
 				oc.DeleteFromTemplate(t, ns, ExGatewayTemplate, smcp)
 			})
+
+			t.LogStep("Scale istio-egressgateway to zero to confirm that requests to istio.io are routed through it")
+			oc.ScaleDeploymentAndWait(t, meshNamespace, "istio-egressgateway", 0)
+			assertExternalHTTPRequestFailure(t, ns)
+
+			t.LogStep("Scale istio-egressgateway back to one to confirm that requests to istio.io are successful")
+			oc.ScaleDeploymentAndWait(t, meshNamespace, "istio-egressgateway", 1)
 			assertExternalHTTPRequestSuccessful(t, ns)
 		})
 
@@ -68,40 +76,68 @@ func TestEgressGateways(t *testing.T) {
 			t.Cleanup(func() {
 				oc.DeleteFromTemplate(t, ns, ExGatewayHTTPSTemplate, smcp)
 			})
+
+			t.LogStep("Scale istio-egressgateway to zero to confirm that requests to istio.io are routed through it")
+			oc.ScaleDeploymentAndWait(t, meshNamespace, "istio-egressgateway", 0)
+			assertExternalHTTPSRequestFailure(t, ns)
+
+			t.LogStep("Scale istio-egressgateway back to one to confirm that requests to istio.io are successful")
+			oc.ScaleDeploymentAndWait(t, meshNamespace, "istio-egressgateway", 1)
 			assertExternalHTTPSRequestSuccessful(t, ns)
 		})
 	})
 }
 
 func assertExternalHTTPRequestSuccessful(t TestHelper, ns string) {
+	t.LogStep("Confirm that request to http://istio.io is successful")
+	execInSleepPod(t, ns,
+		fmt.Sprintf(`curl -sSL -o /dev/null %s -D - http://istio.io`, getCurlProxyParams()),
+		assert.OutputContains("301 Moved Permanently",
+			"Got http://istio.io response",
+			"Unexpected response from http://istio.io"))
+}
+
+func assertExternalHTTPRequestFailure(t TestHelper, ns string) {
+	t.LogStep("Confirm that request to http://istio.io fails")
+	execInSleepPod(t, ns,
+		fmt.Sprintf(`curl -sSL -o /dev/null %s -D - http://istio.io`, getCurlProxyParams()),
+		assert.OutputContains("503 Service Unavailable",
+			"Got http://istio.io failure",
+			"Unexpected response from http://istio.io"))
+
+}
+
+func getCurlProxyParams() string {
 	proxy, _ := util.GetProxy()
 	curlParams := ""
 	if proxy.HTTPProxy != "" {
 		curlParams = "-x " + proxy.HTTPProxy
 	}
-
-	t.LogStep("Check if request to http://istio.io is successful")
-	retry.UntilSuccess(t, func(t TestHelper) {
-		oc.Exec(t,
-			pod.MatchingSelector("app=sleep", ns),
-			"sleep",
-			fmt.Sprintf(`curl -sSL -o /dev/null %s -D - http://istio.io`, curlParams),
-			assert.OutputContains("301 Moved Permanently",
-				"Got http://istio.io response",
-				"Unexpected response from http://istio.io"))
-	})
+	return curlParams
 }
 
 func assertExternalHTTPSRequestSuccessful(t TestHelper, ns string) {
-	t.LogStep("Check if request to https://istio.io is successful")
+	t.LogStep("Confirm that request to https://istio.io is successful")
+	execInSleepPod(t, ns,
+		`curl -sSL -o /dev/null -D - https://istio.io`,
+		assert.OutputContains("200",
+			"Got https://istio.io response",
+			"Unexpected response from https://istio.io"))
+}
+
+func assertExternalHTTPSRequestFailure(t TestHelper, ns string) {
+	t.LogStep("Confirm that request to https://istio.io fails")
+	execInSleepPod(t, ns,
+		`curl -sSL -o /dev/null -D - https://istio.io || echo "connection failed"`,
+		assert.OutputContains("connection failed",
+			"Got https://istio.io failure",
+			"Unexpected response from https://istio.io"))
+}
+
+func execInSleepPod(t TestHelper, ns string, command string, checks ...common.CheckFunc) {
 	retry.UntilSuccess(t, func(t TestHelper) {
-		oc.Exec(t,
-			pod.MatchingSelector("app=sleep", ns),
-			"sleep",
-			`curl -sSL -o /dev/null -D - https://istio.io`,
-			assert.OutputContains("200",
-				"Got https://istio.io response",
-				"Unexpected response from https://istio.io"))
+		oc.Exec(t, pod.MatchingSelector("app=sleep", ns), "sleep",
+			command, checks...)
 	})
 }
 
