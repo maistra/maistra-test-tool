@@ -15,56 +15,58 @@
 package ossm
 
 import (
-	"strings"
+	"fmt"
 	"testing"
-	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
-	. "github.com/maistra/maistra-test-tool/pkg/examples"
-	. "github.com/maistra/maistra-test-tool/pkg/util"
-	. "github.com/maistra/maistra-test-tool/pkg/util/log"
+	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func cleanupBookinfo() {
-	Log.Info("Cleanup")
-	app := Bookinfo{Namespace: "bookinfo"}
-	app.Uninstall()
-	time.Sleep(time.Duration(30) * time.Second)
+func TestBookinfoInjection(t *testing.T) {
+	NewTest(t).Id("A2").Groups(ARM, Full, Smoke, InterOp).Run(func(t TestHelper) {
+		hack.DisableLogrusForThisTest(t)
+		ns := "bookinfo"
+
+		t.Cleanup(func() {
+			oc.RecreateNamespace(t, ns)
+		})
+
+		app.InstallAndWaitReady(t, app.Bookinfo(ns))
+
+		t.LogStep("Check pods running 2/2 ready and with Sidecar Injection")
+		assertSidecarInjectedInAllPods(t, ns)
+
+		t.LogStep("Check if bookinfo productpage is running through the Proxy")
+		shell.Execute(t,
+			fmt.Sprintf(`oc -n %s run -i --restart=Never --rm curl --image curlimages/curl -- curl -sI http://productpage:9080`, ns),
+			assert.OutputContains(
+				"HTTP/1.1 200 OK",
+				"ProductPage returns 200 OK",
+				"ProductPage didn't return 200 OK"),
+			assert.OutputContains(
+				"server: istio-envoy",
+				"HTTP header 'server: istio-envoy' is present in the response",
+				"HTTP header 'server: istio-envoy' is missing from the response"),
+			assert.OutputContains(
+				"x-envoy-decorator-operation",
+				"HTTP header 'x-envoy-decorator-operation' is present in the response",
+				"HTTP header 'x-envoy-decorator-operation' is missing from the response"))
+	})
 }
 
-func TestBookinfo(t *testing.T) {
-	NewTest(t).Id("A2").Groups(ARM, Full, Smoke, InterOp).Run(func(t TestHelper) {
-		defer cleanupBookinfo()
-		Log.Info("Test Bookinfo Installation")
-		app.InstallAndWaitReady(t, app.Bookinfo("bookinfo"))
-
-		Log.Info("Check pods running 2/2 ready")
-		msg, _ := Shell(`oc get pods -n bookinfo`)
-		if strings.Contains(msg, "2/2") {
-			Log.Info("Success. proxy container is running.")
-		} else {
-			t.Error("Error. proxy container is not running.")
-		}
-
-		Log.Info("Check istiod pod is ready and print istiod logs")
-		mesg, _ := Shell(`oc get pods -n istio-system | grep istiod`)
-		if strings.Contains(mesg, "1/1") {
-			Log.Info("Success. istiod pod is running with below logs:")
-			shell.Executef(t, `oc logs -n %s -l app=istiod | grep info`, meshNamespace)
-		} else {
-			t.Error("Error. istiod pod is not running.")
-		}
-
-		Log.Info("Check if bookinfo productpage is running")
-		GATEWAY_URL, _ := Shell(`oc -n %s get route istio-ingressgateway -o jsonpath='{.spec.host}'`, meshNamespace)
-		mes, _ := Shell(`curl -o /dev/null -s -w "%%{http_code}\n" http://%s/productpage`, GATEWAY_URL)
-		if strings.Contains(mes, "200") {
-			Log.Info("Success. bookinfo productpage is running")
-		} else {
-			t.Error("Error. bookinfo productpage is not running.")
-			Log.Error("Error. bookinfo productpage is not running.")
-		}
-	})
+func assertSidecarInjectedInAllPods(t TestHelper, ns string) {
+	response := util.GetPodNames(ns)
+	for _, podName := range response {
+		shell.Execute(t,
+			fmt.Sprintf(`oc get pod %s -n %s`, podName, ns),
+			assert.OutputContains(
+				"2/2",
+				fmt.Sprintf("Proxy container is injected and running in pod %s", podName),
+				fmt.Sprintf("Proxy container is not running in pod %s", podName)))
+	}
 }

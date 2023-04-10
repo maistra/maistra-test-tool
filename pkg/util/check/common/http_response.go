@@ -2,7 +2,6 @@ package common
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -13,16 +12,11 @@ import (
 
 type FailureFunc func(t test.TestHelper, msg string, detailedMsg string)
 
-func CheckResponseMatchesFile(t test.TestHelper, resp *http.Response, file, successMsg, failureMsg string, failure FailureFunc, otherFiles ...string) {
+func CheckResponseMatchesFile(t test.TestHelper, resp *http.Response, responseBody []byte, file, successMsg, failureMsg string, failure FailureFunc, otherFiles ...string) {
 	t.T().Helper()
 	requireNonNilResponse(t, resp)
 
-	defer util.CloseResponseBody(resp)
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatalf("Failed to read response body: %v", err)
-	}
-	err = util.CompareHTTPResponse(body, file)
+	err := util.CompareHTTPResponse(responseBody, file)
 	if err == nil {
 		if successMsg == "" {
 			successMsg = fmt.Sprintf("response matches file %s", file)
@@ -31,7 +25,7 @@ func CheckResponseMatchesFile(t test.TestHelper, resp *http.Response, file, succ
 	} else {
 		var detailMsg string
 		if len(otherFiles) > 0 {
-			matchedFile := findMatchingFile(body, otherFiles)
+			matchedFile := findMatchingFile(responseBody, otherFiles)
 			if matchedFile == "" {
 				detailMsg = fmt.Sprintf("expected the response to match file %q, but it didn't match that or any other file", file)
 				if !t.WillRetry() {
@@ -72,16 +66,11 @@ func CheckResponseStatus(t test.TestHelper, resp *http.Response, expectedStatus 
 	}
 }
 
-func CheckResponseContains(t test.TestHelper, resp *http.Response, str string, failure FailureFunc) {
+func CheckResponseContains(t test.TestHelper, resp *http.Response, responseBody []byte, str string, failure FailureFunc) {
 	t.T().Helper()
 	requireNonNilResponse(t, resp)
 
-	defer util.CloseResponseBody(resp)
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatalf("Failed to read response body: %v", err)
-	}
-	body := string(bodyBytes)
+	body := string(responseBody)
 	if strings.Contains(body, str) {
 		logSuccess(t, fmt.Sprintf("string '%s' found in response", str))
 	} else {
@@ -90,6 +79,22 @@ func CheckResponseContains(t test.TestHelper, resp *http.Response, str string, f
 			detailMsg += "\nfull response:\n" + body
 		}
 		failure(t, detailMsg, "")
+	}
+}
+
+func CheckResponseDoesNotContain(t test.TestHelper, resp *http.Response, responseBody []byte, str string, failure FailureFunc) {
+	t.T().Helper()
+	requireNonNilResponse(t, resp)
+
+	body := string(responseBody)
+	if strings.Contains(body, str) {
+		detailMsg := fmt.Sprintf("expected the string '%s' to be absent from the response, but it was present", str)
+		if !t.WillRetry() {
+			detailMsg += "\nfull response:\n" + body
+		}
+		failure(t, detailMsg, "")
+	} else {
+		logSuccess(t, fmt.Sprintf("string '%s' not found in response", str))
 	}
 }
 
@@ -104,22 +109,16 @@ func CheckDurationInRange(t test.TestHelper, resp *http.Response, duration, minD
 	}
 }
 
-func CheckRequestFails(t test.TestHelper, resp *http.Response, successMsg, failureMsg string, failure FailureFunc) {
+func CheckRequestFails(t test.TestHelper, resp *http.Response, responseBody []byte, successMsg, failureMsg string, failure FailureFunc) {
 	t.T().Helper()
 	if resp == nil {
 		if successMsg != "" {
 			logSuccess(t, successMsg)
 		}
 	} else {
-		defer util.CloseResponseBody(resp)
-		bodyBytes, err := io.ReadAll(resp.Body)
-		if err != nil {
-			t.Fatalf("Failed to read response body: %v", err)
-		}
-
 		detailMsg := fmt.Sprintf("expected request to fail, but it succeeded with the following status: %s", resp.Status)
 		if !t.WillRetry() {
-			detailMsg += "\nfull response:\n" + string(bodyBytes)
+			detailMsg += "\nfull response:\n" + string(responseBody)
 		}
 		failure(t, failureMsg, detailMsg)
 	}

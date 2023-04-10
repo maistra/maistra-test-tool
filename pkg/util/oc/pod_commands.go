@@ -72,7 +72,7 @@ func WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
 
 func WaitDeploymentRolloutComplete(t test.TestHelper, ns string, deploymentNames ...string) {
 	t.T().Helper()
-	timeout := 1 * time.Minute // TODO: make this configurable?
+	timeout := 3 * time.Minute // TODO: make this configurable?
 	start := time.Now()
 	for _, name := range deploymentNames {
 		usedUpTime := time.Now().Sub(start)

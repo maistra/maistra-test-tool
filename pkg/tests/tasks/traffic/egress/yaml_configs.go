@@ -15,7 +15,7 @@
 package egress
 
 var (
-	httbinextServiceEntry = `
+	httpbinextServiceEntry = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
