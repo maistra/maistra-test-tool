@@ -35,7 +35,7 @@ func TestSMCPAddons(t *testing.T) {
 		// Created a subtest because we need to add more test related to Addons in the future.
 		t.NewSubTest("3scale_addon").Run(func(t TestHelper) {
 			t.LogStep("Enable 3scale in a SMCP expecting to get validation error.")
-			shell.Executef(t,
+			shell.Execute(t,
 				fmt.Sprintf(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"addons":{"3scale":{"enabled":true}}}}' || true`, meshNamespace, smcpName),
 				assert.OutputContains("support for 3scale has been removed",
 					"Got expected validation error: support for 3scale has been removed",
