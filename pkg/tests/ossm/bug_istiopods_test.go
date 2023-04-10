@@ -43,14 +43,14 @@ func TestIstiodPodFailsAfterRestarts(t *testing.T) {
 		}
 
 		t.Cleanup(func() {
-			DeleteNamespaces(t, data)
+			deleteMultipleNamespaces(t, data)
 			oc.RecreateNamespace(t, meshNamespace)
 			oc.ApplyString(t, meshNamespace, smmr)
 		})
 
 		t.LogStep("Create Namespaces and SMMR")
-		CreateNamespaces(t, data)
-		UpdateSMMRMultipleNamespaces(t, meshNamespace, smmr_multiple_members, data)
+		createMultipleNamespaces(t, data)
+		updateSMMRMultipleNamespaces(t, meshNamespace, smmr_multiple_members, data)
 
 		t.LogStep("Delete Istio pod 10 times and check that it is running and ready after the deletions")
 		for i := 0; i < 10; i++ {
@@ -61,19 +61,19 @@ func TestIstiodPodFailsAfterRestarts(t *testing.T) {
 	})
 }
 
-func UpdateSMMRMultipleNamespaces(t test.TestHelper, ns string, yaml string, data interface{}) {
+func updateSMMRMultipleNamespaces(t test.TestHelper, ns string, yaml string, data interface{}) {
 	t.T().Helper()
 	t.Logf("Creating smmr")
 	oc.ApplyTemplate(t, ns, yaml, data)
 }
 
-func CreateNamespaces(t test.TestHelper, data interface{}) {
+func createMultipleNamespaces(t test.TestHelper, data interface{}) {
 	t.T().Helper()
 	t.Logf("Creating multiple namespaces: %s", data.(map[string]interface{})["Count"])
 	oc.ApplyTemplate(t, "default", multiple_namespaces, data)
 }
 
-func DeleteNamespaces(t test.TestHelper, data interface{}) {
+func deleteMultipleNamespaces(t test.TestHelper, data interface{}) {
 	t.T().Helper()
 	t.Logf("Deleting multiple namespaces")
 	oc.DeleteFromTemplate(t, "default", multiple_namespaces, data)
