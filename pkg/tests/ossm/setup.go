@@ -13,6 +13,12 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
+type SMCP struct {
+	Name      string `default:"basic"`
+	Namespace string `default:"istio-system"`
+	Rosa      bool   `default:"false"`
+}
+
 var (
 	//go:embed yaml/subscription-jaeger.yaml
 	jaegerSubscription string
