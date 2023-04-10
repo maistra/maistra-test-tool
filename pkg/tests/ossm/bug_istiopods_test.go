@@ -15,66 +15,54 @@
 package ossm
 
 import (
-	_ "embed"
+	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
-)
-
-var (
-	//go:embed yaml/multiple-namespaces.yaml
-	multiple_namespaces string
-
-	//go:embed yaml/smmr-test-multiple-members.yaml
-	smmr_multiple_members string
 )
 
 // TestIstiodPodFailsAfterRestarts tests that Istio pod get stuck with probes failure after restart. Jira ticket bug: https://issues.redhat.com/browse/OSSM-2434
 func TestIstiodPodFailsAfterRestarts(t *testing.T) {
 	NewTest(t).Id("T35").Groups(Full).Run(func(t TestHelper) {
 		hack.DisableLogrusForThisTest(t)
-		data := map[string]interface{}{
-			"Count":     50,
-			"Namespace": meshNamespace,
-		}
+
+		namespaces := util.GenerateStrings("test-", 50)
 
 		t.Cleanup(func() {
-			deleteMultipleNamespaces(t, data)
+			oc.DeleteNamespace(t, namespaces...)
 			oc.RecreateNamespace(t, meshNamespace)
 			oc.ApplyString(t, meshNamespace, smmr)
 		})
 
 		t.LogStep("Create Namespaces and SMMR")
-		createMultipleNamespaces(t, data)
-		updateSMMRMultipleNamespaces(t, meshNamespace, smmr_multiple_members, data)
+		oc.CreateNamespace(t, namespaces...)
+		oc.ApplyString(t, meshNamespace, createSMMRManifest(namespaces...))
 
 		t.LogStep("Delete Istio pod 10 times and check that it is running and ready after the deletions")
 		for i := 0; i < 10; i++ {
-			oc.DeletePod(t, pod.MatchingSelector("app=istiod", meshNamespace))
-			oc.WaitPodRunning(t, pod.MatchingSelector("app=istiod", meshNamespace))
-			oc.WaitPodReady(t, pod.MatchingSelector("app=istiod", meshNamespace))
+			istiodPod := pod.MatchingSelector("app=istiod", meshNamespace)
+			oc.DeletePod(t, istiodPod)
+			oc.WaitPodRunning(t, istiodPod)
+			oc.WaitPodReady(t, istiodPod)
 		}
 	})
 }
 
-func updateSMMRMultipleNamespaces(t test.TestHelper, ns string, yaml string, data interface{}) {
-	t.T().Helper()
-	t.Logf("Creating smmr")
-	oc.ApplyTemplate(t, ns, yaml, data)
-}
-
-func createMultipleNamespaces(t test.TestHelper, data interface{}) {
-	t.T().Helper()
-	t.Logf("Creating multiple namespaces: %d", data.(map[string]interface{})["Count"])
-	oc.ApplyTemplate(t, "default", multiple_namespaces, data)
-}
-
-func deleteMultipleNamespaces(t test.TestHelper, data interface{}) {
-	t.T().Helper()
-	t.Logf("Deleting multiple namespaces")
-	oc.DeleteFromTemplate(t, "default", multiple_namespaces, data)
+func createSMMRManifest(namespaces ...string) string {
+	return fmt.Sprintf(`
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  members:
+    - bookinfo
+    - foo
+    - bar
+    - legacy%s`, strings.Join(namespaces, "\n    - "))
 }

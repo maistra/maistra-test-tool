@@ -19,6 +19,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -133,4 +134,12 @@ func Until(n int) []int {
 		nums[i] = i
 	}
 	return nums
+}
+
+func GenerateStrings(prefix string, count int) []string {
+	arr := make([]string, count)
+	for i := 0; i < count; i++ {
+		arr[i] = fmt.Sprintf("%s%d", prefix, i)
+	}
+	return arr
 }
