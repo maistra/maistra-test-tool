@@ -21,6 +21,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -34,12 +35,8 @@ func TestSMCPAddons(t *testing.T) {
 		// Created a subtest because we need to add more test related to Addons in the future.
 		t.NewSubTest("3scale_addon").Run(func(t TestHelper) {
 			t.LogStep("Enable 3scale in a SMCP expecting to get validation error.")
-			oc.Patch(t,
-				meshNamespace,
-				fmt.Sprintf("smcp/%s", smcpName),
-				"merge",
-				`{"spec":{"addons":{"3scale":{"enabled":true}}}}`, // TODO: remove || true when we modify the func to detect the error expected.
-				"|| true", //TODO: hack, remove this when we modify the func to detect the error expected. This is to avoid the test to fail because the patch is not applied.
+			shell.Executef(t,
+				fmt.Sprintf(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"addons":{"3scale":{"enabled":true}}}}' || true`, meshNamespace, smcpName),
 				assert.OutputContains("support for 3scale has been removed",
 					"Got expected validation error: support for 3scale has been removed",
 					"The validation error was not shown as expected"))
