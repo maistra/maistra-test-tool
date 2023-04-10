@@ -31,11 +31,11 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/request"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestAuthPolicy(t *testing.T) {
-	test.NewTest(t).Id("T18").Groups(test.Full, test.InterOp).Run(func(t test.TestHelper) {
+	NewTest(t).Id("T18").Groups(Full, InterOp).Run(func(t TestHelper) {
 		hack.DisableLogrusForThisTest(t)
 
 		meshNamespace := env.GetDefaultMeshNamespace()
@@ -56,7 +56,7 @@ func TestAuthPolicy(t *testing.T) {
 		toNamespaces := []string{"foo", "bar"}
 
 		t.LogStep("Check connectivity from namespaces foo, bar, and legacy to namespaces foo and bar")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
+		retry.UntilSuccess(t, func(t TestHelper) {
 			for _, from := range fromNamespaces {
 				for _, to := range toNamespaces {
 					assertConnectionSucessful(t, from, to)
@@ -64,9 +64,9 @@ func TestAuthPolicy(t *testing.T) {
 			}
 		})
 
-		t.NewSubTest("auto mTLS").Run(func(t test.TestHelper) {
+		t.NewSubTest("auto mTLS").Run(func(t TestHelper) {
 			t.LogStep("Check if mTLS is enabled in foo")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				oc.Exec(t,
 					pod.MatchingSelector("app=sleep", "foo"),
 					"sleep",
@@ -77,7 +77,7 @@ func TestAuthPolicy(t *testing.T) {
 			})
 
 			t.LogStep("Check that mTLS is NOT enabled in legacy")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				oc.Exec(t,
 					pod.MatchingSelector("app=sleep", "foo"),
 					"sleep",
@@ -88,14 +88,14 @@ func TestAuthPolicy(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("enable global mTLS STRICT mode").Run(func(t test.TestHelper) {
+		t.NewSubTest("enable global mTLS STRICT mode").Run(func(t TestHelper) {
 			t.LogStep("Enable mTLS STRICT mode globally")
 			oc.ApplyString(t, meshNamespace, PeerAuthenticationMTLSStrict)
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, meshNamespace, PeerAuthenticationMTLSStrict)
 			})
 
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				from := "legacy"
 				for _, to := range []string{"foo", "bar"} {
 					oc.Exec(t,
@@ -109,13 +109,13 @@ func TestAuthPolicy(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("namespace_policy_mtls").Run(func(t test.TestHelper) {
+		t.NewSubTest("namespace_policy_mtls").Run(func(t TestHelper) {
 			t.LogStep("Enable mutual TLS per namespace")
 			oc.ApplyString(t, "foo", PeerAuthenticationMTLSStrict)
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, "foo", PeerAuthenticationMTLSStrict)
 			})
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				for _, from := range []string{"foo", "bar", "legacy"} {
 					for _, to := range []string{"foo", "bar"} {
 						if from == "legacy" && to == "foo" {
@@ -128,30 +128,30 @@ func TestAuthPolicy(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("workload policy mtls").Run(func(t test.TestHelper) {
+		t.NewSubTest("workload policy mtls").Run(func(t TestHelper) {
 			t.LogStep("Enable mutual TLS per workload")
 			oc.ApplyString(t, "bar", WorkloadPolicyStrict)
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, "bar", WorkloadPolicyStrict)
 			})
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				assertConnectionFailure(t, "legacy", "bar")
 			})
 
 			t.LogStep("Refine mutual TLS per port")
 			oc.ApplyString(t, "bar", PortPolicy)
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				assertConnectionSucessful(t, "legacy", "bar")
 			})
 		})
 
-		t.NewSubTest("policy precedence mtls").Run(func(t test.TestHelper) {
+		t.NewSubTest("policy precedence mtls").Run(func(t TestHelper) {
 			t.LogStep("Overwrite foo namespace policy by a workload policy")
 			oc.ApplyString(t, "foo", OverwritePolicy)
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, "foo", OverwritePolicy)
 			})
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				assertConnectionSucessful(t, "legacy", "foo")
 			})
 		})
@@ -159,14 +159,14 @@ func TestAuthPolicy(t *testing.T) {
 		ingressGatewayHost := istio.GetIngressGatewayHost(t, meshNamespace)
 		headersURL := fmt.Sprintf("http://%s/headers", ingressGatewayHost)
 
-		t.NewSubTest("end-user JWT").Run(func(t test.TestHelper) {
+		t.NewSubTest("end-user JWT").Run(func(t TestHelper) {
 			t.Log("End-user authentication")
 
 			t.LogStep("Apply httpbin gateway")
 			oc.ApplyString(t, "foo", HttpbinGateway)
 
 			t.LogStep("Check httpbin request is successful")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				assertResponseStatus(t, headersURL, nil, http.StatusOK)
 			})
 
@@ -177,45 +177,45 @@ func TestAuthPolicy(t *testing.T) {
 			})
 
 			t.LogStep("Check whether request without token returns 200")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				assertResponseStatus(t, headersURL, nil, http.StatusOK)
 			})
 
 			t.LogStep("Check whether request with an invalid token returns 401")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				assertResponseStatus(t, headersURL, request.WithHeader("Authorization", "Bearer deadbeef"), http.StatusUnauthorized)
 			})
 
 			t.LogStep("Check whether request with a valid token returns 200")
 			token := string(curl.Request(t, "https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/demo.jwt", nil))
 			token = strings.Trim(token, "\n")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				assertResponseStatus(t, headersURL, request.WithHeader("Authorization", "Bearer "+token), http.StatusOK)
 			})
 
 			// skip gen-jwt.py and test JWT expires
 		})
 
-		t.NewSubTest("end-user require JWT").Run(func(t test.TestHelper) {
+		t.NewSubTest("end-user require JWT").Run(func(t TestHelper) {
 			t.Log("Require a valid token")
 			oc.ApplyTemplate(t, meshNamespace, RequireTokenPolicyTemplate, ossm.Smcp)
 			t.Cleanup(func() {
 				oc.DeleteFromTemplate(t, meshNamespace, RequireTokenPolicyTemplate, ossm.Smcp)
 			})
 
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				assertResponseStatus(t, headersURL, nil, http.StatusForbidden)
 			})
 		})
 
-		t.NewSubTest("end-user require JWT per path").Run(func(t test.TestHelper) {
+		t.NewSubTest("end-user require JWT per path").Run(func(t TestHelper) {
 			t.Log("Require valid tokens per-path")
 			oc.ApplyTemplate(t, meshNamespace, RequireTokenPathPolicyTemplate, ossm.Smcp)
 			t.Cleanup(func() {
 				oc.DeleteFromTemplate(t, meshNamespace, RequireTokenPathPolicyTemplate, ossm.Smcp)
 			})
 
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				assertResponseStatus(t, headersURL, nil, http.StatusForbidden)
 
 				ipURL := fmt.Sprintf("http://%s/ip", ingressGatewayHost)
@@ -225,7 +225,7 @@ func TestAuthPolicy(t *testing.T) {
 	})
 }
 
-func assertResponseStatus(t test.TestHelper, url string, requestOption curl.RequestOption, statusCode int) {
+func assertResponseStatus(t TestHelper, url string, requestOption curl.RequestOption, statusCode int) {
 	curl.Request(t, url, requestOption, assert.ResponseStatus(statusCode))
 }
 
