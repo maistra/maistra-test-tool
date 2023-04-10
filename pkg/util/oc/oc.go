@@ -99,10 +99,10 @@ metadata:
 	ApplyString(t, "", yaml)
 }
 
-func RecreateNamespace(t test.TestHelper, ns string) {
+func RecreateNamespace(t test.TestHelper, ns ...string) {
 	t.T().Helper()
-	DeleteNamespace(t, ns)
-	CreateNamespace(t, ns)
+	DeleteNamespace(t, ns...)
+	CreateNamespace(t, ns...)
 }
 
 func WaitSMCPReady(t test.TestHelper, ns string, name string) {
