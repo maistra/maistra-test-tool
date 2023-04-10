@@ -18,157 +18,196 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
+	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func cleanupAuthorJWT() {
-	log.Log.Info("Cleanup")
-	util.KubeDeleteContents("foo", JWTGroupClaimRule)
-	util.KubeDeleteContents("foo", JWTRequireRule)
-	util.KubeDeleteContents("foo", JWTExampleRule)
-	time.Sleep(time.Duration(40) * time.Second)
-	sleep := examples.Sleep{Namespace: "foo"}
-	httpbin := examples.Httpbin{Namespace: "foo"}
-	sleep.Uninstall()
-	httpbin.Uninstall()
-	time.Sleep(time.Duration(20) * time.Second)
-}
+func TestAuthorizationJWT(t *testing.T) {
+	test.NewTest(t).Id("T22").Groups(test.Full, test.InterOp).Run(func(t test.TestHelper) {
+		hack.DisableLogrusForThisTest(t)
 
-func TestAuthorJWT(t *testing.T) {
-	test.NewTest(t).Id("T22").Groups(test.Full, test.InterOp).NotRefactoredYet()
+		ns := "foo"
+		t.Cleanup(func() {
+			oc.RecreateNamespace(t, ns)
+		})
 
-	defer cleanupAuthorJWT()
-	defer util.RecoverPanic(t)
+		t.Log("This test validates authorization policies with JWT Token")
 
-	log.Log.Info("Authorization with JWT Token")
-	httpbin := examples.Httpbin{Namespace: "foo"}
-	httpbin.Install()
-	sleep := examples.Sleep{Namespace: "foo"}
-	sleep.Install()
+		t.LogStep("Install httpbin and sleep")
+		app.InstallAndWaitReady(t, app.Httpbin(ns), app.Sleep(ns))
 
-	sleepPod, err := util.GetPodName("foo", "app=sleep")
-	util.Inspect(err, "Failed to get sleep pod name", "", t)
-	cmd := fmt.Sprintf(`curl http://httpbin.foo:8000/ip -sS -o /dev/null -w "%%{http_code}\n"`)
-	msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true)
-	util.Inspect(err, "Failed to get response", "", t)
-	if !strings.Contains(msg, "200") {
-		log.Log.Errorf("Verify setup -- Unexpected response code: %s", msg)
-	} else {
-		log.Log.Infof("Success. Get expected response: %s", msg)
-	}
+		t.LogStep("Check if httpbin returns 200 OK when no authorization policies are in place")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			oc.Exec(t,
+				pod.MatchingSelector("app=sleep", ns),
+				"sleep",
+				httpbinRequest("GET", "/ip"),
+				assert.OutputContains(
+					"200",
+					"Got expected 200 OK from httpbin",
+					"Expected 200 OK from httpbin, but got a different HTTP code"))
+		})
 
-	t.Run("Security_authorization_allow_valid_JWT_list-typed_claims", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-
-		log.Log.Info("Allow requests with valid JWT and list-typed claims")
-		util.KubeApplyContents("foo", JWTExampleRule)
-		time.Sleep(time.Duration(50) * time.Second)
-
-		log.Log.Info("Verify a request with an invalid JWT is denied")
-		cmd := fmt.Sprintf(`curl "http://httpbin.%s:8000/headers" -sS -o /dev/null -H "Authorization: Bearer invalidToken" -w "%%{http_code}\n"`, "foo")
-		msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true)
-		util.Inspect(err, "Failed to get response", "", t)
-		if !strings.Contains(msg, "401") {
-			log.Log.Errorf("Verify denied request Unexpected response: %s", msg)
-			t.Errorf("Verify denied request Unexpected response: %s", msg)
-		} else {
-			log.Log.Infof("Success. Get expected response: %s", msg)
-		}
-
-		log.Log.Info("Verify a request without a JWT is allowed")
-		cmd = fmt.Sprintf(`curl "http://httpbin.%s:8000/headers" -sS -o /dev/null -w "%%{http_code}\n"`, "foo")
-		msg, err = util.PodExec("foo", sleepPod, "sleep", cmd, true)
-		util.Inspect(err, "Failed to get response", "", t)
-		if !strings.Contains(msg, "200") {
-			log.Log.Errorf("Verify request without JWT Unexpected response: %s", msg)
-			t.Errorf("Verify request without JWT Unexpected response: %s", msg)
-		} else {
-			log.Log.Infof("Success. Get expected response: %s", msg)
-		}
-	})
-
-	t.Run("Security_authorization_allow_JWT_requestPrincipal", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-
-		log.Log.Info("Apply a policy requires all requests to have a valid JWT")
-		util.KubeApplyContents("foo", JWTRequireRule)
-		time.Sleep(time.Duration(50) * time.Second)
-
-		log.Log.Info("Download JWT token")
 		jwtURL := "https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/demo.jwt"
-		token, err := util.ShellMuteOutput(`curl %s -s`, jwtURL)
+		token, err := util.Shell(`curl %s -s`, jwtURL)
 		token = strings.Trim(token, "\n")
-		// token, err = util.Shell(`echo %s | cut -d '.' -f2 - | base64 --decode -`, token)
-		util.Inspect(err, "Failed to get JWT token", "", t)
-
-		log.Log.Info("Verify request with a valid JWT")
-		cmd := fmt.Sprintf(`curl "http://httpbin.%s:8000/headers" -sS -o /dev/null -H "Authorization: Bearer %s" -w "%%{http_code}\n"`, "foo", token)
-		msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true)
-		util.Inspect(err, "Failed to get response", "", t)
-		if !strings.Contains(msg, "200") {
-			log.Log.Errorf("Verify request with valid JWT Unexpected response: %s", msg)
-			t.Errorf("Verify request with valid JWT Unexpected response: %s", msg)
-		} else {
-			log.Log.Infof("Success. Get expected response: %s", msg)
+		if err != nil {
+			t.Error("message")
 		}
-
-		log.Log.Info("Verify request without a JWT is denied")
-		cmd = fmt.Sprintf(`curl "http://httpbin.%s:8000/headers" -sS -o /dev/null -w "%%{http_code}\n"`, "foo")
-		msg, err = util.PodExec("foo", sleepPod, "sleep", cmd, true)
-		util.Inspect(err, "Failed to get response", "", t)
-		if !strings.Contains(msg, "403") {
-			log.Log.Errorf("Verify request without valid JWT Unexpected response: %s", msg)
-			t.Errorf("Verify request without valid JWT Unexpected response: %s", msg)
-		} else {
-			log.Log.Infof("Success. Get expected response: %s", msg)
-		}
-	})
-
-	t.Run("Security_authorization_allow_JWT_claims_group", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-
-		log.Log.Info("Apply a require jwt policy with a group claim")
-		util.KubeApplyContents("foo", JWTGroupClaimRule)
-		time.Sleep(time.Duration(50) * time.Second)
-
-		log.Log.Info("Download JWT token and sets the groups claims")
-		jwtURL := "https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/demo.jwt"
-		token, err := util.ShellMuteOutput(`curl %s -s`, jwtURL)
-		token = strings.Trim(token, "\n")
-		// token, err = util.Shell(`echo %s | cut -d '.' -f2 - | base64 --decode -`, token)
-		util.Inspect(err, "Failed to get JWT token", "", t)
 
 		groupURL := "https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/groups-scope.jwt"
 		tokenGroup, err := util.ShellMuteOutput(`curl %s -s`, groupURL)
 		tokenGroup = strings.Trim(tokenGroup, "\n")
-		// tokenGroup, err = util.Shell(`echo %s | cut -d '.' -f2 - | base64 --decode -`, tokenGroup)
-		util.Inspect(err, "Failed to get JWT token", "", t)
-
-		log.Log.Info("Verify request with a JWT includes group1 claim")
-		cmd := fmt.Sprintf(`curl "http://httpbin.%s:8000/headers" -s -o /dev/null -H "Authorization: Bearer %s" -w "%%{http_code}\n"`, "foo", tokenGroup)
-		msg, err := util.PodExec("foo", sleepPod, "sleep", cmd, true)
-		util.Inspect(err, "Failed to get response", "", t)
-		if !strings.Contains(msg, "200") {
-			log.Log.Errorf("Verify request with JWT group1 claim Unexpected response: %s", msg)
-			t.Errorf("Verify request with JWT group1 claim Unexpected response: %s", msg)
-		} else {
-			log.Log.Infof("Success. Get expected response: %s", msg)
+		if err != nil {
+			t.Error("message")
 		}
 
-		log.Log.Info("Verify request without groups claim JWT is denied")
-		cmd = fmt.Sprintf(`curl "http://httpbin.%s:8000/headers" -s -o /dev/null -H "Authorization: Bearer %s" -w "%%{http_code}\n"`, "foo", token)
-		msg, err = util.PodExec("foo", sleepPod, "sleep", cmd, true)
-		util.Inspect(err, "Failed to get response", "", t)
-		if !strings.Contains(msg, "403") {
-			log.Log.Errorf("Verify request without groups claim JWT Unexpected response: %s", msg)
-			t.Errorf("Verify request without groups claim JWT Unexpected response: %s", msg)
-		} else {
-			log.Log.Infof("Success. Get expected response: %s", msg)
-		}
+		t.NewSubTest("Allow requests with valid JWT and list-typed claims").Run(func(t test.TestHelper) {
+			t.Cleanup(func() {
+				oc.DeleteFromString(t, ns, JWTExampleRule)
+			})
+			oc.ApplyString(t, ns, JWTExampleRule)
+
+			t.LogStep("Verify that a request with an invalid JWT is denied")
+			assertRequestJWTDenied_401(t, ns, curl_JWT("Authorization: Bearer invalidToken"))
+
+			t.LogStep("Verify that a request without a JWT is allowed because there is no authorization policy")
+			assertRequestJWTAccepted(t, ns, curl_JWT())
+
+		})
+
+		t.NewSubTest("Security authorization allow JWT requestPrincipal").Run(func(t test.TestHelper) {
+			t.Cleanup(func() {
+				oc.DeleteFromString(t, ns, JWTRequireRule)
+			})
+			oc.ApplyString(t, ns, JWTRequireRule)
+
+			t.LogStep("Verify that a request with a valid JWT is allowed")
+			assertRequestJWTAccepted(t, ns, curl_JWT("Authorization: Bearer %s", token))
+
+			t.LogStep("Verify request without a JWT is denied")
+			assertRequestJWTDenied(t, ns, curl_JWT())
+
+		})
+
+		t.NewSubTest("Security authorization allow JWT claims group").Run(func(t test.TestHelper) {
+			t.Cleanup(func() {
+				oc.DeleteFromString(t, ns, JWTGroupClaimRule)
+			})
+			oc.ApplyString(t, ns, JWTGroupClaimRule)
+
+			t.LogStep("Verify that a request with the JWT that includes group1 in the groups claim is allowed")
+			assertRequestJWTAccepted(t, ns, curl_JWT("Authorization: Bearer %s", tokenGroup))
+
+			t.LogStep("Verify that a request with a JWT, which does not have the groups claim is rejected")
+			assertRequestJWTDenied(t, ns, curl_JWT("Authorization: Bearer %s", token))
+		})
 	})
 }
+
+func curl_JWT(headers ...string) string {
+	headerArgs := ""
+	for _, header := range headers {
+		headerArgs += fmt.Sprintf(` -H "%s"`, header)
+	}
+	return fmt.Sprintf(`curl "http://httpbin:8000/headers" -sS -o /dev/null %s -w "%%%%{http_code}\n"`, headerArgs)
+}
+
+func assertRequestJWTDenied(t test.TestHelper, ns string, curlCommand string) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		oc.Exec(t,
+			pod.MatchingSelector("app=sleep", ns),
+			"sleep",
+			curlCommand,
+			assert.OutputContains(
+				"403",
+				"Got the expected 403 Forbidden response",
+				"Expected the JWT Authorization Policy to reject request (expected HTTP status 403), but got a different HTTP code"))
+	})
+}
+
+func assertRequestJWTDenied_401(t test.TestHelper, ns string, curlCommand string) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		oc.Exec(t,
+			pod.MatchingSelector("app=sleep", ns),
+			"sleep",
+			curlCommand,
+			assert.OutputContains(
+				"401",
+				"Got the expected 401 Unauthorized response",
+				"Expected the JWT AuthorizationPolicy to reject request (expected HTTP status 401), but got a different HTTP code"))
+	})
+}
+
+func assertRequestJWTAccepted(t test.TestHelper, ns string, curlCommand string) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		oc.Exec(t,
+			pod.MatchingSelector("app=sleep", ns),
+			"sleep",
+			curlCommand,
+			assert.OutputContains(
+				"200",
+				"Got the expected 200 OK response for the JWT request",
+				"Expected the JWT AuthorizationPolicy to accept request (expected HTTP status 200), but got a different HTTP code"))
+	})
+}
+
+const (
+	JWTExampleRule = `
+apiVersion: "security.istio.io/v1beta1"
+kind: "RequestAuthentication"
+metadata:
+  name: "jwt-example"
+  namespace: foo
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  jwtRules:
+  - issuer: "testing@secure.istio.io"
+    jwksUri: "https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/jwks.json"
+`
+	JWTRequireRule = `
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: require-jwt
+  namespace: foo
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+       requestPrincipals: ["testing@secure.istio.io/testing@secure.istio.io"]
+`
+
+	JWTGroupClaimRule = `
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: require-jwt
+  namespace: foo
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+       requestPrincipals: ["testing@secure.istio.io/testing@secure.istio.io"]
+    when:
+    - key: request.auth.claims[groups]
+      values: ["group1"]
+`
+)

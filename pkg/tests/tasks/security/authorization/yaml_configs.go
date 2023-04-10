@@ -36,55 +36,56 @@ spec:
       app: httpbin
 `
 
-	JWTExampleRule = `
-apiVersion: "security.istio.io/v1beta1"
-kind: "RequestAuthentication"
-metadata:
-  name: "jwt-example"
-  namespace: foo
-spec:
-  selector:
-    matchLabels:
-      app: httpbin
-  jwtRules:
-  - issuer: "testing@secure.istio.io"
-    jwksUri: "https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/jwks.json"
-`
-
-	JWTRequireRule = `
+	TCPAllowPolicy = `
 apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
-  name: require-jwt
+  name: tcp-policy
   namespace: foo
 spec:
   selector:
     matchLabels:
-      app: httpbin
+      app: tcp-echo
   action: ALLOW
   rules:
-  - from:
-    - source:
-       requestPrincipals: ["testing@secure.istio.io/testing@secure.istio.io"]
+  - to:
+    - operation:
+       ports: ["9000", "9001"]
 `
 
-	JWTGroupClaimRule = `
+	TCPAllowGETPolicy = `
 apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
-  name: require-jwt
+  name: tcp-policy
   namespace: foo
 spec:
   selector:
     matchLabels:
-      app: httpbin
+      app: tcp-echo
   action: ALLOW
   rules:
-  - from:
-    - source:
-       requestPrincipals: ["testing@secure.istio.io/testing@secure.istio.io"]
-    when:
-    - key: request.auth.claims[groups]
-      values: ["group1"]
+  - to:
+    - operation:
+        methods: ["GET"]
+        ports: ["9000"]
+`
+
+	TCPDenyGETPolicy = `
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: tcp-policy
+  namespace: foo
+spec:
+  selector:
+    matchLabels:
+      app: tcp-echo
+  action: DENY
+  rules:
+  - to:
+    - operation:
+        methods: ["GET"]
+        ports: ["9000"]
 `
 )
