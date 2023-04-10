@@ -24,11 +24,11 @@ import (
 func TestTLSVersionSMCP(t *testing.T) {
 	NewTest(t).Id("T26").Groups(Full, ARM, InterOp).Run(func(t TestHelper) {
 		hack.DisableLogrusForThisTest(t)
-		t.Log("This test checks if the SMCP updated the tls.maxProtocolVersion to TLSv1_0, TLSv1_1, and TLSv1_3.")
+		t.Log("This test checks if the SMCP updated the tls.minProtocolVersion to TLSv1_0, TLSv1_1, and tls.maxProtocolVersion to TLSv1_3.")
 		t.Cleanup(func() {
 			oc.Patch(t, meshNamespace,
 				"smcp", smcpName,
-				"merge",
+				"json",
 				`[{"op": "remove", "path": "/spec/security/controlPlane/tls"}]`)
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 		})
