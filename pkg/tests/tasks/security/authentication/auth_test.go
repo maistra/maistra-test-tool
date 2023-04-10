@@ -64,7 +64,7 @@ func TestAuthPolicy(t *testing.T) {
 			}
 		})
 
-		t.NewSubTest("auto mTLS").Run(func(t TestHelper) {
+		t.NewSubTest("enable auto mTLS").Run(func(t TestHelper) {
 			t.LogStep("Check if mTLS is enabled in foo")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				oc.Exec(t,
@@ -109,7 +109,7 @@ func TestAuthPolicy(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("namespace_policy_mtls").Run(func(t TestHelper) {
+		t.NewSubTest("namespace policy mtls").Run(func(t TestHelper) {
 			t.LogStep("Enable mutual TLS per namespace")
 			oc.ApplyString(t, "foo", PeerAuthenticationMTLSStrict)
 			t.Cleanup(func() {
