@@ -16,12 +16,14 @@ package ossm
 
 import (
 	_ "embed"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -44,11 +46,16 @@ func TestRateLimiting(t *testing.T) {
 		namespaces := []string{"bookinfo", "redis"}
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, meshNamespace)
-			oc.DeleteNamespace(t, namespaces...)
 		})
+		smcpVersion, _ := strconv.ParseFloat(env.GetDefaultSMCPVersion(), 32)
+		if smcpVersion > 2.2 {
+			t.T().Skip("Rate limiting is not supported for SMCP versions v2.3+")
+		}
 		t.LogStep("Install Bookinfo and Redis")
 		app.InstallAndWaitReady(t, app.Bookinfo(namespaces[0]), app.Redis(namespaces[1]))
-
+		t.Cleanup(func() {
+			oc.DeleteNamespace(t, namespaces...)
+		})
 		t.LogStep("Patch SMCP to enable rate limiting and wait until smcp is ready")
 		oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", rateLimitSMCPPatch)
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
