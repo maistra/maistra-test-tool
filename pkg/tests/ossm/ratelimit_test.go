@@ -16,13 +16,18 @@ package ossm
 
 import (
 	_ "embed"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
-	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 var (
@@ -33,82 +38,35 @@ var (
 	rateLimitFilterYaml_template string
 )
 
-func cleanupRateLimiting(redisDeploy examples.Redis, bookinfoDeploy examples.Bookinfo) {
-	util.Shell(`kubectl -n %s patch smcp/%s --type=json -p='[{"op": "remove", "path": "/spec/techPreview/rateLimiting"}]'`, meshNamespace, smcpName)
-	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
-	util.KubeDeleteContents(meshNamespace, util.RunTemplate(rateLimitFilterYaml_template, Smcp))
-	time.Sleep(time.Second * 5)
-	util.KubeDeleteContents(meshNamespace, rateLimitSMCPPatch)
-	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
-	redisDeploy.Uninstall()
-	bookinfoDeploy.Uninstall()
-}
-
 func TestRateLimiting(t *testing.T) {
-	test.NewTest(t).Id("T28").Groups(test.Full).NotRefactoredYet()
+	NewTest(t).Id("T28").Groups(Full).Run(func(t TestHelper) {
+		hack.DisableLogrusForThisTest(t)
+		namespaces := []string{"bookinfo", "redis"}
+		t.Cleanup(func() {
+			oc.RecreateNamespace(t, meshNamespace)
+			oc.DeleteNamespace(t, namespaces...)
+		})
+		t.LogStep("Install Bookinfo and Redis")
+		app.InstallAndWaitReady(t, app.Bookinfo(namespaces[0]), app.Redis(namespaces[1]))
 
-	redisDeploy := examples.Redis{Namespace: "redis"}
-	bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
-	bookinfo.Install(false)
+		t.LogStep("Patch SMCP to enable rate limiting and wait until smcp is ready")
+		oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", rateLimitSMCPPatch)
+		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
-	defer cleanupRateLimiting(redisDeploy, bookinfo)
+		t.LogStep("Verify rls Pod is Running")
+		rlsPod := pod.MatchingSelector("app=rls", meshNamespace)
+		oc.WaitPodRunning(t, rlsPod)
 
-	if err := redisDeploy.Install(); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := util.Shell(`kubectl -n %s patch smcp/%s --type=merge --patch="%s"`, meshNamespace, smcpName, rateLimitSMCPPatch); err != nil {
-		t.Fatal(err)
-	}
+		t.LogStep("Create EnvoyFilter for rate limiting")
+		oc.ApplyTemplate(t, meshNamespace, rateLimitFilterYaml_template, Smcp)
 
-	if _, err := util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := util.CheckPodRunning(meshNamespace, "app=rls"); err != nil {
-		t.Fatalf("rls deployment not ready: %v", err)
-	}
-
-	if err := util.KubeApplyContents(meshNamespace, util.RunTemplate(rateLimitFilterYaml_template, Smcp)); err != nil {
-		t.Fatalf("error applying envoy filter: %v", err)
-	}
-	util.Shell(`kubectl -n %s get envoyfilter -o yaml > rrr.yaml`, meshNamespace)
-	// util.Log.Info(msg)
-
-	// Give some time to envoy filters apply
-	time.Sleep(time.Second * 5)
-
-	host, err := util.Shell("oc -n %s get route istio-ingressgateway -o jsonpath='{.spec.host}'", meshNamespace)
-	if err != nil {
-		t.Fatalf("error getting route hostname: %v", err)
-	}
-	host = strings.Trim(host, "'")
-
-	time.Sleep(time.Duration(20) * time.Second)
-
-	// Should work first time
-	checkProductPageResponseCode(t, host, "200")
-
-	// Should fail first time
-	checkProductPageResponseCode(t, host, "429")
-
-	// Should work again after 1 minute
-	time.Sleep(time.Second * 65)
-	checkProductPageResponseCode(t, host, "200")
-
-	// Should fail
-	// time.Sleep(time.Second * 20)
-	// checkProductPageResponseCode(t, host, "429")
-}
-
-func checkProductPageResponseCode(t *testing.T, host string, expectedCode string) {
-	t.Helper()
-
-	code, err := util.Shell("curl -s -o /dev/null -w '%%{http_code}' http://%s/productpage", host)
-	if err != nil {
-		t.Fatalf("error getting productpage: %v", err)
-	}
-	code = strings.Trim(code, "'")
-	if code != expectedCode {
-		t.Fatalf("expected status code %q got %q", expectedCode, code)
-	}
+		productPageURL := app.BookinfoProductPageURL(t, meshNamespace)
+		t.LogStep("Make 3 request to validate rate limit: first should work, second should fail with 429, third should work again after wait more than 10 seconds")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			curl.Request(t, productPageURL, nil, assert.ResponseStatus(200))
+			curl.Request(t, productPageURL, nil, assert.ResponseStatus(429))
+			time.Sleep(time.Second * 20)
+			curl.Request(t, productPageURL, nil, assert.ResponseStatus(200))
+		})
+	})
 }

@@ -120,3 +120,7 @@ func BookinfoRuleAllYamlFile() string {
 func BookinfoRuleAllMTLSYamlFile() string {
 	return bookinfoRuleAllTLSYaml
 }
+
+func RedisYamlFile() string {
+	return redisYaml
+}
