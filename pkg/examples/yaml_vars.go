@@ -43,6 +43,8 @@ var (
 
 	echoYaml      = fmt.Sprintf("%s/%s/tcp-echo/tcp-echo-services.yaml", basedir, branch)
 	echoWithProxy = fmt.Sprintf("%s/%s/tcp-echo/tcp-echo.yaml", basedir, branch)
+	echov1Yaml    = fmt.Sprintf("%s/%s/tcp-echo/tcp-echo-v1.yaml", basedir, branch)
+	echov2Yaml    = fmt.Sprintf("%s/%s/tcp-echo/tcp-echo-v2.yaml", basedir, branch)
 
 	fortioYaml = fmt.Sprintf("%s/%s/httpbin/sample-client/fortio-deploy.yaml", basedir, branch)
 
@@ -66,6 +68,18 @@ var (
 )
 
 // TODO: remove these functions when the refactoring is done
+
+func EchoYamlFile() string {
+	return echoWithProxy
+}
+
+func EchoV1YamlFile() string {
+	return echov1Yaml
+}
+
+func EchoV2YamlFile() string {
+	return echov2Yaml
+}
 
 func HttpbinYamlFile() string {
 	return httpbinYaml

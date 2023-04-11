@@ -2,6 +2,7 @@ package oc
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
@@ -25,6 +26,13 @@ func Exec(t test.TestHelper, podLocator PodLocatorFunc, container string, cmd st
 	shell.Execute(t,
 		fmt.Sprintf("kubectl exec -n %s %s -c %s -- %s", pod.Namespace, pod.Name, container, cmd),
 		checks...)
+}
+
+func GetPodIP(t test.TestHelper, podLocator PodLocatorFunc) string {
+	t.T().Helper()
+	pod := podLocator(t)
+	return shell.Execute(t,
+		fmt.Sprintf("kubectl get pod -n %s %s -o jsonpath='{.status.podIP}'", pod.Namespace, pod.Name))
 }
 
 func Patch(t test.TestHelper, ns string, kind string, name string, patchType string, patch string, checks ...common.CheckFunc) {
@@ -69,8 +77,12 @@ func WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		pod = podLocator(t)
 	})
-
-	shell.Executef(t, "kubectl -n %s wait --for condition=Ready pod %s --timeout 30s", pod.Namespace, pod.Name)
+	condition := shell.Executef(t, "kubectl -n %s wait --for condition=Ready pod %s --timeout 30s || true", pod.Namespace, pod.Name) // TODO: Change shell execute to do not fail on error
+	if strings.Contains(condition, "condition met") {
+		t.Logf("Pod %s in namespace %s is ready!", pod.Name, pod.Namespace)
+	} else {
+		t.Fatalf("Error: %s in namespace %s is not ready: %s", pod.Name, pod.Namespace, condition)
+	}
 }
 
 func WaitDeploymentRolloutComplete(t test.TestHelper, ns string, deploymentNames ...string) {
@@ -108,10 +120,25 @@ func WaitAllPodsReady(t test.TestHelper, ns string) {
 func WaitCondition(t test.TestHelper, ns string, kind string, name string, condition string) {
 	t.T().Helper()
 	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(30), func(t test.TestHelper) {
-		shell.Executef(t,
+		shell.Execute(t,
 			fmt.Sprintf(`oc wait -n %s %s/%s --for condition=%s  --timeout %s`, ns, kind, name, condition, "10s"),
 			assert.OutputContains(condition,
 				fmt.Sprintf("Condition %s met by %s %s/%s", condition, kind, ns, name),
 				fmt.Sprintf("Condition %s not met %s %s/%s, retrying", condition, kind, ns, name)))
+	})
+}
+
+func DeletePod(t test.TestHelper, podLocator PodLocatorFunc) {
+	t.T().Helper()
+	var pod NamespacedName
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		pod = podLocator(t)
+	})
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		shell.Execute(t,
+			fmt.Sprintf(`oc delete pod %s -n %s`, pod.Name, pod.Namespace),
+			assert.OutputContains("deleted",
+				fmt.Sprintf("Pod %s is being deleted", pod.Name),
+				fmt.Sprintf("Pod %s deletion return an error", pod.Name)))
 	})
 }

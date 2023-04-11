@@ -16,109 +16,267 @@ package egress
 
 import (
 	"fmt"
-	"strings"
 	"testing"
-	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
+	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func cleanupEgressGateways() {
-	log.Log.Info("Cleanup")
-	sleep := examples.Sleep{Namespace: "bookinfo"}
-	util.KubeDeleteContents("bookinfo", util.RunTemplate(ExGatewayHTTPSTemplate, smcp))
-	util.KubeDeleteContents("bookinfo", util.RunTemplate(ExGatewayTemplate, smcp))
-	util.KubeDeleteContents("bookinfo", ExServiceEntryTLS)
-	util.KubeDeleteContents("bookinfo", ExServiceEntry)
-	sleep.Uninstall()
-	time.Sleep(time.Duration(20) * time.Second)
+func TestEgressGateways(t *testing.T) {
+	NewTest(t).Id("T13").Groups(Full, InterOp).Run(func(t TestHelper) {
+		hack.DisableLogrusForThisTest(t)
+
+		ns := "bookinfo"
+		t.Cleanup(func() {
+			oc.RecreateNamespace(t, ns)
+		})
+
+		app.InstallAndWaitReady(t, app.Sleep(ns))
+
+		t.NewSubTest("HTTP").Run(func(t TestHelper) {
+			t.LogStep("Create a ServiceEntry to external istio.io")
+			oc.ApplyString(t, ns, ExServiceEntry)
+			t.Cleanup(func() {
+				oc.DeleteFromString(t, ns, ExServiceEntry)
+			})
+			assertExternalHTTPRequestSuccessful(t, ns)
+
+			t.LogStep("Create a Gateway to external istio.io")
+			oc.ApplyTemplate(t, ns, ExGatewayTemplate, smcp)
+			t.Cleanup(func() {
+				oc.DeleteFromTemplate(t, ns, ExGatewayTemplate, smcp)
+			})
+
+			t.LogStep("Scale istio-egressgateway to zero to confirm that requests to istio.io are routed through it")
+			oc.ScaleDeploymentAndWait(t, meshNamespace, "istio-egressgateway", 0)
+			assertExternalHTTPRequestFailure(t, ns)
+
+			t.LogStep("Scale istio-egressgateway back to one to confirm that requests to istio.io are successful")
+			oc.ScaleDeploymentAndWait(t, meshNamespace, "istio-egressgateway", 1)
+			assertExternalHTTPRequestSuccessful(t, ns)
+		})
+
+		t.NewSubTest("HTTPS").Run(func(t TestHelper) {
+			t.LogStep("Create a TLS ServiceEntry to external istio.io")
+			oc.ApplyString(t, ns, ExServiceEntryTLS)
+			t.Cleanup(func() {
+				oc.DeleteFromString(t, ns, ExServiceEntryTLS)
+			})
+			assertExternalHTTPSRequestSuccessful(t, ns)
+
+			t.LogStep("Create a https Gateway to external istio.io")
+			oc.ApplyTemplate(t, ns, ExGatewayHTTPSTemplate, smcp)
+			t.Cleanup(func() {
+				oc.DeleteFromTemplate(t, ns, ExGatewayHTTPSTemplate, smcp)
+			})
+
+			t.LogStep("Scale istio-egressgateway to zero to confirm that requests to istio.io are routed through it")
+			oc.ScaleDeploymentAndWait(t, meshNamespace, "istio-egressgateway", 0)
+			assertExternalHTTPSRequestFailure(t, ns)
+
+			t.LogStep("Scale istio-egressgateway back to one to confirm that requests to istio.io are successful")
+			oc.ScaleDeploymentAndWait(t, meshNamespace, "istio-egressgateway", 1)
+			assertExternalHTTPSRequestSuccessful(t, ns)
+		})
+	})
 }
 
-func TestEgressGateways(t *testing.T) {
-	test.NewTest(t).Id("T13").Groups(test.Full, test.InterOp).NotRefactoredYet()
+func assertExternalHTTPRequestSuccessful(t TestHelper, ns string) {
+	t.LogStep("Confirm that request to http://istio.io is successful")
+	execInSleepPod(t, ns,
+		fmt.Sprintf(`curl -sSL -o /dev/null %s -D - http://istio.io`, getCurlProxyParams()),
+		assert.OutputContains("301 Moved Permanently",
+			"Got http://istio.io response",
+			"Unexpected response from http://istio.io"))
+}
 
-	defer cleanupEgressGateways()
-	defer util.RecoverPanic(t)
+func assertExternalHTTPRequestFailure(t TestHelper, ns string) {
+	t.LogStep("Confirm that request to http://istio.io fails")
+	execInSleepPod(t, ns,
+		fmt.Sprintf(`curl -sSL -o /dev/null %s -D - http://istio.io`, getCurlProxyParams()),
+		assert.OutputContains("503 Service Unavailable",
+			"Got http://istio.io failure",
+			"Unexpected response from http://istio.io"))
 
-	log.Log.Info("TestEgressGateways")
-	sleep := examples.Sleep{Namespace: "bookinfo"}
-	sleep.Install()
-	sleepPod, err := util.GetPodName("bookinfo", "app=sleep")
-	util.Inspect(err, "Failed to get sleep pod name", "", t)
+}
+
+func getCurlProxyParams() string {
 	proxy, _ := util.GetProxy()
 	curlParams := ""
-	if proxy.HTTPProxy == "" {
-		log.Log.Info("HTTP_PROXY is not set")
-	} else {
-		curlParams = curlParams + " -x " + proxy.HTTPProxy
+	if proxy.HTTPProxy != "" {
+		curlParams = "-x " + proxy.HTTPProxy
 	}
-	t.Run("TrafficManagement_egress_gateway_for_http_traffic", func(t *testing.T) {
-		defer util.RecoverPanic(t)
+	return curlParams
+}
 
-		log.Log.Info("Create a ServiceEntry to external istio.io")
-		util.KubeApplyContents("bookinfo", ExServiceEntry)
-		time.Sleep(time.Duration(10) * time.Second)
-		command := fmt.Sprintf(`curl -sSL -o /dev/null %s -D - http://istio.io`, curlParams)
-		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
-		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "301 Moved Permanently") {
-			log.Log.Info("Success. Get http://istio.io response")
-		} else {
-			log.Log.Infof("Error response: %s", msg)
-			t.Errorf("Error response: %s", msg)
-		}
+func assertExternalHTTPSRequestSuccessful(t TestHelper, ns string) {
+	t.LogStep("Confirm that request to https://istio.io is successful")
+	execInSleepPod(t, ns,
+		`curl -sSL -o /dev/null -D - https://istio.io`,
+		assert.OutputContains("200",
+			"Got https://istio.io response",
+			"Unexpected response from https://istio.io"))
+}
 
-		log.Log.Info("Create a Gateway to external istio.io")
-		util.KubeApplyContents("bookinfo", util.RunTemplate(ExGatewayTemplate, smcp))
-		time.Sleep(time.Duration(20) * time.Second)
+func assertExternalHTTPSRequestFailure(t TestHelper, ns string) {
+	t.LogStep("Confirm that request to https://istio.io fails")
+	execInSleepPod(t, ns,
+		`curl -sSL -o /dev/null -D - https://istio.io || echo "connection failed"`,
+		assert.OutputContains("connection failed",
+			"Got https://istio.io failure",
+			"Unexpected response from https://istio.io"))
+}
 
-		command = fmt.Sprintf(`curl -sSL -o /dev/null %s -D - http://istio.io`, curlParams)
-		msg, err = util.PodExec("bookinfo", sleepPod, "sleep", command, false)
-		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "301 Moved Permanently") {
-			log.Log.Infof("Success. Get http://istio.io response: %s", msg)
-		} else {
-			log.Log.Infof("Error response: %s", msg)
-			t.Errorf("Error response: %s", msg)
-		}
-
-		util.KubeDeleteContents("bookinfo", util.RunTemplate(ExGatewayTemplate, smcp))
-		util.KubeDeleteContents("bookinfo", ExServiceEntry)
-		time.Sleep(time.Duration(20) * time.Second)
-	})
-
-	t.Run("TrafficManagement_egress_gateway_for_https_traffic", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-
-		log.Log.Info("Create a TLS ServiceEntry to external istio.io")
-		util.KubeApplyContents("bookinfo", ExServiceEntryTLS)
-		time.Sleep(time.Duration(10) * time.Second)
-
-		command := `curl -sSL -o /dev/null -D - https://istio.io`
-		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
-		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "301 Moved Permanently") || !strings.Contains(msg, "200") {
-			log.Log.Infof("Error response: %s", msg)
-			t.Errorf("Error response: %s", msg)
-		} else {
-			log.Log.Infof("Success. Get https://istio.io response: %s", msg)
-		}
-
-		log.Log.Info("Create a https Gateway to external istio.io")
-		util.KubeApplyContents("bookinfo", util.RunTemplate(ExGatewayHTTPSTemplate, smcp))
-		time.Sleep(time.Duration(20) * time.Second)
-
-		command = `curl -sSL -o /dev/null -D - https://istio.io`
-		msg, err = util.PodExec("bookinfo", sleepPod, "sleep", command, false)
-		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "301 Moved Permanently") || !strings.Contains(msg, "200") {
-			log.Log.Infof("Error response: %s", msg)
-			t.Errorf("Error response: %s", msg)
-		} else {
-			log.Log.Infof("Success. Get https://istio.io response: %s", msg)
-		}
+func execInSleepPod(t TestHelper, ns string, command string, checks ...common.CheckFunc) {
+	retry.UntilSuccess(t, func(t TestHelper) {
+		oc.Exec(t, pod.MatchingSelector("app=sleep", ns), "sleep",
+			command, checks...)
 	})
 }
+
+const (
+	ExServiceEntryTLS = `
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: istio-io
+spec:
+  hosts:
+  - istio.io
+  ports:
+  - number: 443
+    name: tls
+    protocol: TLS
+  resolution: DNS
+`
+
+	ExGatewayTemplate = `
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: istio-egressgateway
+spec:
+  selector:
+    istio: egressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - istio.io
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: egressgateway-for-istio-io
+spec:
+  host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
+  subsets:
+  - name: istio-io
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: direct-istio-io-through-egress-gateway
+spec:
+  hosts:
+  - istio.io
+  gateways:
+  - istio-egressgateway
+  - mesh
+  http:
+  - match:
+    - gateways:
+      - mesh
+      port: 80
+    route:
+    - destination:
+        host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
+        subset: istio-io
+        port:
+          number: 80
+      weight: 100
+  - match:
+    - gateways:
+      - istio-egressgateway
+      port: 80
+    route:
+    - destination:
+        host: istio.io
+        port:
+          number: 80
+      weight: 100
+`
+
+	ExGatewayHTTPSTemplate = `
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: istio-egressgateway
+spec:
+  selector:
+    istio: egressgateway
+  servers:
+  - port:
+      number: 443
+      name: tls
+      protocol: TLS
+    hosts:
+    - istio.io
+    tls:
+      mode: PASSTHROUGH
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: egressgateway-for-istio-io
+spec:
+  host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
+  subsets:
+  - name: istio-io
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: direct-istio-io-through-egress-gateway
+spec:
+  hosts:
+  - istio.io
+  gateways:
+  - mesh
+  - istio-egressgateway
+  tls:
+  - match:
+    - gateways:
+      - mesh
+      port: 443
+      sniHosts:
+      - istio.io
+    route:
+    - destination:
+        host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
+        subset: istio-io
+        port:
+          number: 443
+  - match:
+    - gateways:
+      - istio-egressgateway
+      port: 443
+      sniHosts:
+      - istio.io
+    route:
+    - destination:
+        host: istio.io
+        port:
+          number: 443
+      weight: 100
+`
+)

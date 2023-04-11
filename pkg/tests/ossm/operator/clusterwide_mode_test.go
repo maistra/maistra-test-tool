@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
+	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
@@ -122,7 +123,7 @@ func TestClusterWideMode(t *testing.T) {
 }
 
 func deleteMemberNamespaces(t test.TestHelper, count int) {
-	oc.DeleteNamespace(t, namespaceArray(count)...)
+	oc.DeleteNamespace(t, util.GenerateStrings("member-", count)...)
 }
 
 func createMemberNamespaces(t test.TestHelper, count int) {
@@ -142,14 +143,6 @@ metadata:
 
 	t.Logf("Creating %d namespaces with the label 'istio-injection=enabled': %v", count, namespaces)
 	oc.ApplyString(t, "", yaml)
-}
-
-func namespaceArray(count int) []string {
-	var namespaces []string
-	for i := 0; i < count; i++ {
-		namespaces = append(namespaces, fmt.Sprintf("member-%d", i))
-	}
-	return namespaces
 }
 
 func assertNumberOfAPIRequestsBetween(min, max int) common.CheckFunc {

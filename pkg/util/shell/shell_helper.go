@@ -2,6 +2,7 @@ package shell
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
@@ -27,4 +28,12 @@ func Execute(t test.TestHelper, cmd string, checks ...common.CheckFunc) string {
 func Executef(t test.TestHelper, format string, args ...any) string {
 	t.T().Helper()
 	return Execute(t, fmt.Sprintf(format, args...))
+}
+
+func CreateTempDir(t test.TestHelper, namePrefix string) string {
+	dir, err := os.MkdirTemp("/tmp", namePrefix)
+	if err != nil {
+		t.Fatalf("could not create temp dir %s: %v", namePrefix, err)
+	}
+	return dir
 }
