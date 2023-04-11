@@ -43,15 +43,16 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 
 		t.LogStep("Install sleep and echo")
 		app.InstallAndWaitReady(t, app.Sleep(ns), app.Echo(ns))
+		podIP := oc.GetPodIP(t, pod.MatchingSelector("app=tcp-echo", ns))
 
 		t.LogStep("Verify sleep to echo TCP connections")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
-			assertPortTcpEchoAccepted(t, ns, "9000")
-			assertPortTcpEchoAccepted(t, ns, "9001")
+			assertPortTcpEchoAccepted(t, ns, "tcp-echo", "9000")
+			assertPortTcpEchoAccepted(t, ns, "tcp-echo", "9001")
 		})
 
 		retry.UntilSuccess(t, func(t test.TestHelper) {
-			assertPortTcpEchoIPAccepted(t, ns, "9002")
+			assertPortTcpEchoAccepted(t, ns, podIP, "9002")
 		})
 
 		t.NewSubTest("TCP ALLOW policy").Run(func(t test.TestHelper) {
@@ -62,12 +63,12 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 			oc.ApplyString(t, ns, TCPAllowPolicy)
 
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				assertPortTcpEchoAccepted(t, ns, "9000")
-				assertPortTcpEchoAccepted(t, ns, "9001")
+				assertPortTcpEchoAccepted(t, ns, "tcp-echo", "9000")
+				assertPortTcpEchoAccepted(t, ns, "tcp-echo", "9001")
 			})
 
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				assertPortTcpEchoIPDenied(t, ns, "9002")
+				assertPortTcpEchoDenied(t, ns, podIP, "9002")
 			})
 		})
 
@@ -79,8 +80,8 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 			oc.ApplyString(t, ns, TCPAllowGETPolicy)
 
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				assertPortTcpEchoDenied(t, ns, "9000")
-				assertPortTcpEchoDenied(t, ns, "9001")
+				assertPortTcpEchoDenied(t, ns, "tcp-echo", "9000")
+				assertPortTcpEchoDenied(t, ns, "tcp-echo", "9001")
 			})
 		})
 
@@ -92,61 +93,31 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 			oc.ApplyString(t, ns, TCPDenyGETPolicy)
 
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				assertPortTcpEchoDenied(t, ns, "9000")
-				assertPortTcpEchoAccepted(t, ns, "9001")
+				assertPortTcpEchoDenied(t, ns, "tcp-echo", "9000")
+				assertPortTcpEchoAccepted(t, ns, "tcp-echo", "9001")
 			})
 		})
 	})
 }
 
-func assertPortTcpEchoAccepted(t test.TestHelper, ns string, port string) {
+func assertPortTcpEchoAccepted(t test.TestHelper, ns string, host string, port string) {
 	oc.Exec(t,
 		pod.MatchingSelector("app=sleep", ns),
 		"sleep",
-		fmt.Sprintf(`sh -c 'echo "port %s" | nc tcp-echo %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`,
-			port, port),
+		fmt.Sprintf(`sh -c 'echo "port %s" | nc %s %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`,
+			port, host, port),
 		assert.OutputContains(
 			"connection succeeded",
 			fmt.Sprintf("Got expected hello message on port %s", port),
 			fmt.Sprintf("Expected return message hello, but failed on port %s", port)))
 }
 
-func assertPortTcpEchoDenied(t test.TestHelper, ns string, port string) {
-	oc.Exec(t,
-		pod.MatchingSelector("app=sleep", ns),
-		"sleep",
-		fmt.Sprintf(`sh -c 'echo "port %s" | nc tcp-echo %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`,
-			port, port),
-		assert.OutputContains(
-			"connection rejected",
-			fmt.Sprintf("Got expected connection rejected on port %s", port),
-			fmt.Sprintf("Expected connection rejected, but got return message hello on port %s", port)))
-}
-
-func assertPortTcpEchoIPAccepted(t test.TestHelper, ns string, port string) {
-	podIP := oc.GetPodIP(t,
-		pod.MatchingSelector("app=tcp-echo", ns))
-
+func assertPortTcpEchoDenied(t test.TestHelper, ns string, host string, port string) {
 	oc.Exec(t,
 		pod.MatchingSelector("app=sleep", ns),
 		"sleep",
 		fmt.Sprintf(`sh -c 'echo "port %s" | nc %s %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`,
-			port, podIP, port),
-		assert.OutputContains(
-			"connection succeeded",
-			fmt.Sprintf("Got expected hello message on port %s", port),
-			fmt.Sprintf("Expected return message hello, but failed on port %s", port)))
-}
-
-func assertPortTcpEchoIPDenied(t test.TestHelper, ns string, port string) {
-	podIP := oc.GetPodIP(t,
-		pod.MatchingSelector("app=tcp-echo", ns))
-
-	oc.Exec(t,
-		pod.MatchingSelector("app=sleep", ns),
-		"sleep",
-		fmt.Sprintf(`sh -c 'echo "port %s" | nc %s %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`,
-			port, podIP, port),
+			port, host, port),
 		assert.OutputContains(
 			"connection rejected",
 			fmt.Sprintf("Got expected connection rejected on port %s", port),
