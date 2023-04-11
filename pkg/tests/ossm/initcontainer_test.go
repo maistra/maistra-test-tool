@@ -21,7 +21,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestInitContainerNotRemovedDuringInjection(t *testing.T) {
@@ -29,27 +29,22 @@ func TestInitContainerNotRemovedDuringInjection(t *testing.T) {
 	const goldString = "[init worked]"
 	const podSelector = "app=sleep-init"
 
-	test.NewTest(t).Id("T33").Groups(test.Full).Run(func(t test.TestHelper) {
-
+	NewTest(t).Id("T33").Groups(Full).Run(func(t TestHelper) {
 		hack.DisableLogrusForThisTest(t)
 
 		t.Log("Checking init container not removed during sidecar injection.")
 
 		t.Cleanup(func() {
-			oc.DeleteFromString(t, ns, testInitContainerYAML)
-			oc.DeleteNamespace(t, ns)
+			oc.RecreateNamespace(t, ns)
 		})
 
 		oc.RecreateNamespace(t, ns)
 
 		t.LogStep("Deploying test pod.")
-
 		oc.ApplyString(t, ns, testInitContainerYAML)
-
 		oc.WaitPodReady(t, pod.MatchingSelector(podSelector, ns))
 
 		t.LogStep("Checking pod logs for init message.")
-
 		oc.Logs(t,
 			pod.MatchingSelector(podSelector, ns),
 			"init",
