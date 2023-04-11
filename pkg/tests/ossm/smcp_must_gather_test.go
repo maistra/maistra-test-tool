@@ -17,49 +17,41 @@ package ossm
 import (
 	"path/filepath"
 	"testing"
-	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
-	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/shell"
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-var mustGatherImage = "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel8"
-var mustGatherTag string = env.Getenv("MUSTGATHERTAG", "2.3")
-
-func cleanupMustGatherTest() {
-	log.Log.Info("Cleanup ...")
-	bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
-	bookinfo.Uninstall()
-	time.Sleep(time.Duration(20) * time.Second)
-}
-
 func TestMustGather(t *testing.T) {
-	test.NewTest(t).Id("T30").Groups(test.Full).NotRefactoredYet()
+	NewTest(t).Id("T30").Groups(Full).Run(func(t TestHelper) {
+		hack.DisableLogrusForThisTest(t)
+		t.Log("This test verifies must-gather log collection")
 
-	defer cleanupMustGatherTest()
-	defer util.RecoverPanic(t)
+		ns := "bookinfo"
+		t.Cleanup(func() {
+			oc.RecreateNamespace(t, ns)
+		})
 
-	log.Log.Info("Deploy bookinfo in bookinfo ns")
-	bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
-	bookinfo.Install(false)
+		t.LogStep("Deploy bookinfo in bookinfo ns")
+		app.InstallAndWaitReady(t, app.Bookinfo(ns))
 
-	t.Run("smcp_test_must_gather", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-		log.Log.Info("Test must-gather log collection")
-		log.Log.Info("Must-gather image: ", mustGatherImage, ":", mustGatherTag)
-		util.Shell(`mkdir -p debug; oc adm must-gather --dest-dir=./debug --image=%s:%s`, mustGatherImage, mustGatherTag)
+		image := "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel8:" + env.Getenv("MUSTGATHERTAG", "2.3")
 
-		log.Log.Info("Check cluster-scoped openshift-operators.servicemesh-resources.maistra.io.yaml")
-		pattern := "debug/*must-gather*/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/openshift-operators.servicemesh-resources.maistra.io.yaml"
+		t.LogStepf("Capture must-gather using image %s", image)
+		dir := shell.CreateTempDir(t, "must-gather-")
+		shell.Executef(t, `mkdir -p %s; oc adm must-gather --dest-dir=%s --image=%s`, dir, dir, image)
+
+		t.LogStep("Check cluster-scoped openshift-operators.servicemesh-resources.maistra.io.yaml")
+		pattern := dir + "/*must-gather*/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/openshift-operators.servicemesh-resources.maistra.io.yaml"
 		matches, err := filepath.Glob(pattern)
-		if err != nil || len(matches) == 0 {
-			log.Log.Errorf("openshift-operators.servicemesh-resources.maistra.io.yaml file not found: %s", matches)
-			t.Errorf("openshift-operators.servicemesh-resources.maistra.io.yaml file not found: %s", matches)
+		if err == nil && len(matches) != 0 {
+			t.LogSuccessf("file exists: %s", matches)
 		} else {
-			log.Log.Infof("file exists: %s", matches)
+			t.Fatalf("openshift-operators.servicemesh-resources.maistra.io.yaml file not found: %s", matches)
 		}
 	})
 }
