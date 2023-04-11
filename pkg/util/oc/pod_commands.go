@@ -28,6 +28,13 @@ func Exec(t test.TestHelper, podLocator PodLocatorFunc, container string, cmd st
 		checks...)
 }
 
+func GetPodIP(t test.TestHelper, podLocator PodLocatorFunc) string {
+	t.T().Helper()
+	pod := podLocator(t)
+	return shell.Execute(t,
+		fmt.Sprintf("kubectl get pod -n %s %s -o jsonpath='{.status.podIP}'", pod.Namespace, pod.Name))
+}
+
 func Patch(t test.TestHelper, ns string, kind string, name string, patchType string, patch string, checks ...common.CheckFunc) {
 	t.T().Helper()
 	shell.Execute(t,
