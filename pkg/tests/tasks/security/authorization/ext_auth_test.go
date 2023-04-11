@@ -49,10 +49,8 @@ func TestExtAuthz(t *testing.T) {
 		t.LogStep("Check if httpbin returns 200 OK when no authorization policies are in place")
 		assertHttpbinRequestSucceeds(t, ns, httpbinRequest("GET", "/ip"))
 
-		t.LogStep("Deploy the External Authorizer")
+		t.LogStep("Deploy the External Authorizer and Verify the sample external authorizer is up and running")
 		oc.ApplyString(t, ns, ExternalAuthzService)
-
-		t.LogStep("Verify that a request with an invalid JWT is denied")
 
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			oc.Logs(t,
