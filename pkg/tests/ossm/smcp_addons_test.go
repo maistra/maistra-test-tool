@@ -15,29 +15,33 @@
 package ossm
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/shell"
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestSMCPAddons(t *testing.T) {
-	test.NewTest(t).Id("T34").Groups(test.Full).NotRefactoredYet()
+	NewTest(t).Id("T34").Groups(Full).Run(func(t TestHelper) {
+		hack.DisableLogrusForThisTest(t)
+		t.Cleanup(func() {
+			oc.RecreateNamespace(t, meshNamespace)
+		})
 
-	t.Run("smcp_test_addons_3scale", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-		log.Log.Info("Enable 3scale in a CR. Expected validation error.")
-		_, err := util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"addons":{"3scale":{"enabled":true}}}}'`, meshNamespace, smcpName)
-		if err != nil {
-			log.Log.Info("Expected validation error")
-		} else {
-			log.Log.Error("Failed check. enabling 3scale should be deprecated.")
-		}
+		// Created a subtest because we need to add more test related to Addons in the future.
+		t.NewSubTest("3scale_addon").Run(func(t TestHelper) {
+			t.LogStep("Enable 3scale in a SMCP expecting to get validation error.")
+			shell.Execute(t,
+				fmt.Sprintf(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"addons":{"3scale":{"enabled":true}}}}' || true`, meshNamespace, smcpName),
+				assert.OutputContains("support for 3scale has been removed",
+					"Got expected validation error: support for 3scale has been removed",
+					"The validation error was not shown as expected"))
+			oc.WaitSMCPReady(t, meshNamespace, smcpName)
+		})
 
-		log.Log.Info("Verify SMCP status")
-		util.Shell(`oc get -n %s smcp/%s -o wide`, meshNamespace, smcpName)
-		util.Shell(`kubectl patch -n %s smcp/%s --type merge -p '{"spec":{"addons":{"3scale":{"enabled":false}}}}'`, meshNamespace, smcpName)
-		util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
 	})
 }
