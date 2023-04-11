@@ -65,7 +65,7 @@ func TestRateLimiting(t *testing.T) {
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			curl.Request(t, productPageURL, nil, assert.ResponseStatus(200))
 			curl.Request(t, productPageURL, nil, assert.ResponseStatus(429))
-			time.Sleep(time.Second * 20)
+			time.Sleep(time.Second * 5)
 			curl.Request(t, productPageURL, nil, assert.ResponseStatus(200))
 		})
 	})
