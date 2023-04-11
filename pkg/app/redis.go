@@ -33,7 +33,7 @@ func (a *redis) Install(t test.TestHelper) {
 
 func (a *redis) Uninstall(t test.TestHelper) {
 	t.T().Helper()
-	t.Logf("Uninstalling Redis from namespace %q", a.ns)
+	t.Logf("Uninstall Redis from namespace %q", a.ns)
 	oc.DeleteFile(t, a.ns, examples.RedisYamlFile())
 }
 
