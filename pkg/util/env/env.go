@@ -12,6 +12,11 @@ import (
 
 var initEnvVarsOnce sync.Once
 
+type Version struct {
+	major int
+	minor int
+}
+
 // getenv loads test.env file and returns an environment variable value.
 // If the environment variable is empty, it returns the fallback as a default value.
 func Getenv(key, fallback string) string {
@@ -72,4 +77,38 @@ func GetDefaultSMCPVersion() string {
 
 func GetOperatorNamespace() string {
 	return "openshift-operators"
+}
+
+func SMCPVersionLessThan(v string) bool {
+	if len(v) == 0 {
+		return false
+	}
+
+	testingVersion := splitVersion(GetDefaultSMCPVersion())
+	supportedVersion := splitVersion(v)
+
+	if testingVersion.major < supportedVersion.major {
+		return true
+	}
+	if testingVersion.major > supportedVersion.major {
+		return false
+	}
+	return testingVersion.minor < supportedVersion.minor
+}
+
+func splitVersion(version string) Version {
+	majorMinor := strings.Split(version, ".")
+	if len(majorMinor) != 2 {
+		panic(fmt.Sprintf("invalid SMCP version: %s", version))
+	}
+	major, err := strconv.Atoi(majorMinor[0])
+	if err != nil {
+		panic(fmt.Sprintf("invalid SMCP version: %s", version))
+	}
+	minor, err := strconv.Atoi(majorMinor[1])
+	if err != nil {
+		panic(fmt.Sprintf("invalid SMCP version: %s", version))
+	}
+
+	return Version{major: major, minor: minor}
 }
