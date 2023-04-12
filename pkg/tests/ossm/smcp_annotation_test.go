@@ -35,9 +35,6 @@ func TestSMCPAnnotations(t *testing.T) {
 		t.Log("Test annotations: verify deployment with sidecar.maistra.io/proxyEnv annotations and Enable automatic injection in SMCP to propagate the annotations to the sidecar")
 		hack.DisableLogrusForThisTest(t)
 		ns := "foo"
-		t.Cleanup(func() {
-			oc.RecreateNamespace(t, meshNamespace)
-		})
 
 		t.NewSubTest("proxyEnvoy").Run(func(t TestHelper) {
 			t.Cleanup(func() {
@@ -118,8 +115,8 @@ spec:
       labels:
         app: env
     spec:
+      terminationGracePeriodSeconds: 0
       containers:
       - name: testenv
         image: %s
-        imagePullPolicy: Always
 `
