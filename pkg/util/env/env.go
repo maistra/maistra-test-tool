@@ -13,8 +13,8 @@ import (
 var initEnvVarsOnce sync.Once
 
 type Version struct {
-	major int
-	minor int
+	Major int
+	Minor int
 }
 
 // getenv loads test.env file and returns an environment variable value.
@@ -75,25 +75,22 @@ func GetDefaultSMCPVersion() string {
 	return Getenv("SMCPVERSION", "2.4")
 }
 
+func GetSMCPVersion() Version {
+	return parseVersion(GetDefaultSMCPVersion())
+}
+
 func GetOperatorNamespace() string {
 	return "openshift-operators"
 }
 
-func (v Version) LessThan(other Version) bool {
-	if len(v) == 0 {
+func (testingVersion Version) LessThan(supportedVersion Version) bool {
+	if testingVersion.Major < supportedVersion.Major {
 		return false
 	}
-
-	testingVersion := splitVersion(GetDefaultSMCPVersion())
-	supportedVersion := splitVersion(v)
-
-	if testingVersion.major < supportedVersion.major {
+	if testingVersion.Major > supportedVersion.Major {
 		return true
 	}
-	if testingVersion.major > supportedVersion.major {
-		return false
-	}
-	return testingVersion.minor < supportedVersion.minor
+	return testingVersion.Minor > supportedVersion.Minor
 }
 
 func parseVersion(version string) Version {
@@ -110,5 +107,5 @@ func parseVersion(version string) Version {
 		panic(fmt.Sprintf("invalid SMCP version: %s", version))
 	}
 
-	return Version{major: major, minor: minor}
+	return Version{Major: major, Minor: minor}
 }
