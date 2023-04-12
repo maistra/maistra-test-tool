@@ -16,7 +16,7 @@ import (
 func TestCertManager(t *testing.T) {
 	test.NewTest(t).Id("T38").Groups(test.Full, test.ARM, test.InterOp).Run(func(t test.TestHelper) {
 
-		ns := "bookinfo"
+		ns := "foo"
 		cert := "cert-manager"
 		t.Cleanup(func() {
 			oc.DeleteNamespace(t, cert)
@@ -25,6 +25,9 @@ func TestCertManager(t *testing.T) {
 
 		t.LogStep("uninstall the SMCP")
 		oc.RecreateNamespace(t, meshNamespace)
+
+		t.LogStep("Add jetstach repo")
+		shell.Execute(t, `helm repo add jetstack https://charts.jetstack.io`)
 
 		t.LogStep("Install cert-manager")
 		shell.Execute(t,
@@ -44,39 +47,96 @@ func TestCertManager(t *testing.T) {
 				"Failed to installed cert-manager-istio-csr"))
 
 		t.LogStep("deploy the cert-manager in SMCP")
-		oc.ApplyString(t, meshNamespace, certManagerSMCP)
+		oc.ApplyString(t, meshNamespace, CertManagerSMCP)
+		oc.WaitAllPodsReady(t, meshNamespace)
 
-		t.LogStep("Install bookinfo app")
-		app.InstallAndWaitReady(t, app.Bookinfo(ns))
+		t.LogStep("Install httpbin and sleep")
+		app.InstallAndWaitReady(t, app.Httpbin(ns), app.Sleep(ns))
 
-		t.NewSubTest("Validation of Cert-Manager").Run(func(t test.TestHelper) {
-
-			t.LogStep("Check istiod certificate")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				oc.Exec(t,
-					pod.MatchingSelector("app=productpage", "bookinfo"),
-					"istio-proxy",
-					fmt.Sprint(`openssl s_client -CAfile /var/run/secrets/istio/root-cert.pem -showcerts -connect istiod-basic.istio-system:15012`),
-					assert.OutputContains(
-						"Verify return code: 0 (ok)",
-						"Successfully verified the istiod certificate",
-						"Failed to verified the istiod certificate"))
-			})
-
-			t.LogStep("Check app certificate")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				oc.Exec(t,
-					pod.MatchingSelector("app=productpage", "bookinfo"),
-					"istio-proxy",
-					fmt.Sprint(`openssl s_client -CAfile /var/run/secrets/istio/root-cert.pem -showcerts -connect details.bookinfo:9080`),
-					assert.OutputContains(
-						"Verify return code: 0 (ok)",
-						"Successfully verified the Check app certificate",
-						"Failed to verified the Check app certificate"))
-			})
-
+		t.LogStep("Check if httpbin returns 200 OK ")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			oc.Exec(t,
+				pod.MatchingSelector("app=sleep", ns),
+				"sleep",
+				fmt.Sprintf(`curl http://httpbin.foo:8000/ip -s -o /dev/null -w "%%%%{http_code}\n"`),
+				assert.OutputContains(
+					"200",
+					"Got expected 200 OK from httpbin",
+					"Expected 200 OK from httpbin, but got a different HTTP code"))
 		})
 
 	})
 
 }
+
+const (
+	SelfSignedCa = `
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: istio-ca
+spec:
+  isCA: true
+  duration: 2160h # 90d
+  secretName: istio-ca
+  commonName: istio-ca
+  subject:
+    organizations:
+      - cluster.local
+      - cert-manager
+  issuerRef:
+    name: selfsigned
+    kind: Issuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: istio-ca
+spec:
+  ca:
+    secretName: istio-ca
+ `
+
+	CertManagerSMCP = `
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: basic
+spec:
+  addons:
+    grafana:
+      enabled: false
+    kiali:
+      enabled: false
+    prometheus:
+      enabled: false
+  security:
+    certificateAuthority:
+      cert-manager:
+        address: cert-manager-istio-csr.cert-manager.svc:443
+      type: cert-manager
+    dataPlane:
+      mtls: true
+    identity:
+      type: ThirdParty
+  tracing:
+    type: None
+  version: v2.3
+---
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  members:
+  - foo
+ `
+)
