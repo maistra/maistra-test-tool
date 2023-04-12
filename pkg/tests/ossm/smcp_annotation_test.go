@@ -95,7 +95,7 @@ func GetPodAnnotations(t TestHelper, podLocator oc.PodLocatorFunc) map[string]st
 	pod := podLocator(t)
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		output := shell.Executef(t, "kubectl get pod %s -n %s -o jsonpath='{.metadata.annotations}'", pod.Name, pod.Namespace)
-		error := json.Unmarshal([]byte(output), &annotations)
+		err := json.Unmarshal([]byte(output), &annotations)
 		if error != nil {
 			t.Fatalf("Error parsing pod annotations json: %v", error)
 		}
