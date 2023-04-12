@@ -18,11 +18,8 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
-	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/pod"
-	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -52,15 +49,7 @@ func TestExtAuthz(t *testing.T) {
 		t.LogStep("Deploy the External Authorizer and Verify the sample external authorizer is up and running")
 		oc.ApplyString(t, ns, ExternalAuthzService)
 
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			oc.Logs(t,
-				pod.MatchingSelector("app=ext-authz", ns),
-				"ext-authz",
-				assert.OutputContains(
-					"Starting HTTP server at [::]:8000",
-					"sample external authorizer is running",
-					"sample external authorizer is not running successfully"))
-		})
+		oc.WaitDeploymentRolloutComplete(t, ns, "ext-authz")
 
 		t.LogStep("Set envoyExtAuthzHttp extension provider in SMCP")
 		oc.Patch(t, meshNamespace, "smcp", smcpName, "merge",
@@ -109,12 +98,12 @@ spec:
 `
 
 	ExternalAuthzService = `
-apiVersion: "v1"
-kind: "Service"
+apiVersion: v1
+kind: Service
 metadata:
-  name: "ext-authz"
+  name: ext-authz
   labels:
-    app: "ext-authz"
+    app: ext-authz
 spec:
   ports:
   - name: http
@@ -126,10 +115,10 @@ spec:
   selector:
     app: ext-authz
 ---
-apiVersion: "apps/v1"
-kind: "Deployment"
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: "ext-authz"
+  name: ext-authz
 spec:
   replicas: 1
   selector:
@@ -142,11 +131,11 @@ spec:
     spec:
       containers:
       - image: gcr.io/istio-testing/ext-authz:latest
+      readinessProbe:
         imagePullPolicy: IfNotPresent
         name: ext-authz
         ports:
         - containerPort: 8000
         - containerPort: 9000
----
 `
 )
