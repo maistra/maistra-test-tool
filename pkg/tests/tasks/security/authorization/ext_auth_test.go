@@ -131,7 +131,6 @@ spec:
     spec:
       containers:
       - image: gcr.io/istio-testing/ext-authz:latest
-      readinessProbe:
         imagePullPolicy: IfNotPresent
         name: ext-authz
         ports:
