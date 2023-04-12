@@ -75,11 +75,7 @@ func TestSMCPAnnotations(t *testing.T) {
 			t.LogStep("Deploy TestSSL pod with annotations sidecar.maistra.io/proxyEnv")
 			DeployTestSsl(t, ns)
 
-			t.LogStep("Get annotations and verify that the pod has the expected ones")
-			annotations := make(map[string]string)
-			annotations["test1.annotation-from-smcp"] = "test1"
-			annotations["test2.annotation-from-smcp"] = `["test2"]`
-			annotations["test3.annotation-from-smcp"] = "{test3}"
+			t.LogStep("Get annotations and verify that the pod has the expected: test1.annotation-from-smcp : test1, test2.annotation-from-smcp : [\"test2\"], test3.annotation-from-smcp : {test3}")
 			envPod := pod.MatchingSelector("app=env", ns)
 			assertAnnotationIsPresent(t, envPod, "test1.annotation-from-smcp", "test1")
 			assertAnnotationIsPresent(t, envPod, "test2.annotation-from-smcp", `["test2"]`)
