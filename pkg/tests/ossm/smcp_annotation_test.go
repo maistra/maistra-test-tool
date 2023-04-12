@@ -59,8 +59,9 @@ func TestSMCPAnnotations(t *testing.T) {
 			DeployTestSsl(t, ns)
 
 			t.LogStep("Get annotations and verify that the pod has the expected ones")
-			annotations := make(map[string]string)
-			annotations["sidecar.maistra.io/proxyEnv"] = `{ "maistra_test_env": "env_value", "maistra_test_env_2": "env_value_2" }`
+			annotations := map[string]string {
+				"sidecar.maistra.io/proxyEnv": `{ "maistra_test_env": "env_value", "maistra_test_env_2": "env_value_2" }`
+			}
 			pod := pod.MatchingSelector("app=env", ns)
 			podAnnotations := GetPodAnnotations(t, pod)
 			for k, v := range annotations {
