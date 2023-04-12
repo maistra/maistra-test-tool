@@ -44,15 +44,12 @@ func TestSMCPAnnotations(t *testing.T) {
 				oc.RecreateNamespace(t, ns)
 			})
 			t.LogStep("Deploy TestSSL pod with annotations sidecar.maistra.io/proxyEnv")
-			oc.ApplyString(t, ns, fmt.Sprintf(testSSLDeploymentWithAnnotation, env.GetTestSSLImage()))
+			oc.ApplyString(t, ns, getTestSSLManifestWithAnnotation())
 			oc.WaitDeploymentRolloutComplete(t, ns, "testenv")
 
 			t.LogStep("Get annotations and verify that the pod has the expected: sidecar.maistra.io/proxyEnv : { \"maistra_test_env\": \"env_value\", \"maistra_test_env_2\": \"env_value_2\" }")
-			envPod := pod.MatchingSelector("app=env", ns)
-			podAnnotations := GetPodAnnotations(t, envPod)
-			if podAnnotations["sidecar.maistra.io/proxyEnv"] != `{ "maistra_test_env": "env_value", "maistra_test_env_2": "env_value_2" }` {
-				t.Fatalf("ERROR: The pod has not the expected annotations")
-			}
+			annotations := GetPodAnnotations(t, pod.MatchingSelector("app=env", ns))
+			assertAnnotationIsPresent(t, annotations, "sidecar.maistra.io/proxyEnv", `{ "maistra_test_env": "env_value", "maistra_test_env_2": "env_value_2" }`)
 		})
 
 		// Test that the SMCP automatic injection with quotes works
@@ -63,44 +60,45 @@ func TestSMCPAnnotations(t *testing.T) {
 			t.LogStep("Enable annotation auto injection in SMCP")
 			oc.Patch(t,
 				meshNamespace,
-				"smcp",
-				smcpName,
+				"smcp", smcpName,
 				"merge",
 				`{"spec":{"proxy":{"injection":{"autoInject":true,"injectedAnnotations":{"test1.annotation-from-smcp":"test1","test2.annotation-from-smcp":"[\"test2\"]","test3.annotation-from-smcp":"{test3}"}}}}}`)
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 			t.LogStep("Deploy TestSSL pod with annotations sidecar.maistra.io/proxyEnv")
-			oc.ApplyString(t, ns, fmt.Sprintf(testSSLDeploymentWithAnnotation, env.GetTestSSLImage()))
+			oc.ApplyString(t, ns, getTestSSLManifestWithAnnotation())
 			oc.WaitDeploymentRolloutComplete(t, ns, "testenv")
 
 			t.LogStep("Get annotations and verify that the pod has the expected: test1.annotation-from-smcp : test1, test2.annotation-from-smcp : [\"test2\"], test3.annotation-from-smcp : {test3}")
-			envPod := pod.MatchingSelector("app=env", ns)
-			assertAnnotationIsPresent(t, envPod, "test1.annotation-from-smcp", "test1")
-			assertAnnotationIsPresent(t, envPod, "test2.annotation-from-smcp", `["test2"]`)
-			assertAnnotationIsPresent(t, envPod, "test3.annotation-from-smcp", "{test3}")
+			annotations := GetPodAnnotations(t, pod.MatchingSelector("app=env", ns))
+			assertAnnotationIsPresent(t, annotations, "test1.annotation-from-smcp", "test1")
+			assertAnnotationIsPresent(t, annotations, "test2.annotation-from-smcp", `["test2"]`)
+			assertAnnotationIsPresent(t, annotations, "test3.annotation-from-smcp", "{test3}")
 		})
-
 	})
 }
 
 func GetPodAnnotations(t TestHelper, podLocator oc.PodLocatorFunc) map[string]string {
 	annotations := map[string]string{}
-	podInformation := podLocator(t)
+	po := podLocator(t)
 	retry.UntilSuccess(t, func(t test.TestHelper) {
-		output := shell.Executef(t, "kubectl get pod %s -n %s -o jsonpath='{.metadata.annotations}'", podInformation.Name, podInformation.Namespace)
-		error := json.Unmarshal([]byte(output), &annotations)
-		if error != nil {
-			t.Fatalf("Error parsing pod annotations json: %v", error)
+		output := shell.Executef(t, "kubectl get pod %s -n %s -o jsonpath='{.metadata.annotations}'", po.Name, po.Namespace)
+		err := json.Unmarshal([]byte(output), &annotations)
+		if err != nil {
+			t.Fatalf("Error parsing pod annotations json: %v", err)
 		}
 	})
 	return annotations
 }
 
-func assertAnnotationIsPresent(t TestHelper, podLocator oc.PodLocatorFunc, key string, expectedValue string) {
-	annotations := GetPodAnnotations(t, podLocator)
+func assertAnnotationIsPresent(t TestHelper, annotations map[string]string, key string, expectedValue string) {
 	if annotations[key] != expectedValue {
 		t.Fatalf("Expected annotation %s=%s, but got %s", key, expectedValue, annotations[key])
 	}
+}
+
+func getTestSSLManifestWithAnnotation() string {
+	return fmt.Sprintf(testSSLDeploymentWithAnnotation, env.GetTestSSLImage())
 }
 
 const testSSLDeploymentWithAnnotation = `
