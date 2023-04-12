@@ -27,4 +27,5 @@ spec:
         privateKey:
           rootCADir: /etc/cacerts
 `
+	CertSMCPPathRemovalPatch = `[{"op": "remove", "path": "/spec/security/certificateAuthority"}, {"op": "remove", "path": "/spec/security/dataPlane"}]`
 )
