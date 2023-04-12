@@ -52,9 +52,14 @@ func DeleteFromString(t test.TestHelper, ns string, yaml string) {
 
 func DeleteFile(t test.TestHelper, ns string, file string) {
 	t.T().Helper()
-	if err := util.KubeDelete(ns, file); err != nil {
-		t.Fatalf("Failed to delete objects from file %s: %v", file, err)
+	shell.Executef(t, "kubectl delete %s -f %s --ignore-not-found", nsFlag(ns), file)
+}
+
+func nsFlag(ns string) string {
+	if ns == "" {
+		return ""
 	}
+	return "-n " + ns
 }
 
 func CreateTLSSecret(t test.TestHelper, ns, name string, keyFile, certFile string) {
