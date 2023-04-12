@@ -27,4 +27,92 @@ spec:
         privateKey:
           rootCADir: /etc/cacerts
 `
+	SelfSignedCa = `
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: istio-ca
+spec:
+  isCA: true
+  duration: 2160h # 90d
+  secretName: istio-ca
+  commonName: istio-ca
+  subject:
+    organizations:
+      - cluster.local
+      - cert-manager
+  issuerRef:
+    name: selfsigned
+    kind: Issuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: istio-ca
+spec:
+  ca:
+    secretName: istio-ca
+ `
+
+	certManagerSMCP = `
+kind: ServiceMeshControlPlane
+apiVersion: maistra.io/v2
+metadata:
+  name: basic
+  namespace: istio-system
+spec:
+  version: v2.3
+  tracing:
+    type: Jaeger
+    sampling: 10000
+  policy:
+    type: Istiod
+  security:
+    certificateAuthority:
+      cert-manager:
+        address: cert-manager-istio-csr.cert-manager.svc:443
+      type: cert-manager
+    dataPlane:
+      mtls: true
+    identity:
+      type: ThirdParty
+  telemetry:
+    type: Istiod
+  addons:
+    jaeger:
+      install:
+        storage:
+          type: Memory
+    prometheus:
+      enabled: true
+    kiali:
+      enabled: true
+    grafana:
+      enabled: true  
+---
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  members:
+    - bookinfo
+  
+---
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  members:
+    - bookinfo
+`
 )
