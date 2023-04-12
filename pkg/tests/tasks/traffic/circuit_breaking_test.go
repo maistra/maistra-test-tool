@@ -22,10 +22,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func cleanupCircuitBreaking() {
@@ -39,76 +46,95 @@ func cleanupCircuitBreaking() {
 }
 
 func TestCircuitBreaking(t *testing.T) {
-	test.NewTest(t).Id("T6").Groups(test.Full, test.InterOp).NotRefactoredYet()
+	NewTest(t).Id("T6").Groups(Full, InterOp).Run(func(t TestHelper) {
+		hack.DisableLogrusForThisTest(t)
+		ns := "bookinfo"
+		t.Cleanup(func() {
+			oc.RecreateNamespace(t, ns)
+		})
 
-	defer cleanupCircuitBreaking()
-	defer util.RecoverPanic(t)
+		app.InstallAndWaitReady(t, app.Httpbin(ns), app.Fortio(ns))
 
-	log.Log.Info("TestCircuitBreaking")
-	fortio := examples.Fortio{Namespace: "bookinfo"}
-	httpbin := examples.Httpbin{Namespace: "bookinfo"}
-	httpbin.Install()
-	fortio.Install()
+		t.NewSubTest("TrafficManagement_tripping").Run(func(t TestHelper) {
+			t.Log("verify traffic management tripping circuit breaker")
+			t.LogStep("Configure circuit breaker destination rule")
+			oc.ApplyString(t, ns, httpbinCircuitBreaker)
 
-	t.Run("TrafficManagement_tripping_circuit_breaker", func(t *testing.T) {
-		defer util.RecoverPanic(t)
+			t.LogStep("Verify connection with curl: expected 200 OK")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				oc.Exec(t,
+					pod.MatchingSelector("app=fortio", ns),
+					"fortio",
+					"/usr/bin/fortio curl -quiet http://httpbin:8000/get",
+					assert.OutputContains("200",
+						"Got expected response from httpbin: 200 OK",
+						"ERROR: Got unexpected response from httpbin not 200 OK"))
+			})
 
-		if err := util.KubeApplyContents("bookinfo", httpbinCircuitBreaker); err != nil {
-			t.Errorf("Failed to configure circuit breaker")
-			log.Log.Errorf("Failed to configure circuit breaker")
-		}
-		time.Sleep(time.Duration(10) * time.Second)
+			t.LogStep("Tripping the circuit breaker")
+			t.Log("To tipping the circuit breaker we are going to send 50 requests to httpbin with 2 connections")
+			connection := 2
+			reqCount := 50
+			msg := oc.Exec(t,
+				pod.MatchingSelector("app=fortio", ns),
+				"fortio",
+				fmt.Sprintf("/usr/bin/fortio load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount))
 
-		// verify curl
-		pod, err := util.GetPodName("bookinfo", "app=fortio")
-		util.Inspect(err, "failed to get fortio pod", "", t)
+			t.LogStep("Validate the number of 200 responses")
+			t.Log("verify from output message the number of 200 responses to the load test. We expect to have a line with this information: Code 200 : XX (X0.0 %)")
+			c200 := getNumberOfResponses(t, msg, `Code 200.*`)
 
-		command := `/usr/bin/fortio curl -quiet http://httpbin:8000/get`
-		msg, err := util.PodExec("bookinfo", pod, "fortio", command, false)
-		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "200 OK") {
-			log.Log.Infof("Success. Get correct response")
-		} else {
-			t.Errorf("Error response: %v", msg)
-			log.Log.Errorf("Error response: %v", msg)
-		}
+			t.LogStep("Validate the number of 503 responses")
+			t.Log("verify from output message the number of 500 responses to the load test. We expect to have a line with this information: Code 503 : XX (X0.0 %)")
+			c503 := getNumberOfResponses(t, msg, `Code 503.*`)
 
-		log.Log.Info("Tripping the circuit breaker")
-		connection := 2
-		reqCount := 50
-		tolerance := 0.5
+			t.LogStep("Validate the percentage of 200 responses and 503 to the total of requests")
+			t.Log("We expect to have 60% 200 responses and 40% 503 responses")
+			tolerance := 0.5
+			if util.IsWithinPercentage(c200, reqCount, 0.6, tolerance) && util.IsWithinPercentage(c503, reqCount, 0.4, tolerance) {
+				t.Logf(
+					"Success. Circuit breaking acts as expected. "+
+						"Code 200 hit %d of %d, Code 503 hit %d of %d", c200, reqCount, c503, reqCount)
+			} else {
+				t.Fatalf(
+					"Failed Circuit breaking. "+
+						"Code 200 hit %d 0f %d, Code 503 hit %d of %d", c200, reqCount, c503, reqCount)
+			}
+		})
 
-		command = fmt.Sprintf(`/usr/bin/fortio load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get`, connection, reqCount)
-		msg, err = util.PodExec("bookinfo", pod, "fortio", command, false)
-		util.Inspect(err, "Failed to get response", "", t)
-
-		re := regexp.MustCompile(`Code 200.*`)
-		line := re.FindStringSubmatch(msg)[0]
-		re = regexp.MustCompile(`: [\d]+`)
-		word := re.FindStringSubmatch(line)[0]
-		c200, err := strconv.Atoi(strings.TrimLeft(word, ": "))
-		util.Inspect(err, "Failed to parse code 200 count", "", t)
-
-		re = regexp.MustCompile(`Code 503.*`)
-		line = re.FindStringSubmatch(msg)[0]
-		re = regexp.MustCompile(`: [\d]+`)
-		word = re.FindStringSubmatch(line)[0]
-		c503, err := strconv.Atoi(strings.TrimLeft(word, ": "))
-		util.Inspect(err, "Failed to parse code 503 count", "", t)
-
-		if util.IsWithinPercentage(c200, reqCount, 0.6, tolerance) && util.IsWithinPercentage(c503, reqCount, 0.4, tolerance) {
-			log.Log.Infof(
-				"Success. Circuit breaking acts as expected. "+
-					"Code 200 hit %d of %d, Code 503 hit %d of %d", c200, reqCount, c503, reqCount)
-		} else {
-			t.Errorf(
-				"Failed Circuit breaking. "+
-					"Code 200 hit %d 0f %d, Code 503 hit %d of %d", c200, reqCount, c503, reqCount)
-		}
-
-		log.Log.Info("Query the istio-proxy stats")
-		command = fmt.Sprintf(`pilot-agent request GET stats | grep httpbin | grep pending`)
-		msg, _ = util.PodExec("bookinfo", pod, "istio-proxy", command, false)
-		log.Log.Infof("%s", msg)
 	})
 }
+
+func getNumberOfResponses(t test.TestHelper, msg string, codeText string) int {
+	re := regexp.MustCompile(codeText)
+	line := re.FindStringSubmatch(msg)[0]
+	re = regexp.MustCompile(`: [\d]+`)
+	word := re.FindStringSubmatch(line)[0]
+	count, err := strconv.Atoi(strings.TrimLeft(word, ": "))
+	if err != nil {
+		t.Fatalf("Failed to parse %s count: %v", codeText, err)
+	}
+
+	return count
+}
+
+var httpbinCircuitBreaker = `
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: httpbin
+spec:
+  host: httpbin
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 1
+      http:
+        http1MaxPendingRequests: 1
+        maxRequestsPerConnection: 1
+    outlierDetection:
+      consecutiveErrors: 1
+      interval: 1s
+      baseEjectionTime: 3m
+      maxEjectionPercent: 100
+`

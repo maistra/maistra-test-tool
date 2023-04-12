@@ -20,10 +20,10 @@ type NamespacedName struct {
 
 type PodLocatorFunc func(t test.TestHelper) NamespacedName
 
-func Exec(t test.TestHelper, podLocator PodLocatorFunc, container string, cmd string, checks ...common.CheckFunc) {
+func Exec(t test.TestHelper, podLocator PodLocatorFunc, container string, cmd string, checks ...common.CheckFunc) string {
 	t.T().Helper()
 	pod := podLocator(t)
-	shell.Execute(t,
+	return shell.Execute(t,
 		fmt.Sprintf("kubectl exec -n %s %s -c %s -- %s", pod.Namespace, pod.Name, container, cmd),
 		checks...)
 }
