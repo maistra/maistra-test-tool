@@ -30,13 +30,9 @@ import (
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-var (
-	InjectedAnnotationsSMCPPatch = `{"spec":{"proxy":{"injection":{"autoInject":true,"injectedAnnotations":{"test1.annotation-from-smcp":"test1","test2.annotation-from-smcp":"[\"test2\"]","test3.annotation-from-smcp":"{test3}"}}}}}`
-)
-
 func TestSMCPAnnotations(t *testing.T) {
 	NewTest(t).Id("T29").Groups(Full).Run(func(t TestHelper) {
-		t.Log("Test annotations: verify deployment with sidecar.maistra.io/proxyEnv annotations and Enable automatic injection in SMCP")
+		t.Log("Test annotations: verify deployment with sidecar.maistra.io/proxyEnv annotations and Enable automatic injection in SMCP to propagate the annotations to the sidecar")
 		hack.DisableLogrusForThisTest(t)
 		ns := "foo"
 		t.Cleanup(func() {
@@ -48,7 +44,8 @@ func TestSMCPAnnotations(t *testing.T) {
 				oc.RecreateNamespace(t, ns)
 			})
 			t.LogStep("Deploy TestSSL pod with annotations sidecar.maistra.io/proxyEnv")
-			DeployTestSsl(t, ns)
+			oc.ApplyString(t, ns, fmt.Sprintf(testSSLDeploymentWithAnnotation, env.GetTestSSLImage()))
+			oc.WaitDeploymentRolloutComplete(t, ns, "testenv")
 
 			t.LogStep("Get annotations and verify that the pod has the expected: sidecar.maistra.io/proxyEnv : { \"maistra_test_env\": \"env_value\", \"maistra_test_env_2\": \"env_value_2\" }")
 			envPod := pod.MatchingSelector("app=env", ns)
@@ -73,7 +70,8 @@ func TestSMCPAnnotations(t *testing.T) {
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 			t.LogStep("Deploy TestSSL pod with annotations sidecar.maistra.io/proxyEnv")
-			DeployTestSsl(t, ns)
+			oc.ApplyString(t, ns, fmt.Sprintf(testSSLDeploymentWithAnnotation, env.GetTestSSLImage()))
+			oc.WaitDeploymentRolloutComplete(t, ns, "testenv")
 
 			t.LogStep("Get annotations and verify that the pod has the expected: test1.annotation-from-smcp : test1, test2.annotation-from-smcp : [\"test2\"], test3.annotation-from-smcp : {test3}")
 			envPod := pod.MatchingSelector("app=env", ns)
@@ -85,17 +83,12 @@ func TestSMCPAnnotations(t *testing.T) {
 	})
 }
 
-func DeployTestSsl(t TestHelper, ns string) {
-	oc.ApplyString(t, ns, fmt.Sprintf(testSSLDeploymentWithAnnotation, env.GetTestSSLImage()))
-	oc.WaitDeploymentRolloutComplete(t, ns, "testenv")
-}
-
 func GetPodAnnotations(t TestHelper, podLocator oc.PodLocatorFunc) map[string]string {
 	annotations := map[string]string{}
-	pod := podLocator(t)
+	podInformation := podLocator(t)
 	retry.UntilSuccess(t, func(t test.TestHelper) {
-		output := shell.Executef(t, "kubectl get pod %s -n %s -o jsonpath='{.metadata.annotations}'", pod.Name, pod.Namespace)
-		err := json.Unmarshal([]byte(output), &annotations)
+		output := shell.Executef(t, "kubectl get pod %s -n %s -o jsonpath='{.metadata.annotations}'", podInformation.Name, podInformation.Namespace)
+		error := json.Unmarshal([]byte(output), &annotations)
 		if error != nil {
 			t.Fatalf("Error parsing pod annotations json: %v", error)
 		}
