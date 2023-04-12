@@ -85,10 +85,11 @@ func TestSMCPAnnotations(t *testing.T) {
 			DeployTestSsl(t, ns)
 
 			t.LogStep("Get annotations and verify that the pod has the expected ones")
-			annotations := make(map[string]string)
-			annotations["test1.annotation-from-smcp"] = "test1"
-			annotations["test2.annotation-from-smcp"] = `["test2"]`
-			annotations["test3.annotation-from-smcp"] = "{test3}"
+			annotations := map[string]string{
+				"test1.annotation-from-smcp": "test1",
+				"test2.annotation-from-smcp": `["test2"]`,
+				"test3.annotation-from-smcp": "{test3}",
+			}
 			pod := pod.MatchingSelector("app=env", ns)
 			podAnnotations := GetPodAnnotations(t, pod)
 			for k, v := range annotations {
