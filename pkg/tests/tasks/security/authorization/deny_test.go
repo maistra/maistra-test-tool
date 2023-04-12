@@ -15,15 +15,11 @@
 package authorization
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
-	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/pod"
-	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -42,16 +38,7 @@ func TestAuthorizationDenyAllow(t *testing.T) {
 		app.InstallAndWaitReady(t, app.Httpbin(ns), app.Sleep(ns))
 
 		t.LogStep("Check if httpbin returns 200 OK when no authorization policies are in place")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			oc.Exec(t,
-				pod.MatchingSelector("app=sleep", ns),
-				"sleep",
-				httpbinRequest("GET", "/ip"),
-				assert.OutputContains(
-					"200",
-					"Got expected 200 OK from httpbin",
-					"Expected 200 OK from httpbin, but got a different HTTP code"))
-		})
+		assertHttpbinRequestSucceeds(t, ns, httpbinRequest("GET", "/ip"))
 
 		t.NewSubTest("explicitly deny request").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
@@ -61,7 +48,7 @@ func TestAuthorizationDenyAllow(t *testing.T) {
 			oc.ApplyString(t, ns, DenyGETPolicy)
 
 			t.LogStep("Verify that GET request is denied")
-			assertRequestDenied(t, ns, httpbinRequest("GET", "/get"))
+			assertRequestDenied(t, ns, httpbinRequest("GET", "/get"), "403")
 
 			t.LogStep("Verify that POST request is allowed")
 			assertRequestAccepted(t, ns, httpbinRequest("POST", "/post"))
@@ -78,7 +65,7 @@ func TestAuthorizationDenyAllow(t *testing.T) {
 			assertRequestAccepted(t, ns, httpbinRequest("GET", "/get", "x-token: admin"))
 
 			t.LogStep("Verify that GET request with HTTP header 'x-token: guest' is denied")
-			assertRequestDenied(t, ns, httpbinRequest("GET", "/get", "x-token: guest"))
+			assertRequestDenied(t, ns, httpbinRequest("GET", "/get", "x-token: guest"), "403")
 		})
 
 		t.NewSubTest("allow request path").Run(func(t test.TestHelper) {
@@ -93,48 +80,14 @@ func TestAuthorizationDenyAllow(t *testing.T) {
 			oc.ApplyString(t, ns, AllowPathIPPolicy)
 
 			t.LogStep("Verify that GET request with the HTTP header 'x-token: guest' at path '/ip' is denied")
-			assertRequestDenied(t, ns, httpbinRequest("GET", "/ip", "x-token: guest"))
+			assertRequestDenied(t, ns, httpbinRequest("GET", "/ip", "x-token: guest"), "403")
 
 			t.LogStep("Verify that GET request with HTTP header 'x-token: admin' at path '/ip' is allowed")
 			assertRequestAccepted(t, ns, httpbinRequest("GET", "/ip", "x-token: admin"))
 
 			t.LogStep("Verify that GET request with HTTP header 'x-token: admin' at path '/get' is denied")
-			assertRequestDenied(t, ns, httpbinRequest("GET", "/get", "x-token: admin"))
+			assertRequestDenied(t, ns, httpbinRequest("GET", "/get", "x-token: admin"), "403")
 		})
-	})
-}
-
-func httpbinRequest(method string, path string, headers ...string) string {
-	headerArgs := ""
-	for _, header := range headers {
-		headerArgs += fmt.Sprintf(` -H "%s"`, header)
-	}
-	return fmt.Sprintf(`curl "http://httpbin:8000%s" -X %s%s -sS -o /dev/null -w "%%%%{http_code}\n"`, path, method, headerArgs)
-}
-
-func assertRequestAccepted(t test.TestHelper, ns string, curlCommand string) {
-	retry.UntilSuccess(t, func(t test.TestHelper) {
-		oc.Exec(t,
-			pod.MatchingSelector("app=sleep", ns),
-			"sleep",
-			curlCommand,
-			assert.OutputContains(
-				"200",
-				"Got the expected 200 OK response for request from httpbin",
-				"Expected the AuthorizationPolicy to accept request (expected HTTP status 200), but got a different HTTP code"))
-	})
-}
-
-func assertRequestDenied(t test.TestHelper, ns string, curlCommand string) {
-	retry.UntilSuccess(t, func(t test.TestHelper) {
-		oc.Exec(t,
-			pod.MatchingSelector("app=sleep", ns),
-			"sleep",
-			curlCommand,
-			assert.OutputContains(
-				"403",
-				"Got the expected 403 Forbidden response",
-				"Expected the AuthorizationPolicy to reject request (expected HTTP status 403), but got a different HTTP code"))
 	})
 }
 

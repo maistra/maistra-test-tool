@@ -8,6 +8,8 @@ import (
 	"sync"
 
 	"github.com/joho/godotenv"
+
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 var initEnvVarsOnce sync.Once
@@ -70,6 +72,23 @@ func GetDefaultSMCPVersion() string {
 	return Getenv("SMCPVERSION", "2.4")
 }
 
+func GetSMCPVersion() version.Version {
+	return version.ParseVersion(GetDefaultSMCPVersion())
+}
+
 func GetOperatorNamespace() string {
 	return "openshift-operators"
+}
+
+func GetTestSSLImage() string {
+	image := ""
+	switch Getenv("SAMPLEARCH", "x86") {
+	case "p":
+		image = "quay.io/maistra/testssl:0.0-ibm-p"
+	case "z":
+		image = "quay.io/maistra/testssl:0.0-ibm-z"
+	default:
+		image = "quay.io/maistra/testssl:latest"
+	}
+	return image
 }
