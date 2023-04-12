@@ -79,7 +79,7 @@ func GetOperatorNamespace() string {
 	return "openshift-operators"
 }
 
-func SMCPVersionLessThan(v string) bool {
+func (v Version) LessThan(other Version) bool {
 	if len(v) == 0 {
 		return false
 	}
