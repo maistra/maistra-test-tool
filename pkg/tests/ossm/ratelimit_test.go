@@ -43,7 +43,8 @@ var (
 func TestRateLimiting(t *testing.T) {
 	NewTest(t).Id("T28").Groups(Full).Run(func(t TestHelper) {
 		hack.DisableLogrusForThisTest(t)
-		skip := env.SMCPVersionLessThan("2.2")
+		const version22 = parseVersion("2.2")   // this should somewhere at the top of the file (actually, it should be in a different file altogether)
+		skip := env.GetSMCPVersion().LessThan(version22)
 		if skip {
 			t.T().Skip("Rate limiting is not supported for SMCP versions v2.3+")
 		}
