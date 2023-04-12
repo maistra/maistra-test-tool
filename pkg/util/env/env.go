@@ -8,6 +8,8 @@ import (
 	"sync"
 
 	"github.com/joho/godotenv"
+
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 var initEnvVarsOnce sync.Once
@@ -68,6 +70,10 @@ func GetDefaultMeshNamespace() string {
 
 func GetDefaultSMCPVersion() string {
 	return Getenv("SMCPVERSION", "2.4")
+}
+
+func GetSMCPVersion() version.Version {
+	return version.ParseVersion(GetDefaultSMCPVersion())
 }
 
 func GetOperatorNamespace() string {
