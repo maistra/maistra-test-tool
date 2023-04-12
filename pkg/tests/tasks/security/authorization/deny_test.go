@@ -48,7 +48,7 @@ func TestAuthorizationDenyAllow(t *testing.T) {
 			oc.ApplyString(t, ns, DenyGETPolicy)
 
 			t.LogStep("Verify that GET request is denied")
-			assertRequestDenied(t, ns, httpbinRequest("GET", "/get"))
+			assertRequestDenied(t, ns, httpbinRequest("GET", "/get"), "403")
 
 			t.LogStep("Verify that POST request is allowed")
 			assertRequestAccepted(t, ns, httpbinRequest("POST", "/post"))
@@ -65,7 +65,7 @@ func TestAuthorizationDenyAllow(t *testing.T) {
 			assertRequestAccepted(t, ns, httpbinRequest("GET", "/get", "x-token: admin"))
 
 			t.LogStep("Verify that GET request with HTTP header 'x-token: guest' is denied")
-			assertRequestDenied(t, ns, httpbinRequest("GET", "/get", "x-token: guest"))
+			assertRequestDenied(t, ns, httpbinRequest("GET", "/get", "x-token: guest"), "403")
 		})
 
 		t.NewSubTest("allow request path").Run(func(t test.TestHelper) {
@@ -80,13 +80,13 @@ func TestAuthorizationDenyAllow(t *testing.T) {
 			oc.ApplyString(t, ns, AllowPathIPPolicy)
 
 			t.LogStep("Verify that GET request with the HTTP header 'x-token: guest' at path '/ip' is denied")
-			assertRequestDenied(t, ns, httpbinRequest("GET", "/ip", "x-token: guest"))
+			assertRequestDenied(t, ns, httpbinRequest("GET", "/ip", "x-token: guest"), "403")
 
 			t.LogStep("Verify that GET request with HTTP header 'x-token: admin' at path '/ip' is allowed")
 			assertRequestAccepted(t, ns, httpbinRequest("GET", "/ip", "x-token: admin"))
 
 			t.LogStep("Verify that GET request with HTTP header 'x-token: admin' at path '/get' is denied")
-			assertRequestDenied(t, ns, httpbinRequest("GET", "/get", "x-token: admin"))
+			assertRequestDenied(t, ns, httpbinRequest("GET", "/get", "x-token: admin"), "403")
 		})
 	})
 }
