@@ -96,7 +96,7 @@ func SMCPVersionLessThan(v string) bool {
 	return testingVersion.minor < supportedVersion.minor
 }
 
-func splitVersion(version string) Version {
+func parseVersion(version string) Version {
 	majorMinor := strings.Split(version, ".")
 	if len(majorMinor) != 2 {
 		panic(fmt.Sprintf("invalid SMCP version: %s", version))
