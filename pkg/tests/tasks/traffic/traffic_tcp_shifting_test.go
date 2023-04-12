@@ -15,6 +15,7 @@
 package traffic
 
 import (
+	"bufio"
 	"fmt"
 	"strings"
 	"testing"
@@ -35,7 +36,7 @@ func TestTcpTrafficShifting(t *testing.T) {
 		ns := "foo"
 
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns)
+			app.Uninstall(t, app.Sleep(ns), app.EchoV1(ns), app.EchoV2(ns))
 		})
 
 		t.Log("This test validates traffic shifting for TCP traffic.")
@@ -84,15 +85,17 @@ func TestTcpTrafficShifting(t *testing.T) {
 
 func checkTcpTrafficRatio(t test.TestHelper, ns, host, port string, numberOfRequests int, tolerance float64, ratios map[string]float64) {
 	counts := map[string]int{}
-	for i := 0; i < numberOfRequests; i++ {
-		oc.Exec(t,
-			pod.MatchingSelector("app=sleep", ns),
-			"sleep",
-			fmt.Sprintf(`sh -c "(date; read -t 0.5) | nc %s %s"`, host, port),
-			func(t test.TestHelper, output string) {
+	oc.Exec(t,
+		pod.MatchingSelector("app=sleep", ns),
+		"sleep",
+		fmt.Sprintf(`sh -c 'i=1; while [ $i -le %d ]; do date | nc %s %s; i=$((i+1)); done'`, numberOfRequests, host, port),
+		func(t test.TestHelper, output string) {
+			scanner := bufio.NewScanner(strings.NewReader(output))
+			for scanner.Scan() {
+				line := scanner.Text()
 				matched := false
 				for version := range ratios {
-					if strings.Contains(output, version) {
+					if strings.Contains(line, version) {
 						matched = true
 						counts[version]++
 					}
@@ -100,8 +103,8 @@ func checkTcpTrafficRatio(t test.TestHelper, ns, host, port string, numberOfRequ
 				if !matched {
 					t.Fatalf("nc tcp-echo output did not match any expected version, got output: %s", output)
 				}
-			})
-	}
+			}
+		})
 
 	for version, count := range counts {
 		expectedRate := ratios[version]
