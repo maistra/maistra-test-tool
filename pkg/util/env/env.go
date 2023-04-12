@@ -8,14 +8,11 @@ import (
 	"sync"
 
 	"github.com/joho/godotenv"
+
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 var initEnvVarsOnce sync.Once
-
-type Version struct {
-	Major int
-	Minor int
-}
 
 // getenv loads test.env file and returns an environment variable value.
 // If the environment variable is empty, it returns the fallback as a default value.
@@ -75,37 +72,10 @@ func GetDefaultSMCPVersion() string {
 	return Getenv("SMCPVERSION", "2.4")
 }
 
-func GetSMCPVersion() Version {
-	return parseVersion(GetDefaultSMCPVersion())
+func GetSMCPVersion() version.Version {
+	return version.ParseVersion(GetDefaultSMCPVersion())
 }
 
 func GetOperatorNamespace() string {
 	return "openshift-operators"
-}
-
-func (testingVersion Version) LessThan(supportedVersion Version) bool {
-	if testingVersion.Major < supportedVersion.Major {
-		return false
-	}
-	if testingVersion.Major > supportedVersion.Major {
-		return true
-	}
-	return testingVersion.Minor > supportedVersion.Minor
-}
-
-func parseVersion(version string) Version {
-	majorMinor := strings.Split(version, ".")
-	if len(majorMinor) != 2 {
-		panic(fmt.Sprintf("invalid SMCP version: %s", version))
-	}
-	major, err := strconv.Atoi(majorMinor[0])
-	if err != nil {
-		panic(fmt.Sprintf("invalid SMCP version: %s", version))
-	}
-	minor, err := strconv.Atoi(majorMinor[1])
-	if err != nil {
-		panic(fmt.Sprintf("invalid SMCP version: %s", version))
-	}
-
-	return Version{Major: major, Minor: minor}
 }

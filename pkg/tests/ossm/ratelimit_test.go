@@ -30,6 +30,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 var (
@@ -43,9 +44,7 @@ var (
 func TestRateLimiting(t *testing.T) {
 	NewTest(t).Id("T28").Groups(Full).Run(func(t TestHelper) {
 		hack.DisableLogrusForThisTest(t)
-		supportedV := env.Version{Major: 2, Minor: 2}
-		skip := env.GetSMCPVersion().LessThan(supportedV)
-		if skip {
+		if env.GetSMCPVersion().GreaterThanOrEqualTo(version.SMCP_2_3) {
 			t.T().Skip("Rate limiting is not supported for SMCP versions v2.3+")
 		}
 
@@ -85,8 +84,4 @@ func TestRateLimiting(t *testing.T) {
 			curl.Request(t, productPageURL, nil, assert.ResponseStatus(200))
 		})
 	})
-}
-
-func parseVersion(s string) {
-	panic("unimplemented")
 }

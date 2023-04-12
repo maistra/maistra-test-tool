@@ -10,7 +10,7 @@ type redis struct {
 	ns string
 }
 
-var _ App = &bookinfo{}
+var _ App = &redis{}
 
 func Redis(ns string) App {
 	return &redis{ns: ns}
