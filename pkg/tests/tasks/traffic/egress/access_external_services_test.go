@@ -15,102 +15,105 @@
 package egress
 
 import (
-	"strings"
+	"fmt"
 	"testing"
-	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
-	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
+	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func cleanupAccessExternalServices() {
-	log.Log.Info("Cleanup")
-	sleep := examples.Sleep{Namespace: "bookinfo"}
-	util.KubeDeleteContents("bookinfo", httpbinextTimeout)
-	util.KubeDeleteContents("bookinfo", redhatextServiceEntry)
-	util.KubeDeleteContents("bookinfo", httpbinextServiceEntry)
-	sleep.Uninstall()
-	time.Sleep(time.Duration(20) * time.Second)
+func TestAccessExternalServices(t *testing.T) {
+	test.NewTest(t).Id("T11").Groups(test.Full, test.InterOp).Run(func(t test.TestHelper) {
+		hack.DisableLogrusForThisTest(t)
+
+		ns := "bookinfo"
+		t.Cleanup(func() {
+			app.Uninstall(t, app.Sleep(ns))
+		})
+
+		t.Log("This test validates access to external services")
+
+		t.LogStepf("Install sleep into %s", ns)
+		app.InstallAndWaitReady(t, app.Sleep(ns))
+
+		t.NewSubTest("allow request to external service in default passthrough mode").Run(func(t test.TestHelper) {
+			t.LogStep("Make request to www.redhat.com from sleep")
+
+			execInSleepPod(
+				t,
+				ns,
+				buildGetRequestCmd("https://www.redhat.com/en"),
+				assert.OutputContains(
+					"200",
+					"Got expected 200 ok from www.redhat.com",
+					"Expect 200 ok from www.redhat.com, but got a different HTTP code",
+				),
+			)
+		})
+
+		t.NewSubTest("").Run(func(t test.TestHelper) {
+			t.Cleanup(func() {
+				oc.DeleteFromString(t, ns, redhatExternalServiceEntryHttpsPortOnly)
+			})
+
+			t.LogStep("Apply a ServiceEntry to redhat.com")
+			oc.ApplyString(t, ns, redhatExternalServiceEntryHttpsPortOnly)
+
+			t.LogStep("Send a request to redhat.com on HTTPS port")
+			execInSleepPod(
+				t,
+				ns,
+				buildGetRequestCmd("https://www.redhat.com/en"),
+				assert.OutputContains(
+					"200",
+					"Got expetcted 200 ok from www.redhat.com",
+					"Expect 200 ok from www.redhat.com, but got a different HTTP code",
+				),
+			)
+		})
+
+		t.NewSubTest("").Run(func(t test.TestHelper) {
+			t.Cleanup(func() {
+				oc.DeleteFromString(t, ns, httpbinExternalServiceEntryHttpPortOnly)
+				oc.DeleteFromString(t, ns, httpbinExternalVituralServiceWithTimeout)
+			})
+
+			t.LogStep("Apply a ServiceEntry to httpbin.org")
+			oc.ApplyString(t, ns, httpbinExternalServiceEntryHttpPortOnly)
+
+			t.LogStep("Send a request to httpbin.org on HTTP port")
+			execInSleepPod(
+				t,
+				ns,
+				buildGetRequestCmd("http://httpbin.org/headers"),
+				assert.OutputContains(
+					"200",
+					"Got expetcted 200 ok from httpbin.org",
+					"Expect 200 ok from httpbin.org, but got a different HTTP code",
+				),
+			)
+
+			t.LogStep("Apply a VirtualService with 3-second timetout to httpbin.org")
+			oc.ApplyString(t, ns, httpbinExternalVituralServiceWithTimeout)
+
+			t.LogStep("Send a request to httpbin.org with 5-second expected delay")
+			execInSleepPod(
+				t,
+				ns,
+				buildGetRequestCmd("http://httpbin.org/delay/5"),
+				assert.OutputContains(
+					"504",
+					"Got expected 504 response since the request was timeout",
+					"Expect a timeout response with 504, but got a different one",
+				),
+			)
+		})
+	})
 }
 
-func TestAccessExternalServices(t *testing.T) {
-	test.NewTest(t).Id("T11").Groups(test.Full, test.InterOp).NotRefactoredYet()
-
-	defer cleanupAccessExternalServices()
-	defer util.RecoverPanic(t)
-
-	log.Log.Info("TestAccessExternalServices")
-	sleep := examples.Sleep{Namespace: "bookinfo"}
-	sleep.Install()
-	sleepPod, err := util.GetPodName("bookinfo", "app=sleep")
-	util.Inspect(err, "Failed to get sleep pod name", "", t)
-
-	t.Run("TrafficManagement_egress_envoy_passthrough_to_external_services", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-
-		log.Log.Info("Skip checking the meshConfig outboundTrafficPolicy mode")
-		log.Log.Info("make requests to external https services")
-		command := `curl -sSI https://www.redhat.com/en | grep  "HTTP/"`
-		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
-		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "200") {
-			log.Log.Infof("Success. Get https://www.redhat.com/en response: %s", msg)
-		} else {
-			log.Log.Infof("Error response: %s", msg)
-			t.Errorf("Error response: %s", msg)
-		}
-	})
-
-	t.Run("TrafficManagement_egress_controlled_access_to_external_httpbin_services", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-
-		log.Log.Info("Skip update global.outboundTrafficPolicy.mode")
-		log.Log.Info("Create a ServiceEntry to external httpbin")
-		util.KubeApplyContents("bookinfo", httpbinextServiceEntry)
-		time.Sleep(time.Duration(10) * time.Second)
-		command := `curl -sS http://httpbin.org/headers`
-		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
-		if err != nil {
-			log.Log.Infof("Error response: %s", msg)
-			t.Errorf("Error response: %s", msg)
-		} else {
-			log.Log.Infof("Success. Get http://httpbin.org/headers response:\n%s", msg)
-		}
-	})
-
-	t.Run("TrafficManagement_egress_access_to_external_https_redhat", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-
-		log.Log.Info("Create a ServiceEntry to external https://www.redhat.com/en")
-		util.KubeApplyContents("bookinfo", redhatextServiceEntry)
-		time.Sleep(time.Duration(10) * time.Second)
-		command := `curl -sSI https://www.redhat.com/en | grep  "HTTP/"`
-		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
-		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "200") {
-			log.Log.Infof("Success. Get https://www.redhat.com/en response: %s", msg)
-		} else {
-			log.Log.Infof("Error response: %s", msg)
-			t.Errorf("Error response: %s", msg)
-		}
-	})
-
-	t.Run("TrafficManagement_egress_manage_traffic_to_external_services", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-
-		log.Log.Info("Create a httpbin-ext timeout")
-		util.KubeApplyContents("bookinfo", httpbinextTimeout)
-		time.Sleep(time.Duration(10) * time.Second)
-		command := `time curl -o /dev/null -sS -w "%{http_code}\n" http://httpbin.org/delay/5`
-		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
-		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "504") {
-			log.Log.Infof("Get expected response failure: %s", msg)
-		} else {
-			log.Log.Infof("Error response code: %s", msg)
-			t.Errorf("Error response code: %s", msg)
-		}
-	})
+func buildGetRequestCmd(location string) string {
+	return fmt.Sprintf("curl -sSL -o /dev/null -D - %s | head -n 1", location)
 }

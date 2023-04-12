@@ -15,7 +15,7 @@
 package egress
 
 var (
-	httpbinextServiceEntry = `
+	httpbinExternalServiceEntryHttpPortOnly = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
@@ -31,7 +31,7 @@ spec:
   location: MESH_EXTERNAL
 `
 
-	redhatextServiceEntry = `
+	redhatExternalServiceEntryHttpsPortOnly = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
@@ -47,7 +47,7 @@ spec:
   location: MESH_EXTERNAL
 `
 
-	httpbinextTimeout = `
+	httpbinExternalVituralServiceWithTimeout = `
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
