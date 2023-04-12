@@ -44,15 +44,15 @@ func assertRequestAccepted(t test.TestHelper, ns string, curlCommand string) {
 	})
 }
 
-func assertRequestDenied(t test.TestHelper, ns string, curlCommand string) {
+func assertRequestDenied(t test.TestHelper, ns string, curlCommand string, expectedStatusCode string) {
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		oc.Exec(t,
 			pod.MatchingSelector("app=sleep", ns),
 			"sleep",
 			curlCommand,
 			assert.OutputContains(
-				"403",
-				"Got the expected 403 Forbidden response",
-				"Expected the AuthorizationPolicy to reject request (expected HTTP status 403), but got a different HTTP code"))
+				expectedStatusCode,
+				fmt.Sprintf("Got the expected %s response code", expectedStatusCode),
+				fmt.Sprintf("Expected the AuthorizationPolicy to reject request (expected HTTP status %s), but got a different HTTP code", expectedStatusCode)))
 	})
 }
