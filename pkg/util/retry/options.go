@@ -3,7 +3,7 @@ package retry
 import "time"
 
 var defaultOptions = RetryOptions{
-	maxAttempts:          30,
+	maxAttempts:          60,
 	delayBetweenAttempts: 1 * time.Second,
 }
 

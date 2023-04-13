@@ -18,44 +18,43 @@ type NamespacedName struct {
 	Name      string
 }
 
-type PodLocatorFunc func(t test.TestHelper) NamespacedName
+type PodLocatorFunc func(t test.TestHelper, oc *OC) NamespacedName
 
-func Exec(t test.TestHelper, podLocator PodLocatorFunc, container string, cmd string, checks ...common.CheckFunc) {
+func (o OC) Exec(t test.TestHelper, podLocator PodLocatorFunc, container string, cmd string, checks ...common.CheckFunc) string {
 	t.T().Helper()
-	pod := podLocator(t)
-	shell.Execute(t,
-		fmt.Sprintf("kubectl exec -n %s %s -c %s -- %s", pod.Namespace, pod.Name, container, cmd),
+	pod := podLocator(t, &o)
+	if pod.Name == "" || pod.Namespace == "" {
+		t.Fatal("could not find pod using podLocatorFunc")
+	}
+	containerFlag := ""
+	if container != "" {
+		containerFlag = "-c " + container
+	}
+	return o.Invoke(t,
+		fmt.Sprintf("kubectl exec -n %s %s %s -- %s", pod.Namespace, pod.Name, containerFlag, cmd),
 		checks...)
 }
 
-func GetPodIP(t test.TestHelper, podLocator PodLocatorFunc) string {
+func (o OC) GetPodIP(t test.TestHelper, podLocator PodLocatorFunc) string {
 	t.T().Helper()
-	pod := podLocator(t)
-	return shell.Execute(t,
-		fmt.Sprintf("kubectl get pod -n %s %s -o jsonpath='{.status.podIP}'", pod.Namespace, pod.Name))
+	pod := podLocator(t, &o)
+	return o.Invoke(t, fmt.Sprintf("kubectl get pod -n %s %s -o jsonpath='{.status.podIP}'", pod.Namespace, pod.Name))
 }
 
-func Patch(t test.TestHelper, ns string, kind string, name string, patchType string, patch string, checks ...common.CheckFunc) {
+func (o OC) Logs(t test.TestHelper, podLocator PodLocatorFunc, container string, checks ...common.CheckFunc) {
 	t.T().Helper()
-	shell.Execute(t,
-		fmt.Sprintf(`oc patch -n %s %s/%s --type %s -p '%s'`, ns, kind, name, patchType, patch),
-		checks...)
-}
-
-func Logs(t test.TestHelper, podLocator PodLocatorFunc, container string, checks ...common.CheckFunc) {
-	t.T().Helper()
-	pod := podLocator(t)
-	shell.Execute(t,
+	pod := podLocator(t, &o)
+	o.Invoke(t,
 		fmt.Sprintf("kubectl logs -n %s %s -c %s", pod.Namespace, pod.Name, container),
 		checks...)
 }
 
-func WaitPodRunning(t test.TestHelper, podLocator PodLocatorFunc) {
+func (o OC) WaitPodRunning(t test.TestHelper, podLocator PodLocatorFunc) {
 	t.T().Helper()
 	maxAttempts := 60
 	for i := 0; i < maxAttempts; i++ {
 		lastAttempt := i == maxAttempts-1
-		pod := podLocator(t)
+		pod := podLocator(t, &o)
 		status := util.GetPodStatus(pod.Namespace, pod.Name)
 		if status == "Running" {
 			t.Logf("Pod %s/%s is running!", pod.Namespace, pod.Name)
@@ -71,13 +70,13 @@ func WaitPodRunning(t test.TestHelper, podLocator PodLocatorFunc) {
 	}
 }
 
-func WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
+func (o OC) WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
 	t.T().Helper()
 	var pod NamespacedName
 	retry.UntilSuccess(t, func(t test.TestHelper) {
-		pod = podLocator(t)
+		pod = podLocator(t, &o)
 	})
-	condition := shell.Executef(t, "kubectl -n %s wait --for condition=Ready pod %s --timeout 30s || true", pod.Namespace, pod.Name) // TODO: Change shell execute to do not fail on error
+	condition := o.Invokef(t, "kubectl -n %s wait --for condition=Ready pod %s --timeout 30s || true", pod.Namespace, pod.Name) // TODO: Change shell execute to do not fail on error
 	if strings.Contains(condition, "condition met") {
 		t.Logf("Pod %s in namespace %s is ready!", pod.Name, pod.Namespace)
 	} else {
@@ -85,39 +84,44 @@ func WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
 	}
 }
 
-func WaitDeploymentRolloutComplete(t test.TestHelper, ns string, deploymentNames ...string) {
+func (o OC) WaitDeploymentRolloutComplete(t test.TestHelper, ns string, deploymentNames ...string) {
 	t.T().Helper()
 	timeout := 3 * time.Minute // TODO: make this configurable?
 	start := time.Now()
 	for _, name := range deploymentNames {
 		usedUpTime := time.Now().Sub(start)
 		remainingTime := timeout - usedUpTime
-		shell.Executef(t, "kubectl -n %s rollout status deploy/%s --timeout=%s", ns, name, remainingTime.Round(time.Second))
+		o.Invokef(t, "kubectl -n %s rollout status deploy/%s --timeout=%s", ns, name, remainingTime.Round(time.Second))
 	}
 }
 
-func RestartAllPodsAndWaitReady(t test.TestHelper, namespaces ...string) {
+func (o OC) RestartAllPodsAndWaitReady(t test.TestHelper, namespaces ...string) {
+	t.T().Helper()
+	o.RestartAllPods(t, namespaces...)
+	o.WaitAllPodsReady(t, namespaces...)
+}
+
+func (o OC) RestartAllPods(t test.TestHelper, namespaces ...string) {
 	t.T().Helper()
 	for _, ns := range namespaces {
-		shell.Executef(t, "oc -n %s delete pod --all", ns)
-	}
-	for _, ns := range namespaces {
-		WaitAllPodsReady(t, ns)
+		o.Invokef(t, "oc -n %s delete pod --all", ns)
 	}
 }
 
-func DeletePodNoWait(t test.TestHelper, podLocator PodLocatorFunc) {
+func (o OC) WaitAllPodsReady(t test.TestHelper, namespaces ...string) {
 	t.T().Helper()
-	pod := podLocator(t)
+	for _, ns := range namespaces {
+		o.Invokef(t, `oc -n %s wait --for condition=Ready --all pods --timeout 180s`, ns)
+	}
+}
+
+func (o OC) DeletePodNoWait(t test.TestHelper, podLocator PodLocatorFunc) {
+	t.T().Helper()
+	pod := podLocator(t, &o)
 	shell.Executef(t, `oc -n %s delete pod %s --wait=false`, pod.Namespace, pod.Name)
 }
 
-func WaitAllPodsReady(t test.TestHelper, ns string) {
-	t.T().Helper()
-	shell.Executef(t, `oc -n %s wait --for condition=Ready --all pods --timeout 180s`, ns)
-}
-
-func WaitCondition(t test.TestHelper, ns string, kind string, name string, condition string) {
+func (o OC) WaitCondition(t test.TestHelper, ns string, kind string, name string, condition string) {
 	t.T().Helper()
 	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(30), func(t test.TestHelper) {
 		shell.Execute(t,
@@ -128,11 +132,18 @@ func WaitCondition(t test.TestHelper, ns string, kind string, name string, condi
 	})
 }
 
-func DeletePod(t test.TestHelper, podLocator PodLocatorFunc) {
+func (o OC) GetAllResources(t test.TestHelper, ns string, checks ...common.CheckFunc) {
+	t.T().Helper()
+	shell.Execute(t,
+		fmt.Sprintf(`oc get all -n %s`, ns),
+		checks...)
+}
+
+func (o OC) DeletePod(t test.TestHelper, podLocator PodLocatorFunc) {
 	t.T().Helper()
 	var pod NamespacedName
 	retry.UntilSuccess(t, func(t test.TestHelper) {
-		pod = podLocator(t)
+		pod = podLocator(t, &o)
 	})
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		shell.Execute(t,

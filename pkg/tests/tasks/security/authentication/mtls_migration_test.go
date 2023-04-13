@@ -115,6 +115,6 @@ func curlFromTo(t test.TestHelper, from string, to string, checks ...common.Chec
 	oc.Exec(t,
 		pod.MatchingSelector("app=sleep", from),
 		"sleep",
-		fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%%%{http_code}" || echo "failed to connect"`, to, from, to),
+		fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%{http_code}" || echo "failed to connect"`, to, from, to),
 		checks...)
 }

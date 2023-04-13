@@ -77,7 +77,7 @@ func TestSMCPAnnotations(t *testing.T) {
 
 func GetPodAnnotations(t TestHelper, podLocator oc.PodLocatorFunc) map[string]string {
 	annotations := map[string]string{}
-	po := podLocator(t)
+	po := podLocator(t, oc.DefaultOC)
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		output := shell.Executef(t, "kubectl get pod %s -n %s -o jsonpath='{.metadata.annotations}'", po.Name, po.Namespace)
 		err := json.Unmarshal([]byte(output), &annotations)

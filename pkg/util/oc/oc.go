@@ -3,13 +3,10 @@ package oc
 import (
 	"fmt"
 	"math/rand"
-	"strings"
 	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
-	"github.com/maistra/maistra-test-tool/pkg/util/template"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -17,102 +14,140 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-func ApplyString(t test.TestHelper, ns string, yaml string) {
-	t.T().Helper()
-	if err := util.KubeApplyContents(ns, yaml); err != nil {
-		t.Fatalf("Failed to apply manifest: %v;\nYAML: %v", err, yaml)
-	}
+var DefaultOC = NewOC("")
+
+func WithKubeconfig(location string) *OC {
+	return NewOC(location)
 }
 
-func ApplyTemplate(t test.TestHelper, ns string, yaml string, data interface{}) {
+func ApplyString(t test.TestHelper, ns string, yaml string) {
 	t.T().Helper()
-	template := template.Run(t, yaml, data)
-	ApplyString(t, ns, template)
+	DefaultOC.ApplyString(t, ns, yaml)
+}
+
+func ApplyTemplate(t test.TestHelper, ns string, template string, input interface{}) {
+	t.T().Helper()
+	DefaultOC.ApplyTemplateString(t, ns, template, input)
 }
 
 func DeleteFromTemplate(t test.TestHelper, ns string, yaml string, data interface{}) {
 	t.T().Helper()
-	template := template.Run(t, yaml, data)
-	DeleteFromString(t, ns, template)
+	DefaultOC.DeleteFromTemplate(t, ns, yaml, data)
 }
 
 func ApplyFile(t test.TestHelper, ns string, file string) {
 	t.T().Helper()
-	if err := util.KubeApply(ns, file); err != nil {
-		t.Fatalf("Failed to apply manifest file %s: %v", file, err)
-	}
+	DefaultOC.ApplyFile(t, ns, file)
 }
 
 func DeleteFromString(t test.TestHelper, ns string, yaml string) {
 	t.T().Helper()
-	if err := util.KubeDeleteContents(ns, yaml); err != nil {
-		t.Fatalf("Failed to delete objects in YAML: %v; YAML: %v", err, yaml)
-	}
+	DefaultOC.DeleteFromString(t, ns, yaml)
 }
 
 func DeleteFile(t test.TestHelper, ns string, file string) {
 	t.T().Helper()
-	shell.Executef(t, "kubectl delete %s -f %s --ignore-not-found", nsFlag(ns), file)
-}
-
-func nsFlag(ns string) string {
-	if ns == "" {
-		return ""
-	}
-	return "-n " + ns
+	DefaultOC.DeleteFile(t, ns, file)
 }
 
 func CreateTLSSecret(t test.TestHelper, ns, name string, keyFile, certFile string) {
-	DeleteSecret(t, ns, name)
-	if _, err := util.CreateTLSSecret(name, ns, keyFile, certFile); err != nil {
-		t.Fatalf("Failed to create secret %s\n", name)
-	}
+	t.T().Helper()
+	DefaultOC.CreateTLSSecret(t, ns, name, keyFile, certFile)
 }
 
 func CreateTLSSecretWithCACert(t test.TestHelper, ns, name string, keyFile, certFile, caCertFile string) {
 	t.T().Helper()
-	DeleteSecret(t, ns, name)
-	shell.Executef(t,
-		`kubectl create -n %s secret generic %s --from-file=tls.key=%s --from-file=tls.crt=%s --from-file=ca.crt=%s`,
-		ns, name, keyFile, certFile, caCertFile)
+	DefaultOC.CreateTLSSecretWithCACert(t, ns, name, keyFile, certFile, caCertFile)
 }
 
 func DeleteSecret(t test.TestHelper, ns string, name string) {
 	t.T().Helper()
-	shell.ExecuteIgnoreError(t, fmt.Sprintf(`kubectl -n %s delete secret %s`, ns, name))
+	DefaultOC.DeleteSecret(t, ns, name)
 }
 
 func DeleteNamespace(t test.TestHelper, namespaces ...string) {
 	t.T().Helper()
-	t.Logf("Deleting namespaces: %v", namespaces)
-	shell.Executef(t, "kubectl delete ns %s", strings.Join(namespaces, " "))
+	DefaultOC.DeleteNamespace(t, namespaces...)
 }
 
 func CreateNamespace(t test.TestHelper, namespaces ...string) {
 	t.T().Helper()
-	t.Logf("Creating namespaces: %v", namespaces)
-
-	yaml := ""
-	for _, ns := range namespaces {
-		yaml += fmt.Sprintf(`
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: %s
----`, ns)
-	}
-	ApplyString(t, "", yaml)
+	DefaultOC.CreateNamespace(t, namespaces...)
 }
 
-func RecreateNamespace(t test.TestHelper, ns ...string) {
+func RecreateNamespace(t test.TestHelper, namespaces ...string) {
 	t.T().Helper()
-	DeleteNamespace(t, ns...)
-	CreateNamespace(t, ns...)
+	DefaultOC.RecreateNamespace(t, namespaces...)
 }
 
 func WaitSMCPReady(t test.TestHelper, ns string, name string) {
 	t.T().Helper()
-	shell.Executef(t, `oc -n %s wait --for condition=Ready smcp/%s --timeout 300s`, ns, name)
+	DefaultOC.WaitSMCPReady(t, ns, name)
+}
+
+func Patch(t test.TestHelper, ns, kind, name string, mergeType string, patch string) {
+	t.T().Helper()
+	DefaultOC.Patch(t, ns, kind, name, mergeType, patch)
+}
+
+func GetConfigMapData(t test.TestHelper, ns, name string) map[string]string {
+	t.T().Helper()
+	return DefaultOC.GetConfigMapData(t, ns, name)
+}
+
+func Exec(t test.TestHelper, podLocator PodLocatorFunc, container string, cmd string, checks ...common.CheckFunc) string {
+	t.T().Helper()
+	return DefaultOC.Exec(t, podLocator, container, cmd, checks...)
+}
+
+func GetPodIP(t test.TestHelper, podLocator PodLocatorFunc) string {
+	t.T().Helper()
+	return DefaultOC.GetPodIP(t, podLocator)
+}
+
+func Logs(t test.TestHelper, podLocator PodLocatorFunc, container string, checks ...common.CheckFunc) {
+	t.T().Helper()
+	DefaultOC.Logs(t, podLocator, container, checks...)
+}
+
+func WaitPodRunning(t test.TestHelper, podLocator PodLocatorFunc) {
+	t.T().Helper()
+	DefaultOC.WaitPodRunning(t, podLocator)
+}
+
+func WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
+	t.T().Helper()
+	DefaultOC.WaitPodReady(t, podLocator)
+}
+
+func WaitDeploymentRolloutComplete(t test.TestHelper, ns string, deploymentNames ...string) {
+	t.T().Helper()
+	DefaultOC.WaitDeploymentRolloutComplete(t, ns, deploymentNames...)
+}
+
+func RestartAllPodsAndWaitReady(t test.TestHelper, namespaces ...string) {
+	t.T().Helper()
+	DefaultOC.RestartAllPodsAndWaitReady(t, namespaces...)
+}
+
+func RestartAllPods(t test.TestHelper, namespaces ...string) {
+	t.T().Helper()
+	DefaultOC.RestartAllPods(t, namespaces...)
+}
+
+func WaitAllPodsReady(t test.TestHelper, namespaces ...string) {
+	t.T().Helper()
+	DefaultOC.WaitAllPodsReady(t, namespaces...)
+}
+
+func DeletePodNoWait(t test.TestHelper, podLocator PodLocatorFunc) {
+	t.T().Helper()
+	DefaultOC.DeletePodNoWait(t, podLocator)
+}
+
+func WaitCondition(t test.TestHelper, ns string, kind string, name string, condition string) {
+	t.T().Helper()
+	DefaultOC.WaitCondition(t, ns, kind, name, condition)
 }
 
 func WaitSMMRReady(t test.TestHelper, ns string) {
@@ -122,9 +157,12 @@ func WaitSMMRReady(t test.TestHelper, ns string) {
 
 func GetAllResources(t test.TestHelper, ns string, checks ...common.CheckFunc) {
 	t.T().Helper()
-	shell.Execute(t,
-		fmt.Sprintf(`oc get all -n %s`, ns),
-		checks...)
+	DefaultOC.GetAllResources(t, ns, checks...)
+}
+
+func DeletePod(t test.TestHelper, podLocator PodLocatorFunc) {
+	t.T().Helper()
+	DefaultOC.DeletePod(t, podLocator)
 }
 
 func ScaleDeploymentAndWait(t test.TestHelper, ns string, name string, replicas int) {
