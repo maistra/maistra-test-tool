@@ -124,8 +124,8 @@ spec:
 
 func checkForNamespace(ns string) common.CheckFunc {
 	return require.OutputContains(ns,
-		fmt.Sprintf("found %s in promethues config", ns),
-		fmt.Sprintf("expected to find %s in promethues config, but not found", ns),
+		fmt.Sprintf("found %s in Prometheus config", ns),
+		fmt.Sprintf("expected to find %s in Prometheus config, but not found", ns),
 	)
 }
 
