@@ -26,7 +26,7 @@ func TestCertManager(t *testing.T) {
 		t.LogStep("uninstall the SMCP")
 		oc.RecreateNamespace(t, meshNamespace)
 
-		t.LogStep("Add jetstach repo to helm")
+		t.LogStep("Add jetstack repo to helm")
 		shell.Execute(t, `helm repo add jetstack https://charts.jetstack.io`)
 
 		t.LogStep("Install cert-manager")
