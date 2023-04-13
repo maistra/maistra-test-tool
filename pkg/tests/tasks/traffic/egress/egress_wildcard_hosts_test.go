@@ -33,17 +33,17 @@ func TestEgressWildcard(t *testing.T) {
 		ns := "bookinfo"
 
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns)
+			oc.RecreateNamespace(t, ns, EgressWildcardGatewayTemplate, EgressWildcardEntry)
 		})
 
 		t.Log("This Test recieves the sleep pod name")
-		app.InstallAndWaitReady(t, app.GetPodName(ns), app.Sleep(ns))
+		app.InstallAndWaitReady(t, app.Sleep(ns))
 		t.LogStep("Recieve the sleep pod name")
-		t.GetPodName(t, func(t TestHelper) {
+		retry.UntilSuccess(t, func(t TestHelper) {
 			oc.Exec(t,
-				pod.MatchingSelector("app=sleep", ns),
+				pod.MatchingSelector(ns, "app=sleep"),
 				"sleep",
-				smcp,
+				ns,
 				assert.OutputContains(
 					"",
 					"Successfully got the sleep pod name",
@@ -56,7 +56,7 @@ func TestEgressWildcard(t *testing.T) {
 
 			command := `curl -s https://en.wikipedia.org/wiki/Main_Page | grep -o "<title>.*</title>"; curl -s https://de.wikipedia.org/wiki/Wikipedia:Hauptseite | grep -o "<title>.*</title>"`
 
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				oc.Exec(t,
 					pod.MatchingSelector("app=sleep", ns),
 					ns,
