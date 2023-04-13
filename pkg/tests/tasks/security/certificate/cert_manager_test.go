@@ -58,7 +58,7 @@ func TestCertManager(t *testing.T) {
 			oc.Exec(t,
 				pod.MatchingSelector("app=sleep", ns),
 				"sleep",
-				fmt.Sprintf(`curl http://httpbin.foo:8000/ip -s -o /dev/null -w "%%%%{http_code}\n"`),
+				fmt.Sprintf(`curl http://httpbin.foo:8000/ip -s -o /dev/null -w "%%{http_code}\n"`),
 				assert.OutputContains(
 					"200",
 					"Got expected 200 OK from httpbin",
