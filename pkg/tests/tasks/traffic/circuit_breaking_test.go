@@ -20,30 +20,17 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
-	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
-
-func cleanupCircuitBreaking() {
-	log.Log.Info("Cleanup")
-	util.KubeDeleteContents("bookinfo", httpbinCircuitBreaker)
-	fortio := examples.Fortio{Namespace: "bookinfo"}
-	httpbin := examples.Httpbin{Namespace: "bookinfo"}
-	fortio.Uninstall()
-	httpbin.Uninstall()
-	time.Sleep(time.Duration(20) * time.Second)
-}
 
 func TestCircuitBreaking(t *testing.T) {
 	NewTest(t).Id("T6").Groups(Full, InterOp).Run(func(t TestHelper) {
@@ -55,53 +42,55 @@ func TestCircuitBreaking(t *testing.T) {
 
 		app.InstallAndWaitReady(t, app.Httpbin(ns), app.Fortio(ns))
 
-		t.NewSubTest("TrafficManagement_tripping").Run(func(t TestHelper) {
-			t.Log("verify traffic management tripping circuit breaker")
-			t.LogStep("Configure circuit breaker destination rule")
-			oc.ApplyString(t, ns, httpbinCircuitBreaker)
+		t.Log("verify traffic management tripping circuit breaker")
+		t.LogStep("Configure circuit breaker destination rule")
+		oc.ApplyString(t, ns, httpbinCircuitBreaker)
 
-			t.LogStep("Verify connection with curl: expected 200 OK")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				oc.Exec(t,
-					pod.MatchingSelector("app=fortio", ns),
-					"fortio",
-					"/usr/bin/fortio curl -quiet http://httpbin:8000/get",
-					assert.OutputContains("200",
-						"Got expected response from httpbin: 200 OK",
-						"ERROR: Got unexpected response from httpbin not 200 OK"))
-			})
-
-			t.LogStep("Tripping the circuit breaker")
-			t.Log("To tipping the circuit breaker we are going to send 50 requests to httpbin with 2 connections")
-			connection := 2
-			reqCount := 50
-			msg := oc.Exec(t,
+		t.LogStep("Verify connection with curl: expected 200 OK")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			oc.Exec(t,
 				pod.MatchingSelector("app=fortio", ns),
 				"fortio",
-				fmt.Sprintf("/usr/bin/fortio load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount))
+				"/usr/bin/fortio curl -quiet http://httpbin:8000/get",
+				assert.OutputContains("200",
+					"Got expected response from httpbin: 200 OK",
+					"ERROR: Got unexpected response from httpbin not 200 OK"))
+		})
 
-			t.LogStep("Validate the number of 200 responses")
-			t.Log("verify from output message the number of 200 responses to the load test. We expect to have a line with this information: Code 200 : XX (X0.0 %)")
-			c200 := getNumberOfResponses(t, msg, `Code 200.*`)
+		t.LogStep("Tripping the circuit breaker")
+		t.Log("To tipping the circuit breaker we are going to send 50 requests to httpbin with 2 connections")
+		connection := 2
+		reqCount := 50
+		msg := oc.Exec(t,
+			pod.MatchingSelector("app=fortio", ns),
+			"fortio",
+			fmt.Sprintf("/usr/bin/fortio load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount))
 
-			t.LogStep("Validate the number of 503 responses")
-			t.Log("verify from output message the number of 500 responses to the load test. We expect to have a line with this information: Code 503 : XX (X0.0 %)")
-			c503 := getNumberOfResponses(t, msg, `Code 503.*`)
+		t.LogStep("Validate the number of 200 responses")
+		t.Log("verify from output message the number of 200 responses to the load test. We expect to have a line with this information: Code 200 : XX (X0.0 %)")
+		c200 := getNumberOfResponses(t, msg, `Code 200.*`)
 
-			t.LogStep("Validate the percentage of 200 responses and 503 to the total of requests")
-			t.Log("We expect to have 60% 200 responses and 40% 503 responses")
-			tolerance := 0.5
+		t.LogStep("Validate the number of 503 responses")
+		t.Log("verify from output message the number of 500 responses to the load test. We expect to have a line with this information: Code 503 : XX (X0.0 %)")
+		c503 := getNumberOfResponses(t, msg, `Code 503.*`)
+
+		t.LogStep("Validate the percentage of 200 responses and 503 to the total of requests")
+		t.Log("We expect to have 60% 200 responses and 40% 503 responses")
+		tolerance := 0.1
+		successRate200 := float64(c200) / float64(reqCount) * 100
+		successRate503 := float64(c503) / float64(reqCount) * 100
+		retry.UntilSuccess(t, func(t test.TestHelper) {
 			if util.IsWithinPercentage(c200, reqCount, 0.6, tolerance) && util.IsWithinPercentage(c503, reqCount, 0.4, tolerance) {
 				t.Logf(
 					"Success. Circuit breaking acts as expected. "+
-						"Code 200 hit %d of %d, Code 503 hit %d of %d", c200, reqCount, c503, reqCount)
+						"Code 200 hit %d of %d (%.2f%%), Code 503 hit %d of %d (%.2f%%)",
+					c200, reqCount, successRate200, c503, reqCount, successRate503)
 			} else {
 				t.Fatalf(
 					"Failed Circuit breaking. "+
 						"Code 200 hit %d 0f %d, Code 503 hit %d of %d", c200, reqCount, c503, reqCount)
 			}
 		})
-
 	})
 }
 
