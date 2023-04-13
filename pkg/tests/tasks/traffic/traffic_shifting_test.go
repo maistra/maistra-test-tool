@@ -111,9 +111,9 @@ func checkTrafficRatio(t TestHelper, url string, numberOfRequests int, tolerance
 		expectedRate := ratios[file]
 		actualRate := float64(count) / float64(numberOfRequests)
 		if IsWithinPercentage(count, numberOfRequests, expectedRate, tolerance) {
-			t.Logf("success: %d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, 100, file, actualRate, expectedRate, tolerance)
+			t.Logf("success: %d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, numberOfRequests, file, actualRate, expectedRate, tolerance)
 		} else {
-			t.Errorf("failure: %d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, 100, file, actualRate, expectedRate, tolerance)
+			t.Errorf("failure: %d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, numberOfRequests, file, actualRate, expectedRate, tolerance)
 		}
 	}
 }

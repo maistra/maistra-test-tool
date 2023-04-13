@@ -55,7 +55,7 @@ func TestSSL(t *testing.T) {
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Install bookinfo with mTLS and testssl pod")
-		oc.ApplyString(t, ns, fmt.Sprintf(testSSLDeployment, getTestSSLImage()))
+		oc.ApplyString(t, ns, fmt.Sprintf(testSSLDeployment, env.GetTestSSLImage()))
 		app.InstallAndWaitReady(t, app.BookinfoWithMTLS(ns))
 		oc.WaitDeploymentRolloutComplete(t, ns, "testssl")
 
@@ -79,19 +79,6 @@ func TestSSL(t *testing.T) {
 					"Results not include: P-256"))
 		})
 	})
-}
-
-func getTestSSLImage() string {
-	image := ""
-	switch env.Getenv("SAMPLEARCH", "x86") {
-	case "p":
-		image = "quay.io/maistra/testssl:0.0-ibm-p"
-	case "z":
-		image = "quay.io/maistra/testssl:0.0-ibm-z"
-	default:
-		image = "quay.io/maistra/testssl:latest"
-	}
-	return image
 }
 
 const testSSLDeployment = `

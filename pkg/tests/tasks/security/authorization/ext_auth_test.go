@@ -63,7 +63,7 @@ func TestExtAuthz(t *testing.T) {
 		oc.ApplyString(t, ns, ExternalRoute)
 
 		t.LogStep("Verify a request to path /headers with header x-ext-authz: deny is denied by the sample ext_authz server:")
-		assertRequestDenied(t, ns, httpbinRequest("GET", "/headers", "x-ext-authz: deny"))
+		assertRequestDenied(t, ns, httpbinRequest("GET", "/headers", "x-ext-authz: deny"), "403")
 
 		t.LogStep("Verify a request to path /headers with header x-ext-authz: allow is allowed by the sample ext_authz server")
 		assertRequestAccepted(t, ns, httpbinRequest("GET", "/headers", "x-ext-authz: allow"))

@@ -16,119 +16,107 @@ package ossm
 
 import (
 	_ "embed"
-	"strings"
+	"encoding/json"
+	"fmt"
 	"testing"
-	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
+	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
-
-var (
-	//go:embed yaml/deployment-testenv-x86.yaml
-	testenvDeploymentX86 string
-
-	//go:embed yaml/deployment-testenv-z.yaml
-	testenvDeploymentZ string
-
-	//go:embed yaml/deployment-testenv-p.yaml
-	testenvDeploymentP string
-
-	InjectedAnnotationsSMCPPatch = `
-spec:
-  proxy:
-    injection:
-      autoInject: true
-      injectedAnnotations:
-        test1.annotation-from-smcp: test1
-        test2.annotation-from-smcp: '["test2"]'
-        test3.annotation-from-smcp: '{test3}'
-`
-)
-
-func cleanupSMCPAnnotations() {
-	log.Log.Info("Cleanup ...")
-	util.KubeDeleteContents("bookinfo", testenvDeploymentX86)
-	time.Sleep(time.Duration(20) * time.Second)
-}
 
 func TestSMCPAnnotations(t *testing.T) {
-	test.NewTest(t).Id("T29").Groups(test.Full).NotRefactoredYet()
+	NewTest(t).Id("T29").Groups(Full).Run(func(t TestHelper) {
+		t.Log("Test annotations: verify deployment with sidecar.maistra.io/proxyEnv annotations and Enable automatic injection in SMCP to propagate the annotations to the sidecar")
+		hack.DisableLogrusForThisTest(t)
+		ns := "foo"
 
-	defer cleanupSMCPAnnotations()
+		t.NewSubTest("proxyEnvoy").Run(func(t TestHelper) {
+			t.Cleanup(func() {
+				oc.RecreateNamespace(t, ns)
+			})
+			t.LogStep("Deploy TestSSL pod with annotations sidecar.maistra.io/proxyEnv")
+			oc.ApplyString(t, ns, getTestSSLManifestWithAnnotation())
+			oc.WaitDeploymentRolloutComplete(t, ns, "testenv")
 
-	t.Run("smcp_test_annotation_proxyEnv", func(t *testing.T) {
-		defer util.RecoverPanic(t)
+			t.LogStep("Get annotations and verify that the pod has the expected: sidecar.maistra.io/proxyEnv : { \"maistra_test_env\": \"env_value\", \"maistra_test_env_2\": \"env_value_2\" }")
+			annotations := GetPodAnnotations(t, pod.MatchingSelector("app=env", ns))
+			assertAnnotationIsPresent(t, annotations, "sidecar.maistra.io/proxyEnv", `{ "maistra_test_env": "env_value", "maistra_test_env_2": "env_value_2" }`)
+		})
 
-		log.Log.Info("Test annotation sidecar.maistra.io/proxyEnv")
-		if env.Getenv("SAMPLEARCH", "x86") == "p" {
-			util.KubeApplyContents("bookinfo", testenvDeploymentP)
-		} else if env.Getenv("SAMPLEARCH", "x86") == "z" {
-			util.KubeApplyContents("bookinfo", testenvDeploymentZ)
-		} else {
-			util.KubeApplyContents("bookinfo", testenvDeploymentX86)
-		}
-		util.CheckPodRunning("bookinfo", "app=env")
-		msg, err := util.ShellMuteOutput(`kubectl get po -n bookinfo -o yaml | grep maistra_test_env`)
-		util.Inspect(err, "Failed to get variables", "", t)
+		// Test that the SMCP automatic injection with quotes works
+		t.NewSubTest("quote_injection").Run(func(t TestHelper) {
+			t.Cleanup(func() {
+				oc.RecreateNamespace(t, ns)
+			})
+			t.LogStep("Enable annotation auto injection in SMCP")
+			oc.Patch(t,
+				meshNamespace,
+				"smcp", smcpName,
+				"merge",
+				`{"spec":{"proxy":{"injection":{"autoInject":true,"injectedAnnotations":{"test1.annotation-from-smcp":"test1","test2.annotation-from-smcp":"[\"test2\"]","test3.annotation-from-smcp":"{test3}"}}}}}`)
+			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
-		if strings.Contains(msg, "env_value") {
-			log.Log.Info(msg)
-		} else {
-			t.Errorf("Failed to get env variable: %v", msg)
-		}
-		util.KubeDeleteContents("bookinfo", testenvDeploymentX86)
-		time.Sleep(time.Duration(30) * time.Second)
-	})
+			t.LogStep("Deploy TestSSL pod with annotations sidecar.maistra.io/proxyEnv")
+			oc.ApplyString(t, ns, getTestSSLManifestWithAnnotation())
+			oc.WaitDeploymentRolloutComplete(t, ns, "testenv")
 
-	t.Run("smcp_test_annotation_quote_injection", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-
-		log.Log.Info("Test SMCP annotation quote value injection")
-		if _, err := util.Shell(`kubectl -n %s patch smcp/%s --type=merge --patch="%s"`, meshNamespace, smcpName, InjectedAnnotationsSMCPPatch); err != nil {
-			t.Fatal(err)
-		}
-
-		if _, err := util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName); err != nil {
-			t.Fatal(err)
-		}
-
-		log.Log.Info("Check a pod annotations")
-		if env.Getenv("SAMPLEARCH", "x86") == "p" {
-			util.KubeApplyContents("bookinfo", testenvDeploymentP)
-		} else if env.Getenv("SAMPLEARCH", "x86") == "z" {
-			util.KubeApplyContents("bookinfo", testenvDeploymentZ)
-		} else {
-			util.KubeApplyContents("bookinfo", testenvDeploymentX86)
-		}
-		util.CheckPodRunning("bookinfo", "app=env")
-		podName, err := util.GetPodName("bookinfo", "app=env")
-		if err != nil {
-			t.Fatalf("Failed to get pod name: %v", err)
-		}
-		annotations, err := util.GetPodAnnotations("bookinfo", podName, 30)
-		if err != nil {
-			t.Fatalf("Failed to get annotations: %v", err)
-		}
-		log.Log.Infof("Checking annotation: %v", annotations["test1.annotation-from-smcp"])
-		if _, ok := annotations["test1.annotation-from-smcp"]; !ok {
-			t.Errorf("Failed to get annotations: test1.annotation-from-smcp: test1")
-		} else if annotations["test1.annotation-from-smcp"] != "test1" {
-			t.Errorf("Failed to get annotations: test1.annotation-from-smcp: test1")
-		}
-		log.Log.Infof("Checking annotation: %v", annotations["test2.annotation-from-smcp"])
-		if _, ok := annotations["test2.annotation-from-smcp"]; !ok {
-			t.Errorf("Failed to get annotations: test2.annotation-from-smcp: '[test2]'")
-		} else if annotations["test2.annotation-from-smcp"] != "[test2]" {
-			t.Errorf("Failed to get annotations: test2.annotation-from-smcp: '[test2]'")
-		}
-		log.Log.Infof("Checking annotation: %v", annotations["test3.annotation-from-smcp"])
-		if _, ok := annotations["test3.annotation-from-smcp"]; !ok {
-			t.Errorf("Failed to get annotations: test3.annotation-from-smcp: '{test3}'")
-		} else if annotations["test3.annotation-from-smcp"] != "{test3}" {
-			t.Errorf("Failed to get annotations: test3.annotation-from-smcp: '{test3}'")
-		}
+			t.LogStep("Get annotations and verify that the pod has the expected: test1.annotation-from-smcp : test1, test2.annotation-from-smcp : [\"test2\"], test3.annotation-from-smcp : {test3}")
+			annotations := GetPodAnnotations(t, pod.MatchingSelector("app=env", ns))
+			assertAnnotationIsPresent(t, annotations, "test1.annotation-from-smcp", "test1")
+			assertAnnotationIsPresent(t, annotations, "test2.annotation-from-smcp", `["test2"]`)
+			assertAnnotationIsPresent(t, annotations, "test3.annotation-from-smcp", "{test3}")
+		})
 	})
 }
+
+func GetPodAnnotations(t TestHelper, podLocator oc.PodLocatorFunc) map[string]string {
+	annotations := map[string]string{}
+	po := podLocator(t)
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		output := shell.Executef(t, "kubectl get pod %s -n %s -o jsonpath='{.metadata.annotations}'", po.Name, po.Namespace)
+		err := json.Unmarshal([]byte(output), &annotations)
+		if err != nil {
+			t.Fatalf("Error parsing pod annotations json: %v", err)
+		}
+	})
+	return annotations
+}
+
+func assertAnnotationIsPresent(t TestHelper, annotations map[string]string, key string, expectedValue string) {
+	if annotations[key] != expectedValue {
+		t.Fatalf("Expected annotation %s=%s, but got %s", key, expectedValue, annotations[key])
+	}
+}
+
+func getTestSSLManifestWithAnnotation() string {
+	return fmt.Sprintf(testSSLDeploymentWithAnnotation, env.GetTestSSLImage())
+}
+
+const testSSLDeploymentWithAnnotation = `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testenv
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: env
+  template:
+    metadata:
+      annotations:
+        sidecar.maistra.io/proxyEnv: '{ "maistra_test_env": "env_value", "maistra_test_env_2": "env_value_2" }'
+      labels:
+        app: env
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+      - name: testenv
+        image: %s
+`

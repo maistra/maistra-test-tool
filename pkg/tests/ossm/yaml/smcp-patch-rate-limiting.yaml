@@ -11,7 +11,7 @@ spec:
         - key: PATH
           value: "/productpage"
           rate_limit:
-            unit: minute
+            unit: second
             requests_per_unit: 1
         - key: PATH
           rate_limit:

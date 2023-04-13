@@ -124,3 +124,7 @@ func BookinfoRuleAllMTLSYamlFile() string {
 func FortioYamlFile() string {
 	return fortioYaml
 }
+
+func RedisYamlFile() string {
+	return redisYaml
+}
