@@ -269,10 +269,14 @@ func (o OC) Invoke(t test.TestHelper, command string, checks ...common.CheckFunc
 // is used to execute commands (TODO)
 func (o OC) withKubeconfig(t test.TestHelper, f func()) {
 	t.T().Helper()
-	oldValue := os.Getenv("KUBECONFIG")
-	setEnv(t, "KUBECONFIG", o.kubeconfig)
-	f()
-	setEnv(t, "KUBECONFIG", oldValue)
+	if o.kubeconfig == "" {
+		f()
+	} else {
+		oldValue := os.Getenv("KUBECONFIG")
+		setEnv(t, "KUBECONFIG", o.kubeconfig)
+		f()
+		setEnv(t, "KUBECONFIG", oldValue)
+	}
 }
 
 func setEnv(t test.TestHelper, key string, value string) {
