@@ -33,17 +33,12 @@ func TestAccessExternalServices(t *testing.T) {
 		ns := "bookinfo"
 		meshNamespace := env.GetDefaultMeshNamespace()
 		smcpName := env.GetDefaultSMCPName()
-		outboundDefaultPatch := `[{"op": "remove", "path": "/spec/proxy/networking/trafficControl/outbound/policy"}]`
 		t.Cleanup(func() {
 			app.Uninstall(t, app.Sleep(ns))
-			oc.Patch(
-				t,
+			oc.Patch(t,
 				meshNamespace,
-				"smcp",
-				smcpName,
-				"json",
-				outboundDefaultPatch,
-			)
+				"smcp", smcpName,
+				"json", `[{"op": "remove", "path": "/spec/proxy/networking/trafficControl/outbound/policy"}]`)
 		})
 
 		t.Log("This test validates accesses to external services")
@@ -63,16 +58,11 @@ func TestAccessExternalServices(t *testing.T) {
 			),
 		)
 
-		outboundRegistryOnlyPatch := `[{"op": "add", "path": "/spec/proxy/networking/trafficControl/outbound/policy", "value": "REGISTRY_ONLY"}]`
-
 		t.LogStepf("Patch outbound traffic policy to registry only")
-		oc.Patch(
-			t,
+		oc.Patch(t,
 			meshNamespace,
-			"smcp",
-			smcpName,
-			"json",
-			outboundRegistryOnlyPatch,
+			"smcp", smcpName,
+			"json", `[{"op": "add", "path": "/spec/proxy/networking/trafficControl/outbound/policy", "value": "REGISTRY_ONLY"}]`,
 		)
 
 		t.LogStep("Make request to www.redhat.com from sleep again, and expect it denied")
@@ -141,7 +131,7 @@ func TestAccessExternalServices(t *testing.T) {
 				),
 			)
 
-			t.LogStep("Apply a VirtualService with 3-second timetout to httpbin.org")
+			t.LogStep("Apply a VirtualService with 3-second timeout to httpbin.org")
 			oc.ApplyString(t, ns, httpbinExternalVituralServiceWithTimeout)
 
 			t.LogStep("Send a request to httpbin.org with 5-second expected delay")
@@ -162,3 +152,53 @@ func TestAccessExternalServices(t *testing.T) {
 func buildGetRequestCmd(location string) string {
 	return fmt.Sprintf("curl -sSL -o /dev/null -D - %s | head -n 1", location)
 }
+
+const (
+	httpbinExternalServiceEntryHttpPortOnly = `
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: httpbin-ext
+spec:
+  hosts:
+  - httpbin.org
+  ports:
+  - number: 80
+    name: http
+    protocol: HTTP
+  resolution: DNS
+  location: MESH_EXTERNAL
+`
+
+	redhatExternalServiceEntryHttpsPortOnly = `
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: redhat
+spec:
+  hosts:
+  - www.redhat.com
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  resolution: DNS
+  location: MESH_EXTERNAL
+`
+
+	httpbinExternalVituralServiceWithTimeout = `
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: httpbin-ext
+spec:
+  hosts:
+    - httpbin.org
+  http:
+  - timeout: 3s
+    route:
+      - destination:
+          host: httpbin.org
+        weight: 100
+`
+)
