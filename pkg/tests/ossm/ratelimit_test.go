@@ -51,13 +51,15 @@ func TestRateLimiting(t *testing.T) {
 		ns := "bookinfo"
 		nsRedis := "redis"
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, meshNamespace)
+			t.Log("Revert SMCP to default")
+			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `{"spec":{"techPreview":{"rateLimiting":null}}}`)
 		})
 
 		t.LogStep("Install Bookinfo and Redis")
 		app.InstallAndWaitReady(t, app.Bookinfo(ns), app.Redis(nsRedis))
 		t.Cleanup(func() {
 			app.Uninstall(t, app.Bookinfo(ns), app.Redis(nsRedis))
+			oc.DeleteNamespace(t, nsRedis) //namespace redis is only used in this test, so delete it after test
 		})
 
 		t.LogStep("Patch SMCP to enable rate limiting and wait until smcp is ready")
