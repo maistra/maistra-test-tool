@@ -31,7 +31,7 @@ func TestCertManager(t *testing.T) {
 
 		t.LogStep("Install cert-manager")
 		shell.Execute(t,
-			fmt.Sprintf(`helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --version v1.11.0 --set installCRDs=true`),
+			`helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --version v1.11.0 --set installCRDs=true`,
 			assert.OutputContains("cert-manager v1.11.0 has been deployed successfully",
 				"Successfully installed cert-manager",
 				"Failed to installed cert-manager"))
@@ -41,7 +41,7 @@ func TestCertManager(t *testing.T) {
 
 		t.LogStep("Install cert-manager istio-csr Service")
 		shell.Execute(t,
-			fmt.Sprintf(`helm install -n cert-manager cert-manager-istio-csr jetstack/cert-manager-istio-csr -f https://raw.githubusercontent.com/maistra/istio-operator/maistra-2.4/deploy/examples/cert-manager/istio-csr-helm-values.yaml`),
+			`helm install -n cert-manager cert-manager-istio-csr jetstack/cert-manager-istio-csr -f https://raw.githubusercontent.com/maistra/istio-operator/maistra-2.4/deploy/examples/cert-manager/istio-csr-helm-values.yaml`,
 			assert.OutputContains("STATUS: deployed",
 				"Successfully, installed cert-manager-istio-csr",
 				"Failed to installed cert-manager-istio-csr"))
