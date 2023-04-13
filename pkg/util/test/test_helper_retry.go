@@ -7,10 +7,11 @@ import (
 
 const retryPanicKey = "RetryTestHelper.FailNow"
 
-func NewRetryTestHelper(t *testing.T, attempt, maxAttempts int) *RetryTestHelper {
+func NewRetryTestHelper(t *testing.T, currentStep, attempt, maxAttempts int) *RetryTestHelper {
 	return &RetryTestHelper{
 		testHelper: testHelper{
-			t: t,
+			t:           t,
+			currentStep: currentStep,
 		},
 		attempt:     attempt,
 		maxAttempts: maxAttempts,
@@ -41,25 +42,25 @@ func (t *RetryTestHelper) Failed() bool {
 
 func (t *RetryTestHelper) Error(args ...any) {
 	t.t.Helper()
-	t.t.Log("transient error " + t.attemptString() + ": " + fmt.Sprint(args...))
+	t.Log("transient error " + t.attemptString() + ": " + fmt.Sprint(args...))
 	t.Fail()
 }
 
 func (t *RetryTestHelper) Errorf(format string, args ...any) {
 	t.t.Helper()
-	t.t.Logf("transient error "+t.attemptString()+": "+format, args...)
+	t.Logf("transient error "+t.attemptString()+": "+format, args...)
 	t.Fail()
 }
 
 func (t *RetryTestHelper) Fatal(args ...any) {
 	t.t.Helper()
-	t.t.Log("transient error " + t.attemptString() + ": " + fmt.Sprint(args...))
+	t.Log("transient error " + t.attemptString() + ": " + fmt.Sprint(args...))
 	t.FailNow()
 }
 
 func (t *RetryTestHelper) Fatalf(format string, args ...any) {
 	t.t.Helper()
-	t.t.Logf("transient error "+t.attemptString()+": "+format, args...)
+	t.Logf("transient error "+t.attemptString()+": "+format, args...)
 	t.FailNow()
 }
 

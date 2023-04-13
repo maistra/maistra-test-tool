@@ -129,12 +129,8 @@ func ValidatingWebhookConfigurationExists(name string) bool {
 
 // KubeApplyContents kubectl apply from contents
 func KubeApplyContents(namespace, yamlContents string) error {
-	tmpfile, err := WriteTempfile(os.TempDir(), "kubeapply", ".yaml", yamlContents)
-	if err != nil {
-		return err
-	}
-	defer removeFile(tmpfile)
-	return KubeApply(namespace, tmpfile)
+	_, err := ShellWithInput(yamlContents, kubeCommand("apply", namespace, "-"))
+	return err
 }
 
 func kubeCommand(subCommand, namespace, yamlFileName string) string {

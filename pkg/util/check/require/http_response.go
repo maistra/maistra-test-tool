@@ -37,6 +37,13 @@ func DurationInRange(minDuration, maxDuration time.Duration) curl.HTTPResponseCh
 	}
 }
 
+func RequestSucceeds(successMsg, failureMsg string) curl.HTTPResponseCheckFunc {
+	return func(t test.TestHelper, resp *http.Response, responseBody []byte, duration time.Duration) {
+		t.T().Helper()
+		common.CheckRequestSucceeds(t, resp, responseBody, successMsg, failureMsg, requireFailure)
+	}
+}
+
 func RequestFails(successMsg, failureMsg string) curl.HTTPResponseCheckFunc {
 	return func(t test.TestHelper, resp *http.Response, responseBody []byte, duration time.Duration) {
 		t.T().Helper()

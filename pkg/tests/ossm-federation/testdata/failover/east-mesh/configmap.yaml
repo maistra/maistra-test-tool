@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: west-mesh-ca-root-cert
+  namespace: east-mesh-system
+data:
+  root-cert.pem: {{ .CARootCert | toYaml | indent 2 }}

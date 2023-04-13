@@ -21,7 +21,7 @@ func InstallAndWaitReady(t test.TestHelper, apps ...App) {
 func Install(t test.TestHelper, apps ...App) {
 	t.T().Helper()
 	for _, app := range apps {
-		t.Logf("Installing app %q in namespace %q", app.Name(), app.Namespace())
+		t.Logf("Install app %q in namespace %q", app.Name(), app.Namespace())
 		app.Install(t)
 	}
 }
@@ -29,7 +29,7 @@ func Install(t test.TestHelper, apps ...App) {
 func WaitReady(t test.TestHelper, apps ...App) {
 	t.T().Helper()
 	for _, app := range apps {
-		t.Logf("Waiting for app %q in namespace %q to be ready", app.Name(), app.Namespace())
+		t.Logf("Wait for app %s/%s to be ready", app.Namespace(), app.Name())
 		app.WaitReady(t)
 	}
 }

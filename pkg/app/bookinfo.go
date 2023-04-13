@@ -48,7 +48,7 @@ func (a *bookinfo) Install(t test.TestHelper) {
 		oc.ApplyFile(t, a.ns, examples.BookinfoRuleAllYamlFile())
 	}
 
-	t.Logf("Deploying Bookinfo in namespace %q", a.ns)
+	t.Logf("Deploy Bookinfo in namespace %q", a.ns)
 	oc.ApplyFile(t, a.ns, examples.BookinfoYamlFile())
 }
 
