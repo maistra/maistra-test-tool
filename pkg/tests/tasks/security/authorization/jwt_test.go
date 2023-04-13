@@ -15,6 +15,7 @@
 package authorization
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
@@ -47,17 +48,17 @@ func TestAuthorizationJWT(t *testing.T) {
 		groupURL := "https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/groups-scope.jwt"
 		tokenGroup := string(curl.Request(t, groupURL, nil))
 
+		t.Cleanup(func() {
+			oc.DeleteFromString(t, ns, JWTExampleRule)
+		})
+		oc.ApplyString(t, ns, JWTExampleRule)
+
 		t.NewSubTest("Allow requests with valid JWT and list-typed claims").Run(func(t test.TestHelper) {
-			t.Cleanup(func() {
-				oc.DeleteFromString(t, ns, JWTExampleRule)
-			})
-			oc.ApplyString(t, ns, JWTExampleRule)
 			t.LogStep("Verify that a request with an invalid JWT is denied")
-			assertRequestDenied(t, ns, httpbinRequest("GET", "/headers", "Authorization: Bearer invalidToken"), "401")
+			assertRequestDenied(t, ns, httpbinRequest("GET", "/headers", bearerTokenHeader("invalidToken")), "401")
 
 			t.LogStep("Verify that a request without a JWT is allowed because there is no authorization policy")
 			assertRequestAccepted(t, ns, httpbinRequest("GET", "/headers"))
-
 		})
 
 		t.NewSubTest("Security authorization allow JWT requestPrincipal").Run(func(t test.TestHelper) {
@@ -66,11 +67,10 @@ func TestAuthorizationJWT(t *testing.T) {
 			})
 			oc.ApplyString(t, ns, JWTRequireRule)
 			t.LogStep("Verify that a request with a valid JWT is allowed")
-			assertRequestAccepted(t, ns, httpbinRequest("GET", "/headers", "Authorization: Bearer %s", token))
+			assertRequestAccepted(t, ns, httpbinRequest("GET", "/headers", bearerTokenHeader(token)))
 
 			t.LogStep("Verify request without a JWT is denied")
 			assertRequestDenied(t, ns, httpbinRequest("GET", "/headers"), "403")
-
 		})
 
 		t.NewSubTest("Security authorization allow JWT claims group").Run(func(t test.TestHelper) {
@@ -79,36 +79,37 @@ func TestAuthorizationJWT(t *testing.T) {
 			})
 			oc.ApplyString(t, ns, JWTGroupClaimRule)
 			t.LogStep("Verify that a request with the JWT that includes group1 in the groups claim is allowed")
-			assertRequestAccepted(t, ns, httpbinRequest("GET", "/headers", "Authorization: Bearer %s", tokenGroup))
+			assertRequestAccepted(t, ns, httpbinRequest("GET", "/headers", bearerTokenHeader(tokenGroup)))
 
 			t.LogStep("Verify that a request with a JWT, which does not have the groups claim is rejected")
-			assertRequestDenied(t, ns, httpbinRequest("GET", "/headers", "Authorization: Bearer %s", token), "403")
-
+			assertRequestDenied(t, ns, httpbinRequest("GET", "/headers", bearerTokenHeader(token)), "403")
 		})
 	})
+}
+
+func bearerTokenHeader(token string) string {
+	return fmt.Sprintf("Authorization: Bearer %s", token)
 }
 
 const (
 	JWTExampleRule = `
 apiVersion: security.istio.io/v1beta1
-kind: "RequestAuthentication"
+kind: RequestAuthentication
 metadata:
-  name: "jwt-example"
-  namespace: foo
+  name: jwt-example
 spec:
   selector:
     matchLabels:
       app: httpbin
   jwtRules:
-  - issuer: "testing@secure.istio.io"
-    jwksUri: "https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/jwks.json"
+  - issuer: testing@secure.istio.io
+    jwksUri: https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/jwks.json
 `
 	JWTRequireRule = `
 apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
   name: require-jwt
-  namespace: foo
 spec:
   selector:
     matchLabels:
@@ -125,7 +126,6 @@ apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
   name: require-jwt
-  namespace: foo
 spec:
   selector:
     matchLabels:
