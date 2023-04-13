@@ -1,7 +1,6 @@
 package certificate
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
