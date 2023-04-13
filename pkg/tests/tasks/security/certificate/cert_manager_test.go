@@ -22,7 +22,7 @@ func TestCertManager(t *testing.T) {
 			oc.RecreateNamespace(t, ns)
 		})
 
-		t.LogStep("uninstall the SMCP")
+		t.LogStep("Uninstall the SMCP")
 		oc.RecreateNamespace(t, meshNamespace)
 
 		t.LogStep("Add jetstack repo to helm")
@@ -45,7 +45,7 @@ func TestCertManager(t *testing.T) {
 				"Successfully, installed cert-manager-istio-csr",
 				"Failed to installed cert-manager-istio-csr"))
 
-		t.LogStep("deploy the cert-manager in SMCP")
+		t.LogStep("Deploy the cert-manager in SMCP")
 		oc.ApplyString(t, meshNamespace, CertManagerSMCP)
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
