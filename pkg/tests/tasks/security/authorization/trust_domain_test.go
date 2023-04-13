@@ -85,7 +85,7 @@ func runCurlInSleepPod(t TestHelper, ns string, expectedStatus int) {
 		oc.Exec(t,
 			pod.MatchingSelector("app=sleep", ns),
 			"sleep",
-			`curl http://httpbin.foo:8000/ip -sS -o /dev/null -w "%%{http_code}\n"`,
+			`curl http://httpbin.foo:8000/ip -sS -o /dev/null -w "%{http_code}\n"`,
 			assert.OutputContains(strconv.Itoa(expectedStatus), "", ""))
 	})
 }

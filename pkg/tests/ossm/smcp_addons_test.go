@@ -29,6 +29,7 @@ func TestSMCPAddons(t *testing.T) {
 	NewTest(t).Id("T34").Groups(Full).Run(func(t TestHelper) {
 		hack.DisableLogrusForThisTest(t)
 		t.Cleanup(func() {
+			// We need to recreate the namespace because in case that this test case fails we need to assure that the namespace is clean.
 			oc.RecreateNamespace(t, meshNamespace)
 		})
 

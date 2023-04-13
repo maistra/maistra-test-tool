@@ -35,7 +35,6 @@ func TestIstiodPodFailsAfterRestarts(t *testing.T) {
 
 		t.Cleanup(func() {
 			oc.DeleteNamespace(t, namespaces...)
-			oc.RecreateNamespace(t, meshNamespace)
 			oc.ApplyString(t, meshNamespace, smmr)
 		})
 

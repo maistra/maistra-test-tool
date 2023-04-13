@@ -37,6 +37,7 @@ func TestSMCPInstall(t *testing.T) {
 	NewTest(t).Id("A1").Groups(Smoke, Full, InterOp, ARM).Run(func(t TestHelper) {
 		hack.DisableLogrusForThisTest(t)
 		t.Cleanup(func() {
+			//Delete meshNamespace and recreate it in case that we have any issue with the test to avoid have a non wanted smcp version installed
 			oc.RecreateNamespace(t, meshNamespace)
 		})
 

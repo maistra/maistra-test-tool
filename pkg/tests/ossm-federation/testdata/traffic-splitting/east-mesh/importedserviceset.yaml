@@ -1,0 +1,16 @@
+apiVersion: federation.maistra.io/v1
+kind: ImportedServiceSet
+metadata:
+  name: west-mesh
+  namespace: east-mesh-system
+spec:
+  importRules:
+    - type: NameSelector
+      # Set to true to aggregate remote endpoint with local services.
+      # When true, services will be imported as <name>.east-mesh-bookinfo.svc.cluster.local
+      importAsLocal: false
+      nameSelector:
+        namespace: bookinfo
+        alias:
+          # services will be imported as <name>.east-mesh-bookinfo.svc.west-mesh-imports.local
+          namespace: east-mesh-bookinfo

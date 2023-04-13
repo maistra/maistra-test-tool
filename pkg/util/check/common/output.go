@@ -17,7 +17,7 @@ func CheckOutputContains(t test.TestHelper, output, str, successMsg, failureMsg 
 		}
 		logSuccess(t, successMsg)
 	} else {
-		detailMsg := fmt.Sprintf("expected to find the string '%s' in the command output, but it wasn't found", str)
+		detailMsg := fmt.Sprintf("expected to find the string '%s' in the output, but it wasn't found", str)
 		if !t.WillRetry() {
 			detailMsg += "\nfull output:\n" + output
 		}

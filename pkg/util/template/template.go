@@ -7,7 +7,7 @@ import (
 
 func Run(t test.TestHelper, yaml string, vars interface{}) string {
 	t.T().Helper()
-	return util.RunTemplate(yaml, vars)
+	return util.RunTemplateWithTestHelper(t, yaml, vars)
 }
 
 type SMCP struct {
