@@ -59,7 +59,13 @@ func installNightlyOperators() {
 	time.Sleep(time.Duration(30) * time.Second)
 }
 
+func SetupEnvVars() {
+	env.InitEnvVarsFromFile()
+}
+
 func BasicSetup() {
+	SetupEnvVars()
+
 	log.Log.Info("Starting Basic Setup")
 	createNamespaces()
 	if env.Getenv("NIGHTLY", "false") == "true" {

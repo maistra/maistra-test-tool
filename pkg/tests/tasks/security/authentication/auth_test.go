@@ -101,7 +101,7 @@ func TestAuthPolicy(t *testing.T) {
 					oc.Exec(t,
 						pod.MatchingSelector("app=sleep", from),
 						"sleep",
-						fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%%%{http_code}" || echo "failed to connect"`, to, from, to),
+						fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%{http_code}" || echo "failed to connect"`, to, from, to),
 						assert.OutputDoesNotContain("200",
 							"Global mTLS expected 000",
 							"Response 000 as expected"))
