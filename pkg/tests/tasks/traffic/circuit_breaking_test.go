@@ -68,11 +68,8 @@ func TestCircuitBreaking(t *testing.T) {
 				"fortio",
 				fmt.Sprintf("/usr/bin/fortio load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount))
 
-			t.LogStep("Validate the number of 200 responses")
 			t.Log("We expect to have a line with this information: Code 200 : XX (X0.0 %)")
 			c200 := getNumberOfResponses(t, msg, `Code 200.*`)
-
-			t.LogStep("Validate the number of 503 responses")
 			t.Log("We expect to have a line with this information: Code 503 : XX (X0.0 %)")
 			c503 := getNumberOfResponses(t, msg, `Code 503.*`)
 
