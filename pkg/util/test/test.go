@@ -70,7 +70,7 @@ func (t *topLevelTest) NotRefactoredYet() {
 
 func (t *topLevelTest) skipIfNecessary() {
 	testGroup := TestGroup(env.Getenv("TEST_GROUP", string(Full)))
-	if env.Getenv("SAMPLEARCH", "x86") == "arm" {
+	if env.GetSampleArch() == "arm" {
 		testGroup = "arm"
 	}
 
