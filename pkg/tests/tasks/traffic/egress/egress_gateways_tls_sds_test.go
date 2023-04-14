@@ -18,13 +18,9 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
-	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -45,28 +41,24 @@ func TestTLSOriginationSDS(t *testing.T) {
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, ns, ExServiceEntry)
 			})
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				execInSleepPod(t, ns,
-					`curl -sSL -o /dev/null -D - http://istio.io`,
-					assert.OutputContains(
-						"301",
-						"Expected 301 Moved Permanently",
-						"Unexpected response, expected 301 Moved Permanently"))
-			})
+			execInSleepPod(t, ns,
+				`curl -sSL -o /dev/null -D - http://istio.io`,
+				assert.OutputContains(
+					"301",
+					"Expected 301 Moved Permanently",
+					"Unexpected response, expected 301 Moved Permanently"))
 
 			t.LogStep("Create a Gateway to external istio.io")
 			oc.ApplyTemplate(t, ns, ExGatewayTLSFileTemplate, smcp)
 			t.Cleanup(func() {
 				oc.DeleteFromTemplate(t, ns, ExGatewayTLSFileTemplate, smcp)
 			})
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				execInSleepPod(t, ns,
-					`curl -sSL -o /dev/null -D - http://istio.io`,
-					assert.OutputContains(
-						"HTTP/1.1 200 OK",
-						"Expected 200 from istio.io",
-						"Unexpected response, expected 200"))
-			})
+			execInSleepPod(t, ns,
+				`curl -sSL -o /dev/null -D - http://istio.io`,
+				assert.OutputContains(
+					"HTTP/1.1 200 OK",
+					"Expected 200 from istio.io",
+					"Unexpected response, expected 200"))
 		})
 
 		t.NewSubTest("Gateway").Run(func(t TestHelper) {
@@ -74,35 +66,30 @@ func TestTLSOriginationSDS(t *testing.T) {
 			nsNginx := "mesh-external"
 			t.Cleanup(func() {
 				oc.DeleteNamespace(t, nsNginx)
-				oc.DeleteSecret(t, meshNamespace, nginxClientCertKey)
-				oc.DeleteSecret(t, meshNamespace, nginxClientCert)
-				oc.DeleteSecret(t, meshNamespace, nginxServerCACert)
+				oc.DeleteSecret(t, meshNamespace, "client-credential")
 				oc.DeleteFromTemplate(t, ns, EgressGatewaySDSTemplate, smcp)
-				oc.DeleteFromString(t, meshNamespace, meshExternalServiceEntry)
-				oc.DeleteFromString(t, meshNamespace, OriginateSDS)
+				oc.DeleteFromString(t, meshNamespace, meshExternalServiceEntry, OriginateSDS)
 			})
 
 			t.LogStep("Deploy nginx mTLS server and create secrets in the mesh namespace")
 
-			nginx := examples.Nginx{Namespace: nsNginx}
-			nginx.Install_mTLS(env.GetRootDir() + "/testdata/examples/x86/nginx/nginx_mesh_external_ssl.conf")
+			app.InstallAndWaitReady(t, app.NginxWithMTLS(nsNginx))
 
-			oc.CreateTLSSecretWithCACert(t, meshNamespace, "client-credential", nginxClientCertKey, nginxClientCert, nginxServerCACert)
-
+			oc.CreateGenericSecretFromFiles(t, meshNamespace, "client-credential",
+				"tls.key="+nginxClientCertKey,
+				"tls.crt="+nginxClientCert,
+				"ca.crt="+nginxServerCACert)
 			oc.ApplyTemplate(t, ns, EgressGatewaySDSTemplate, smcp)
-			oc.ApplyString(t, meshNamespace, meshExternalServiceEntry)
-			oc.ApplyString(t, meshNamespace, OriginateSDS)
+			oc.ApplyString(t, meshNamespace, meshExternalServiceEntry, OriginateSDS)
 
 			t.Log("Verify NGINX server")
 
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				execInSleepPod(t, ns,
-					`curl -sS http://my-nginx.mesh-external.svc.cluster.local`,
-					assert.OutputContains(
-						"Welcome to nginx",
-						"Success. Get expected response: Welcome to nginx",
-						"ERROR: Expected Welcome to nginx; Got unexpected response"))
-			})
+			execInSleepPod(t, ns,
+				`curl -sS http://my-nginx.mesh-external.svc.cluster.local`,
+				assert.OutputContains(
+					"Welcome to nginx",
+					"Success. Get expected response: Welcome to nginx",
+					"ERROR: Expected Welcome to nginx; Got unexpected response"))
 		})
 	})
 }

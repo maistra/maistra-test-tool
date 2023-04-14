@@ -22,8 +22,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -50,14 +48,12 @@ func TestTLSOrigination(t *testing.T) {
 			})
 
 			t.LogStep("Verify that the egress gateway is working: expect 301 Moved Permanently from istio.io")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				execInSleepPod(t, ns,
-					`curl -sSL -o /dev/null -D - http://istio.io`,
-					assert.OutputContains(
-						"301",
-						"Got expected 301 Moved Permanently",
-						"Not expected response, expected 301 Moved Permanently"))
-			})
+			execInSleepPod(t, ns,
+				`curl -sSL -o /dev/null -D - http://istio.io`,
+				assert.OutputContains(
+					"301",
+					"Got expected 301 Moved Permanently",
+					"Not expected response, expected 301 Moved Permanently"))
 
 			t.LogStep("Create a Gateway, DestinationRule, and VirtualService to route requests to istio.io")
 			oc.ApplyTemplate(t, ns, ExGatewayTLSFileTemplate, smcp)
@@ -66,13 +62,11 @@ func TestTLSOrigination(t *testing.T) {
 			})
 
 			t.LogStep("Verify that request to http://istio.io is routed through the egress gateway (response 200 indicates that the TLS origination is done by the egress gateway)")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				execInSleepPod(t, ns,
-					fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(), "http://istio.io"),
-					assert.OutputContains("200",
-						"Got expected 200 response",
-						"Unexpected response from http://istio.io"))
-			})
+			execInSleepPod(t, ns,
+				fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(), "http://istio.io"),
+				assert.OutputContains("200",
+					"Got expected 200 response",
+					"Unexpected response from http://istio.io"))
 		})
 
 		t.NewSubTest("mTLS with file mount").Run(func(t TestHelper) {
@@ -106,14 +100,12 @@ func TestTLSOrigination(t *testing.T) {
 			app.WaitReady(t, app.NginxWithMTLS(nsNginx))
 
 			t.LogStep("Verify NGINX server")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				execInSleepPod(t, ns,
-					`curl -sS http://my-nginx.mesh-external.svc.cluster.local`,
-					assert.OutputContains(
-						"Welcome to nginx",
-						"Get expected response: Welcome to nginx",
-						"Expected Welcome to nginx; Got unexpected response"))
-			})
+			execInSleepPod(t, ns,
+				`curl -sS http://my-nginx.mesh-external.svc.cluster.local`,
+				assert.OutputContains(
+					"Welcome to nginx",
+					"Get expected response: Welcome to nginx",
+					"Expected Welcome to nginx; Got unexpected response"))
 		})
 	})
 }
