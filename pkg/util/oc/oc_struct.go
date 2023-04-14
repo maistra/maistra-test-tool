@@ -129,10 +129,7 @@ func (o OC) CreateTLSSecretWithCACert(t test.TestHelper, ns, name string, keyFil
 
 func (o OC) CreateGenericSecretFromFile(t test.TestHelper, ns, name string, file string) {
 	t.T().Helper()
-	o.withKubeconfig(t, func() {
-		t.T().Helper()
-		o.CreateGenericSecretFromFiles(t, ns, name, file)
-	})
+	o.CreateGenericSecretFromFiles(t, ns, name, file)
 }
 
 func (o OC) DeleteSecret(t test.TestHelper, ns string, name string) {
