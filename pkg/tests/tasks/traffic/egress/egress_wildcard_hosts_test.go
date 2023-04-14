@@ -70,8 +70,8 @@ func assertExternalRequestSuccess(t TestHelper, ns string) {
 			`curl -s https://en.wikipedia.org/wiki/Main_Page`,
 			assert.OutputContains(
 				"<title>Wikipedia, the free encyclopedia</title>",
-				"Received the correct English Wikipedia response",
-				"Failed to receive the correct English Wikipedia response"))
+				"Received the correct response from en.wikipedia.org",
+				"Failed to receive the correct response from en.wikipedia.org"))
 
 		oc.Exec(t,
 			pod.MatchingSelector("app=sleep", ns),
@@ -79,8 +79,8 @@ func assertExternalRequestSuccess(t TestHelper, ns string) {
 			`curl -s https://de.wikipedia.org/wiki/Wikipedia:Hauptseite`,
 			assert.OutputContains(
 				"<title>Wikipedia – Die freie Enzyklopädie</title>",
-				"Received the correct German Wikipedia response",
-				"Failed to receive the correct German Wikipedia response"))
+				"Received the correct response from de.wikipedia.org",
+				"Failed to receive the correct response from de.wikipedia.org"))
 	})
 }
 
