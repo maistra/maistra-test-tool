@@ -16,172 +16,240 @@ package egress
 
 import (
 	"fmt"
-	"strings"
 	"testing"
-	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
-	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
+	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/hack"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
+
+func TestTLSOrigination(t *testing.T) {
+	NewTest(t).Id("T14").Groups(Full, InterOp).Run(func(t TestHelper) {
+		hack.DisableLogrusForThisTest(t)
+		t.Log("This test verifies that TLS origination works in 2 scenarios:")
+		t.Log("  1) Egress gateway TLS Origination")
+		t.Log("  2) MTLS Origination with file mount (certificates mounted in egress gateway pod)")
+
+		ns := "bookinfo"
+		t.Cleanup(func() {
+			app.Uninstall(t, app.Sleep(ns))
+		})
+		app.InstallAndWaitReady(t, app.Sleep(ns))
+
+		t.NewSubTest("Egress Gateway without file mount").Run(func(t TestHelper) {
+			t.Log("Perform TLS origination with an egress gateway")
+
+			t.LogStep("Create ServiceEntry for istio.io, port 80 and 443")
+			oc.ApplyString(t, ns, ExServiceEntry)
+			t.Cleanup(func() {
+				oc.DeleteFromString(t, ns, ExServiceEntry)
+			})
+
+			t.LogStep("Verify that the egress gateway is working: expect 301 Moved Permanently from istio.io")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				execInSleepPod(t, ns,
+					`curl -sSL -o /dev/null -D - http://istio.io`,
+					assert.OutputContains(
+						"301",
+						"Got expected 301 Moved Permanently",
+						"Not expected response, expected 301 Moved Permanently"))
+			})
+
+			t.LogStep("Create a Gateway, DestinationRule, and VirtualService to route requests to istio.io")
+			oc.ApplyTemplate(t, ns, ExGatewayTLSFileTemplate, smcp)
+			t.Cleanup(func() {
+				oc.DeleteFromTemplate(t, ns, ExGatewayTLSFileTemplate, smcp)
+			})
+
+			t.LogStep("Verify that request to http://istio.io is routed through the egress gateway (response 200 indicates that the TLS origination is done by the egress gateway)")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				execInSleepPod(t, ns,
+					fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(), "http://istio.io"),
+					assert.OutputContains("200",
+						"Got expected 200 response",
+						"Unexpected response from http://istio.io"))
+			})
+		})
+
+		t.NewSubTest("mTLS with file mount").Run(func(t TestHelper) {
+			t.Log("Perform mTLS origination with an egress gateway")
+			nsNginx := "mesh-external"
+			t.Cleanup(func() {
+				app.Uninstall(t, app.NginxWithMTLS(nsNginx))
+				oc.DeleteSecret(t, meshNamespace, "nginx-client-certs", "nginx-ca-certs")
+				// Rollout undo to istio-egressgateway to revert patch
+				oc.UndoRollout(t, meshNamespace, "deploy", "istio-egressgateway")
+				oc.DeleteFromTemplate(t, ns, nginxGatewayTLSTemplate, smcp)
+				oc.DeleteFromString(t, meshNamespace, meshExternalServiceEntry, nginxMeshRule)
+			})
+
+			t.LogStep("Deploy nginx mTLS server and create secrets in the mesh namespace")
+			oc.CreateTLSSecret(t, meshNamespace, "nginx-client-certs", nginxClientCertKey, nginxClientCert)
+			oc.CreateGenericSecretFromFiles(t, meshNamespace,
+				"nginx-ca-certs",
+				"example.com.crt="+nginxServerCACert)
+			app.Install(t, app.NginxWithMTLS(nsNginx))
+
+			t.LogStep("Patch egress gateway with File Mount configuration")
+			oc.Patch(t, meshNamespace, "deploy", "istio-egressgateway", "json", gatewayPatchAdd)
+
+			t.LogStep("Configure MTLS origination for egress traffic")
+			oc.ApplyTemplate(t, ns, nginxGatewayTLSTemplate, smcp)
+			oc.ApplyString(t, meshNamespace, meshExternalServiceEntry, nginxMeshRule)
+
+			t.LogStep("Wait for egress gateway and nginx to be ready")
+			oc.WaitDeploymentRolloutComplete(t, meshNamespace, "istio-egressgateway")
+			app.WaitReady(t, app.NginxWithMTLS(nsNginx))
+
+			t.LogStep("Verify NGINX server")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				execInSleepPod(t, ns,
+					`curl -sS http://my-nginx.mesh-external.svc.cluster.local`,
+					assert.OutputContains(
+						"Welcome to nginx",
+						"Get expected response: Welcome to nginx",
+						"Expected Welcome to nginx; Got unexpected response"))
+			})
+		})
+	})
+}
 
 var (
-	gatewayPatchAdd = `
-[{
-"op": "add",
-"path": "/spec/template/spec/containers/0/volumeMounts/0",
-"value": {
-"mountPath": "/etc/istio/nginx-client-certs",
-"name": "nginx-client-certs",
-"readOnly": true
-}
-},
-{
-"op": "add",
-"path": "/spec/template/spec/volumes/0",
-"value": {
-"name": "nginx-client-certs",
-"secret": {
-"secretName": "nginx-client-certs",
-"optional": true
-}
-}
-},
-{
-"op": "add",
-"path": "/spec/template/spec/containers/0/volumeMounts/1",
-"value": {
-"mountPath": "/etc/istio/nginx-ca-certs",
-"name": "nginx-ca-certs",
-"readOnly": true
-}
-},
-{
-"op": "add",
-"path": "/spec/template/spec/volumes/1",
-"value": {
-"name": "nginx-ca-certs",
-"secret": {
-"secretName": "nginx-ca-certs",
-"optional": true
-}
-}
-}]
+	gatewayPatchAdd = `[
+    {
+        "op": "add",
+        "path": "/spec/template/spec/containers/0/volumeMounts/0",
+        "value": {
+            "mountPath": "/etc/istio/nginx-client-certs",
+            "name": "nginx-client-certs",
+            "readOnly": true
+        }
+    },
+    {
+        "op": "add",
+        "path": "/spec/template/spec/volumes/0",
+        "value": {
+            "name": "nginx-client-certs",
+            "secret": {
+                "secretName": "nginx-client-certs",
+                "optional": true
+            }
+        }
+    },
+    {
+        "op": "add",
+        "path": "/spec/template/spec/containers/0/volumeMounts/1",
+        "value": {
+            "mountPath": "/etc/istio/nginx-ca-certs",
+            "name": "nginx-ca-certs",
+            "readOnly": true
+        }
+    },
+    {
+        "op": "add",
+        "path": "/spec/template/spec/volumes/1",
+        "value": {
+            "name": "nginx-ca-certs",
+            "secret": {
+                "secretName": "nginx-ca-certs",
+                "optional": true
+            }
+        }
+    }
+]`
+
+	nginxGatewayTLSTemplate = `
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: istio-egressgateway
+spec:
+  selector:
+    istio: egressgateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    hosts:
+    - my-nginx.mesh-external.svc.cluster.local
+    tls:
+      mode: ISTIO_MUTUAL
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: egressgateway-for-nginx
+spec:
+  host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
+  subsets:
+  - name: nginx
+    trafficPolicy:
+      loadBalancer:
+        simple: ROUND_ROBIN
+      portLevelSettings:
+      - port:
+          number: 443
+        tls:
+          mode: ISTIO_MUTUAL
+          sni: my-nginx.mesh-external.svc.cluster.local
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: direct-nginx-through-egress-gateway
+spec:
+  hosts:
+  - my-nginx.mesh-external.svc.cluster.local
+  gateways:
+  - istio-egressgateway
+  - mesh
+  http:
+  - match:
+    - gateways:
+      - mesh
+      port: 80
+    route:
+    - destination:
+        host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
+        subset: nginx
+        port:
+          number: 443
+      weight: 100
+  - match:
+    - gateways:
+      - istio-egressgateway
+      port: 443
+    route:
+    - destination:
+        host: my-nginx.mesh-external.svc.cluster.local
+        port:
+          number: 443
+      weight: 100
+`
+
+	nginxMeshRule = `
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: originate-mtls-for-nginx
+spec:
+  host: my-nginx.mesh-external.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    portLevelSettings:
+    - port:
+        number: 443
+      tls:
+        mode: MUTUAL
+        clientCertificate: /etc/istio/nginx-client-certs/tls.crt
+        privateKey: /etc/istio/nginx-client-certs/tls.key
+        caCertificates: /etc/istio/nginx-ca-certs/example.com.crt
+        sni: my-nginx.mesh-external.svc.cluster.local
 `
 )
-
-func cleanupTLSOriginationFileMount() {
-	log.Log.Info("Cleanup")
-	sleep := examples.Sleep{Namespace: "bookinfo"}
-	nginx := examples.Nginx{Namespace: "mesh-external"}
-	util.KubeDeleteContents(meshNamespace, nginxMeshRule)
-	util.KubeDeleteContents(meshNamespace, meshExternalServiceEntry)
-	util.KubeDeleteContents("bookinfo", util.RunTemplate(nginxGatewayTLSTemplate, smcp))
-
-	util.Shell(`kubectl -n %s rollout undo deploy istio-egressgateway`, meshNamespace)
-	time.Sleep(time.Duration(20) * time.Second)
-	util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 180s`, meshNamespace, smcpName)
-	util.Shell(`kubectl -n %s rollout history deploy istio-egressgateway`, meshNamespace)
-
-	util.Shell(`kubectl delete -n %s secret nginx-client-certs`, meshNamespace)
-	util.Shell(`kubectl delete -n %s secret nginx-ca-certs`, meshNamespace)
-	util.KubeDeleteContents("bookinfo", util.RunTemplate(ExGatewayTLSFileTemplate, smcp))
-	util.KubeDeleteContents("bookinfo", ExServiceEntry)
-	nginx.Uninstall()
-	sleep.Uninstall()
-	time.Sleep(time.Duration(20) * time.Second)
-}
-
-func TestTLSOriginationFileMount(t *testing.T) {
-	test.NewTest(t).Id("T14").Groups(test.Full, test.InterOp).NotRefactoredYet()
-
-	defer cleanupTLSOriginationFileMount()
-	defer util.RecoverPanic(t)
-
-	log.Log.Info("TestEgressGatewaysTLSOrigination File Mount")
-	sleep := examples.Sleep{Namespace: "bookinfo"}
-	sleep.Install()
-	sleepPod, err := util.GetPodName("bookinfo", "app=sleep")
-	util.Inspect(err, "Failed to get sleep pod name", "", t)
-
-	t.Run("TrafficManagement_egress_gateway_perform_TLS_origination", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-
-		log.Log.Info("Perform TLS origination with an egress gateway")
-		util.KubeApplyContents("bookinfo", ExServiceEntry)
-		time.Sleep(time.Duration(10) * time.Second)
-
-		command := `curl -sSL -o /dev/null -D - http://istio.io`
-		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", command, false)
-		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "301 Moved Permanently") {
-			log.Log.Info("Success. Get http://istio.io response")
-		} else {
-			log.Log.Infof("Error response: %s", msg)
-			t.Errorf("Error response: %s", msg)
-		}
-
-		log.Log.Info("Create a Gateway to external istio.io")
-		util.KubeApplyContents("bookinfo", util.RunTemplate(ExGatewayTLSFileTemplate, smcp))
-		time.Sleep(time.Duration(20) * time.Second)
-
-		command = `curl -sSL -o /dev/null -D - http://istio.io`
-		msg, err = util.PodExec("bookinfo", sleepPod, "sleep", command, false)
-		util.Inspect(err, "Failed to get response", "", t)
-		if strings.Contains(msg, "301 Moved Permanently") || !strings.Contains(msg, "200") {
-			log.Log.Infof("Error response: %s", msg)
-			t.Errorf("Error response: %s", msg)
-		} else {
-			log.Log.Infof("Success. Get http://istio.io response")
-		}
-
-		log.Log.Info("Cleanup the TLS origination example")
-		util.KubeDeleteContents("bookinfo", util.RunTemplate(ExGatewayTLSFileTemplate, smcp))
-		util.KubeDeleteContents("bookinfo", ExServiceEntry)
-		time.Sleep(time.Duration(20) * time.Second)
-	})
-
-	t.Run("TrafficManagement_egress_gateway_perform_MTLS_origination", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-
-		log.Log.Info("Deploy nginx mtls server")
-		nginx := examples.Nginx{Namespace: "mesh-external"}
-		nginx.Install_mTLS(env.GetRootDir() + "/testdata/examples/x86/nginx/nginx_mesh_external_ssl.conf")
-
-		log.Log.Info("Redeploy the egress gateway with the client certs")
-		util.Shell(`kubectl create -n %s secret tls nginx-client-certs --key %s --cert %s`, meshNamespace, nginxClientCertKey, nginxClientCert)
-		util.Shell(`kubectl create -n %s secret generic nginx-ca-certs --from-file=%s`, meshNamespace, nginxServerCACert)
-
-		log.Log.Info("Patch egress gateway")
-		util.Shell(`kubectl -n %s rollout history deploy istio-egressgateway`, meshNamespace)
-		util.Shell(`kubectl -n %s patch --type=json deploy istio-egressgateway -p='%s'`, meshNamespace, strings.ReplaceAll(gatewayPatchAdd, "\n", ""))
-		time.Sleep(time.Duration(20) * time.Second)
-		util.Shell(`oc wait --for condition=Ready -n %s smcp/%s --timeout 180s`, meshNamespace, smcpName)
-		log.Log.Info("Verify the istio-egressgateway pod")
-		util.Shell(`kubectl exec -n %s "$(kubectl -n %s get pods -l %s -o jsonpath='{.items[0].metadata.name}')" -- ls -al %s %s`,
-			meshNamespace, meshNamespace,
-			"istio=egressgateway",
-			"/etc/istio/nginx-client-certs",
-			"/etc/istio/nginx-ca-certs")
-		util.Shell(`kubectl -n %s rollout history deploy istio-egressgateway`, meshNamespace)
-
-		log.Log.Info("Configure MTLS origination for egress traffic")
-		util.KubeApplyContents("bookinfo", util.RunTemplate(nginxGatewayTLSTemplate, smcp))
-		util.KubeApplyContents(meshNamespace, meshExternalServiceEntry)
-		util.KubeApplyContents(meshNamespace, nginxMeshRule)
-		time.Sleep(time.Duration(10) * time.Second)
-
-		log.Log.Info("Verify NGINX server")
-		cmd := fmt.Sprintf(`curl -sS http://my-nginx.mesh-external.svc.cluster.local`)
-		msg, err := util.PodExec("bookinfo", sleepPod, "sleep", cmd, true)
-		util.Inspect(err, "failed to get response", "", t)
-		if !strings.Contains(msg, "Welcome to nginx") {
-			t.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)
-			log.Log.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)
-		} else {
-			log.Log.Infof("Success. Get expected response: %s", msg)
-		}
-	})
-}

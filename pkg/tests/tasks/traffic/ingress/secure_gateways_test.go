@@ -109,7 +109,10 @@ func TestSecureGateways(t *testing.T) {
 
 		t.NewSubTest("mutual_tls").Run(func(t TestHelper) {
 			t.LogStep("configure Gateway with tls.mode=Mutual")
-			oc.CreateTLSSecretWithCACert(t, meshNamespace, "httpbin-credential", httpbinSampleServerCertKey, httpbinSampleServerCert, httpbinSampleCACert)
+			oc.CreateGenericSecretFromFiles(t, meshNamespace, "httpbin-credential",
+				"tls.key="+httpbinSampleServerCertKey,
+				"tls.crt="+httpbinSampleServerCert,
+				"ca.crt="+httpbinSampleCACert)
 			oc.ApplyString(t, ns, gatewayHttpbinMTLSYaml)
 
 			t.LogStep("check if SSL handshake fails when no client certificate is given")
