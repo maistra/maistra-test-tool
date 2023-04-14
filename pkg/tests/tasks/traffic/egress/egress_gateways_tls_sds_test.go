@@ -82,14 +82,14 @@ func TestTLSOriginationSDS(t *testing.T) {
 			oc.ApplyTemplate(t, ns, EgressGatewaySDSTemplate, smcp)
 			oc.ApplyString(t, meshNamespace, meshExternalServiceEntry, OriginateSDS)
 
-			t.Log("Verify NGINX server")
+			t.Log("Send HTTP request to my-nginx in mesh-external namespace to verify the nginx server")
 
 			execInSleepPod(t, ns,
 				`curl -sS http://my-nginx.mesh-external.svc.cluster.local`,
 				assert.OutputContains(
 					"Welcome to nginx",
-					"Success. Get expected response: Welcome to nginx",
-					"ERROR: Expected Welcome to nginx; Got unexpected response"))
+					"Get expected response: Welcome to nginx",
+					"Expected Welcome to nginx; Got unexpected response"))
 		})
 	})
 }
