@@ -19,13 +19,9 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
-	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
-	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/pod"
-	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -46,7 +42,25 @@ func TestEgressGateways(t *testing.T) {
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, ns, ExServiceEntry)
 			})
-			assertExternalHTTPRequestSuccessful(t, ns)
+
+			assertRequestSuccess := func(url string) {
+				t.LogStepf("Confirm that request to %s is successful", url)
+				execInSleepPod(t, ns,
+					fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(), url),
+					assert.OutputContains("200",
+						fmt.Sprintf("Got %s response", url),
+						fmt.Sprintf("Unexpected response from %s", url)))
+			}
+			assertRequestFailure := func(url string) {
+				t.LogStepf("Confirm that request to %s fails", url)
+				execInSleepPod(t, ns,
+					fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(), url),
+					assert.OutputContains("503",
+						fmt.Sprintf("Got %s failure", url),
+						fmt.Sprintf("Unexpected response from %s", url)))
+			}
+
+			assertRequestSuccess("http://istio.io")
 
 			t.LogStep("Create a Gateway to external istio.io")
 			oc.ApplyTemplate(t, ns, ExGatewayTemplate, smcp)
@@ -56,11 +70,11 @@ func TestEgressGateways(t *testing.T) {
 
 			t.LogStep("Scale istio-egressgateway to zero to confirm that requests to istio.io are routed through it")
 			oc.ScaleDeploymentAndWait(t, meshNamespace, "istio-egressgateway", 0)
-			assertExternalHTTPRequestFailure(t, ns)
+			assertRequestFailure("http://istio.io")
 
 			t.LogStep("Scale istio-egressgateway back to one to confirm that requests to istio.io are successful")
 			oc.ScaleDeploymentAndWait(t, meshNamespace, "istio-egressgateway", 1)
-			assertExternalHTTPRequestSuccessful(t, ns)
+			assertRequestSuccess("http://istio.io")
 		})
 
 		t.NewSubTest("HTTPS").Run(func(t TestHelper) {
@@ -69,7 +83,26 @@ func TestEgressGateways(t *testing.T) {
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, ns, ExServiceEntryTLS)
 			})
-			assertExternalHTTPSRequestSuccessful(t, ns)
+
+			assertRequestSuccess := func(url string) {
+				t.LogStepf("Confirm that request to %s is successful", url)
+				execInSleepPod(t, ns,
+					`curl -sSL -o /dev/null -w "%{http_code}" `+url,
+					assert.OutputContains("200",
+						fmt.Sprintf("Got %s response", url),
+						fmt.Sprintf("Unexpected response from %s", url)))
+			}
+
+			assertRequestFailure := func(url string) {
+				t.LogStepf("Confirm that request to %s fails", url)
+				execInSleepPod(t, ns,
+					fmt.Sprintf(`curl -sSL -o /dev/null -w "%%{http_code}" %s || echo "connection failed"`, url),
+					assert.OutputContains("connection failed",
+						fmt.Sprintf("Got %s failure", url),
+						fmt.Sprintf("Unexpected response from %s", url)))
+			}
+
+			assertRequestSuccess("https://istio.io")
 
 			t.LogStep("Create a https Gateway to external istio.io")
 			oc.ApplyTemplate(t, ns, ExGatewayHTTPSTemplate, smcp)
@@ -79,65 +112,12 @@ func TestEgressGateways(t *testing.T) {
 
 			t.LogStep("Scale istio-egressgateway to zero to confirm that requests to istio.io are routed through it")
 			oc.ScaleDeploymentAndWait(t, meshNamespace, "istio-egressgateway", 0)
-			assertExternalHTTPSRequestFailure(t, ns)
+			assertRequestFailure("https://istio.io")
 
 			t.LogStep("Scale istio-egressgateway back to one to confirm that requests to istio.io are successful")
 			oc.ScaleDeploymentAndWait(t, meshNamespace, "istio-egressgateway", 1)
-			assertExternalHTTPSRequestSuccessful(t, ns)
+			assertRequestSuccess("https://istio.io")
 		})
-	})
-}
-
-func assertExternalHTTPRequestSuccessful(t TestHelper, ns string) {
-	t.LogStep("Confirm that request to http://istio.io is successful")
-	execInSleepPod(t, ns,
-		fmt.Sprintf(`curl -sSL -o /dev/null %s -D - http://istio.io`, getCurlProxyParams()),
-		assert.OutputContains("301 Moved Permanently",
-			"Got http://istio.io response",
-			"Unexpected response from http://istio.io"))
-}
-
-func assertExternalHTTPRequestFailure(t TestHelper, ns string) {
-	t.LogStep("Confirm that request to http://istio.io fails")
-	execInSleepPod(t, ns,
-		fmt.Sprintf(`curl -sSL -o /dev/null %s -D - http://istio.io`, getCurlProxyParams()),
-		assert.OutputContains("503 Service Unavailable",
-			"Got http://istio.io failure",
-			"Unexpected response from http://istio.io"))
-
-}
-
-func getCurlProxyParams() string {
-	proxy, _ := util.GetProxy()
-	curlParams := ""
-	if proxy.HTTPProxy != "" {
-		curlParams = "-x " + proxy.HTTPProxy
-	}
-	return curlParams
-}
-
-func assertExternalHTTPSRequestSuccessful(t TestHelper, ns string) {
-	t.LogStep("Confirm that request to https://istio.io is successful")
-	execInSleepPod(t, ns,
-		`curl -sSL -o /dev/null -D - https://istio.io`,
-		assert.OutputContains("200",
-			"Got https://istio.io response",
-			"Unexpected response from https://istio.io"))
-}
-
-func assertExternalHTTPSRequestFailure(t TestHelper, ns string) {
-	t.LogStep("Confirm that request to https://istio.io fails")
-	execInSleepPod(t, ns,
-		`curl -sSL -o /dev/null -D - https://istio.io || echo "connection failed"`,
-		assert.OutputContains("connection failed",
-			"Got https://istio.io failure",
-			"Unexpected response from https://istio.io"))
-}
-
-func execInSleepPod(t TestHelper, ns string, command string, checks ...common.CheckFunc) {
-	retry.UntilSuccess(t, func(t TestHelper) {
-		oc.Exec(t, pod.MatchingSelector("app=sleep", ns), "sleep",
-			command, checks...)
 	})
 }
 

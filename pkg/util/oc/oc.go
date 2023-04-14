@@ -20,9 +20,9 @@ func WithKubeconfig(location string) *OC {
 	return NewOC(location)
 }
 
-func ApplyString(t test.TestHelper, ns string, yaml string) {
+func ApplyString(t test.TestHelper, ns string, yamls ...string) {
 	t.T().Helper()
-	DefaultOC.ApplyString(t, ns, yaml)
+	DefaultOC.ApplyString(t, ns, yamls...)
 }
 
 func ApplyTemplate(t test.TestHelper, ns string, template string, input interface{}) {
@@ -40,9 +40,9 @@ func ApplyFile(t test.TestHelper, ns string, file string) {
 	DefaultOC.ApplyFile(t, ns, file)
 }
 
-func DeleteFromString(t test.TestHelper, ns string, yaml string) {
+func DeleteFromString(t test.TestHelper, ns string, yamls ...string) {
 	t.T().Helper()
-	DefaultOC.DeleteFromString(t, ns, yaml)
+	DefaultOC.DeleteFromString(t, ns, yamls...)
 }
 
 func DeleteFile(t test.TestHelper, ns string, file string) {
@@ -55,14 +55,24 @@ func CreateTLSSecret(t test.TestHelper, ns, name string, keyFile, certFile strin
 	DefaultOC.CreateTLSSecret(t, ns, name, keyFile, certFile)
 }
 
-func CreateTLSSecretWithCACert(t test.TestHelper, ns, name string, keyFile, certFile, caCertFile string) {
+func CreateGenericSecretFromFiles(t test.TestHelper, ns, name string, files ...string) {
 	t.T().Helper()
-	DefaultOC.CreateTLSSecretWithCACert(t, ns, name, keyFile, certFile, caCertFile)
+	DefaultOC.CreateGenericSecretFromFiles(t, ns, name, files...)
 }
 
-func DeleteSecret(t test.TestHelper, ns string, name string) {
+func DeleteSecret(t test.TestHelper, ns string, name ...string) {
 	t.T().Helper()
-	DefaultOC.DeleteSecret(t, ns, name)
+	DefaultOC.DeleteSecret(t, ns, name...)
+}
+
+func DeleteConfigMap(t test.TestHelper, ns string, name ...string) {
+	t.T().Helper()
+	DefaultOC.DeleteConfigMap(t, ns, name...)
+}
+
+func DeleteResource(t test.TestHelper, ns string, kind string, name ...string) {
+	t.T().Helper()
+	DefaultOC.DeleteResource(t, ns, kind, name...)
 }
 
 func DeleteNamespace(t test.TestHelper, namespaces ...string) {
@@ -95,6 +105,11 @@ func GetConfigMapData(t test.TestHelper, ns, name string) map[string]string {
 	return DefaultOC.GetConfigMapData(t, ns, name)
 }
 
+func CreateConfigMapFromFiles(t test.TestHelper, ns, name string, files ...string) {
+	t.T().Helper()
+	DefaultOC.CreateConfigMapFromFiles(t, ns, name, files...)
+}
+
 func Exec(t test.TestHelper, podLocator PodLocatorFunc, container string, cmd string, checks ...common.CheckFunc) string {
 	t.T().Helper()
 	return DefaultOC.Exec(t, podLocator, container, cmd, checks...)
@@ -118,6 +133,11 @@ func WaitPodRunning(t test.TestHelper, podLocator PodLocatorFunc) {
 func WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
 	t.T().Helper()
 	DefaultOC.WaitPodReady(t, podLocator)
+}
+
+func UndoRollout(t test.TestHelper, ns string, kind, name string) {
+	t.T().Helper()
+	DefaultOC.UndoRollout(t, ns, kind, name)
 }
 
 func WaitDeploymentRolloutComplete(t test.TestHelper, ns string, deploymentNames ...string) {

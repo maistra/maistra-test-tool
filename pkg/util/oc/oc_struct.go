@@ -49,12 +49,13 @@ func (o OC) ApplyTemplateFile(t test.TestHelper, ns string, tmplFile string, inp
 	})
 }
 
-func (o OC) ApplyString(t test.TestHelper, ns string, yaml string) {
+func (o OC) ApplyString(t test.TestHelper, ns string, yamls ...string) {
 	t.T().Helper()
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		if err := util.KubeApplyContents(ns, yaml); err != nil {
-			t.Fatalf("Failed to apply manifest: %v;\nYAML: %v", err, yaml)
+		fullYaml := strings.Join(yamls, "\n---\n")
+		if err := util.KubeApplyContents(ns, fullYaml); err != nil {
+			t.Fatalf("Failed to apply manifest: %v;\nYAML: %v", err, fullYaml)
 		}
 	})
 }
@@ -67,12 +68,13 @@ func (o OC) ApplyFile(t test.TestHelper, ns string, file string) {
 	})
 }
 
-func (o OC) DeleteFromString(t test.TestHelper, ns string, yaml string) {
+func (o OC) DeleteFromString(t test.TestHelper, ns string, yamls ...string) {
 	t.T().Helper()
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		if err := util.KubeDeleteContents(ns, yaml); err != nil {
-			t.Fatalf("Failed to delete objects in YAML: %v; YAML: %v", err, yaml)
+		fullYaml := strings.Join(yamls, "\n---\n")
+		if err := util.KubeDeleteContents(ns, fullYaml); err != nil {
+			t.Fatalf("Failed to delete objects in YAML: %v; YAML: %v", err, fullYaml)
 		}
 	})
 }
@@ -94,10 +96,24 @@ func nsFlag(ns string) string {
 
 func (o OC) CreateGenericSecretFromFiles(t test.TestHelper, ns, name string, files ...string) {
 	t.T().Helper()
+	o.createSecretOrConfigMapFromFiles(t, ns, "secret generic", name, files...)
+}
+
+func (o OC) CreateConfigMapFromFiles(t test.TestHelper, ns, name string, files ...string) {
+	t.T().Helper()
+	o.createSecretOrConfigMapFromFiles(t, ns, "configmap", name, files...)
+}
+
+func (o OC) createSecretOrConfigMapFromFiles(t test.TestHelper, ns string, kind string, name string, files ...string) {
+	t.T().Helper()
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		o.DeleteSecret(t, ns, name)
-		cmd := fmt.Sprintf(`kubectl create -n %s secret generic %s`, ns, name)
+		k := kind
+		if kind == "secret generic" {
+			k = "secret"
+		}
+		o.DeleteResource(t, ns, k, name)
+		cmd := fmt.Sprintf(`oc create %s %s -n %s `, kind, name, ns)
 		for _, file := range files {
 			cmd += fmt.Sprintf(" --from-file=%s", file)
 		}
@@ -116,22 +132,21 @@ func (o OC) CreateTLSSecret(t test.TestHelper, ns, name string, keyFile, certFil
 	})
 }
 
-func (o OC) CreateTLSSecretWithCACert(t test.TestHelper, ns, name string, keyFile, certFile, caCertFile string) {
+func (o OC) DeleteSecret(t test.TestHelper, ns string, name ...string) {
 	t.T().Helper()
-	o.withKubeconfig(t, func() {
-		t.T().Helper()
-		o.CreateGenericSecretFromFiles(t, ns, name,
-			"tls.key="+keyFile,
-			"tls.crt="+certFile,
-			"ca.crt="+caCertFile)
-	})
+	o.DeleteResource(t, ns, "secret", name...)
 }
 
-func (o OC) DeleteSecret(t test.TestHelper, ns string, name string) {
+func (o OC) DeleteConfigMap(t test.TestHelper, ns string, name ...string) {
+	t.T().Helper()
+	o.DeleteResource(t, ns, "configmap", name...)
+}
+
+func (o OC) DeleteResource(t test.TestHelper, ns string, kind string, names ...string) {
 	t.T().Helper()
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		shell.ExecuteIgnoreError(t, fmt.Sprintf(`kubectl -n %s delete secret %s`, ns, name))
+		shell.Executef(t, "kubectl -n %s delete %s %s --ignore-not-found", ns, kind, strings.Join(names, " "))
 	})
 }
 
@@ -277,6 +292,10 @@ func (o OC) withKubeconfig(t test.TestHelper, f func()) {
 		f()
 		setEnv(t, "KUBECONFIG", oldValue)
 	}
+}
+
+func (o OC) UndoRollout(t test.TestHelper, ns string, kind, name string) {
+	shell.Executef(t, `kubectl -n %s rollout undo %s %s`, ns, kind, name)
 }
 
 func setEnv(t test.TestHelper, key string, value string) {

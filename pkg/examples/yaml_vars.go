@@ -63,6 +63,7 @@ var (
 	meshExtServerCertKey = fmt.Sprintf("%s/nginx.example.com/my-nginx.mesh-external.svc.cluster.local.key", certdir)
 	meshExtServerCert    = fmt.Sprintf("%s/nginx.example.com/my-nginx.mesh-external.svc.cluster.local.crt", certdir)
 	nginxConf            = fmt.Sprintf("%s/%s/nginx/nginx.conf", basedir, branch)
+	nginxConfMTls        = fmt.Sprintf("%s/%s/nginx/nginx_mesh_external_ssl.conf", basedir, branch)
 	nginxYaml            = fmt.Sprintf("%s/%s/nginx/nginx.yaml", basedir, branch)
 
 	redisYaml = fmt.Sprintf("%s/%s/redis/redis.yaml", basedir, branch)
@@ -131,4 +132,36 @@ func FortioYamlFile() string {
 
 func RedisYamlFile() string {
 	return redisYaml
+}
+
+func NginxYamlFile() string {
+	return nginxYaml
+}
+
+func NginxConfMTlsFile() string {
+	return nginxConfMTls
+}
+
+func NginxConfFile() string {
+	return nginxConf
+}
+
+func NginxServerCertKey() string {
+	return nginxServerCertKey
+}
+
+func NginxServerCert() string {
+	return nginxServerCert
+}
+
+func NginxServerCACert() string {
+	return nginxServerCACert
+}
+
+func MeshExtServerCertKey() string {
+	return meshExtServerCertKey
+}
+
+func MeshExtServerCert() string {
+	return meshExtServerCert
 }

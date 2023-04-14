@@ -18,6 +18,13 @@ type NamespacedName struct {
 	Name      string
 }
 
+func NewNamespacedName(ns, name string) NamespacedName {
+	return NamespacedName{
+		Namespace: ns,
+		Name:      name,
+	}
+}
+
 type PodLocatorFunc func(t test.TestHelper, oc *OC) NamespacedName
 
 func (o OC) Exec(t test.TestHelper, podLocator PodLocatorFunc, container string, cmd string, checks ...common.CheckFunc) string {
