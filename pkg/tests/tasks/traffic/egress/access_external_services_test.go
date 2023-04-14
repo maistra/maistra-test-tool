@@ -38,7 +38,7 @@ func TestAccessExternalServices(t *testing.T) {
 			oc.Patch(t,
 				meshNamespace,
 				"smcp", smcpName,
-				"json", `[{"op": "remove", "path": "/spec/proxy/networking/trafficControl/outbound/policy"}]`)
+				"json", `[{"op": "remove", "path": "/spec/proxy"}]`)
 		})
 
 		t.Log("This test validates accesses to external services")
@@ -47,9 +47,7 @@ func TestAccessExternalServices(t *testing.T) {
 		app.InstallAndWaitReady(t, app.Sleep(ns))
 
 		t.LogStep("Make request to www.redhat.com from sleep")
-		execInSleepPod(
-			t,
-			ns,
+		execInSleepPod(t, ns,
 			buildGetRequestCmd("https://www.redhat.com/en"),
 			assert.OutputContains(
 				"200",
@@ -62,18 +60,23 @@ func TestAccessExternalServices(t *testing.T) {
 		oc.Patch(t,
 			meshNamespace,
 			"smcp", smcpName,
-			"json", `[{"op": "add", "path": "/spec/proxy/networking/trafficControl/outbound/policy", "value": "REGISTRY_ONLY"}]`,
+			"json", `
+- op: add
+  path: /spec/proxy
+  value:
+    networking:
+      trafficControl:
+        outbound:
+          policy: "REGISTRY_ONLY"`,
 		)
 
 		t.LogStep("Make request to www.redhat.com from sleep again, and expect it denied")
-		execInSleepPod(
-			t,
-			ns,
+		execInSleepPod(t, ns,
 			buildGetRequestCmd("https://www.redhat.com/en"),
-			assert.OutputDoesNotContain(
-				"200",
-				"Got expected non 200 response from www.redhat.com",
-				"Expect non 200 from www.redhat.com, but got a different HTTP code",
+			assert.OutputContains(
+				CURL_FAILED_MESSAGE,
+				"Got a failure message as expected",
+				"Expect request to failed, but got a response",
 			),
 		)
 
@@ -86,9 +89,7 @@ func TestAccessExternalServices(t *testing.T) {
 			oc.ApplyString(t, ns, redhatExternalServiceEntryHttpsPortOnly)
 
 			t.LogStep("Send a request to redhat.com on HTTPS port")
-			execInSleepPod(
-				t,
-				ns,
+			execInSleepPod(t, ns,
 				buildGetRequestCmd("https://www.redhat.com/en"),
 				assert.OutputContains(
 					"200",
@@ -108,9 +109,7 @@ func TestAccessExternalServices(t *testing.T) {
 			oc.ApplyString(t, ns, httpbinExternalServiceEntryHttpPortOnly)
 
 			t.LogStep("Send a request to httpbin.org on HTTP port")
-			execInSleepPod(
-				t,
-				ns,
+			execInSleepPod(t, ns,
 				buildGetRequestCmd("http://httpbin.org/headers"),
 				assert.OutputContains(
 					"200",
@@ -120,14 +119,12 @@ func TestAccessExternalServices(t *testing.T) {
 			)
 
 			t.LogStep("Send a request to httpbin.org on HTTPS port")
-			execInSleepPod(
-				t,
-				ns,
+			execInSleepPod(t, ns,
 				buildGetRequestCmd("https://httpbin.org/headers"),
-				assert.OutputDoesNotContain(
-					"200",
-					"Got expetcted non 200 response from httpbin.org",
-					"Expect non 200 from httpbin.org, but got a different HTTP code",
+				assert.OutputContains(
+					CURL_FAILED_MESSAGE,
+					"Got a failure message as expected",
+					"Expect request to failed, but got a response",
 				),
 			)
 
@@ -135,9 +132,7 @@ func TestAccessExternalServices(t *testing.T) {
 			oc.ApplyString(t, ns, httpbinExternalVituralServiceWithTimeout)
 
 			t.LogStep("Send a request to httpbin.org with 5-second expected delay")
-			execInSleepPod(
-				t,
-				ns,
+			execInSleepPod(t, ns,
 				buildGetRequestCmd("http://httpbin.org/delay/5"),
 				assert.OutputContains(
 					"504",
@@ -150,10 +145,11 @@ func TestAccessExternalServices(t *testing.T) {
 }
 
 func buildGetRequestCmd(location string) string {
-	return fmt.Sprintf("curl -sSL -o /dev/null -D - %s | head -n 1", location)
+	return fmt.Sprintf(`curl -sSL -o /dev/null -w "%%%%{http_code}" %s 2>/dev/null || echo %s`, location, CURL_FAILED_MESSAGE)
 }
 
 const (
+	CURL_FAILED_MESSAGE                     = "CURL_FAILED"
 	httpbinExternalServiceEntryHttpPortOnly = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
