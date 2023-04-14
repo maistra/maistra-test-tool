@@ -43,18 +43,30 @@ func TestAccessExternalServices(t *testing.T) {
 
 		t.Log("This test validates accesses to external services")
 
+		assertRequestSuccess := func(url string) {
+			execInSleepPod(t, ns, buildGetRequestCmd(url),
+				assert.OutputContains("200",
+					fmt.Sprintf("Got expected 200 OK from %s", url),
+					fmt.Sprintf("Expect 200 OK from %s, but got a different HTTP code", url)))
+		}
+		assertRequestFailure := func(url string) {
+			execInSleepPod(t, ns, buildGetRequestCmd(url),
+				assert.OutputContains(curlFailedMessage,
+					"Got a failure message as expected",
+					"Expect request to failed, but got a response"))
+		}
+		assertRequestTimeout := func(url string) {
+			execInSleepPod(t, ns, buildGetRequestCmd(url),
+				assert.OutputContains("504",
+					"Got expected 504 response since the request was timeout",
+					"Expect a timeout response with 504, but got a different one"))
+		}
+
 		t.LogStepf("Install sleep into %s", ns)
 		app.InstallAndWaitReady(t, app.Sleep(ns))
 
 		t.LogStep("Make request to www.redhat.com from sleep")
-		execInSleepPod(t, ns,
-			buildGetRequestCmd("https://www.redhat.com/en"),
-			assert.OutputContains(
-				"200",
-				"Got expected 200 ok from www.redhat.com",
-				"Expect 200 ok from www.redhat.com, but got a different HTTP code",
-			),
-		)
+		assertRequestSuccess("https://www.redhat.com/en")
 
 		t.LogStepf("Patch outbound traffic policy to registry only")
 		oc.Patch(t,
@@ -71,14 +83,7 @@ func TestAccessExternalServices(t *testing.T) {
 		)
 
 		t.LogStep("Make request to www.redhat.com from sleep again, and expect it denied")
-		execInSleepPod(t, ns,
-			buildGetRequestCmd("https://www.redhat.com/en"),
-			assert.OutputContains(
-				curlFailedMessage,
-				"Got a failure message as expected",
-				"Expect request to failed, but got a response",
-			),
-		)
+		assertRequestFailure("https://www.redhat.com/en")
 
 		t.NewSubTest("allow request to www.redhat.com after applying ServiceEntry").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
@@ -89,14 +94,7 @@ func TestAccessExternalServices(t *testing.T) {
 			oc.ApplyString(t, ns, redhatExternalServiceEntryHttpsPortOnly)
 
 			t.LogStep("Send a request to redhat.com on HTTPS port")
-			execInSleepPod(t, ns,
-				buildGetRequestCmd("https://www.redhat.com/en"),
-				assert.OutputContains(
-					"200",
-					"Got expected 200 ok from www.redhat.com",
-					"Expect 200 ok from www.redhat.com, but got a different HTTP code",
-				),
-			)
+			assertRequestSuccess("https://www.redhat.com/en")
 		})
 
 		t.NewSubTest("follow access policies for httpbin.org").Run(func(t test.TestHelper) {
@@ -109,37 +107,16 @@ func TestAccessExternalServices(t *testing.T) {
 			oc.ApplyString(t, ns, httpbinExternalServiceEntryHttpPortOnly)
 
 			t.LogStep("Send a request to httpbin.org on HTTP port")
-			execInSleepPod(t, ns,
-				buildGetRequestCmd("http://httpbin.org/headers"),
-				assert.OutputContains(
-					"200",
-					"Got expected 200 ok from httpbin.org",
-					"Expect 200 ok from httpbin.org, but got a different HTTP code",
-				),
-			)
+			assertRequestSuccess("http://httpbin.org/headers")
 
 			t.LogStep("Send a request to httpbin.org on HTTPS port")
-			execInSleepPod(t, ns,
-				buildGetRequestCmd("https://httpbin.org/headers"),
-				assert.OutputContains(
-					curlFailedMessage,
-					"Got a failure message as expected",
-					"Expect request to failed, but got a response",
-				),
-			)
+			assertRequestFailure("https://httpbin.org/headers")
 
 			t.LogStep("Apply a VirtualService with 3-second timeout to httpbin.org")
 			oc.ApplyString(t, ns, httpbinExternalVituralServiceWithTimeout)
 
 			t.LogStep("Send a request to httpbin.org with 5-second expected delay")
-			execInSleepPod(t, ns,
-				buildGetRequestCmd("http://httpbin.org/delay/5"),
-				assert.OutputContains(
-					"504",
-					"Got expected 504 response since the request was timeout",
-					"Expect a timeout response with 504, but got a different one",
-				),
-			)
+			assertRequestTimeout("http://httpbin.org/delay/5")
 		})
 	})
 }
