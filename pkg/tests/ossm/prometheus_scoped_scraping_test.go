@@ -22,14 +22,12 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 		t.Log("This test checks if the operator can update Prometheus ConfigMap when the SMMR is updated")
 
 		meshNamespace := env.GetDefaultMeshNamespace()
-		defaultSMMR := shell.Executef(t, "oc -n %s get smmr default -o jsonpath='{.metadata.annotations.kubectl\\.kubernetes\\.io/last-applied-configuration}'", meshNamespace)
-
 		t.Cleanup(func() {
-			oc.ApplyString(t, meshNamespace, defaultSMMR)
+			oc.ApplyString(t, meshNamespace, smmr)
 		})
 
-		t.LogStepf("Delete current SMMR %s", defaultSMMR)
-		oc.DeleteFromString(t, meshNamespace, defaultSMMR)
+		t.LogStepf("Delete current SMMR %s", smmr)
+		oc.DeleteFromString(t, meshNamespace, smmr)
 
 		getPrometheusConfigCmd := fmt.Sprintf("oc -n %s get configmap prometheus -o jsonpath='{.data.prometheus\\.yml}'", meshNamespace)
 
