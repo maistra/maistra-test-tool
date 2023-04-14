@@ -88,7 +88,9 @@ func TestTLSOrigination(t *testing.T) {
 			t.LogStep("Deploy nginx mtls server and create secrets in the mesh namespace")
 			app.InstallAndWaitReady(t, app.NginxWithMTLS(nsNginx))
 			oc.CreateTLSSecret(t, meshNamespace, "nginx-client-certs", nginxClientCertKey, nginxClientCert)
-			oc.CreateSecretOrConfigMapFromFile(t, meshNamespace, "secret generic", "nginx-ca-certs", nginxServerCACert)
+			oc.CreateGenericSecretFromFiles(t, meshNamespace,
+				"nginx-ca-certs",
+				"example.com.crt="+nginxServerCACert)
 
 			t.LogStep("Patch egress gateway with File Mount configuration")
 			oc.Patch(t, meshNamespace, "deploy", "istio-egressgateway", "json", gatewayPatchAdd)

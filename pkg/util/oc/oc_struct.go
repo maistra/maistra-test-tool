@@ -92,7 +92,17 @@ func nsFlag(ns string) string {
 	return "-n " + ns
 }
 
-func (o OC) CreateSecretOrConfigMapFromFile(t test.TestHelper, ns string, kind string, name string, files ...string) {
+func (o OC) CreateGenericSecretFromFiles(t test.TestHelper, ns, name string, files ...string) {
+	t.T().Helper()
+	o.createSecretOrConfigMapFromFiles(t, ns, "secret generic", name, files...)
+}
+
+func (o OC) CreateConfigMapFromFiles(t test.TestHelper, ns, name string, files ...string) {
+	t.T().Helper()
+	o.createSecretOrConfigMapFromFiles(t, ns, "configmap", name, files...)
+}
+
+func (o OC) createSecretOrConfigMapFromFiles(t test.TestHelper, ns string, kind string, name string, files ...string) {
 	t.T().Helper()
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
@@ -113,29 +123,28 @@ func (o OC) CreateTLSSecret(t test.TestHelper, ns, name string, keyFile, certFil
 	t.T().Helper()
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		o.DeleteResource(t, ns, "secret", name)
+		o.DeleteSecret(t, ns, name)
 		if _, err := util.CreateTLSSecret(name, ns, keyFile, certFile); err != nil {
 			t.Fatalf("Failed to create secret %s\n", name)
 		}
 	})
 }
 
-func (o OC) CreateTLSSecretWithCACert(t test.TestHelper, ns, name string, keyFile, certFile, caCertFile string) {
+func (o OC) DeleteSecret(t test.TestHelper, ns string, name string) {
 	t.T().Helper()
-	o.withKubeconfig(t, func() {
-		t.T().Helper()
-		o.CreateSecretOrConfigMapFromFile(t, ns, "secret generic", name,
-			"tls.key="+keyFile,
-			"tls.crt="+certFile,
-			"ca.crt="+caCertFile)
-	})
+	o.DeleteResource(t, ns, "secret", name)
+}
+
+func (o OC) DeleteConfigMap(t test.TestHelper, ns string, name string) {
+	t.T().Helper()
+	o.DeleteResource(t, ns, "configmap", name)
 }
 
 func (o OC) DeleteResource(t test.TestHelper, ns string, kind string, name string) {
 	t.T().Helper()
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		shell.ExecuteIgnoreError(t, fmt.Sprintf(`kubectl -n %s delete %s %s`, ns, kind, name))
+		shell.Executef(t, "kubectl -n %s delete %s %s --ignore-not-found", ns, kind, name)
 	})
 }
 
