@@ -15,6 +15,7 @@
 package egress
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
@@ -28,17 +29,17 @@ import (
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func TestTLSOriginationFileMount(t *testing.T) {
+func TestTLSOrigination(t *testing.T) {
 	NewTest(t).Id("T14").Groups(Full, InterOp).Run(func(t TestHelper) {
 		hack.DisableLogrusForThisTest(t)
-		t.Log("Test TLS Origination with File Mount")
+		t.Log("This test verifies that TLS origination works in 2 scenarios: 1) Egress gateway TLS Origination 2) MTLS Origination with file mount (certificates mounted in egress gateway pod)")
 		ns := "bookinfo"
 		t.Cleanup(func() {
 			app.Uninstall(t, app.Sleep(ns))
 		})
 		app.InstallAndWaitReady(t, app.Sleep(ns))
 
-		t.NewSubTest("Traffic Management egress gateway TLS origination").Run(func(t TestHelper) {
+		t.NewSubTest("Egress Gateway without file mount").Run(func(t TestHelper) {
 			t.Log("Perform TLS origination with an egress gateway")
 			t.Cleanup(func() {
 				oc.DeleteFromTemplate(t, ns, ExGatewayTLSFileTemplate, smcp)
@@ -62,17 +63,15 @@ func TestTLSOriginationFileMount(t *testing.T) {
 			oc.ApplyTemplate(t, ns, ExGatewayTLSFileTemplate, smcp)
 			t.Log("Expect Get http://istio.io response 200 because the TLS origination is done by the egress gateway")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				oc.Exec(t,
-					pod.MatchingSelector("app=sleep", ns),
-					"sleep", `curl -sSL -o /dev/null -D - http://istio.io`,
-					assert.OutputContains(
-						"HTTP/1.1 200 OK",
-						"Expected 200 from istio.io",
-						"ERROR: Not expected response, expected 200"))
+				execInSleepPod(t, ns,
+					fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(), "http://istio.io"),
+					assert.OutputContains("200",
+						"Got expected 200 response",
+						"Unexpected response from http://istio.io"))
 			})
 		})
 
-		t.NewSubTest("Traffic Management egress gateway MTLS origination").Run(func(t TestHelper) {
+		t.NewSubTest("MTLS with file mount").Run(func(t TestHelper) {
 			t.Log("Perform MTLS origination with an egress gateway")
 			nsNginx := "mesh-external"
 			t.Cleanup(func() {
@@ -89,7 +88,7 @@ func TestTLSOriginationFileMount(t *testing.T) {
 			t.LogStep("Deploy nginx mtls server and create secrets in the mesh namespace")
 			app.InstallAndWaitReady(t, app.NginxWithMTLS(nsNginx))
 			oc.CreateTLSSecret(t, meshNamespace, "nginx-client-certs", nginxClientCertKey, nginxClientCert)
-			oc.CreateGenericSecretFromFile(t, meshNamespace, "nginx-ca-certs", nginxServerCACert)
+			oc.CreateSecretOrConfigMapFromFile(t, meshNamespace, "secret generic", "nginx-ca-certs", nginxServerCACert)
 
 			t.LogStep("Patch egress gateway with File Mount configuration")
 			oc.Patch(t, meshNamespace, "deploy", "istio-egressgateway", "json", gatewayPatchAdd)
@@ -117,7 +116,48 @@ func TestTLSOriginationFileMount(t *testing.T) {
 }
 
 var (
-	gatewayPatchAdd = `[{"op": "add","path": "/spec/template/spec/containers/0/volumeMounts/0","value": {"mountPath": "/etc/istio/nginx-client-certs","name": "nginx-client-certs","readOnly": true}},{"op": "add","path": "/spec/template/spec/volumes/0","value": {"name": "nginx-client-certs","secret": {"secretName": "nginx-client-certs","optional": true}}},{"op": "add","path": "/spec/template/spec/containers/0/volumeMounts/1","value": {"mountPath": "/etc/istio/nginx-ca-certs","name": "nginx-ca-certs","readOnly": true}},{"op": "add","path": "/spec/template/spec/volumes/1","value": {"name": "nginx-ca-certs","secret": {"secretName": "nginx-ca-certs","optional": true}}}]`
+	gatewayPatchAdd = `[
+    {
+        "op": "add",
+        "path": "/spec/template/spec/containers/0/volumeMounts/0",
+        "value": {
+            "mountPath": "/etc/istio/nginx-client-certs",
+            "name": "nginx-client-certs",
+            "readOnly": true
+        }
+    },
+    {
+        "op": "add",
+        "path": "/spec/template/spec/volumes/0",
+        "value": {
+            "name": "nginx-client-certs",
+            "secret": {
+                "secretName": "nginx-client-certs",
+                "optional": true
+            }
+        }
+    },
+    {
+        "op": "add",
+        "path": "/spec/template/spec/containers/0/volumeMounts/1",
+        "value": {
+            "mountPath": "/etc/istio/nginx-ca-certs",
+            "name": "nginx-ca-certs",
+            "readOnly": true
+        }
+    },
+    {
+        "op": "add",
+        "path": "/spec/template/spec/volumes/1",
+        "value": {
+            "name": "nginx-ca-certs",
+            "secret": {
+                "secretName": "nginx-ca-certs",
+                "optional": true
+            }
+        }
+    }
+]`
 
 	nginxGatewayTLSTemplate = `
 apiVersion: networking.istio.io/v1alpha3

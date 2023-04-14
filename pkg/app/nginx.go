@@ -33,13 +33,13 @@ func (a *nginx) Namespace() string {
 
 func (a *nginx) Install(t test.TestHelper) {
 	t.T().Helper()
-	oc.CreateGenericSecretFromFile(t, a.Namespace(), "nginx-ca-certs", examples.NginxServerCACert())
+	oc.CreateSecretOrConfigMapFromFile(t, a.Namespace(), "secret generic", "nginx-ca-certs", examples.NginxServerCACert())
 	if a.mTLS {
 		oc.CreateTLSSecret(t, a.Namespace(), "nginx-server-certs", examples.MeshExtServerCertKey(), examples.MeshExtServerCert())
-		oc.CreateConfigMapFromFile(t, a.Namespace(), "nginx-configmap", fmt.Sprintf("nginx.conf=%s", examples.NginxConfMTlsFile()))
+		oc.CreateSecretOrConfigMapFromFile(t, a.Namespace(), "configmap", "nginx-configmap", fmt.Sprintf("nginx.conf=%s", examples.NginxConfMTlsFile()))
 	} else {
 		oc.CreateTLSSecret(t, a.Namespace(), "nginx-server-certs", examples.NginxServerCertKey(), examples.NginxServerCert())
-		oc.CreateConfigMapFromFile(t, a.Namespace(), "nginx-configmap", fmt.Sprintf("nginx.conf=%s", examples.NginxConfFile()))
+		oc.CreateSecretOrConfigMapFromFile(t, a.Namespace(), "configmap", "nginx-configmap", fmt.Sprintf("nginx.conf=%s", examples.NginxConfFile()))
 	}
 	oc.ApplyFile(t, a.Namespace(), examples.NginxYamlFile())
 }

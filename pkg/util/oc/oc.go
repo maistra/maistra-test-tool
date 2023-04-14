@@ -60,19 +60,14 @@ func CreateTLSSecretWithCACert(t test.TestHelper, ns, name string, keyFile, cert
 	DefaultOC.CreateTLSSecretWithCACert(t, ns, name, keyFile, certFile, caCertFile)
 }
 
-func CreateGenericSecretFromFile(t test.TestHelper, ns, name string, file string) {
-	t.T().Helper()
-	DefaultOC.CreateGenericSecretFromFile(t, ns, name, file)
-}
-
 func DeleteSecret(t test.TestHelper, ns string, name string) {
 	t.T().Helper()
-	DefaultOC.DeleteSecret(t, ns, name)
+	DefaultOC.DeleteResource(t, ns, "secret", name)
 }
 
 func DeleteConfigMap(t test.TestHelper, ns string, name string) {
 	t.T().Helper()
-	DefaultOC.DeleteConfigMap(t, ns, name)
+	DefaultOC.DeleteResource(t, ns, "configmap", name)
 }
 
 func DeleteNamespace(t test.TestHelper, namespaces ...string) {
@@ -105,9 +100,9 @@ func GetConfigMapData(t test.TestHelper, ns, name string) map[string]string {
 	return DefaultOC.GetConfigMapData(t, ns, name)
 }
 
-func CreateConfigMapFromFile(t test.TestHelper, ns, name string, file string) {
+func CreateSecretOrConfigMapFromFile(t test.TestHelper, ns, kind string, name string, file string) {
 	t.T().Helper()
-	DefaultOC.CreateConfigMapFromFile(t, ns, name, file)
+	DefaultOC.CreateSecretOrConfigMapFromFile(t, ns, kind, name, file)
 }
 
 func Exec(t test.TestHelper, podLocator PodLocatorFunc, container string, cmd string, checks ...common.CheckFunc) string {

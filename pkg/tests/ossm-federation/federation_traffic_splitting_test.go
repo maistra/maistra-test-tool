@@ -79,7 +79,7 @@ func TestSingleClusterFederationDifferentCerts(t *testing.T) {
 			},
 			controlPlaneInstaller: func(t TestHelper, ft federationTest) {
 				t.Log("Create Secret 'cacerts' for custom CA certs in west-mesh")
-				ft.west.oc.CreateGenericSecretFromFiles(t, ft.west.smcpNamespace, "cacerts",
+				ft.west.oc.CreateSecretOrConfigMapFromFile(t, ft.west.smcpNamespace, "secret generic", "cacerts",
 					"testdata/cacerts/ca-cert.pem",
 					"testdata/cacerts/ca-key.pem",
 					"testdata/cacerts/root-cert.pem",

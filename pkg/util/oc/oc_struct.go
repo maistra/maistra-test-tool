@@ -92,12 +92,16 @@ func nsFlag(ns string) string {
 	return "-n " + ns
 }
 
-func (o OC) CreateGenericSecretFromFiles(t test.TestHelper, ns, name string, files ...string) {
+func (o OC) CreateSecretOrConfigMapFromFile(t test.TestHelper, ns string, kind string, name string, files ...string) {
 	t.T().Helper()
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		o.DeleteSecret(t, ns, name)
-		cmd := fmt.Sprintf(`kubectl create -n %s secret generic %s`, ns, name)
+		k := kind
+		if kind == "secret generic" {
+			k = "secret"
+		}
+		o.DeleteResource(t, ns, k, name)
+		cmd := fmt.Sprintf(`oc create %s %s -n %s `, kind, name, ns)
 		for _, file := range files {
 			cmd += fmt.Sprintf(" --from-file=%s", file)
 		}
@@ -109,7 +113,7 @@ func (o OC) CreateTLSSecret(t test.TestHelper, ns, name string, keyFile, certFil
 	t.T().Helper()
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		o.DeleteSecret(t, ns, name)
+		o.DeleteResource(t, ns, "secret", name)
 		if _, err := util.CreateTLSSecret(name, ns, keyFile, certFile); err != nil {
 			t.Fatalf("Failed to create secret %s\n", name)
 		}
@@ -120,31 +124,18 @@ func (o OC) CreateTLSSecretWithCACert(t test.TestHelper, ns, name string, keyFil
 	t.T().Helper()
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		o.CreateGenericSecretFromFiles(t, ns, name,
+		o.CreateSecretOrConfigMapFromFile(t, ns, "secret generic", name,
 			"tls.key="+keyFile,
 			"tls.crt="+certFile,
 			"ca.crt="+caCertFile)
 	})
 }
 
-func (o OC) CreateGenericSecretFromFile(t test.TestHelper, ns, name string, file string) {
-	t.T().Helper()
-	o.CreateGenericSecretFromFiles(t, ns, name, file)
-}
-
-func (o OC) DeleteSecret(t test.TestHelper, ns string, name string) {
+func (o OC) DeleteResource(t test.TestHelper, ns string, kind string, name string) {
 	t.T().Helper()
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		shell.ExecuteIgnoreError(t, fmt.Sprintf(`kubectl -n %s delete secret %s`, ns, name))
-	})
-}
-
-func (o OC) DeleteConfigMap(t test.TestHelper, ns string, name string) {
-	t.T().Helper()
-	o.withKubeconfig(t, func() {
-		t.T().Helper()
-		shell.ExecuteIgnoreError(t, fmt.Sprintf(`kubectl -n %s delete configmap %s`, ns, name))
+		shell.ExecuteIgnoreError(t, fmt.Sprintf(`kubectl -n %s delete %s %s`, ns, kind, name))
 	})
 }
 
@@ -230,14 +221,6 @@ func (o OC) GetConfigMapData(t test.TestHelper, ns, name string) map[string]stri
 		}
 	})
 	return data
-}
-
-func (o OC) CreateConfigMapFromFile(t test.TestHelper, ns, name, file string) {
-	t.T().Helper()
-	o.withKubeconfig(t, func() {
-		t.T().Helper()
-		o.Invokef(t, "oc create configmap -n %s %s --from-file=%s", ns, name, file)
-	})
 }
 
 func (o OC) ScaleDeploymentAndWait(t test.TestHelper, ns string, deployment string, replicas int) {
