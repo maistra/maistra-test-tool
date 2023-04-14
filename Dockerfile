@@ -1,19 +1,11 @@
 FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
-WORKDIR /bin
 
-RUN microdnf install --nodocs tar gcc gzip git bind-utils sudo \
-    && curl -Lo ./oc.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz \
-    && tar -xf oc.tar.gz \
-    && rm -f oc.tar.gz \
-    && curl -Lo ./golang.tar.gz https://go.dev/dl/go1.20.1.linux-amd64.tar.gz \
-    && tar -xf golang.tar.gz -C / \
-    && rm -f golang.tar.gz \
-    && microdnf update \
-    && microdnf clean all
+ENV GOPATH=/go
+ENV PATH=/usr/local/go/bin:$GOPATH/bin:$PATH
+# we need to set HOME when running on OCP with random UID, otherwise the home is set to / and any writing there will fail with permission denied
+ENV HOME=$GOPATH/src/maistra-test-tool
 
-ENV GOROOT=/go
 ENV TEST_GROUP ${TEST_GROUP}
-ENV PATH=$GOROOT/bin:$PATH
 ENV SAMPLEARCH ${SAMPLEARCH}
 ENV OCP_CRED_USR ${OCP_CRED_USR}
 ENV OCP_CRED_PSW ${OCP_CRED_PSW}
@@ -26,8 +18,26 @@ ENV GODEBUG "x509ignoreCN=0"
 ENV MUSTGATHERTAG ${MUSTGATHERTAG}
 ENV IPV6 ${IPV6}
 
-COPY . /opt/maistra-test-tool
-WORKDIR /opt/maistra-test-tool/tests
+WORKDIR /bin
+RUN microdnf install --nodocs tar gcc gzip git bind-utils sudo \
+    && curl -Lo ./oc.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz \
+    && tar -xf oc.tar.gz \
+    && rm -f oc.tar.gz \
+    && curl -Lo ./golang.tar.gz https://go.dev/dl/go1.20.2.linux-amd64.tar.gz \
+    && tar -xf golang.tar.gz -C /usr/local \
+    && rm -f golang.tar.gz \
+    && microdnf update \
+    && microdnf clean all \
+    && mkdir -p "$GOPATH/src/maistra-test-tool" "$GOPATH/bin"
+
+
+COPY . $HOME
+WORKDIR $HOME/tests
+
+# Set required permissions for OpenShift usage
+RUN chgrp -R 0 $GOPATH \
+    && chmod -R g=u $GOPATH
 
 # ENTRYPOINT is not a shell, if you need export environment variables, use ["/bin/bash/", "-c", "scripts"]
-ENTRYPOINT ["../scripts/pipeline/run_all_tests.sh"]
+#ENTRYPOINT ["../scripts/pipeline/run_all_tests.sh"]
+CMD ["/bin/bash", "-c", "../scripts/pipeline/run_all_tests.sh"]
