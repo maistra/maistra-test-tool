@@ -9,8 +9,9 @@ import (
 )
 
 func execInSleepPod(t test.TestHelper, ns string, command string, checks ...common.CheckFunc) {
+	t.T().Helper()
 	retry.UntilSuccess(t, func(t test.TestHelper) {
-		oc.Exec(t, pod.MatchingSelector("app=sleep", ns), "sleep",
-			command, checks...)
+		t.T().Helper()
+		oc.Exec(t, pod.MatchingSelector("app=sleep", ns), "sleep", command, checks...)
 	})
 }

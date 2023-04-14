@@ -74,7 +74,7 @@ func TestAccessExternalServices(t *testing.T) {
 		execInSleepPod(t, ns,
 			buildGetRequestCmd("https://www.redhat.com/en"),
 			assert.OutputContains(
-				CURL_FAILED_MESSAGE,
+				curlFailedMessage,
 				"Got a failure message as expected",
 				"Expect request to failed, but got a response",
 			),
@@ -93,7 +93,7 @@ func TestAccessExternalServices(t *testing.T) {
 				buildGetRequestCmd("https://www.redhat.com/en"),
 				assert.OutputContains(
 					"200",
-					"Got expetcted 200 ok from www.redhat.com",
+					"Got expected 200 ok from www.redhat.com",
 					"Expect 200 ok from www.redhat.com, but got a different HTTP code",
 				),
 			)
@@ -113,7 +113,7 @@ func TestAccessExternalServices(t *testing.T) {
 				buildGetRequestCmd("http://httpbin.org/headers"),
 				assert.OutputContains(
 					"200",
-					"Got expetcted 200 ok from httpbin.org",
+					"Got expected 200 ok from httpbin.org",
 					"Expect 200 ok from httpbin.org, but got a different HTTP code",
 				),
 			)
@@ -122,7 +122,7 @@ func TestAccessExternalServices(t *testing.T) {
 			execInSleepPod(t, ns,
 				buildGetRequestCmd("https://httpbin.org/headers"),
 				assert.OutputContains(
-					CURL_FAILED_MESSAGE,
+					curlFailedMessage,
 					"Got a failure message as expected",
 					"Expect request to failed, but got a response",
 				),
@@ -145,11 +145,12 @@ func TestAccessExternalServices(t *testing.T) {
 }
 
 func buildGetRequestCmd(location string) string {
-	return fmt.Sprintf(`curl -sSL -o /dev/null -w "%%%%{http_code}" %s 2>/dev/null || echo %s`, location, CURL_FAILED_MESSAGE)
+	return fmt.Sprintf(`curl -sSL -o /dev/null -w "%%{http_code}" %s 2>/dev/null || echo %s`, location, curlFailedMessage)
 }
 
 const (
-	CURL_FAILED_MESSAGE                     = "CURL_FAILED"
+	curlFailedMessage = "CURL_FAILED"
+
 	httpbinExternalServiceEntryHttpPortOnly = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
