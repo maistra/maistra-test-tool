@@ -38,6 +38,5 @@ WORKDIR $HOME/tests
 RUN chgrp -R 0 $GOPATH \
     && chmod -R g=u $GOPATH
 
-# ENTRYPOINT is not a shell, if you need export environment variables, use ["/bin/bash/", "-c", "scripts"]
-#ENTRYPOINT ["../scripts/pipeline/run_all_tests.sh"]
+# using CMD here so it can be easily overwritten when using this in OpenShiftCI
 CMD ["/bin/bash", "-c", "../scripts/pipeline/run_all_tests.sh"]
