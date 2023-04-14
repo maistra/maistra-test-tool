@@ -13,12 +13,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-type SMCP struct {
-	Name      string `default:"basic"`
-	Namespace string `default:"istio-system"`
-	Rosa      bool   `default:"false"`
-}
-
 var (
 	//go:embed yaml/subscription-jaeger.yaml
 	jaegerSubscription string
@@ -36,7 +30,9 @@ var (
 	Smcp          = template.SMCP{
 		Name:      smcpName,
 		Namespace: meshNamespace,
-		Rosa:      env.IsRosa()}
+		Rosa:      env.IsRosa(),
+		Version:   env.GetSMCPVersion().String(),
+	}
 	ipv6 = env.Getenv("IPV6", "false")
 )
 
@@ -77,7 +73,7 @@ func BasicSetup() {
 // Initialize a default SMCP and SMMR
 func SetupNamespacesAndControlPlane() {
 	BasicSetup()
-	tmpl := getSMCPTemplate(env.GetDefaultSMCPVersion())
+	tmpl := getSMCPTemplate(env.GetDefaultSMCPProfile())
 	util.KubeApplyContents(meshNamespace, util.RunTemplate(tmpl, Smcp))
 	util.KubeApplyContents(meshNamespace, smmr)
 	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, Smcp.Name)
@@ -87,16 +83,16 @@ func SetupNamespacesAndControlPlane() {
 	}
 }
 
-func getSMCPTemplate(version string) string {
-	versionTemplates := GetSMCPTemplates()
+func getSMCPTemplate(profile string) string {
+	profileTemplates := GetSMCPTemplates()
 
-	if tmpl, ok := versionTemplates[version]; ok {
+	if tmpl, ok := profileTemplates[profile]; ok {
 		return tmpl
 	} else {
-		panic(fmt.Sprintf("Unsupported SMCP version: %s", version))
+		panic(fmt.Sprintf("Unsupported SMCP profile: %s", profile))
 	}
 }
 
-func InstallSMCP(t test.TestHelper, ns, version string) {
-	oc.ApplyTemplate(t, ns, getSMCPTemplate(version), Smcp)
+func InstallSMCP(t test.TestHelper, ns, profile string) {
+	oc.ApplyTemplate(t, ns, getSMCPTemplate(profile), Smcp)
 }

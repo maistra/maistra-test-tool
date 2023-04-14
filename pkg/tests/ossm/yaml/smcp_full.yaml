@@ -3,7 +3,7 @@ kind: ServiceMeshControlPlane
 metadata:
   name: {{ .Name }}
 spec:
-  version: v2.3
+  version: {{ .Version }}
   tracing:
     type: Jaeger
     sampling: 10000

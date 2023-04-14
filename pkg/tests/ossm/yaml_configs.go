@@ -17,17 +17,11 @@ package ossm
 import _ "embed"
 
 var (
-	//go:embed yaml/smcp_v2.4.yaml
-	smcpV24_template string
+	//go:embed yaml/smcp_minimal.yaml
+	smcp_minimal_template string
 
-	//go:embed yaml/smcp_v2.3.yaml
-	smcpV23_template string
-
-	//go:embed yaml/smcp_v2.2.yaml
-	smcpV22_template string
-
-	//go:embed yaml/smcp_v2.1.yaml
-	smcpV21_template string
+	//go:embed yaml/smcp_full.yaml
+	smcp_full_template string
 
 	//go:embed yaml/smmr.yaml
 	smmr string
@@ -35,10 +29,8 @@ var (
 
 func GetSMCPTemplates() map[string]string {
 	return map[string]string{
-		"2.4": smcpV24_template,
-		"2.3": smcpV23_template,
-		"2.2": smcpV22_template,
-		"2.1": smcpV21_template,
+		"minimal": smcp_minimal_template,
+		"full":    smcp_full_template,
 	}
 }
 

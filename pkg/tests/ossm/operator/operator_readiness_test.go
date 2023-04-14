@@ -24,7 +24,7 @@ func TestOperatorPodHonorsReadinessProbe(t *testing.T) {
 		t.Log("This test checks if the operator correctly reports its readiness status")
 
 		t.LogStep("Install SMCP and wait for it to be Ready")
-		ossm.InstallSMCP(t, meshNamespace, env.GetDefaultSMCPVersion())
+		ossm.InstallSMCP(t, meshNamespace, env.GetDefaultSMCPProfile())
 		oc.WaitSMCPReady(t, meshNamespace, env.GetDefaultSMCPName())
 
 		t.LogStep("Delete istio-operator pod")

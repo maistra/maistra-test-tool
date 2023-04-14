@@ -14,4 +14,5 @@ type SMCP struct {
 	Name      string `default:"basic"`
 	Namespace string `default:"istio-system"`
 	Rosa      bool   `default:"false"`
+	Version   string `default:"v2.4"`
 }

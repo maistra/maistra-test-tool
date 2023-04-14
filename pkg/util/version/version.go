@@ -50,5 +50,5 @@ func (this Version) LessThan(that Version) bool {
 }
 
 func (this Version) String() string {
-	return fmt.Sprintf("%d.%d", this.Major, this.Minor)
+	return fmt.Sprintf("v%d.%d", this.Major, this.Minor)
 }

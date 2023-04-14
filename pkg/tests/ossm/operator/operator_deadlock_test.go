@@ -26,7 +26,7 @@ func TestOperatorCanReconcileSMCPWhenIstiodOffline(t *testing.T) {
 		})
 
 		t.LogStep("Install SMCP and wait for it to be Ready")
-		ossm.InstallSMCP(t, meshNamespace, env.GetDefaultSMCPVersion())
+		ossm.InstallSMCP(t, meshNamespace, env.GetDefaultSMCPProfile())
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Scale istiod to zero replicas, so that the validation webhook goes offline")

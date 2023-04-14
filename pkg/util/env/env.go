@@ -68,6 +68,10 @@ func GetDefaultMeshNamespace() string {
 	return Getenv("MESHNAMESPACE", "istio-system")
 }
 
+func GetDefaultSMCPProfile() string {
+	return Getenv("SMCPPROFILE", "full")
+}
+
 func GetDefaultSMCPVersion() string {
 	return Getenv("SMCPVERSION", "2.4")
 }
