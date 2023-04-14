@@ -33,7 +33,9 @@ func TestTLSOriginationFileMount(t *testing.T) {
 		hack.DisableLogrusForThisTest(t)
 		t.Log("Test TLS Origination with File Mount")
 		ns := "bookinfo"
-
+		t.Cleanup(func() {
+			app.Uninstall(t, app.Sleep(ns))
+		})
 		app.InstallAndWaitReady(t, app.Sleep(ns))
 
 		t.NewSubTest("Traffic Management egress gateway TLS origination").Run(func(t TestHelper) {
@@ -79,7 +81,7 @@ func TestTLSOriginationFileMount(t *testing.T) {
 				oc.DeleteSecret(t, meshNamespace, "nginx-ca-certs")
 				// Rollout to istio-egressgateway to revert patch
 				shell.Executef(t, `kubectl -n %s rollout undo deploy istio-egressgateway`, meshNamespace)
-				oc.DeleteFromTemplate(t, meshNamespace, nginxGatewayTLSTemplate, smcp)
+				oc.DeleteFromTemplate(t, ns, nginxGatewayTLSTemplate, smcp)
 				oc.DeleteFromString(t, meshNamespace, meshExternalServiceEntry)
 				oc.DeleteFromString(t, meshNamespace, nginxMeshRule)
 			})
@@ -110,9 +112,7 @@ func TestTLSOriginationFileMount(t *testing.T) {
 						"Success. Get expected response: Welcome to nginx",
 						"ERROR: Expected Welcome to nginx; Got unexpected response"))
 			})
-
 		})
-
 	})
 }
 
