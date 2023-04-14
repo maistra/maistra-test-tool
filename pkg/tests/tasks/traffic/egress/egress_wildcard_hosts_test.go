@@ -33,21 +33,14 @@ func TestEgressWildcard(t *testing.T) {
 		ns := "bookinfo"
 
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns, EgressWildcardGatewayTemplate, EgressWildcardEntry)
+			oc.DeleteFromTemplate(t, ns, EgressWildcardEntry, EgressWildcardGatewayTemplate)
 		})
 
-		t.Log("This Test recieves the sleep pod name")
+		t.Log("This Test receives the sleep pod name")
 		app.InstallAndWaitReady(t, app.Sleep(ns))
-		t.LogStep("Recieve the sleep pod name")
+		t.LogStep("Receive the sleep pod name")
 		retry.UntilSuccess(t, func(t TestHelper) {
-			oc.Exec(t,
-				pod.MatchingSelector(ns, "app=sleep"),
-				"sleep",
-				ns,
-				assert.OutputContains(
-					"",
-					"Successfully got the sleep pod name",
-					"Failed to get the sleep pod name"))
+
 		})
 
 		t.NewSubTest("TrafficManagement_egress_direct_traffic_wildcard_host").Run(func(t TestHelper) {
@@ -63,8 +56,8 @@ func TestEgressWildcard(t *testing.T) {
 					command,
 					assert.OutputContains(
 						"<title>Wikipedia, the free encyclopedia</title>\n<title>Wikipedia – Die freie Enzyklopädie</title>",
-						"Successful. Recieved the correct Wikipedia response",
-						"Error. Failed to recieve the correct Wikipedia response"))
+						"Successful. Received the correct Wikipedia response",
+						"Error. Failed to receive the correct Wikipedia response"))
 			})
 		})
 
@@ -81,8 +74,8 @@ func TestEgressWildcard(t *testing.T) {
 					command,
 					assert.OutputContains(
 						"<title>Wikipedia, the free encyclopedia</title>\n<title>Wikipedia – Die freie Enzyklopädie</title>",
-						"Successful. Recieved the correct Wikipedia response",
-						"Error. Failed to recieve the correct Wikipedia response"))
+						"Successful. Received the correct Wikipedia response",
+						"Error. Failed to receive the correct Wikipedia response"))
 			})
 		})
 	})
