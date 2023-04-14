@@ -23,6 +23,9 @@ var (
 	//go:embed yaml/smcp_v2.3.yaml
 	smcpV23_template string
 
+	//go:embed yaml/smcp_v2.3-minimal.yaml
+	smcpV23_template_minimal string
+
 	//go:embed yaml/smcp_v2.2.yaml
 	smcpV22_template string
 
@@ -35,10 +38,11 @@ var (
 
 func GetSMCPTemplates() map[string]string {
 	return map[string]string{
-		"2.4": smcpV24_template,
-		"2.3": smcpV23_template,
-		"2.2": smcpV22_template,
-		"2.1": smcpV21_template,
+		"2.4":         smcpV24_template,
+		"2.3":         smcpV23_template,
+		"2.3-minimal": smcpV23_template_minimal,
+		"2.2":         smcpV22_template,
+		"2.1":         smcpV21_template,
 	}
 }
 
