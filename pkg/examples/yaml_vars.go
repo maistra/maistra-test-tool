@@ -126,6 +126,10 @@ func BookinfoRuleAllMTLSYamlFile() string {
 	return bookinfoRuleAllTLSYaml
 }
 
+func FortioYamlFile() string {
+	return fortioYaml
+}
+
 func RedisYamlFile() string {
 	return redisYaml
 }

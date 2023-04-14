@@ -15,27 +15,6 @@
 package traffic
 
 const (
-	httpbinCircuitBreaker = `
-apiVersion: networking.istio.io/v1alpha3
-kind: DestinationRule
-metadata:
-  name: httpbin
-spec:
-  host: httpbin
-  trafficPolicy:
-    connectionPool:
-      tcp:
-        maxConnections: 1
-      http:
-        http1MaxPendingRequests: 1
-        maxRequestsPerConnection: 1
-    outlierDetection:
-      consecutiveErrors: 1
-      interval: 1s
-      baseEjectionTime: 3m
-      maxEjectionPercent: 100
-`
-
 	httpbinAllv1 = `
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
