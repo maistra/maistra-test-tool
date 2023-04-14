@@ -15,11 +15,13 @@ func httpbinRequest(method string, path string, headers ...string) string {
 	for _, header := range headers {
 		headerArgs += fmt.Sprintf(` -H "%s"`, header)
 	}
-	return fmt.Sprintf(`curl "http://httpbin:8000%s" -X %s%s -sS -o /dev/null -w "%%{http_code}\n"`, path, method, headerArgs)
+	return fmt.Sprintf(`curl "http://httpbin:8000%s" -X %s%s -sS -o /dev/null -w "%%{http_code}"`, path, method, headerArgs)
 }
 
 func assertHttpbinRequestSucceeds(t test.TestHelper, ns string, curlCommand string) {
+	t.T().Helper()
 	retry.UntilSuccess(t, func(t test.TestHelper) {
+		t.T().Helper()
 		oc.Exec(t,
 			pod.MatchingSelector("app=sleep", ns),
 			"sleep",
@@ -32,7 +34,9 @@ func assertHttpbinRequestSucceeds(t test.TestHelper, ns string, curlCommand stri
 }
 
 func assertRequestAccepted(t test.TestHelper, ns string, curlCommand string) {
+	t.T().Helper()
 	retry.UntilSuccess(t, func(t test.TestHelper) {
+		t.T().Helper()
 		oc.Exec(t,
 			pod.MatchingSelector("app=sleep", ns),
 			"sleep",
@@ -45,7 +49,9 @@ func assertRequestAccepted(t test.TestHelper, ns string, curlCommand string) {
 }
 
 func assertRequestDenied(t test.TestHelper, ns string, curlCommand string, expectedStatusCode string) {
+	t.T().Helper()
 	retry.UntilSuccess(t, func(t test.TestHelper) {
+		t.T().Helper()
 		oc.Exec(t,
 			pod.MatchingSelector("app=sleep", ns),
 			"sleep",
