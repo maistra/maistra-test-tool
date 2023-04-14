@@ -127,11 +127,27 @@ func (o OC) CreateTLSSecretWithCACert(t test.TestHelper, ns, name string, keyFil
 	})
 }
 
+func (o OC) CreateGenericSecretFromFile(t test.TestHelper, ns, name string, file string) {
+	t.T().Helper()
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		o.CreateGenericSecretFromFiles(t, ns, name, file)
+	})
+}
+
 func (o OC) DeleteSecret(t test.TestHelper, ns string, name string) {
 	t.T().Helper()
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
 		shell.ExecuteIgnoreError(t, fmt.Sprintf(`kubectl -n %s delete secret %s`, ns, name))
+	})
+}
+
+func (o OC) DeleteConfigMap(t test.TestHelper, ns string, name string) {
+	t.T().Helper()
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		shell.ExecuteIgnoreError(t, fmt.Sprintf(`kubectl -n %s delete configmap %s`, ns, name))
 	})
 }
 
@@ -217,6 +233,14 @@ func (o OC) GetConfigMapData(t test.TestHelper, ns, name string) map[string]stri
 		}
 	})
 	return data
+}
+
+func (o OC) CreateConfigMapFromFile(t test.TestHelper, ns, name, file string) {
+	t.T().Helper()
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		o.Invokef(t, "oc create configmap -n %s %s --from-file=%s", ns, name, file)
+	})
 }
 
 func (o OC) ScaleDeploymentAndWait(t test.TestHelper, ns string, deployment string, replicas int) {
