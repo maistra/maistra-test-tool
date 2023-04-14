@@ -23,7 +23,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -40,20 +39,19 @@ func TestTLSOriginationSDS(t *testing.T) {
 
 		app.InstallAndWaitReady(t, app.Sleep(ns))
 
-		t.NewSubTest("TrafficManagement_egress_gateway_perform_TLS_origination").Run(func(t TestHelper) {
+		t.NewSubTest("ServiceEntry").Run(func(t TestHelper) {
 			t.LogStep("Perform TLS origination with an egress gateway")
 			oc.ApplyString(t, ns, ExServiceEntry)
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, ns, ExServiceEntry)
 			})
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				oc.Exec(t,
-					pod.MatchingSelector("app=sleep", ns),
-					"sleep", `curl -sSL -o /dev/null -D - http://istio.io`,
+				execInSleepPod(t, ns,
+					`curl -sSL -o /dev/null -D - http://istio.io`,
 					assert.OutputContains(
 						"301",
 						"Expected 301 Moved Permanently",
-						"ERROR: Not expected response, expected 301 Moved Permanently"))
+						"Unexpected response, expected 301 Moved Permanently"))
 			})
 
 			t.LogStep("Create a Gateway to external istio.io")
@@ -62,19 +60,17 @@ func TestTLSOriginationSDS(t *testing.T) {
 				oc.DeleteFromTemplate(t, ns, ExGatewayTLSFileTemplate, smcp)
 			})
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				oc.Exec(t,
-					pod.MatchingSelector("app=sleep", ns),
-					"sleep", `curl -sSL -o /dev/null -D - http://istio.io`,
+				execInSleepPod(t, ns,
+					`curl -sSL -o /dev/null -D - http://istio.io`,
 					assert.OutputContains(
 						"HTTP/1.1 200 OK",
 						"Expected 200 from istio.io",
-						"ERROR: Not expected response, expected 200"))
+						"Unexpected response, expected 200"))
 			})
 		})
 
-		t.NewSubTest("TrafficManagement_egress_gateway_perform_TLS_origination").Run(func(t TestHelper) {
-
-			t.Log("Perform MTLS origination with an egress gateway")
+		t.NewSubTest("Gateway").Run(func(t TestHelper) {
+			t.Log("Perform mTLS origination with an egress gateway")
 			nsNginx := "mesh-external"
 			t.Cleanup(func() {
 				oc.DeleteNamespace(t, nsNginx)
@@ -86,7 +82,7 @@ func TestTLSOriginationSDS(t *testing.T) {
 				oc.DeleteFromString(t, meshNamespace, OriginateSDS)
 			})
 
-			t.LogStep("Deploy nginx mtls server and create secrets in the mesh namespace")
+			t.LogStep("Deploy nginx mTLS server and create secrets in the mesh namespace")
 
 			nginx := examples.Nginx{Namespace: nsNginx}
 			nginx.Install_mTLS(env.GetRootDir() + "/testdata/examples/x86/nginx/nginx_mesh_external_ssl.conf")
@@ -100,18 +96,13 @@ func TestTLSOriginationSDS(t *testing.T) {
 			t.Log("Verify NGINX server")
 
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				oc.Exec(t,
-					pod.MatchingSelector("app=sleep", ns),
-					"sleep",
+				execInSleepPod(t, ns,
 					`curl -sS http://my-nginx.mesh-external.svc.cluster.local`,
 					assert.OutputContains(
 						"Welcome to nginx",
 						"Success. Get expected response: Welcome to nginx",
 						"ERROR: Expected Welcome to nginx; Got unexpected response"))
 			})
-
 		})
-
 	})
-
 }
