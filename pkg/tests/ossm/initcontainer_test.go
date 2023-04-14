@@ -42,7 +42,7 @@ func TestInitContainerNotRemovedDuringInjection(t *testing.T) {
 
 		t.LogStep("Deploying test pod.")
 		oc.ApplyString(t, ns, testInitContainerYAML)
-		oc.WaitPodReady(t, pod.MatchingSelector(podSelector, ns))
+		oc.WaitDeploymentRolloutComplete(t, ns, "sleep-init")
 
 		t.LogStep("Checking pod logs for init message.")
 		oc.Logs(t,
