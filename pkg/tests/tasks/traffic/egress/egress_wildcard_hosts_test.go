@@ -28,63 +28,61 @@ import (
 
 func TestEgressWildcard(t *testing.T) {
 	NewTest(t).Id("T16").Groups(Full, InterOp).Run(func(t TestHelper) {
+		t.Log("This test checks if the wildcard in the ServiceEntry and Gateway works as expected for Egress traffic.")
 		hack.DisableLogrusForThisTest(t)
 
 		ns := "bookinfo"
 
-		t.Cleanup(func() {
-			oc.DeleteFromTemplate(t, ns, EgressWildcardEntry, EgressWildcardGatewayTemplate)
-		})
-
-		t.Log("This Test receives the sleep pod name")
+		t.LogStep("Install the sleep pod")
 		app.InstallAndWaitReady(t, app.Sleep(ns))
-		t.LogStep("Receive the sleep pod name")
-		retry.UntilSuccess(t, func(t TestHelper) {
 
-		})
-
-		t.NewSubTest("TrafficManagement_egress_direct_traffic_wildcard_host").Run(func(t TestHelper) {
-			t.LogStep("Configure direct traffic to a wildcard host")
-			oc.ApplyTemplate(t, ns, EgressWildcardEntry, smcp)
-
-			command := `curl -s https://en.wikipedia.org/wiki/Main_Page | grep -o "<title>.*</title>"; curl -s https://de.wikipedia.org/wiki/Wikipedia:Hauptseite | grep -o "<title>.*</title>"`
-
-			retry.UntilSuccess(t, func(t TestHelper) {
-				oc.Exec(t,
-					pod.MatchingSelector("app=sleep", ns),
-					ns,
-					command,
-					assert.OutputContains(
-						"<title>Wikipedia, the free encyclopedia</title>\n<title>Wikipedia – Die freie Enzyklopädie</title>",
-						"Successful. Received the correct Wikipedia response",
-						"Error. Failed to receive the correct Wikipedia response"))
+		t.NewSubTest("ServiceEntry").Run(func(t TestHelper) {
+			t.LogStep("Configure ServiceEntry with wildcard host *.wikipedia.org")
+			oc.ApplyString(t, ns, EgressWildcardServiceEntry)
+			t.Cleanup(func() {
+				oc.DeleteFromString(t, ns, EgressWildcardServiceEntry)
 			})
+
+			assertExternalRequestSuccess(t, ns)
 		})
 
-		t.NewSubTest("TrafficManagement_egress_gateway_wildcard_host").Run(func(t TestHelper) {
-			t.LogStep("Configure egress gateway to a wildcard host")
+		t.NewSubTest("Gateway").Run(func(t TestHelper) {
+			t.LogStep("Configure egress Gateway with wildcard host *.wikipedia.org")
 			oc.ApplyTemplate(t, ns, EgressWildcardGatewayTemplate, smcp)
-
-			command := `curl -s https://en.wikipedia.org/wiki/Main_Page | grep -o "<title>.*</title>"; curl -s https://de.wikipedia.org/wiki/Wikipedia:Hauptseite | grep -o "<title>.*</title>"`
-
-			retry.UntilSuccess(t, func(t TestHelper) {
-				oc.Exec(t,
-					pod.MatchingSelector("app=sleep", ns),
-					ns,
-					command,
-					assert.OutputContains(
-						"<title>Wikipedia, the free encyclopedia</title>\n<title>Wikipedia – Die freie Enzyklopädie</title>",
-						"Successful. Received the correct Wikipedia response",
-						"Error. Failed to receive the correct Wikipedia response"))
+			t.Cleanup(func() {
+				oc.DeleteFromTemplate(t, ns, EgressWildcardGatewayTemplate, smcp)
 			})
+
+			assertExternalRequestSuccess(t, ns)
 		})
 	})
+}
 
-	// setup SNI proxy for wildcard arbitrary domains
+func assertExternalRequestSuccess(t TestHelper, ns string) {
+	t.LogStep("Check external request to en.wikipedia.org and de.wikipedia.org")
+	retry.UntilSuccess(t, func(t TestHelper) {
+		oc.Exec(t,
+			pod.MatchingSelector("app=sleep", ns),
+			"sleep",
+			`curl -s https://en.wikipedia.org/wiki/Main_Page`,
+			assert.OutputContains(
+				"<title>Wikipedia, the free encyclopedia</title>",
+				"Received the correct English Wikipedia response",
+				"Failed to receive the correct English Wikipedia response"))
+
+		oc.Exec(t,
+			pod.MatchingSelector("app=sleep", ns),
+			"sleep",
+			`curl -s https://de.wikipedia.org/wiki/Wikipedia:Hauptseite`,
+			assert.OutputContains(
+				"<title>Wikipedia – Die freie Enzyklopädie</title>",
+				"Received the correct German Wikipedia response",
+				"Failed to receive the correct German Wikipedia response"))
+	})
 }
 
 const (
-	EgressWildcardEntry = `
+	EgressWildcardServiceEntry = `
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
