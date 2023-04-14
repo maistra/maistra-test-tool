@@ -49,12 +49,13 @@ func (o OC) ApplyTemplateFile(t test.TestHelper, ns string, tmplFile string, inp
 	})
 }
 
-func (o OC) ApplyString(t test.TestHelper, ns string, yaml string) {
+func (o OC) ApplyString(t test.TestHelper, ns string, yamls ...string) {
 	t.T().Helper()
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		if err := util.KubeApplyContents(ns, yaml); err != nil {
-			t.Fatalf("Failed to apply manifest: %v;\nYAML: %v", err, yaml)
+		fullYaml := strings.Join(yamls, "\n---\n")
+		if err := util.KubeApplyContents(ns, fullYaml); err != nil {
+			t.Fatalf("Failed to apply manifest: %v;\nYAML: %v", err, fullYaml)
 		}
 	})
 }
@@ -67,12 +68,13 @@ func (o OC) ApplyFile(t test.TestHelper, ns string, file string) {
 	})
 }
 
-func (o OC) DeleteFromString(t test.TestHelper, ns string, yaml string) {
+func (o OC) DeleteFromString(t test.TestHelper, ns string, yamls ...string) {
 	t.T().Helper()
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		if err := util.KubeDeleteContents(ns, yaml); err != nil {
-			t.Fatalf("Failed to delete objects in YAML: %v; YAML: %v", err, yaml)
+		fullYaml := strings.Join(yamls, "\n---\n")
+		if err := util.KubeDeleteContents(ns, fullYaml); err != nil {
+			t.Fatalf("Failed to delete objects in YAML: %v; YAML: %v", err, fullYaml)
 		}
 	})
 }
@@ -130,21 +132,21 @@ func (o OC) CreateTLSSecret(t test.TestHelper, ns, name string, keyFile, certFil
 	})
 }
 
-func (o OC) DeleteSecret(t test.TestHelper, ns string, name string) {
+func (o OC) DeleteSecret(t test.TestHelper, ns string, name ...string) {
 	t.T().Helper()
-	o.DeleteResource(t, ns, "secret", name)
+	o.DeleteResource(t, ns, "secret", name...)
 }
 
-func (o OC) DeleteConfigMap(t test.TestHelper, ns string, name string) {
+func (o OC) DeleteConfigMap(t test.TestHelper, ns string, name ...string) {
 	t.T().Helper()
-	o.DeleteResource(t, ns, "configmap", name)
+	o.DeleteResource(t, ns, "configmap", name...)
 }
 
-func (o OC) DeleteResource(t test.TestHelper, ns string, kind string, name string) {
+func (o OC) DeleteResource(t test.TestHelper, ns string, kind string, names ...string) {
 	t.T().Helper()
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		shell.Executef(t, "kubectl -n %s delete %s %s --ignore-not-found", ns, kind, name)
+		shell.Executef(t, "kubectl -n %s delete %s %s --ignore-not-found", ns, kind, strings.Join(names, " "))
 	})
 }
 
@@ -290,6 +292,10 @@ func (o OC) withKubeconfig(t test.TestHelper, f func()) {
 		f()
 		setEnv(t, "KUBECONFIG", oldValue)
 	}
+}
+
+func (o OC) UndoRollout(t test.TestHelper, ns string, kind, name string) {
+	shell.Executef(t, `kubectl -n %s rollout undo %s %s`, ns, kind, name)
 }
 
 func setEnv(t test.TestHelper, key string, value string) {

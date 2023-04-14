@@ -22,9 +22,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
@@ -32,7 +30,10 @@ import (
 func TestTLSOrigination(t *testing.T) {
 	NewTest(t).Id("T14").Groups(Full, InterOp).Run(func(t TestHelper) {
 		hack.DisableLogrusForThisTest(t)
-		t.Log("This test verifies that TLS origination works in 2 scenarios: 1) Egress gateway TLS Origination 2) MTLS Origination with file mount (certificates mounted in egress gateway pod)")
+		t.Log("This test verifies that TLS origination works in 2 scenarios:")
+		t.Log("  1) Egress gateway TLS Origination")
+		t.Log("  2) MTLS Origination with file mount (certificates mounted in egress gateway pod)")
+
 		ns := "bookinfo"
 		t.Cleanup(func() {
 			app.Uninstall(t, app.Sleep(ns))
@@ -41,27 +42,30 @@ func TestTLSOrigination(t *testing.T) {
 
 		t.NewSubTest("Egress Gateway without file mount").Run(func(t TestHelper) {
 			t.Log("Perform TLS origination with an egress gateway")
+
+			t.LogStep("Create ServiceEntry for istio.io, port 80 and 443")
+			oc.ApplyString(t, ns, ExServiceEntry)
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns, ExGatewayTLSFileTemplate, smcp)
 				oc.DeleteFromString(t, ns, ExServiceEntry)
 			})
 
-			t.LogStep("Create ServiceEntry for port 80 and 443 and verify that the egress gateway is working: expect 301 Moved Permanently from istio.io")
-			oc.ApplyString(t, ns, ExServiceEntry)
+			t.LogStep("Verify that the egress gateway is working: expect 301 Moved Permanently from istio.io")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				oc.Exec(t,
-					pod.MatchingSelector("app=sleep", ns),
-					"sleep", `curl -sSL -o /dev/null -D - http://istio.io`,
+				execInSleepPod(t, ns,
+					`curl -sSL -o /dev/null -D - http://istio.io`,
 					assert.OutputContains(
 						"301",
-						"Expected 301 Moved Permanently",
-						"ERROR: Not expected response, expected 301 Moved Permanently"))
+						"Got expected 301 Moved Permanently",
+						"Not expected response, expected 301 Moved Permanently"))
 			})
 
-			t.LogStep("Create a Gateway to external istio.io and verify that the egress gateway is working: expect Get http://istio.io response 200")
-			t.Log("Create a Gateway for ingress traffic, DestinationRule, and VirtualService to route to the external service")
+			t.LogStep("Create a Gateway, DestinationRule, and VirtualService to route requests to istio.io")
 			oc.ApplyTemplate(t, ns, ExGatewayTLSFileTemplate, smcp)
-			t.Log("Expect Get http://istio.io response 200 because the TLS origination is done by the egress gateway")
+			t.Cleanup(func() {
+				oc.DeleteFromTemplate(t, ns, ExGatewayTLSFileTemplate, smcp)
+			})
+
+			t.LogStep("Verify that request to http://istio.io is routed through the egress gateway (response 200 indicates that the TLS origination is done by the egress gateway)")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				execInSleepPod(t, ns,
 					fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(), "http://istio.io"),
@@ -71,47 +75,44 @@ func TestTLSOrigination(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("MTLS with file mount").Run(func(t TestHelper) {
-			t.Log("Perform MTLS origination with an egress gateway")
+		t.NewSubTest("mTLS with file mount").Run(func(t TestHelper) {
+			t.Log("Perform mTLS origination with an egress gateway")
 			nsNginx := "mesh-external"
 			t.Cleanup(func() {
 				app.Uninstall(t, app.NginxWithMTLS(nsNginx))
-				oc.DeleteSecret(t, meshNamespace, "nginx-client-certs")
-				oc.DeleteSecret(t, meshNamespace, "nginx-ca-certs")
-				// Rollout to istio-egressgateway to revert patch
-				shell.Executef(t, `kubectl -n %s rollout undo deploy istio-egressgateway`, meshNamespace)
+				oc.DeleteSecret(t, meshNamespace, "nginx-client-certs", "nginx-ca-certs")
+				// Rollout undo to istio-egressgateway to revert patch
+				oc.UndoRollout(t, meshNamespace, "deploy", "istio-egressgateway")
 				oc.DeleteFromTemplate(t, ns, nginxGatewayTLSTemplate, smcp)
-				oc.DeleteFromString(t, meshNamespace, meshExternalServiceEntry)
-				oc.DeleteFromString(t, meshNamespace, nginxMeshRule)
+				oc.DeleteFromString(t, meshNamespace, meshExternalServiceEntry, nginxMeshRule)
 			})
 
-			t.LogStep("Deploy nginx mtls server and create secrets in the mesh namespace")
-			app.InstallAndWaitReady(t, app.NginxWithMTLS(nsNginx))
+			t.LogStep("Deploy nginx mTLS server and create secrets in the mesh namespace")
 			oc.CreateTLSSecret(t, meshNamespace, "nginx-client-certs", nginxClientCertKey, nginxClientCert)
 			oc.CreateGenericSecretFromFiles(t, meshNamespace,
 				"nginx-ca-certs",
 				"example.com.crt="+nginxServerCACert)
+			app.Install(t, app.NginxWithMTLS(nsNginx))
 
 			t.LogStep("Patch egress gateway with File Mount configuration")
 			oc.Patch(t, meshNamespace, "deploy", "istio-egressgateway", "json", gatewayPatchAdd)
-			oc.WaitSMCPReady(t, meshNamespace, smcpName)
-			// It's needed to verify that the egress gateway have all the files after the patch and check the rollout history?
 
 			t.LogStep("Configure MTLS origination for egress traffic")
 			oc.ApplyTemplate(t, ns, nginxGatewayTLSTemplate, smcp)
-			oc.ApplyString(t, meshNamespace, meshExternalServiceEntry)
-			oc.ApplyString(t, meshNamespace, nginxMeshRule)
+			oc.ApplyString(t, meshNamespace, meshExternalServiceEntry, nginxMeshRule)
+
+			t.LogStep("Wait for egress gateway and nginx to be ready")
+			oc.WaitDeploymentRolloutComplete(t, meshNamespace, "istio-egressgateway")
+			app.WaitReady(t, app.NginxWithMTLS(nsNginx))
 
 			t.LogStep("Verify NGINX server")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				oc.Exec(t,
-					pod.MatchingSelector("app=sleep", ns),
-					"sleep",
+				execInSleepPod(t, ns,
 					`curl -sS http://my-nginx.mesh-external.svc.cluster.local`,
 					assert.OutputContains(
 						"Welcome to nginx",
-						"Success. Get expected response: Welcome to nginx",
-						"ERROR: Expected Welcome to nginx; Got unexpected response"))
+						"Get expected response: Welcome to nginx",
+						"Expected Welcome to nginx; Got unexpected response"))
 			})
 		})
 	})
