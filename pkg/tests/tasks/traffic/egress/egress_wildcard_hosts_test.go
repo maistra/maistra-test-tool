@@ -35,6 +35,9 @@ func TestEgressWildcard(t *testing.T) {
 
 		t.LogStep("Install the sleep pod")
 		app.InstallAndWaitReady(t, app.Sleep(ns))
+		t.Cleanup(func() {
+			app.Uninstall(t, app.Sleep(ns))
+		})
 
 		t.NewSubTest("ServiceEntry").Run(func(t TestHelper) {
 			t.LogStep("Configure ServiceEntry with wildcard host *.wikipedia.org")
