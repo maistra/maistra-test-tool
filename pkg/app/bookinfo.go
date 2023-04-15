@@ -6,7 +6,6 @@ import (
 	"net/http/cookiejar"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -40,13 +39,13 @@ func (a *bookinfo) Install(t test.TestHelper) {
 	t.T().Helper()
 
 	t.Log("Creating Bookinfo Gateway")
-	oc.ApplyFile(t, a.ns, BookinfoGatewayFile)
+	oc.ApplyString(t, a.ns, BookinfoGateway)
 
 	t.Log("Creating Bookinfo Destination Rules (all)")
 	if a.mTLS {
-		oc.ApplyFile(t, a.ns, BookinfoRuleAllMTLSFile)
+		oc.ApplyString(t, a.ns, BookinfoRuleAllMTLS)
 	} else {
-		oc.ApplyFile(t, a.ns, BookinfoRuleAllFile)
+		oc.ApplyString(t, a.ns, BookinfoRuleAll)
 	}
 
 	t.Logf("Deploy Bookinfo in namespace %q", a.ns)
@@ -56,8 +55,8 @@ func (a *bookinfo) Install(t test.TestHelper) {
 func (a *bookinfo) Uninstall(t test.TestHelper) {
 	t.T().Helper()
 	t.Logf("Uninstalling Bookinfo from namespace %q", a.ns)
-	oc.DeleteFile(t, a.ns, BookinfoRuleAllFile)
-	oc.DeleteFile(t, a.ns, BookinfoGatewayFile)
+	oc.DeleteFromString(t, a.ns, BookinfoRuleAll)
+	oc.DeleteFromString(t, a.ns, BookinfoGateway)
 	oc.DeleteFromTemplate(t, a.ns, BookinfoTemplate, nil)
 }
 
@@ -130,11 +129,15 @@ var (
 	//go:embed "yaml/bookinfo-ratings-v2.yaml"
 	BookinfoRatingsV2Template string
 
-	BookinfoVirtualServiceReviewsV3File = fmt.Sprintf("%s/pkg/app/yaml/virtual-service-reviews-v3.yaml", env.GetRootDir())
+	//go:embed "yaml/virtual-service-reviews-v3.yaml"
+	BookinfoVirtualServiceReviewsV3 string
 
-	BookinfoGatewayFile = fmt.Sprintf("%s/pkg/app/yaml/bookinfo-gateway.yaml", env.GetRootDir())
+	//go:embed "yaml/bookinfo-gateway.yaml"
+	BookinfoGateway string
 
-	BookinfoRuleAllFile = fmt.Sprintf("%s/pkg/app/yaml/destination-rule-all.yaml", env.GetRootDir())
+	//go:embed "yaml/destination-rule-all.yaml"
+	BookinfoRuleAll string
 
-	BookinfoRuleAllMTLSFile = fmt.Sprintf("%s/pkg/app/yaml/destination-rule-all-mtls.yaml", env.GetRootDir())
+	//go:embed "yaml/destination-rule-all-mtls.yaml"
+	BookinfoRuleAllMTLS string
 )

@@ -78,13 +78,13 @@ func TestMultiClusterFederationFailover(t *testing.T) {
 			bookinfoInstaller: func(t TestHelper, ft federationTest) {
 				t.LogStep("Install bookinfo in west-mesh")
 				ft.west.oc.ApplyTemplateString(t, ft.west.bookinfoNamespace, app.BookinfoTemplate, nil)
-				ft.west.oc.ApplyFile(t, ft.west.bookinfoNamespace, app.BookinfoRuleAllFile)
+				ft.west.oc.ApplyString(t, ft.west.bookinfoNamespace, app.BookinfoRuleAll)
 
 				t.LogStep("Install bookinfo in east-mesh")
 				ft.east.oc.ApplyTemplateString(t, ft.east.bookinfoNamespace, app.BookinfoTemplate, nil)
-				ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, app.BookinfoGatewayFile)
-				ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, app.BookinfoRuleAllFile)
-				ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, app.BookinfoVirtualServiceReviewsV3File)
+				ft.east.oc.ApplyString(t, ft.east.bookinfoNamespace, app.BookinfoGateway)
+				ft.east.oc.ApplyString(t, ft.east.bookinfoNamespace, app.BookinfoRuleAll)
+				ft.east.oc.ApplyString(t, ft.east.bookinfoNamespace, app.BookinfoVirtualServiceReviewsV3)
 
 				t.LogStep("Install fail-over DestinationRule for ratings service in east-mesh")
 				ft.east.oc.ApplyTemplateFile(t, ft.east.bookinfoNamespace, ft.testdataPath+"/east-mesh/destinationrule-failover.yaml", map[string]string{
