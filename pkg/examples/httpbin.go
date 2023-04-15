@@ -21,8 +21,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
-var _ ExampleInterface = &Httpbin{}
-
 type Httpbin struct {
 	Namespace string `json:"namespace,omitempty"`
 }
