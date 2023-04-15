@@ -24,7 +24,6 @@ import (
 	. "github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -32,7 +31,6 @@ import (
 
 func TestTrafficShifting(t *testing.T) {
 	NewTest(t).Id("T3").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
 		ns := "bookinfo"
 
 		t.Cleanup(func() {

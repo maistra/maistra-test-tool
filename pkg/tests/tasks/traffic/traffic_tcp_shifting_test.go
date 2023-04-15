@@ -22,7 +22,6 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -32,7 +31,6 @@ import (
 // TestTcpTrafficShifting validates TCP traffic shifting feature.
 func TestTcpTrafficShifting(t *testing.T) {
 	test.NewTest(t).Id("T4").Groups(test.Full, test.InterOp).Run(func(t test.TestHelper) {
-		hack.DisableLogrusForThisTest(t)
 		ns := "foo"
 
 		t.Cleanup(func() {

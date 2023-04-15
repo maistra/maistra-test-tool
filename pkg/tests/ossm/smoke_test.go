@@ -21,7 +21,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
@@ -30,7 +29,6 @@ import (
 
 func TestBookinfoInjection(t *testing.T) {
 	NewTest(t).Id("A2").Groups(ARM, Full, Smoke, InterOp).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
 		ns := "bookinfo"
 
 		t.Cleanup(func() {

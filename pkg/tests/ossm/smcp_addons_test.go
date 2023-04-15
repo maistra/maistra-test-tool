@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -27,8 +26,6 @@ import (
 
 func TestSMCPAddons(t *testing.T) {
 	NewTest(t).Id("T34").Groups(Full).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
-
 		// Created a subtest because we need to add more test related to Addons in the future.
 		t.NewSubTest("3scale_addon").Run(func(t TestHelper) {
 			t.LogStep("Enable 3scale in a SMCP expecting to get validation error.")

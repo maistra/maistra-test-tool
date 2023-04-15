@@ -23,7 +23,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -33,8 +32,6 @@ import (
 
 func TestSingleClusterFederation(t *testing.T) {
 	NewTest(t).Id("T31").Groups(Full, ARM).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
-
 		federationTest{
 			testdataPath: "testdata/traffic-splitting",
 			west: config{
@@ -61,8 +58,6 @@ func TestSingleClusterFederation(t *testing.T) {
 
 func TestSingleClusterFederationDifferentCerts(t *testing.T) {
 	NewTest(t).Id("T32").Groups(Full).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
-
 		federationTest{
 			testdataPath: "testdata/traffic-splitting",
 			west: config{

@@ -20,7 +20,6 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -29,7 +28,6 @@ import (
 
 func TestTLSOrigination(t *testing.T) {
 	NewTest(t).Id("T14").Groups(Full, InterOp).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
 		t.Log("This test verifies that TLS origination works in 2 scenarios:")
 		t.Log("  1) Egress gateway TLS Origination")
 		t.Log("  2) MTLS Origination with file mount (certificates mounted in egress gateway pod)")

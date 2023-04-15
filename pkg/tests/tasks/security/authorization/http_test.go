@@ -20,7 +20,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -29,8 +28,6 @@ import (
 // TestAuthorizationHTTPTraffic validates authorization policies for HTTP traffic.
 func TestAuthorizationHTTPTraffic(t *testing.T) {
 	test.NewTest(t).Id("T20").Groups(test.Full, test.ARM, test.InterOp).Run(func(t test.TestHelper) {
-		hack.DisableLogrusForThisTest(t)
-
 		ns := "bookinfo"
 		t.Cleanup(func() {
 			oc.Patch(t,

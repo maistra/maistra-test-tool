@@ -20,7 +20,6 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -28,7 +27,6 @@ import (
 
 func TestMustGather(t *testing.T) {
 	NewTest(t).Id("T30").Groups(Full).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
 		t.Log("This test verifies must-gather log collection")
 
 		ns := "bookinfo"
