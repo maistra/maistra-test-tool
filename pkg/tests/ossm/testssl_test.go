@@ -65,7 +65,7 @@ spec:
 			oc.Exec(t,
 				pod.MatchingSelector("app=testssl", ns),
 				"testssl",
-				"./testssl/testssl.sh -6 productpage:9080 || true",
+				"./testssl/testssl.sh -P -6 productpage:9080 || true",
 				assert.OutputContains(
 					"TLSv1.2",
 					"Received the TLSv1.2 needed in the testssl.sh results",
