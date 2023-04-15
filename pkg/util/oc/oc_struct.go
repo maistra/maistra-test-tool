@@ -31,10 +31,7 @@ func (o OC) ApplyTemplateString(t test.TestHelper, ns string, tmpl string, input
 
 func (o OC) DeleteFromTemplate(t test.TestHelper, ns string, tmpl string, input interface{}) {
 	t.T().Helper()
-	o.withKubeconfig(t, func() {
-		t.T().Helper()
-		DeleteFromString(t, ns, template.Run(t, tmpl, input))
-	})
+	o.DeleteFromString(t, ns, template.Run(t, tmpl, input))
 }
 
 func (o OC) ApplyTemplateFile(t test.TestHelper, ns string, tmplFile string, input interface{}) {
