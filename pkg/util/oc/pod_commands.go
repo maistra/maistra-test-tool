@@ -58,23 +58,16 @@ func (o OC) Logs(t test.TestHelper, podLocator PodLocatorFunc, container string,
 
 func (o OC) WaitPodRunning(t test.TestHelper, podLocator PodLocatorFunc) {
 	t.T().Helper()
-	maxAttempts := 60
-	for i := 0; i < maxAttempts; i++ {
-		lastAttempt := i == maxAttempts-1
+	retry.UntilSuccessWithOptions(t, retry.Options().LogAttempts(false), func(t test.TestHelper) {
+		t.T().Helper()
 		pod := podLocator(t, &o)
 		status := util.GetPodStatus(pod.Namespace, pod.Name)
 		if status == "Running" {
 			t.Logf("Pod %s/%s is running!", pod.Namespace, pod.Name)
-			return
 		} else {
-			if lastAttempt {
-				t.Fatalf("Pod %s/%s is not running: %s", pod.Namespace, pod.Name, status)
-			} else {
-				t.Logf("Pod %s/%s is still not running: %s", pod.Namespace, pod.Name, status)
-				time.Sleep(1 * time.Second)
-			}
+			t.Fatalf("Pod %s/%s is not running: %s", pod.Namespace, pod.Name, status)
 		}
-	}
+	})
 }
 
 func (o OC) WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
