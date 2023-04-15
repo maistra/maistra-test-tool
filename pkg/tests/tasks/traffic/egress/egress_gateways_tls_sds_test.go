@@ -21,9 +21,7 @@ import (
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
-	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
@@ -36,9 +34,7 @@ func cleanupTLSOriginationSDS(t *testing.T) {
 	util.Shell(`kubectl delete -n %s secret client-credential`, meshNamespace)
 	util.KubeDeleteContents("bookinfo", util.RunTemplate(ExGatewayTLSFileTemplate, smcp))
 	util.KubeDeleteContents("bookinfo", ExServiceEntry)
-	app.Uninstall(test.NewTestContext(t), app.Sleep("bookinfo"))
-	nginx := examples.Nginx{Namespace: "mesh-external"}
-	nginx.Uninstall()
+	app.Uninstall(test.NewTestContext(t), app.Sleep("bookinfo"), app.NginxWithMTLS("mesh-external"))
 	time.Sleep(time.Duration(20) * time.Second)
 }
 
@@ -93,8 +89,8 @@ func TestTLSOriginationSDS(t *testing.T) {
 		defer util.RecoverPanic(t)
 
 		log.Log.Info("Deploy nginx mtls server")
-		nginx := examples.Nginx{Namespace: "mesh-external"}
-		nginx.Install_mTLS(env.GetRootDir() + "/testdata/examples/common/nginx/nginx_mesh_external_ssl.conf")
+
+		app.InstallAndWaitReady(test.NewTestContext(t), app.NginxWithMTLS("mesh-external"))
 
 		log.Log.Info("Create client cert secret")
 		util.Shell(`kubectl create secret -n %s generic client-credential --from-file=tls.key=%s --from-file=tls.crt=%s --from-file=ca.crt=%s`,
