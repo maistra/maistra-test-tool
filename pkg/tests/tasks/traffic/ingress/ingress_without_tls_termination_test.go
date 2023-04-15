@@ -44,7 +44,7 @@ func TestIngressWithoutTLS(t *testing.T) {
 
 	log.Log.Info("TestIngressWithOutTLS Termination")
 	nginx := examples.Nginx{Namespace: "bookinfo"}
-	nginx.Install(env.GetRootDir() + "/testdata/examples/x86/nginx/nginx.conf")
+	nginx.Install(env.GetRootDir() + "/testdata/examples/common/nginx/nginx.conf")
 
 	log.Log.Info("Verify NGINX server")
 	pod, _ := util.GetPodName("bookinfo", "run=my-nginx")

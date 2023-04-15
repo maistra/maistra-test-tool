@@ -37,9 +37,9 @@ var (
 
 var (
 	bookinfoYaml           = fmt.Sprintf("%s/%s/bookinfo/bookinfo.yaml", basedir, branch)
-	bookinfoGateway        = fmt.Sprintf("%s/%s/bookinfo/bookinfo-gateway.yaml", basedir, branch)
-	bookinfoRuleAllYaml    = fmt.Sprintf("%s/%s/bookinfo/destination-rule-all.yaml", basedir, branch)
-	bookinfoRuleAllTLSYaml = fmt.Sprintf("%s/%s/bookinfo/destination-rule-all-mtls.yaml", basedir, branch)
+	bookinfoGateway        = fmt.Sprintf("%s/common/bookinfo/bookinfo-gateway.yaml", basedir)
+	bookinfoRuleAllYaml    = fmt.Sprintf("%s/common/bookinfo/destination-rule-all.yaml", basedir)
+	bookinfoRuleAllTLSYaml = fmt.Sprintf("%s/common/bookinfo/destination-rule-all-mtls.yaml", basedir)
 	BookinfoRatingsV2Yaml  = fmt.Sprintf("%s/%s/bookinfo/bookinfo-ratings-v2.yaml", basedir, branch)
 	BookinfoDBYaml         = fmt.Sprintf("%s/%s/bookinfo/bookinfo-db.yaml", basedir, branch)
 
@@ -50,9 +50,10 @@ var (
 	nginxServerCACert    = fmt.Sprintf("%s/nginx.example.com/example.com.crt", certdir)
 	meshExtServerCertKey = fmt.Sprintf("%s/nginx.example.com/my-nginx.mesh-external.svc.cluster.local.key", certdir)
 	meshExtServerCert    = fmt.Sprintf("%s/nginx.example.com/my-nginx.mesh-external.svc.cluster.local.crt", certdir)
-	nginxConf            = fmt.Sprintf("%s/%s/nginx/nginx.conf", basedir, branch)
-	nginxConfMTls        = fmt.Sprintf("%s/%s/nginx/nginx_mesh_external_ssl.conf", basedir, branch)
-	nginxYaml            = fmt.Sprintf("%s/%s/nginx/nginx.yaml", basedir, branch)
+
+	nginxConf     = fmt.Sprintf("%s/common/nginx/nginx.conf", basedir)
+	nginxConfMTls = fmt.Sprintf("%s/common/nginx/nginx_mesh_external_ssl.conf", basedir)
+	nginxYaml     = fmt.Sprintf("%s/common/nginx/nginx.yaml", basedir)
 )
 
 // TODO: remove these functions when the refactoring is done

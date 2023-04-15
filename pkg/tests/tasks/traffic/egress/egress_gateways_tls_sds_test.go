@@ -94,7 +94,7 @@ func TestTLSOriginationSDS(t *testing.T) {
 
 		log.Log.Info("Deploy nginx mtls server")
 		nginx := examples.Nginx{Namespace: "mesh-external"}
-		nginx.Install_mTLS(env.GetRootDir() + "/testdata/examples/x86/nginx/nginx_mesh_external_ssl.conf")
+		nginx.Install_mTLS(env.GetRootDir() + "/testdata/examples/common/nginx/nginx_mesh_external_ssl.conf")
 
 		log.Log.Info("Create client cert secret")
 		util.Shell(`kubectl create secret -n %s generic client-credential --from-file=tls.key=%s --from-file=tls.crt=%s --from-file=ca.crt=%s`,
