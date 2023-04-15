@@ -36,22 +36,23 @@ func TestSSL(t *testing.T) {
 			oc.RecreateNamespace(t, ns)
 		})
 
-		t.LogStep("Enable the Service Mesh Control Plane mTLS to true")
-		oc.Patch(t, meshNamespace,
-			"smcp", smcpName,
-			"merge",
-			`{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}`)
-
-		t.Log("Update SMCP spec.security.controlPlane.tls")
-		oc.Patch(t, meshNamespace,
-			"smcp", smcpName,
-			"merge",
-			`{"spec":{"security":{"controlPlane":{"tls":{`+
-				`"minProtocolVersion":"TLSv1_2",`+
-				`"maxProtocolVersion":"TLSv1_2",`+
-				`"cipherSuites":["TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"],`+
-				`"ecdhCurves":["CurveP256", "CurveP384"]`+
-				`}}}}}`)
+		t.LogStep("Patch SMCP to enable mTLS in dataPlane and controlPlane and set min/maxProtocolVersion, cipherSuites, and ecdhCurves")
+		oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
+spec:
+  security:
+    dataPlane:
+      mtls: true
+    controlPlane:
+      mtls: true
+      tls:
+        minProtocolVersion: TLSv1_2
+        maxProtocolVersion: TLSv1_2
+        cipherSuites:
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        ecdhCurves:
+        - CurveP256
+        - CurveP384
+`)
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Install bookinfo with mTLS and testssl pod")
