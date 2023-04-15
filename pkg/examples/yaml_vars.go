@@ -21,41 +21,18 @@ import (
 )
 
 var (
-	basedir = env.GetRootDir() + "/testdata/examples"
-	certdir = env.GetRootDir() + "/sampleCerts"
-)
+	nginxServerCertKey   = fmt.Sprintf("%s/sampleCerts/nginx.example.com/nginx.example.com.key", env.GetRootDir())
+	nginxServerCert      = fmt.Sprintf("%s/sampleCerts/nginx.example.com/nginx.example.com.crt", env.GetRootDir())
+	nginxServerCACert    = fmt.Sprintf("%s/sampleCerts/nginx.example.com/example.com.crt", env.GetRootDir())
+	meshExtServerCertKey = fmt.Sprintf("%s/sampleCerts/nginx.example.com/my-nginx.mesh-external.svc.cluster.local.key", env.GetRootDir())
+	meshExtServerCert    = fmt.Sprintf("%s/sampleCerts/nginx.example.com/my-nginx.mesh-external.svc.cluster.local.crt", env.GetRootDir())
 
-var (
-	bookinfoGateway        = fmt.Sprintf("%s/common/bookinfo/bookinfo-gateway.yaml", basedir)
-	bookinfoRuleAllYaml    = fmt.Sprintf("%s/common/bookinfo/destination-rule-all.yaml", basedir)
-	bookinfoRuleAllTLSYaml = fmt.Sprintf("%s/common/bookinfo/destination-rule-all-mtls.yaml", basedir)
-
-	BookinfoVirtualServiceReviewsV3Yaml = fmt.Sprintf("%s/common/bookinfo/virtual-service-reviews-v3.yaml", basedir)
-
-	nginxServerCertKey   = fmt.Sprintf("%s/nginx.example.com/nginx.example.com.key", certdir)
-	nginxServerCert      = fmt.Sprintf("%s/nginx.example.com/nginx.example.com.crt", certdir)
-	nginxServerCACert    = fmt.Sprintf("%s/nginx.example.com/example.com.crt", certdir)
-	meshExtServerCertKey = fmt.Sprintf("%s/nginx.example.com/my-nginx.mesh-external.svc.cluster.local.key", certdir)
-	meshExtServerCert    = fmt.Sprintf("%s/nginx.example.com/my-nginx.mesh-external.svc.cluster.local.crt", certdir)
-
-	nginxConf     = fmt.Sprintf("%s/common/nginx/nginx.conf", basedir)
-	nginxConfMTls = fmt.Sprintf("%s/common/nginx/nginx_mesh_external_ssl.conf", basedir)
-	nginxYaml     = fmt.Sprintf("%s/common/nginx/nginx.yaml", basedir)
+	nginxConf     = fmt.Sprintf("%s/testdata/examples/common/nginx/nginx.conf", env.GetRootDir())
+	nginxConfMTls = fmt.Sprintf("%s/testdata/examples/common/nginx/nginx_mesh_external_ssl.conf", env.GetRootDir())
+	nginxYaml     = fmt.Sprintf("%s/testdata/examples/common/nginx/nginx.yaml", env.GetRootDir())
 )
 
 // TODO: remove these functions when the refactoring is done
-
-func BookinfoGatewayYamlFile() string {
-	return bookinfoGateway
-}
-
-func BookinfoRuleAllYamlFile() string {
-	return bookinfoRuleAllYaml
-}
-
-func BookinfoRuleAllMTLSYamlFile() string {
-	return bookinfoRuleAllTLSYaml
-}
 
 func NginxYamlFile() string {
 	return nginxYaml

@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
-	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
@@ -79,13 +78,13 @@ func TestMultiClusterFederationFailover(t *testing.T) {
 			bookinfoInstaller: func(t TestHelper, ft federationTest) {
 				t.LogStep("Install bookinfo in west-mesh")
 				ft.west.oc.ApplyTemplateString(t, ft.west.bookinfoNamespace, app.BookinfoTemplate, nil)
-				ft.west.oc.ApplyFile(t, ft.west.bookinfoNamespace, examples.BookinfoRuleAllYamlFile())
+				ft.west.oc.ApplyFile(t, ft.west.bookinfoNamespace, app.BookinfoRuleAllFile)
 
 				t.LogStep("Install bookinfo in east-mesh")
 				ft.east.oc.ApplyTemplateString(t, ft.east.bookinfoNamespace, app.BookinfoTemplate, nil)
-				ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, examples.BookinfoGatewayYamlFile())
-				ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, examples.BookinfoRuleAllYamlFile())
-				ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, examples.BookinfoVirtualServiceReviewsV3Yaml)
+				ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, app.BookinfoGatewayFile)
+				ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, app.BookinfoRuleAllFile)
+				ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, app.BookinfoVirtualServiceReviewsV3File)
 
 				t.LogStep("Install fail-over DestinationRule for ratings service in east-mesh")
 				ft.east.oc.ApplyTemplateFile(t, ft.east.bookinfoNamespace, ft.testdataPath+"/east-mesh/destinationrule-failover.yaml", map[string]string{
