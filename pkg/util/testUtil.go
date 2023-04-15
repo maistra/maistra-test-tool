@@ -15,6 +15,7 @@
 package util
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/tls"
@@ -55,13 +56,23 @@ func RunTemplateWithTestHelper(t test.TestHelper, tmpl string, input interface{}
 		Funcs(templateFuncMap).
 		Parse(tmpl)
 	if err != nil {
-		t.Fatalf("could not execute template: %v:\n%s", err, tmpl)
+		t.Fatalf("could not execute template: %v:\n%s", err, addLineNumbers(tmpl))
 	}
 	var buf bytes.Buffer
 	if err := tt.Execute(&buf, input); err != nil {
 		t.Fatal(err)
 	}
 	return buf.String()
+}
+
+func addLineNumbers(str string) string {
+	var builder strings.Builder
+	scanner := bufio.NewScanner(strings.NewReader(str))
+	for i := 1; scanner.Scan(); i++ {
+		lineNumStr := fmt.Sprintf("%3d", i)
+		fmt.Fprintf(&builder, "%s: %s\n", lineNumStr, scanner.Text())
+	}
+	return builder.String()
 }
 
 var templateFuncMap = template.FuncMap{

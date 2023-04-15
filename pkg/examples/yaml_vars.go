@@ -45,8 +45,6 @@ var (
 
 	BookinfoVirtualServiceReviewsV3Yaml = fmt.Sprintf("%s/common/bookinfo/virtual-service-reviews-v3.yaml", basedir)
 
-	fortioYaml = fmt.Sprintf("%s/%s/httpbin/sample-client/fortio-deploy.yaml", basedir, branch)
-
 	httpbinYaml       = fmt.Sprintf("%s/%s/httpbin/httpbin.yaml", basedir, branch)
 	httpbinLegacyYaml = fmt.Sprintf("%s/%s/httpbin/httpbin_legacy.yaml", basedir, branch)
 	httpbinv1Yaml     = fmt.Sprintf("%s/%s/httpbin/httpbinv1.yaml", basedir, branch)
@@ -107,10 +105,6 @@ func BookinfoRuleAllYamlFile() string {
 
 func BookinfoRuleAllMTLSYamlFile() string {
 	return bookinfoRuleAllTLSYaml
-}
-
-func FortioYamlFile() string {
-	return fortioYaml
 }
 
 func RedisYamlFile() string {
