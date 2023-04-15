@@ -59,8 +59,7 @@ var (
 	nginxConfMTls        = fmt.Sprintf("%s/%s/nginx/nginx_mesh_external_ssl.conf", basedir, branch)
 	nginxYaml            = fmt.Sprintf("%s/%s/nginx/nginx.yaml", basedir, branch)
 
-	sleepYaml       = fmt.Sprintf("%s/%s/sleep/sleep.yaml", basedir, branch)
-	sleepLegacyYaml = fmt.Sprintf("%s/%s/sleep/sleep_legacy.yaml", basedir, branch)
+	sleepYaml = fmt.Sprintf("%s/%s/sleep/sleep.yaml", basedir, branch)
 )
 
 // TODO: remove these functions when the refactoring is done
@@ -83,10 +82,6 @@ func HttpbinV2YamlFile() string {
 
 func SleepYamlFile() string {
 	return sleepYaml
-}
-
-func SleepLegacyYamlFile() string {
-	return sleepLegacyYaml
 }
 
 func BookinfoYamlFile() string {

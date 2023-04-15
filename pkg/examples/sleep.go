@@ -50,18 +50,6 @@ func (s *Sleep) Install() error {
 	return err
 }
 
-func (s *Sleep) InstallLegacy() {
-	log.Log.Info("Deploy Sleep")
-	proxy, _ := util.GetProxy()
-	configmap := util.RunTemplate(sleepConfigmap, proxy)
-	log.Log.Infof("Creating configmap %s", configmap)
-	util.KubeApplyContents(s.Namespace, configmap)
-	util.KubeApply(s.Namespace, sleepLegacyYaml)
-	time.Sleep(time.Duration(5) * time.Second)
-	util.CheckPodRunning(s.Namespace, "app=sleep")
-	time.Sleep(time.Duration(10) * time.Second)
-}
-
 func (s *Sleep) Uninstall() {
 	log.Log.Infof("Removing Sleep on namespace %s", s.Namespace)
 	proxy, _ := util.GetProxy()
