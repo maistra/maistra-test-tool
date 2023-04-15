@@ -15,7 +15,6 @@
 package app
 
 import (
-	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
@@ -40,15 +39,60 @@ func (a *echo) Namespace() string {
 
 func (a *echo) Install(t test.TestHelper) {
 	t.T().Helper()
-	oc.ApplyFile(t, a.ns, examples.EchoYamlFile())
+	oc.ApplyTemplate(t, a.ns, tcpEchoTemplate, nil)
 }
 
 func (a *echo) Uninstall(t test.TestHelper) {
 	t.T().Helper()
-	oc.DeleteFile(t, a.ns, examples.EchoYamlFile())
+	oc.DeleteFromTemplate(t, a.ns, tcpEchoTemplate, nil)
 }
 
 func (a *echo) WaitReady(t test.TestHelper) {
 	t.T().Helper()
 	oc.WaitDeploymentRolloutComplete(t, a.ns, "tcp-echo")
 }
+
+const tcpEchoTemplate = `
+apiVersion: v1
+kind: Service
+metadata:
+  name: tcp-echo
+  labels:
+    app: tcp-echo
+spec:
+  ports:
+  - name: tcp
+    port: 9000
+  - name: tcp-other
+    port: 9001
+  # Port 9002 is omitted intentionally for testing the pass through filter chain.
+  selector:
+    app: tcp-echo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tcp-echo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tcp-echo
+      version: v1
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+      labels:
+        app: tcp-echo
+        version: v1
+    spec:
+      containers:
+      - name: tcp-echo
+        image: {{ perArch "docker.io/istio/tcp-echo-server:1.2" "quay.io/maistra/tcp-echo-server:0.0-ibm-p" "quay.io/maistra/tcp-echo-server:2.0-ibm-z" "docker.io/istio/tcp-echo-server:1.2" }}
+        imagePullPolicy: IfNotPresent
+        args: [ "9000,9001,9002", "hello" ]
+        ports:
+        - containerPort: 9000
+        - containerPort: 9001
+`
