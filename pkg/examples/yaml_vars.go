@@ -16,32 +16,19 @@ package examples
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 )
 
-func getenv(key, fallback string) string {
-	value := os.Getenv(key)
-	if len(value) == 0 {
-		return fallback
-	}
-	return value
-}
-
 var (
-	branch  = getenv("SAMPLEARCH", "x86")
 	basedir = env.GetRootDir() + "/testdata/examples"
 	certdir = env.GetRootDir() + "/sampleCerts"
 )
 
 var (
-	bookinfoYaml           = fmt.Sprintf("%s/%s/bookinfo/bookinfo.yaml", basedir, branch)
 	bookinfoGateway        = fmt.Sprintf("%s/common/bookinfo/bookinfo-gateway.yaml", basedir)
 	bookinfoRuleAllYaml    = fmt.Sprintf("%s/common/bookinfo/destination-rule-all.yaml", basedir)
 	bookinfoRuleAllTLSYaml = fmt.Sprintf("%s/common/bookinfo/destination-rule-all-mtls.yaml", basedir)
-	BookinfoRatingsV2Yaml  = fmt.Sprintf("%s/%s/bookinfo/bookinfo-ratings-v2.yaml", basedir, branch)
-	BookinfoDBYaml         = fmt.Sprintf("%s/%s/bookinfo/bookinfo-db.yaml", basedir, branch)
 
 	BookinfoVirtualServiceReviewsV3Yaml = fmt.Sprintf("%s/common/bookinfo/virtual-service-reviews-v3.yaml", basedir)
 
@@ -57,10 +44,6 @@ var (
 )
 
 // TODO: remove these functions when the refactoring is done
-
-func BookinfoYamlFile() string {
-	return bookinfoYaml
-}
 
 func BookinfoGatewayYamlFile() string {
 	return bookinfoGateway

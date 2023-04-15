@@ -74,8 +74,7 @@ spec:
       serviceAccountName: bookinfo-details
       containers:
       - name: details
-        image: quay.io/multi-arch/maistra-examples-bookinfo-details-v1:2.1.0
-        imagePullPolicy: IfNotPresent
+        image: {{ perArch "quay.io/maistra/examples-bookinfo-details-v1:2.3.0" "quay.io/maistra/examples-bookinfo-details-v1:2.1.0-ibm-p" "quay.io/maistra/examples-bookinfo-details-v1:2.1-z" "quay.io/multi-arch/maistra-examples-bookinfo-details-v1:2.1.0" }}
         ports:
         - containerPort: 9080
 ---
@@ -128,8 +127,7 @@ spec:
       terminationGracePeriodSeconds: 0  # TODO: remove when ratings honors SIGINT
       containers:
       - name: ratings
-        image: quay.io/multi-arch/maistra-examples-bookinfo-ratings-v1:2.1.0
-        imagePullPolicy: IfNotPresent
+        image: {{ perArch "quay.io/maistra/examples-bookinfo-ratings-v1:2.3.0" "quay.io/maistra/examples-bookinfo-ratings-v1:2.1.0-ibm-p" "quay.io/maistra/examples-bookinfo-ratings-v1:2.1-z" "quay.io/multi-arch/maistra-examples-bookinfo-ratings-v1:2.1.0" }}
         ports:
         - containerPort: 9080
 ---
@@ -181,8 +179,7 @@ spec:
       serviceAccountName: bookinfo-reviews
       containers:
       - name: reviews
-        image: quay.io/multi-arch/maistra-examples-bookinfo-reviews-v1:2.1.0
-        imagePullPolicy: IfNotPresent
+        image: {{ perArch "quay.io/maistra/examples-bookinfo-reviews-v1:2.3.0" "quay.io/maistra/examples-bookinfo-reviews-v1:2.1.0-ibm-p" "quay.io/maistra/examples-bookinfo-reviews-v1:2.1-z" "quay.io/multi-arch/maistra-examples-bookinfo-reviews-v1:2.1.0" }}
         env:
         - name: LOG_DIR
           value: "/tmp/logs"
@@ -223,8 +220,7 @@ spec:
       serviceAccountName: bookinfo-reviews
       containers:
       - name: reviews
-        image: quay.io/multi-arch/maistra-examples-bookinfo-reviews-v2:2.1.0
-        imagePullPolicy: IfNotPresent
+        image: {{ perArch "quay.io/maistra/examples-bookinfo-reviews-v2:2.3.0" "quay.io/maistra/examples-bookinfo-reviews-v2:2.1.0-ibm-p" "quay.io/maistra/examples-bookinfo-reviews-v2:2.1-z" "quay.io/multi-arch/maistra-examples-bookinfo-reviews-v2:2.1.0" }}
         env:
         - name: LOG_DIR
           value: "/tmp/logs"
@@ -265,8 +261,7 @@ spec:
       serviceAccountName: bookinfo-reviews
       containers:
       - name: reviews
-        image: quay.io/multi-arch/maistra-examples-bookinfo-reviews-v3:2.1.0
-        imagePullPolicy: IfNotPresent
+        image: {{ perArch "quay.io/maistra/examples-bookinfo-reviews-v3:2.3.0" "quay.io/maistra/examples-bookinfo-reviews-v3:2.1.0-ibm-p" "quay.io/maistra/examples-bookinfo-reviews-v3:2.1-z" "quay.io/multi-arch/maistra-examples-bookinfo-reviews-v3:2.1.0" }}
         env:
         - name: LOG_DIR
           value: "/tmp/logs"
@@ -331,8 +326,7 @@ spec:
       serviceAccountName: bookinfo-productpage
       containers:
       - name: productpage
-        image: quay.io/multi-arch/maistra-examples-bookinfo-productpage-v1:2.1.0
-        imagePullPolicy: IfNotPresent
+        image: {{ perArch "quay.io/maistra/examples-bookinfo-productpage-v1:2.3.0" "quay.io/maistra/examples-bookinfo-productpage-v1:2.1.0-ibm-p" "quay.io/maistra/examples-bookinfo-productpage-v1:2.1-z" "quay.io/multi-arch/maistra-examples-bookinfo-productpage-v1:2.1.0" }}
         ports:
         - containerPort: 9080
         volumeMounts:

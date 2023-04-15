@@ -49,8 +49,7 @@ spec:
     spec:
       containers:
       - name: mongodb
-        image: quay.io/maistra/examples-bookinfo-mongodb:2.1-z
-        imagePullPolicy: IfNotPresent
+        image: {{ perArch "quay.io/maistra/examples-bookinfo-mongodb:2.3.0" "quay.io/maistra/examples-bookinfo-mongodb:2.1.0-ibm-p" "quay.io/maistra/examples-bookinfo-mongodb:2.1-z" "quay.io/multi-arch/maistra-examples-bookinfo-mongodb:2.1.0" }}
         ports:
         - containerPort: 27017
         volumeMounts:
@@ -59,4 +58,3 @@ spec:
       volumes:
       - name: data-db
         emptyDir: {}
----

@@ -1,6 +1,7 @@
 package app
 
 import (
+	_ "embed"
 	"fmt"
 	"net/http/cookiejar"
 
@@ -49,7 +50,7 @@ func (a *bookinfo) Install(t test.TestHelper) {
 	}
 
 	t.Logf("Deploy Bookinfo in namespace %q", a.ns)
-	oc.ApplyFile(t, a.ns, examples.BookinfoYamlFile())
+	oc.ApplyTemplate(t, a.ns, BookinfoTemplate, nil)
 }
 
 func (a *bookinfo) Uninstall(t test.TestHelper) {
@@ -57,7 +58,7 @@ func (a *bookinfo) Uninstall(t test.TestHelper) {
 	t.Logf("Uninstalling Bookinfo from namespace %q", a.ns)
 	oc.DeleteFile(t, a.ns, examples.BookinfoRuleAllYamlFile())
 	oc.DeleteFile(t, a.ns, examples.BookinfoGatewayYamlFile())
-	oc.DeleteFile(t, a.ns, examples.BookinfoYamlFile())
+	oc.DeleteFromTemplate(t, a.ns, BookinfoTemplate, nil)
 }
 
 func (a *bookinfo) WaitReady(t test.TestHelper) {
@@ -118,3 +119,14 @@ var ProductPageResponseFiles = []string{
 	"productpage-test-user-v2-rating-unavailable.html",
 	"productpage-test-user-v2-review-timeout.html",
 }
+
+var (
+	//go:embed "yaml/bookinfo.yaml"
+	BookinfoTemplate string
+
+	//go:embed "yaml/bookinfo-db.yaml"
+	BookinfoDBTemplate string
+
+	//go:embed "yaml/bookinfo-ratings-v2.yaml"
+	BookinfoRatingsV2Template string
+)
