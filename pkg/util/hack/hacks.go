@@ -15,7 +15,7 @@ import (
 func DisableLogrusForThisTest(t test.TestHelper) {
 	originalLevel := log.Log.GetLevel()
 	log.Log.SetLevel(logrus.ErrorLevel)
-	t.Cleanup(func() {
+	t.T().Cleanup(func() {
 		log.Log.SetLevel(originalLevel)
 	})
 }
