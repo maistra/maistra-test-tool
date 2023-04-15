@@ -79,16 +79,3 @@ func GetSMCPVersion() version.Version {
 func GetOperatorNamespace() string {
 	return "openshift-operators"
 }
-
-func GetTestSSLImage() string {
-	image := ""
-	switch Getenv("SAMPLEARCH", "x86") {
-	case "p":
-		image = "quay.io/maistra/testssl:0.0-ibm-p"
-	case "z":
-		image = "quay.io/maistra/testssl:0.0-ibm-z"
-	default:
-		image = "quay.io/maistra/testssl:latest"
-	}
-	return image
-}

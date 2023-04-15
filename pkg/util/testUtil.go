@@ -30,16 +30,13 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 // RunTemplate renders a yaml template string in the yaml_configs.go file
 func RunTemplate(tmpl string, input interface{}) string {
-	if input == nil {
-		log.Log.Fatal("input is nil")
-	}
-
 	tt, err := template.New("").
 		Funcs(templateFuncMap).
 		Parse(tmpl)
@@ -54,10 +51,6 @@ func RunTemplate(tmpl string, input interface{}) string {
 }
 
 func RunTemplateWithTestHelper(t test.TestHelper, tmpl string, input interface{}) string {
-	if input == nil {
-		t.Fatal("input is nil")
-	}
-
 	tt, err := template.New("").
 		Funcs(templateFuncMap).
 		Parse(tmpl)
@@ -72,9 +65,10 @@ func RunTemplateWithTestHelper(t test.TestHelper, tmpl string, input interface{}
 }
 
 var templateFuncMap = template.FuncMap{
-	"toYaml": toYaml,
-	"indent": indent,
-	"until":  until,
+	"toYaml":  toYaml,
+	"indent":  indent,
+	"until":   until,
+	"perArch": perArch,
 }
 
 func indent(spaces int, source string) string {
@@ -94,6 +88,36 @@ func toYaml(value interface{}) string {
 	}
 
 	return string(y)
+}
+
+// perArch returns one of the three given strings based on the current
+// system architecture, as defined in the SAMPLEARCH environment variable
+// This is meant to be used in YAML manifests as follows:
+//
+//	image: {{ perArch "foo.io/x86-image" "bar.io/ibm-p-image" "baz.io/ibm-z-image" "arm.io/arm-image"}}
+//
+// or, if all the images start with the same prefix:
+//
+//	image: quay.io/some-image:{{ perArch "x86-tag" "ibm-p-tag" "ibm-z-tag" "arm-tag"}}
+func perArch(images ...string) string {
+	parameterIndices := map[string]int{
+		"x86": 0,
+		"p":   1,
+		"z":   2,
+		"arm": 3,
+	}
+
+	arch := env.Getenv("SAMPLEARCH", "x86")
+	index, found := parameterIndices[arch]
+	if !found {
+		panic(fmt.Sprintf("unknown architecture: %s", arch))
+	}
+
+	if index < len(images) {
+		return images[index]
+	} else {
+		panic(fmt.Sprintf("no image specified for %s in perArch function call (should be specified as parameter #%d)", arch, index))
+	}
 }
 
 // recover from panic if one occurred. This allows cleanup to be executed after panic.
