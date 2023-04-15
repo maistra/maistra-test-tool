@@ -31,33 +31,28 @@ func (a *sleep) Namespace() string {
 
 func (a *sleep) Install(t test.TestHelper) {
 	t.T().Helper()
-	proxy, _ := util.GetProxy()
-	oc.ApplyTemplate(t, a.ns, sleepConfigMapTemplate, proxy)
-	oc.ApplyTemplate(t, a.ns, sleepTemplate, map[string]interface{}{"InjectSidecar": a.injectSidecar})
+	oc.ApplyTemplate(t, a.ns, sleepTemplate, a.values())
 }
 
 func (a *sleep) Uninstall(t test.TestHelper) {
 	t.T().Helper()
+	oc.DeleteFromTemplate(t, a.ns, sleepTemplate, a.values())
+}
+
+func (a *sleep) values() map[string]interface{} {
 	proxy, _ := util.GetProxy()
-	oc.DeleteFromTemplate(t, a.ns, sleepConfigMapTemplate, proxy)
-	oc.DeleteFromTemplate(t, a.ns, sleepTemplate, map[string]interface{}{"InjectSidecar": a.injectSidecar})
+	return map[string]interface{}{
+		"InjectSidecar": a.injectSidecar,
+		"HttpProxy":     proxy.HTTPProxy,
+		"HttpsProxy":    proxy.HTTPSProxy,
+		"NoProxy":       proxy.NoProxy,
+	}
 }
 
 func (a *sleep) WaitReady(t test.TestHelper) {
 	t.T().Helper()
 	oc.WaitDeploymentRolloutComplete(t, a.ns, "sleep")
 }
-
-const sleepConfigMapTemplate = `
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: sleep-configmap
-data:
-  https-proxy: "{{ .HTTPProxy }}"
-  http-proxy: "{{ .HTTPSProxy }}"
-  no-proxy: "{{ .NoProxy }}"
-`
 
 const sleepTemplate = `
 apiVersion: v1
@@ -102,20 +97,11 @@ spec:
         command: ["/bin/sleep", "3650d"]
         env:
         - name: HTTPS_PROXY
-          valueFrom:
-            configMapKeyRef:
-              name: sleep-configmap
-              key: https-proxy
+          value: {{ .HttpsProxy }}
         - name: HTTP_PROXY
-          valueFrom:
-            configMapKeyRef:
-              name: sleep-configmap
-              key: http-proxy
+          value: {{ .HttpProxy }}
         - name: NO_PROXY
-          valueFrom:
-            configMapKeyRef:
-              name: sleep-configmap
-              key: no-proxy
+          value: {{ .NoProxy }}
         volumeMounts:
         - mountPath: /etc/sleep/tls
           name: secret-volume
