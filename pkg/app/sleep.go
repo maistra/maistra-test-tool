@@ -1,7 +1,6 @@
 package app
 
 import (
-	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -33,21 +32,15 @@ func (a *sleep) Namespace() string {
 func (a *sleep) Install(t test.TestHelper) {
 	t.T().Helper()
 	proxy, _ := util.GetProxy()
-	configMapYAML := util.RunTemplate(examples.SleepConfigMap(), proxy)
-	oc.ApplyString(t, a.ns, configMapYAML)
-	if a.injectSidecar {
-		oc.ApplyFile(t, a.ns, examples.SleepYamlFile())
-	} else {
-		oc.ApplyTemplate(t, a.ns, sleepNoSidecarTemplate, nil)
-	}
+	oc.ApplyTemplate(t, a.ns, sleepConfigMapTemplate, proxy)
+	oc.ApplyTemplate(t, a.ns, sleepTemplate, map[string]interface{}{"InjectSidecar": a.injectSidecar})
 }
 
 func (a *sleep) Uninstall(t test.TestHelper) {
 	t.T().Helper()
 	proxy, _ := util.GetProxy()
-	configMapYAML := util.RunTemplate(examples.SleepConfigMap(), proxy)
-	oc.DeleteFromString(t, a.ns, configMapYAML)
-	oc.DeleteFile(t, a.ns, examples.SleepYamlFile())
+	oc.DeleteFromTemplate(t, a.ns, sleepConfigMapTemplate, proxy)
+	oc.DeleteFromTemplate(t, a.ns, sleepTemplate, map[string]interface{}{"InjectSidecar": a.injectSidecar})
 }
 
 func (a *sleep) WaitReady(t test.TestHelper) {
@@ -55,7 +48,18 @@ func (a *sleep) WaitReady(t test.TestHelper) {
 	oc.WaitDeploymentRolloutComplete(t, a.ns, "sleep")
 }
 
-const sleepNoSidecarTemplate = `
+const sleepConfigMapTemplate = `
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sleep-configmap
+data:
+  https-proxy: "{{ .HTTPProxy }}"
+  http-proxy: "{{ .HTTPSProxy }}"
+  no-proxy: "{{ .NoProxy }}"
+`
+
+const sleepTemplate = `
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -85,6 +89,8 @@ spec:
       app: sleep
   template:
     metadata:
+      annotations:
+        sidecar.istio.io/inject: "{{ .InjectSidecar }}"
       labels:
         app: sleep
     spec:
