@@ -93,7 +93,7 @@ spec:
       serviceAccountName: sleep
       containers:
       - name: sleep
-        image: quay.io/{{ perArch "openshifttest/sleep:multiarch" "maistra/governmentpaas-curl-ssl:0.0-ibm-p" "maistra/governmentpaas-curl-ssl:0.0-ibm-z" "openshifttest/sleep:multiarch" }}
+        image: {{ image "sleep" }} 
         command: ["/bin/sleep", "3650d"]
         env:
         - name: HTTPS_PROXY

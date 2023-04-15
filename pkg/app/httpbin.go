@@ -123,7 +123,7 @@ spec:
       serviceAccountName: httpbin
       containers:
       - name: httpbin
-        image: quay.io/{{ perArch "openshifttest/httpbin:multiarch" "maistra/kennethreitz-httpbin:0.0-ibm-p" "maistra/httpbin:0.0-ibm-z" "openshifttest/httpbin:multiarch" }}
+        image: {{ image "httpbin" }}
         command: ["gunicorn", "--access-logfile", "-", "-b", "[::]:8000", "httpbin:app"]
         ports:
         - containerPort: 8000

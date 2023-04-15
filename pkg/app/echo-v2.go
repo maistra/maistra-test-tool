@@ -87,7 +87,7 @@ spec:
     spec:
       containers:
       - name: tcp-echo
-        image: {{ perArch "docker.io/istio/tcp-echo-server:1.2" "quay.io/maistra/tcp-echo-server:0.0-ibm-p" "quay.io/maistra/tcp-echo-server:2.0-ibm-z" "docker.io/istio/tcp-echo-server:1.2" }}
+        image: {{ image "tcp-echo" }}
         imagePullPolicy: IfNotPresent
         #args: [ "9000,9001,9002", "two" ]
         args: [ "9000", "two" ]

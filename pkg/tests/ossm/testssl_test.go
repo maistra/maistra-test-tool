@@ -96,5 +96,5 @@ spec:
     spec:
       containers:
       - name: testssl
-        image: quay.io/maistra/testssl:{{ perArch "latest" "0.0-ibm-p" "0.0-ibm-z" }}
+        image: {{ image "testssl" }}
 `

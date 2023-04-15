@@ -15,7 +15,6 @@
 package util
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"crypto/tls"
@@ -24,22 +23,18 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"strings"
 	"testing"
 	"text/template"
 	"time"
 
-	"gopkg.in/yaml.v2"
-
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	template2 "github.com/maistra/maistra-test-tool/pkg/util/template"
 )
 
 // RunTemplate renders a yaml template string in the yaml_configs.go file
 func RunTemplate(tmpl string, input interface{}) string {
 	tt, err := template.New("").
-		Funcs(templateFuncMap).
+		Funcs(template2.TemplateFuncMap).
 		Parse(tmpl)
 	if err != nil {
 		log.Log.Fatal(err)
@@ -49,86 +44,6 @@ func RunTemplate(tmpl string, input interface{}) string {
 		log.Log.Fatal(err)
 	}
 	return buf.String()
-}
-
-func RunTemplateWithTestHelper(t test.TestHelper, tmpl string, input interface{}) string {
-	tt, err := template.New("").
-		Funcs(templateFuncMap).
-		Parse(tmpl)
-	if err != nil {
-		t.Fatalf("could not execute template: %v:\n%s", err, addLineNumbers(tmpl))
-	}
-	var buf bytes.Buffer
-	if err := tt.Execute(&buf, input); err != nil {
-		t.Fatal(err)
-	}
-	return buf.String()
-}
-
-func addLineNumbers(str string) string {
-	var builder strings.Builder
-	scanner := bufio.NewScanner(strings.NewReader(str))
-	for i := 1; scanner.Scan(); i++ {
-		lineNumStr := fmt.Sprintf("%3d", i)
-		fmt.Fprintf(&builder, "%s: %s\n", lineNumStr, scanner.Text())
-	}
-	return builder.String()
-}
-
-var templateFuncMap = template.FuncMap{
-	"toYaml":  toYaml,
-	"indent":  indent,
-	"until":   until,
-	"perArch": perArch,
-}
-
-func indent(spaces int, source string) string {
-	res := strings.Split(source, "\n")
-	for i, line := range res {
-		if i > 0 {
-			res[i] = fmt.Sprintf(fmt.Sprintf("%% %ds%%s", spaces), "", line)
-		}
-	}
-	return strings.Join(res, "\n")
-}
-
-func toYaml(value interface{}) string {
-	y, err := yaml.Marshal(value)
-	if err != nil {
-		panic(fmt.Sprintf("Unable to marshal %v", value))
-	}
-
-	return string(y)
-}
-
-// perArch returns one of the three given strings based on the current
-// system architecture, as defined in the SAMPLEARCH environment variable
-// This is meant to be used in YAML manifests as follows:
-//
-//	image: {{ perArch "foo.io/x86-image" "bar.io/ibm-p-image" "baz.io/ibm-z-image" "arm.io/arm-image"}}
-//
-// or, if all the images start with the same prefix:
-//
-//	image: quay.io/some-image:{{ perArch "x86-tag" "ibm-p-tag" "ibm-z-tag" "arm-tag"}}
-func perArch(images ...string) string {
-	parameterIndices := map[string]int{
-		"x86": 0,
-		"p":   1,
-		"z":   2,
-		"arm": 3,
-	}
-
-	arch := env.Getenv("SAMPLEARCH", "x86")
-	index, found := parameterIndices[arch]
-	if !found {
-		panic(fmt.Sprintf("unknown architecture: %s", arch))
-	}
-
-	if index < len(images) {
-		return images[index]
-	} else {
-		panic(fmt.Sprintf("no image specified for %s in perArch function call (should be specified as parameter #%d)", arch, index))
-	}
 }
 
 // recover from panic if one occurred. This allows cleanup to be executed after panic.
@@ -205,15 +120,6 @@ func CheckUserGroup(url, ingress, ingressPort, user string) (*http.Response, err
 	req.Header.Set("user", user)
 	// Get response
 	return client.Do(req)
-}
-
-// Define an until function for template
-func until(n int) []int {
-	nums := make([]int, n)
-	for i := 0; i < n; i++ {
-		nums[i] = i
-	}
-	return nums
 }
 
 func GenerateStrings(prefix string, count int) []string {

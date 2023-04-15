@@ -74,7 +74,7 @@ spec:
     spec:
       containers:
       - name: fortio
-        image: {{ perArch "fortio/fortio:latest_release" "quay.io/maistra/fortio.test:0.0-ibm-p" "quay.io/maistra/fortio:0.0-ibm-z" "quay.io/openshifttest/fortio:multiarch" }}
+        image: {{ image "fortio" }}
         ports:
         - containerPort: 8080
           name: http-fortio
