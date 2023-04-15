@@ -254,6 +254,7 @@ func (o OC) GetRouteURL(t test.TestHelper, ns string, name string) string {
 }
 
 func (o OC) Invokef(t test.TestHelper, format string, a ...any) string {
+	t.T().Helper()
 	var output string
 	o.withKubeconfig(t, func() {
 		t.T().Helper()

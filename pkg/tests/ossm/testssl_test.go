@@ -33,6 +33,15 @@ func TestSSL(t *testing.T) {
 		hack.DisableLogrusForThisTest(t)
 		ns := "bookinfo"
 		t.Cleanup(func() {
+			oc.Patch(t, meshNamespace, "smcp", smcpName, "json", `[{"op": "remove", "path": "/spec/security/controlPlane/tls"}]`)
+			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
+spec:
+  security:
+    dataPlane:
+      mtls: false
+    controlPlane:
+      mtls: false
+`)
 			app.Uninstall(t, app.BookinfoWithMTLS(ns))
 			oc.DeleteFromString(t, ns, fmt.Sprintf(testSSLDeployment, env.GetTestSSLImage()))
 		})
