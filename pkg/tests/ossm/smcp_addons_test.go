@@ -28,14 +28,13 @@ import (
 func TestSMCPAddons(t *testing.T) {
 	NewTest(t).Id("T34").Groups(Full).Run(func(t TestHelper) {
 		hack.DisableLogrusForThisTest(t)
-		t.Cleanup(func() {
-			// We need to recreate the namespace because in case that this test case fails we need to assure that the namespace is clean.
-			oc.RecreateNamespace(t, meshNamespace)
-		})
 
 		// Created a subtest because we need to add more test related to Addons in the future.
 		t.NewSubTest("3scale_addon").Run(func(t TestHelper) {
 			t.LogStep("Enable 3scale in a SMCP expecting to get validation error.")
+			t.Cleanup(func() {
+				shell.Execute(t, fmt.Sprintf(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"addons":{"3scale":{"enabled":false}}}}' || true`, meshNamespace, smcpName))
+			})
 			shell.Execute(t,
 				fmt.Sprintf(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"addons":{"3scale":{"enabled":true}}}}' || true`, meshNamespace, smcpName),
 				assert.OutputContains("support for 3scale has been removed",
@@ -43,6 +42,5 @@ func TestSMCPAddons(t *testing.T) {
 					"The validation error was not shown as expected"))
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 		})
-
 	})
 }
