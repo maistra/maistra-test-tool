@@ -45,11 +45,6 @@ var (
 
 	BookinfoVirtualServiceReviewsV3Yaml = fmt.Sprintf("%s/common/bookinfo/virtual-service-reviews-v3.yaml", basedir)
 
-	httpbinYaml       = fmt.Sprintf("%s/%s/httpbin/httpbin.yaml", basedir, branch)
-	httpbinLegacyYaml = fmt.Sprintf("%s/%s/httpbin/httpbin_legacy.yaml", basedir, branch)
-	httpbinv1Yaml     = fmt.Sprintf("%s/%s/httpbin/httpbinv1.yaml", basedir, branch)
-	httpbinv2Yaml     = fmt.Sprintf("%s/%s/httpbin/httpbinv2.yaml", basedir, branch)
-
 	nginxServerCertKey   = fmt.Sprintf("%s/nginx.example.com/nginx.example.com.key", certdir)
 	nginxServerCert      = fmt.Sprintf("%s/nginx.example.com/nginx.example.com.crt", certdir)
 	nginxServerCACert    = fmt.Sprintf("%s/nginx.example.com/example.com.crt", certdir)
@@ -61,22 +56,6 @@ var (
 )
 
 // TODO: remove these functions when the refactoring is done
-
-func HttpbinYamlFile() string {
-	return httpbinYaml
-}
-
-func HttpbinLegacyYamlFile() string {
-	return httpbinLegacyYaml
-}
-
-func HttpbinV1YamlFile() string {
-	return httpbinv1Yaml
-}
-
-func HttpbinV2YamlFile() string {
-	return httpbinv2Yaml
-}
 
 func BookinfoYamlFile() string {
 	return bookinfoYaml
