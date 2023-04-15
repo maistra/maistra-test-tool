@@ -21,18 +21,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
+	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func cleanupExternalCert() {
+func cleanupExternalCert(t *testing.T) {
 	log.Log.Info("Cleanup")
 
-	bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
-	bookinfo.Uninstall()
+	app.Uninstall(test.NewTestContext(t), app.BookinfoWithMTLS("bookinfo"))
 
 	util.Shell(`kubectl -n %s delete secret cacerts`, meshNamespace)
 	util.Shell(`kubectl -n %s patch smcp/%s --type=json -p='[{"op": "remove", "path": "/spec/security/certificateAuthority"}, {"op": "remove", "path": "/spec/security/dataPlane"}]'`, meshNamespace, smcpName)
@@ -43,7 +42,7 @@ func cleanupExternalCert() {
 func TestExternalCert(t *testing.T) {
 	test.NewTest(t).Id("T17").Groups(test.Full, test.ARM, test.InterOp).NotRefactoredYet()
 
-	defer cleanupExternalCert()
+	defer cleanupExternalCert(t)
 
 	log.Log.Info("Test External Certificates")
 	log.Log.Info("Enable Control Plane MTLS")
@@ -59,8 +58,7 @@ func TestExternalCert(t *testing.T) {
 		util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
 		time.Sleep(time.Duration(60) * time.Second)
 
-		bookinfo := examples.Bookinfo{Namespace: "bookinfo"}
-		bookinfo.Install(true)
+		app.Install(test.NewTestContext(t), app.BookinfoWithMTLS("bookinfo"))
 
 		productPod, err := util.GetPodName("bookinfo", "app=productpage")
 		util.Inspect(err, "Failed to get productpage pod name", "", t)
