@@ -45,7 +45,6 @@ var (
 
 	BookinfoVirtualServiceReviewsV3Yaml = fmt.Sprintf("%s/common/bookinfo/virtual-service-reviews-v3.yaml", basedir)
 
-	echoYaml   = fmt.Sprintf("%s/%s/tcp-echo/tcp-echo-services.yaml", basedir, branch)
 	echov1Yaml = fmt.Sprintf("%s/%s/tcp-echo/tcp-echo-v1.yaml", basedir, branch)
 	echov2Yaml = fmt.Sprintf("%s/%s/tcp-echo/tcp-echo-v2.yaml", basedir, branch)
 
