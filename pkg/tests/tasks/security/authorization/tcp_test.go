@@ -35,7 +35,6 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 		ns := "foo"
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns)
-			oc.RecreateNamespace(t, meshNamespace)
 		})
 
 		t.Log("This test validates authorization policies for TCP traffic.")
