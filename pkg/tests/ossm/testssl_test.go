@@ -97,6 +97,7 @@ spec:
       labels:
         app: testssl
     spec:
+      terminationGracePeriodSeconds: 0
       containers:
       - name: testssl
         image: %s
