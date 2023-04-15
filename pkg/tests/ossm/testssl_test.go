@@ -33,7 +33,8 @@ func TestSSL(t *testing.T) {
 		hack.DisableLogrusForThisTest(t)
 		ns := "bookinfo"
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns)
+			app.Uninstall(t, app.BookinfoWithMTLS(ns))
+			oc.DeleteFromString(t, ns, fmt.Sprintf(testSSLDeployment, env.GetTestSSLImage()))
 		})
 
 		t.LogStep("Patch SMCP to enable mTLS in dataPlane and controlPlane and set min/maxProtocolVersion, cipherSuites, and ecdhCurves")
