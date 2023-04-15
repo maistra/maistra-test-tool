@@ -59,8 +59,6 @@ var (
 	nginxConfMTls        = fmt.Sprintf("%s/%s/nginx/nginx_mesh_external_ssl.conf", basedir, branch)
 	nginxYaml            = fmt.Sprintf("%s/%s/nginx/nginx.yaml", basedir, branch)
 
-	redisYaml = fmt.Sprintf("%s/%s/redis/redis.yaml", basedir, branch)
-
 	sleepYaml       = fmt.Sprintf("%s/%s/sleep/sleep.yaml", basedir, branch)
 	sleepLegacyYaml = fmt.Sprintf("%s/%s/sleep/sleep_legacy.yaml", basedir, branch)
 )
@@ -105,10 +103,6 @@ func BookinfoRuleAllYamlFile() string {
 
 func BookinfoRuleAllMTLSYamlFile() string {
 	return bookinfoRuleAllTLSYaml
-}
-
-func RedisYamlFile() string {
-	return redisYaml
 }
 
 func NginxYamlFile() string {
