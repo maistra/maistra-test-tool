@@ -52,6 +52,7 @@ func TestSMCPAnnotations(t *testing.T) {
 		// Test that the SMCP automatic injection with quotes works
 		t.NewSubTest("quote_injection").Run(func(t TestHelper) {
 			t.Cleanup(func() {
+				oc.Patch(t, meshNamespace, "smcp", smcpName, "json", `[{"op": "remove", "path": "/spec/proxy"}]`)
 				oc.RecreateNamespace(t, ns)
 			})
 			t.LogStep("Enable annotation auto injection in SMCP")
