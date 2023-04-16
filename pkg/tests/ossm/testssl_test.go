@@ -60,7 +60,7 @@ func TestSSL(t *testing.T) {
 		oc.WaitDeploymentRolloutComplete(t, ns, "testssl")
 
 		t.LogStep("Check testssl.sh results")
-		retry.UntilSuccess(t, func(t TestHelper) {
+		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(10), func(t TestHelper) {
 			oc.Exec(t,
 				pod.MatchingSelector("app=testssl", ns),
 				"testssl",
