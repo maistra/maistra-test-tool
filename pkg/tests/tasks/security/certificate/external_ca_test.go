@@ -35,56 +35,68 @@ func TestExternalCertificate(t *testing.T) {
 	test.NewTest(t).Id("T17").Groups(test.Full, test.ARM, test.InterOp).Run(func(t test.TestHelper) {
 		const ns = "bookinfo"
 
-		t.Log("Testing external certificates.")
-
 		var tmpDir = ""
 
 		t.Cleanup(func() {
-
 			if tmpDir != "" {
 				t.Log("Removing temporary directory")
 				os.RemoveAll(tmpDir)
 			}
 
-			t.Log("Recreating bookinfo namespace.")
+			t.Logf("Recreate namespace %s", ns)
 			oc.RecreateNamespace(t, ns)
 
-			t.Log("Undoing SMCP patch.")
-			oc.Patch(t, meshNamespace, "smcp", smcpName, "json", CertSMCPPathRemovalPatch)
+			t.Log("Revert SMCP patch.")
+			oc.Patch(t, meshNamespace, "smcp", smcpName, "json", `[
+{"op": "remove", "path": "/spec/security/certificateAuthority"}, 
+{"op": "remove", "path": "/spec/security/dataPlane"}
+]`)
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 		})
 
-		t.LogStep("Adding external CA.")
+		t.LogStep("Create cacerts Secret")
 		oc.CreateGenericSecretFromFiles(t, meshNamespace, "cacerts",
 			fmt.Sprintf("ca-cert.pem=%s", sampleCACert),
 			fmt.Sprintf("ca-key.pem=%s", sampleCAKey),
 			fmt.Sprintf("root-cert.pem=%s", sampleCARoot),
 			fmt.Sprintf("cert-chain.pem=%s", sampleCAChain))
 
-		t.LogStep("Enabling control plane MTLS.")
-		oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", CertSMCPPath)
+		t.LogStep("Patch SMCP to enable mTLS in control plane and configure certificate authority to use cacerts Secret")
+		oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
+spec:
+  security:
+    dataPlane:
+      mtls: true
+    certificateAuthority:
+      type: Istiod
+      istiod:
+        type: PrivateKey
+        privateKey:
+          rootCADir: /etc/cacerts
+`)
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
-		t.LogStep("Installing bookinfo.")
+		t.LogStep("Install bookinfo")
 		app.InstallAndWaitReady(t, app.BookinfoWithMTLS(ns))
 
 		if env.GetSampleArch() == "p" || env.GetSampleArch() == "z" {
-
-			t.Log("Running Power/Z environment test.")
+			t.Log("NOTE: Not checking certificates, because test is running in P or Z environment")
 
 			t.LogStep("Checking response from productpage.")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				curl.Request(t, app.BookinfoProductPageURL(t, meshNamespace), curl.NilRequestOption{}, assert.ResponseStatus(200))
+				curl.Request(t,
+					app.BookinfoProductPageURL(t, meshNamespace), nil,
+					assert.ResponseStatus(200))
 			})
 
 		} else {
 
-			t.LogStep("Retrieving certificates.")
+			t.LogStep("Retrieve certificates using the 'openssl s_client -showcerts' command")
 			tmpDir = shell.CreateTempDir(t, "cacerts")
 			oc.Exec(t, pod.MatchingSelector("app=productpage", ns), "istio-proxy",
 				fmt.Sprintf(`openssl s_client -showcerts -connect details:9080 > '%s/bookinfo-proxy-cert.txt' || true`, tmpDir))
 
-			t.LogStep("Extracting certificates from response.")
+			t.LogStep("Extract certificates")
 			shell.Executef(t,
 				`sed -n '/-----BEGIN CERTIFICATE-----/{:start /-----END CERTIFICATE-----/!{N;b start};/.*/p}' '%s/bookinfo-proxy-cert.txt' > '%s/certs.pem'`,
 				tmpDir, tmpDir)
@@ -92,30 +104,29 @@ func TestExternalCertificate(t *testing.T) {
 				`awk 'BEGIN {counter=0;} /BEGIN CERT/{counter++} { print > "%s/proxy-cert-" counter ".pem"}' < '%s/certs.pem'`,
 				tmpDir, tmpDir)
 
-			t.LogStep("Verifying certificates.")
-			t.NewSubTest("Verify root certificate.").Run(func(t test.TestHelper) {
-
+			t.NewSubTest("root certificate").Run(func(t test.TestHelper) {
 				shell.Executef(t, `openssl x509 -in '%s' -text -noout > '%s/root-cert.crt.txt'`, sampleCARoot, tmpDir)
 				shell.Executef(t, `openssl x509 -in '%s/proxy-cert-3.pem' -text -noout > '%s/pod-root-cert.crt.txt'`, tmpDir, tmpDir)
 
 				if err := util.CompareFiles(fmt.Sprintf("%s/root-cert.crt.txt", tmpDir), fmt.Sprintf("%s/pod-root-cert.crt.txt", tmpDir)); err != nil {
 					t.Errorf("Root certs do not match: %v", err)
+				} else {
+					t.LogSuccess("Root certificate received from pod matches the root certificate in cacerts")
 				}
 			})
 
-			t.NewSubTest("Verify CA certificate.").Run(func(t test.TestHelper) {
-
+			t.NewSubTest("CA certificate").Run(func(t test.TestHelper) {
 				shell.Executef(t, `openssl x509 -in '%s' -text -noout > '%s/ca-cert.crt.txt'`, sampleCACert, tmpDir)
 				shell.Executef(t, `openssl x509 -in '%s/proxy-cert-2.pem' -text -noout > '%s/pod-cert-chain-ca.crt.txt'`, tmpDir, tmpDir)
 
 				if err := util.CompareFiles(fmt.Sprintf("%s/ca-cert.crt.txt", tmpDir), fmt.Sprintf("%s/pod-cert-chain-ca.crt.txt", tmpDir)); err != nil {
 					t.Errorf("CA certs do not match: %v", err)
+				} else {
+					t.LogSuccess("CA certificate received from pod matches the CA certificate in cacerts")
 				}
 			})
 
-			t.LogStep("Verifying certificate chain.")
-			t.NewSubTest("Verify certificate chain.").Run(func(t test.TestHelper) {
-
+			t.NewSubTest("certificate chain").Run(func(t test.TestHelper) {
 				shell.Executef(t, `cat '%s' '%s' > '%s/sample-cert-and-root-cert.pem'`, sampleCACert, sampleCARoot, tmpDir)
 				shell.Execute(t,
 					fmt.Sprintf(`openssl verify -CAfile '%s/sample-cert-and-root-cert.pem' '%s/proxy-cert-1.pem'`, tmpDir, tmpDir),
