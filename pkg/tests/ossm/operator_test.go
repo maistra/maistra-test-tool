@@ -82,7 +82,7 @@ func TestOperator(t *testing.T) {
 					cmd,
 					assert.OutputContains(
 						"istio-operator-",
-						"Sucess: Operator pod is running on the infra node",
+						"Success: Operator pod is running on the infra node",
 						"Error: Operator pod is not running on the infra node"))
 			})
 		})
