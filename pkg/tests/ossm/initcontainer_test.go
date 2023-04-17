@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -30,8 +29,6 @@ func TestInitContainerNotRemovedDuringInjection(t *testing.T) {
 	const podSelector = "app=sleep-init"
 
 	NewTest(t).Id("T33").Groups(Full).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
-
 		t.Log("Checking init container not removed during sidecar injection.")
 
 		t.Cleanup(func() {

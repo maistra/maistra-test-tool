@@ -12,52 +12,49 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-##################################################################################################
-# httpbin service
-##################################################################################################
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: httpbin
----
 apiVersion: v1
 kind: Service
 metadata:
-  name: httpbin
+  name: mongodb
   labels:
-    app: httpbin
-    service: httpbin
+    app: mongodb
+    service: mongodb
 spec:
   ports:
-  - name: http
-    port: 8000
-    targetPort: 8000
+  - port: 27017
+    name: mongo
   selector:
-    app: httpbin
+    app: mongodb
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: httpbin
+  name: mongodb-v1
+  labels:
+    app: mongodb
+    version: v1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: httpbin
+      app: mongodb
       version: v1
   template:
     metadata:
       annotations:
         sidecar.istio.io/inject: "true"
       labels:
-        app: httpbin
+        app: mongodb
         version: v1
     spec:
-      serviceAccountName: httpbin
       containers:
-      - image: docker.io/kennethreitz/httpbin
-        imagePullPolicy: IfNotPresent
-        name: httpbin
+      - name: mongodb
+        image: {{ image "bookinfo-mongodb" }}
         ports:
-        - containerPort: 8000
-        command: ["gunicorn", "-b", "[::]:8000", "httpbin:app", "-k", "gevent"]
+        - containerPort: 27017
+        volumeMounts:
+        - name: data-db
+          mountPath: /data/db
+      volumes:
+      - name: data-db
+        emptyDir: {}

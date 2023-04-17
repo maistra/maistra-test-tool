@@ -24,7 +24,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
@@ -43,7 +42,6 @@ var (
 
 func TestRateLimiting(t *testing.T) {
 	NewTest(t).Id("T28").Groups(Full).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
 		if env.GetSMCPVersion().GreaterThanOrEqualTo(version.SMCP_2_3) {
 			t.T().Skip("Rate limiting is not supported for SMCP versions v2.3+")
 		}
@@ -59,7 +57,7 @@ func TestRateLimiting(t *testing.T) {
 		app.InstallAndWaitReady(t, app.Bookinfo(ns), app.Redis(nsRedis))
 		t.Cleanup(func() {
 			app.Uninstall(t, app.Bookinfo(ns), app.Redis(nsRedis))
-			oc.DeleteNamespace(t, nsRedis) //namespace redis is only used in this test, so delete it after test
+			oc.DeleteNamespace(t, nsRedis) // namespace redis is only used in this test, so delete it after test
 		})
 
 		t.LogStep("Patch SMCP to enable rate limiting and wait until smcp is ready")

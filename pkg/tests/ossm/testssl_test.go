@@ -15,13 +15,10 @@ package ossm
 
 import (
 	_ "embed"
-	"fmt"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -30,41 +27,51 @@ import (
 
 func TestSSL(t *testing.T) {
 	NewTest(t).Id("T27").Groups(Full, InterOp).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
 		ns := "bookinfo"
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns)
+			oc.Patch(t, meshNamespace, "smcp", smcpName, "json", `[{"op": "remove", "path": "/spec/security/controlPlane/tls"}]`)
+			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
+spec:
+  security:
+    dataPlane:
+      mtls: false
+    controlPlane:
+      mtls: false
+`)
+			app.Uninstall(t, app.BookinfoWithMTLS(ns))
+			oc.DeleteFromTemplate(t, ns, testSSLDeployment, nil)
 		})
 
-		t.LogStep("Enable the Service Mesh Control Plane mTLS to true")
-		oc.Patch(t, meshNamespace,
-			"smcp", smcpName,
-			"merge",
-			`{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}`)
-
-		t.Log("Update SMCP spec.security.controlPlane.tls")
-		oc.Patch(t, meshNamespace,
-			"smcp", smcpName,
-			"merge",
-			`{"spec":{"security":{"controlPlane":{"tls":{`+
-				`"minProtocolVersion":"TLSv1_2",`+
-				`"maxProtocolVersion":"TLSv1_2",`+
-				`"cipherSuites":["TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"],`+
-				`"ecdhCurves":["CurveP256", "CurveP384"]`+
-				`}}}}}`)
+		t.LogStep("Patch SMCP to enable mTLS in dataPlane and controlPlane and set min/maxProtocolVersion, cipherSuites, and ecdhCurves")
+		oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
+spec:
+  security:
+    dataPlane:
+      mtls: true
+    controlPlane:
+      mtls: true
+      tls:
+        minProtocolVersion: TLSv1_2
+        maxProtocolVersion: TLSv1_2
+        cipherSuites:
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        ecdhCurves:
+        - CurveP256
+        - CurveP384
+`)
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Install bookinfo with mTLS and testssl pod")
-		oc.ApplyString(t, ns, fmt.Sprintf(testSSLDeployment, env.GetTestSSLImage()))
+		oc.ApplyTemplate(t, ns, testSSLDeployment, nil)
 		app.InstallAndWaitReady(t, app.BookinfoWithMTLS(ns))
 		oc.WaitDeploymentRolloutComplete(t, ns, "testssl")
 
 		t.LogStep("Check testssl.sh results")
-		retry.UntilSuccess(t, func(t TestHelper) {
+		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(10), func(t TestHelper) {
 			oc.Exec(t,
 				pod.MatchingSelector("app=testssl", ns),
 				"testssl",
-				"./testssl/testssl.sh -6 productpage:9080 || true",
+				"./testssl/testssl.sh -P -6 productpage:9080 || true",
 				assert.OutputContains(
 					"TLSv1.2",
 					"Received the TLSv1.2 needed in the testssl.sh results",
@@ -96,7 +103,8 @@ spec:
       labels:
         app: testssl
     spec:
+      terminationGracePeriodSeconds: 0
       containers:
       - name: testssl
-        image: %s
+        image: {{ image "testssl" }}
 `

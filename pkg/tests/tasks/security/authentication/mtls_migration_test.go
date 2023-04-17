@@ -22,7 +22,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -31,8 +30,6 @@ import (
 
 func TestMTlsMigration(t *testing.T) {
 	test.NewTest(t).Id("T19").Groups(test.Full, test.InterOp).Run(func(t test.TestHelper) {
-		hack.DisableLogrusForThisTest(t)
-
 		meshNamespace := env.GetDefaultMeshNamespace()
 
 		t.Cleanup(func() {

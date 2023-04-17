@@ -20,15 +20,12 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestAuthorizationJWT(t *testing.T) {
 	test.NewTest(t).Id("T22").Groups(test.Full, test.InterOp).Run(func(t test.TestHelper) {
-		hack.DisableLogrusForThisTest(t)
-
 		ns := "foo"
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns)

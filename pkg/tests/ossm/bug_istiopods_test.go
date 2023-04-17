@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -29,8 +28,6 @@ import (
 // TestIstiodPodFailsAfterRestarts tests that Istio pod get stuck with probes failure after restart. Jira ticket bug: https://issues.redhat.com/browse/OSSM-2434
 func TestIstiodPodFailsAfterRestarts(t *testing.T) {
 	NewTest(t).Id("T35").Groups(Full).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
-
 		namespaces := util.GenerateStrings("test-", 50)
 
 		t.Cleanup(func() {

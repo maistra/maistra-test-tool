@@ -21,11 +21,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
+	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -37,8 +36,6 @@ import (
 
 func TestMultiClusterFederationFailover(t *testing.T) {
 	NewTest(t).Groups(Full).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
-
 		kubeconfig2 := env.Getenv("KUBECONFIG2", "")
 		if kubeconfig2 == "" {
 			t.Skip("this test only runs when the KUBECONFIG2 environment variable points to the kubeconfig of the second cluster")
@@ -77,14 +74,14 @@ func TestMultiClusterFederationFailover(t *testing.T) {
 			},
 			bookinfoInstaller: func(t TestHelper, ft federationTest) {
 				t.LogStep("Install bookinfo in west-mesh")
-				ft.west.oc.ApplyFile(t, ft.west.bookinfoNamespace, examples.BookinfoYamlFile())
-				ft.west.oc.ApplyFile(t, ft.west.bookinfoNamespace, examples.BookinfoRuleAllYamlFile())
+				ft.west.oc.ApplyTemplateString(t, ft.west.bookinfoNamespace, app.BookinfoTemplate, nil)
+				ft.west.oc.ApplyString(t, ft.west.bookinfoNamespace, app.BookinfoRuleAll)
 
 				t.LogStep("Install bookinfo in east-mesh")
-				ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, examples.BookinfoYamlFile())
-				ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, examples.BookinfoGatewayYamlFile())
-				ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, examples.BookinfoRuleAllYamlFile())
-				ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, examples.BookinfoVirtualServiceReviewsV3Yaml)
+				ft.east.oc.ApplyTemplateString(t, ft.east.bookinfoNamespace, app.BookinfoTemplate, nil)
+				ft.east.oc.ApplyString(t, ft.east.bookinfoNamespace, app.BookinfoGateway)
+				ft.east.oc.ApplyString(t, ft.east.bookinfoNamespace, app.BookinfoRuleAll)
+				ft.east.oc.ApplyString(t, ft.east.bookinfoNamespace, app.BookinfoVirtualServiceReviewsV3)
 
 				t.LogStep("Install fail-over DestinationRule for ratings service in east-mesh")
 				ft.east.oc.ApplyTemplateFile(t, ft.east.bookinfoNamespace, ft.testdataPath+"/east-mesh/destinationrule-failover.yaml", map[string]string{

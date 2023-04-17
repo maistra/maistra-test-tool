@@ -22,7 +22,6 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -32,7 +31,6 @@ import (
 // TestTcpTrafficShifting validates TCP traffic shifting feature.
 func TestTcpTrafficShifting(t *testing.T) {
 	test.NewTest(t).Id("T4").Groups(test.Full, test.InterOp).Run(func(t test.TestHelper) {
-		hack.DisableLogrusForThisTest(t)
 		ns := "foo"
 
 		t.Cleanup(func() {
@@ -110,9 +108,9 @@ func checkTcpTrafficRatio(t test.TestHelper, ns, host, port string, numberOfRequ
 		expectedRate := ratios[version]
 		actualRate := float64(count) / float64(numberOfRequests)
 		if util.IsWithinPercentage(count, numberOfRequests, expectedRate, tolerance) {
-			t.Logf("success: %d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, numberOfRequests, version, actualRate, expectedRate, tolerance)
+			t.LogSuccessf("%d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, numberOfRequests, version, actualRate, expectedRate, tolerance)
 		} else {
-			t.Errorf("failure: %d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, numberOfRequests, version, actualRate, expectedRate, tolerance)
+			t.Errorf("%d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, numberOfRequests, version, actualRate, expectedRate, tolerance)
 		}
 	}
 }

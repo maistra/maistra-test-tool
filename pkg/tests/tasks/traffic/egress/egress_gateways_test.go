@@ -20,15 +20,12 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestEgressGateways(t *testing.T) {
 	NewTest(t).Id("T13").Groups(Full, InterOp).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
-
 		ns := "bookinfo"
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns)

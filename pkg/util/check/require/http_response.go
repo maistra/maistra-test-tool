@@ -19,7 +19,7 @@ func ResponseMatchesFile(file string, successMsg, failureMsg string, otherFiles 
 func ResponseStatus(expectedStatus int) curl.HTTPResponseCheckFunc {
 	return func(t test.TestHelper, resp *http.Response, responseBody []byte, duration time.Duration) {
 		t.T().Helper()
-		common.CheckResponseStatus(t, resp, expectedStatus, requireFailure)
+		common.CheckResponseStatus(t, resp, responseBody, expectedStatus, requireFailure)
 	}
 }
 

@@ -12,17 +12,19 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 func TestClusterWideMode(t *testing.T) {
 	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
-		hack.DisableLogrusForThisTest(t)
+		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
+			t.Skip("Cluster-Wide mode is supported in v2.4+")
+		}
 		t.Log("This test verifies the behavior of SMCP.spec.mode: ClusterWide")
 
 		meshNamespace := env.GetDefaultMeshNamespace()

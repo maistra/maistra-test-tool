@@ -29,7 +29,7 @@ func CheckResponseMatchesFile(t test.TestHelper, resp *http.Response, responseBo
 			if matchedFile == "" {
 				detailMsg = fmt.Sprintf("expected the response to match file %q, but it didn't match that or any other file", file)
 				if !t.WillRetry() {
-					detailMsg += "\ndiff between the expected and actual response:\n" + err.Error()
+					detailMsg += "\ndiff between the expected (-) and actual response (+):\n" + err.Error()
 				}
 			} else {
 				detailMsg = fmt.Sprintf("expected the response to match file %q, but it matched %q", file, matchedFile)
@@ -37,7 +37,7 @@ func CheckResponseMatchesFile(t test.TestHelper, resp *http.Response, responseBo
 		} else {
 			detailMsg = fmt.Sprintf("expected the response to match file %q, but it didn't", file)
 			if !t.WillRetry() {
-				detailMsg += "\ndiff between the expected and actual response:\n" + err.Error()
+				detailMsg += "\ndiff between the expected (-) and actual response (+):\n" + err.Error()
 			}
 		}
 		failure(t, failureMsg, detailMsg)
@@ -58,11 +58,17 @@ func matchesFile(body []byte, file string) bool {
 	return err == nil
 }
 
-func CheckResponseStatus(t test.TestHelper, resp *http.Response, expectedStatus int, failure FailureFunc) {
+func CheckResponseStatus(t test.TestHelper, resp *http.Response, responseBody []byte, expectedStatus int, failure FailureFunc) {
 	t.T().Helper()
 	requireNonNilResponse(t, resp)
-	if resp.StatusCode != expectedStatus {
-		failure(t, fmt.Sprintf("expected status code %d but got %s", expectedStatus, resp.Status), "")
+	if resp.StatusCode == expectedStatus {
+		logSuccess(t, fmt.Sprintf("received expected status code %d", expectedStatus))
+	} else {
+		if t.WillRetry() {
+			failure(t, fmt.Sprintf("expected status code %d but got %s", expectedStatus, resp.Status), "")
+		} else {
+			failure(t, fmt.Sprintf("expected status code %d but got %s and response: %s", expectedStatus, resp.Status, string(responseBody)), "")
+		}
 	}
 }
 
