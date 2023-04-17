@@ -22,7 +22,7 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	. "github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -77,7 +77,7 @@ func checkTrafficRatio(t TestHelper, url string, numberOfRequests int, tolerance
 	for i := 0; i < numberOfRequests; i++ {
 		curl.Request(t,
 			url, nil,
-			assert.ResponseStatus(http.StatusOK),
+			require.ResponseStatus(http.StatusOK),
 			func(t TestHelper, response *http.Response, responseBody []byte, duration time.Duration) {
 				comparisonErrors := map[string]error{}
 				matched := false
@@ -109,9 +109,9 @@ func checkTrafficRatio(t TestHelper, url string, numberOfRequests int, tolerance
 		expectedRate := ratios[file]
 		actualRate := float64(count) / float64(numberOfRequests)
 		if IsWithinPercentage(count, numberOfRequests, expectedRate, tolerance) {
-			t.Logf("success: %d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, numberOfRequests, file, actualRate, expectedRate, tolerance)
+			t.LogSuccessf("%d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, numberOfRequests, file, actualRate, expectedRate, tolerance)
 		} else {
-			t.Errorf("failure: %d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, numberOfRequests, file, actualRate, expectedRate, tolerance)
+			t.Errorf("%d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, numberOfRequests, file, actualRate, expectedRate, tolerance)
 		}
 	}
 }

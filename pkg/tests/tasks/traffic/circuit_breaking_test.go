@@ -33,57 +33,50 @@ import (
 
 func TestCircuitBreaking(t *testing.T) {
 	NewTest(t).Id("T6").Groups(Full, InterOp).Run(func(t TestHelper) {
+		t.Log("This test checks whether the circuit breaker functions correctly")
+
 		ns := "bookinfo"
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns)
 		})
 
+		t.LogStep("Install httpbin and fortio")
 		app.InstallAndWaitReady(t, app.Httpbin(ns), app.Fortio(ns))
 
-		t.Log("verify traffic management tripping circuit breaker")
 		t.LogStep("Configure circuit breaker destination rule")
 		oc.ApplyString(t, ns, httpbinCircuitBreaker)
 
-		t.LogStep("Verify connection with curl: expected 200 OK")
+		t.LogStep("Verify connection with curl: expect 200 OK")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			oc.Exec(t,
 				pod.MatchingSelector("app=fortio", ns),
 				"fortio",
 				"/usr/bin/fortio curl -quiet http://httpbin:8000/get",
 				assert.OutputContains("200",
-					"Got expected response from httpbin: 200 OK",
-					"ERROR: Got unexpected response from httpbin not 200 OK"))
+					"Got expected 200 OK response from httpbin",
+					"Expected 200 OK from httpbin, but got an unexpected response"))
 		})
 
-		t.LogStep("Tripping the circuit breaker")
 		connection := 2
 		reqCount := 50
 		tolerance := 0.1
+		t.LogStep("Trip the circuit breaker by sending 50 requests to httpbin with 2 connections")
+		t.Logf("We expect 60%% of responses to return 200 OK, and 40%% to return 503 Service Unavailable (tolerance %d%%)", int(100*tolerance))
 		retry.UntilSuccess(t, func(t test.TestHelper) {
-			t.Log("To tipping the circuit breaker we are going to send 50 requests to httpbin with 2 connections")
 			msg := oc.Exec(t,
 				pod.MatchingSelector("app=fortio", ns),
 				"fortio",
 				fmt.Sprintf("/usr/bin/fortio load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount))
 
-			t.Log("We expect to have a line with this information: Code 200 : XX (X0.0 %)")
 			c200 := getNumberOfResponses(t, msg, `Code 200.*`)
-			t.Log("We expect to have a line with this information: Code 503 : XX (X0.0 %)")
 			c503 := getNumberOfResponses(t, msg, `Code 503.*`)
+			successRate200 := 100 * c200 / reqCount
+			successRate503 := 100 * c503 / reqCount
 
-			t.LogStep("Validate the percentage of 200 responses and 503 to the total of requests")
-			t.Log("We expect to have 60% 200 responses and 40% 503 responses")
-			successRate200 := float64(c200) / float64(reqCount) * 100
-			successRate503 := float64(c503) / float64(reqCount) * 100
 			if util.IsWithinPercentage(c200, reqCount, 0.6, tolerance) && util.IsWithinPercentage(c503, reqCount, 0.4, tolerance) {
-				t.Logf(
-					"Success. Circuit breaking acts as expected. "+
-						"Code 200 hit %d of %d (%.2f%%), Code 503 hit %d of %d (%.2f%%)",
-					c200, reqCount, successRate200, c503, reqCount, successRate503)
+				t.LogSuccessf("%d%% of responses were 200 OK, and %d%% were 503 Service Unavailable", successRate200, successRate503)
 			} else {
-				t.Fatalf(
-					"Failed Circuit breaking. "+
-						"Code 200 hit %d 0f %d, Code 503 hit %d of %d", c200, reqCount, c503, reqCount)
+				t.Fatalf("%d%% of responses were 200 OK, and %d%% were 503 Service Unavailable", successRate200, successRate503)
 			}
 		})
 	})

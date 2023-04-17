@@ -22,6 +22,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/istio"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/request"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -37,8 +38,13 @@ func TestIngressGateways(t *testing.T) {
 
 		app.InstallAndWaitReady(t, app.Httpbin(ns))
 
+		gatewayHTTP := istio.GetIngressGatewayHost(t, meshNamespace)
+
 		t.NewSubTest("TrafficManagement_ingress_status_200_test").Run(func(t TestHelper) {
+			t.LogStep("Create httpbin Gateway and VirtualService with host set to httpbin.example.com")
 			oc.ApplyString(t, ns, httpbinGateway1)
+
+			t.LogStep("Check if httpbin service is reachable through istio-ingressgateway")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				curl.Request(t,
 					fmt.Sprintf("http://%s/status/200", gatewayHTTP),
@@ -48,7 +54,10 @@ func TestIngressGateways(t *testing.T) {
 		})
 
 		t.NewSubTest("TrafficManagement_ingress_headers_test").Run(func(t TestHelper) {
+			t.LogStep("Create httpbin Gateway and VirtualService with host set to *")
 			oc.ApplyString(t, ns, httpbinGateway2)
+
+			t.LogStep("Check if httpbin service is reachable through istio-ingressgateway")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				curl.Request(t,
 					fmt.Sprintf("http://%s/headers", gatewayHTTP),
