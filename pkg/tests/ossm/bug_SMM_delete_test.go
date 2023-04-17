@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -26,19 +29,27 @@ func TestSMMDelete(t *testing.T) {
 		oc.CreateNamespace(t, "bookinfo")
 		oc.CreateNamespace(t, "my-awesome-project")
 		oc.ApplyString(t, "bookinfo", ServiceMeshMember)
-		oc.WaitCondition(t, "bookinfo", "smm", "default", "Ready")
 		oc.ApplyString(t, "my-awesome-project", ServiceMeshMember)
-		oc.WaitCondition(t, "my-awesome-project", "smm", "default", "Ready")
-		oc.WaitCondition(t, meshNamespace, "smmr", "default", "Ready")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			oc.WaitSMMRReady(t, meshNamespace)
+		})
 
 		t.LogStep("Delete SMM in namespace: my-awesome-project. Expected: SMMR is not deleted")
 		oc.DeleteFromString(t, "my-awesome-project", ServiceMeshMember)
-		oc.WaitCondition(t, meshNamespace, "smmr", "default", "Ready")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			oc.WaitSMMRReady(t, meshNamespace)
+		})
 
-		t.LogStep("Delete SMM in namespace: bookinfo. Expected: SMMR is not deleted")
+		t.LogStep("Delete SMM in namespace: bookinfo. Expected: SMMR is deleted")
 		oc.DeleteFromString(t, "bookinfo", ServiceMeshMember)
-		oc.WaitCondition(t, meshNamespace, "smmr", "default", "Ready")
-
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			shell.Execute(t,
+				fmt.Sprintf(`oc get smmr -n %s default || true`, meshNamespace),
+				assert.OutputContains(
+					"not found",
+					"Sucess: SMMR is deleted",
+					"Error: SMMR is not deleted"))
+		})
 	})
 }
 
