@@ -19,14 +19,14 @@ func TestCertManager(t *testing.T) {
 		certManagerNs := "cert-manager"
 
 		t.Cleanup(func() {
-			helm.Namespace("istio-system").Release("istio-csr").Uninstall(t)
-			helm.Namespace("cert-manager").Release("cert-manager").Uninstall(t)
+			helm.Namespace(meshNamespace).Release("istio-csr").Uninstall(t)
+			helm.Namespace(certManagerNs).Release("cert-manager").Uninstall(t)
 			oc.DeleteNamespace(t, certManagerNs)
 			oc.RecreateNamespace(t, ns)
 		})
 
 		t.LogStep("Uninstall the SMCP")
-		oc.RecreateNamespace(t, "istio-system")
+		oc.RecreateNamespace(t, meshNamespace)
 		oc.CreateNamespace(t, certManagerNs)
 
 		t.LogStep("Add jetstack repo to helm")
@@ -48,16 +48,16 @@ func TestCertManager(t *testing.T) {
 		oc.ApplyString(t, meshNamespace, istioCA)
 
 		t.LogStep("Install cert-manager-istio-csr")
-		helm.Namespace("istio-system").
+		helm.Namespace(meshNamespace).
 			Chart("jetstack/cert-manager-istio-csr").
 			Release("istio-csr").
-			ValuesStdIn(istioCsrValues(meshNamespace, smcpName)).
+			ValuesString(istioCsrValues(meshNamespace, smcpName)).
 			Install(t)
-		oc.WaitPodsReady(t, "istio-system", "app=cert-manager-istio-csr")
+		oc.WaitPodsReady(t, meshNamespace, "app=cert-manager-istio-csr")
 
 		t.LogStep("Deploy the cert-manager in SMCP")
-		oc.ApplyString(t, "istio-system", createSMCPWithCertManager(smcpName, meshNamespace, ns))
-		oc.WaitSMCPReady(t, "istio-system", smcpName)
+		oc.ApplyString(t, meshNamespace, createSMCPWithCertManager(smcpName, meshNamespace, ns))
+		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Install httpbin and sleep")
 		app.InstallAndWaitReady(t, app.Httpbin(ns), app.Sleep(ns))
@@ -73,7 +73,6 @@ func TestCertManager(t *testing.T) {
 					"Got expected 200 OK from httpbin",
 					"Expected 200 OK from httpbin, but got a different HTTP code"))
 		})
-
 	})
 }
 

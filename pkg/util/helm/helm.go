@@ -39,7 +39,7 @@ func (c cmd) Set(keyValue string) cmd {
 	return c
 }
 
-func (c cmd) ValuesStdIn(values string) cmd {
+func (c cmd) ValuesString(values string) cmd {
 	c.valuesStdIn = values
 	return c
 }
