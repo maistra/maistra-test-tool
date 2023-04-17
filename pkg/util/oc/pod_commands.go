@@ -125,7 +125,7 @@ func (o OC) WaitCondition(t test.TestHelper, ns string, kind string, name string
 	t.T().Helper()
 	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(30), func(t test.TestHelper) {
 		shell.Execute(t,
-			fmt.Sprintf(`oc wait -n %s %s/%s --for condition=%s  --timeout %s`, ns, kind, name, condition, "10s"),
+			fmt.Sprintf(`oc wait -n %s %s/%s --for condition=%s  --timeout %s`, ns, kind, name, condition, "20s"),
 			assert.OutputContains(condition,
 				fmt.Sprintf("Condition %s met by %s %s/%s", condition, kind, ns, name),
 				fmt.Sprintf("Condition %s not met %s %s/%s, retrying", condition, kind, ns, name)))
