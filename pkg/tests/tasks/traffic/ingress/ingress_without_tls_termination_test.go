@@ -20,9 +20,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
+	"github.com/maistra/maistra-test-tool/pkg/util/request"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
@@ -41,7 +43,16 @@ func TestIngressWithoutTlsTermination(t *testing.T) {
 
 		t.LogStep("Install nginx")
 		app.InstallAndWaitReady(t, app.Nginx(ns))
-		checkNginx(t, ns, "127.0.0.1", "8443", "")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			oc.Exec(t,
+				pod.MatchingSelector("run=my-nginx", ns),
+				"istio-proxy",
+				"curl -sS -v -k --resolve nginx.example.com:8443:127.0.0.1 https://nginx.example.com:8443",
+				assert.OutputContains(
+					"Welcome to nginx",
+					"Got expected Welcome to nginx message",
+					"Expected return message Welcome to nginx, but failed"))
+		})
 
 		t.NewSubTest("configure a passthrough ingress gateway").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
@@ -51,28 +62,14 @@ func TestIngressWithoutTlsTermination(t *testing.T) {
 			oc.ApplyString(t, ns, nginxIngressGateway)
 			gatewayHTTP := istio.GetIngressGatewayHost(t, meshNamespace)
 			secureIngressPort := istio.GetIngressGatewaySecurePort(t, meshNamespace)
-			checkNginx(t, ns, gatewayHTTP, secureIngressPort, nginxServerCACert)
+
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				curl.Request(t,
+					fmt.Sprintf("https://nginx.example.com:%s", secureIngressPort),
+					request.WithTLS(nginxServerCACert, "nginx.example.com", gatewayHTTP, secureIngressPort),
+					assert.ResponseContains("Welcome to nginx"))
+			})
 		})
-
-	})
-}
-
-func checkNginx(t test.TestHelper, ns string, ingressHost string, port string, caCert string) {
-	t.Log("Verify nginx server is running.")
-	certFlag := "-k"
-	if caCert != "" {
-		certFlag = "--cacert " + caCert
-	}
-
-	retry.UntilSuccess(t, func(t test.TestHelper) {
-		oc.Exec(t,
-			pod.MatchingSelector("run=my-nginx", ns),
-			"istio-proxy",
-			fmt.Sprintf(`curl -sS -v %s --resolve nginx.example.com:%s:%s https://nginx.example.com:%s`, certFlag, port, ingressHost, port),
-			assert.OutputContains(
-				"Welcome to nginx",
-				"Got expected Welcome to nginx message",
-				"Expected return message Welcome to nginx, but failed"))
 	})
 }
 
