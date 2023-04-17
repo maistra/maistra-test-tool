@@ -108,9 +108,9 @@ func checkTcpTrafficRatio(t test.TestHelper, ns, host, port string, numberOfRequ
 		expectedRate := ratios[version]
 		actualRate := float64(count) / float64(numberOfRequests)
 		if util.IsWithinPercentage(count, numberOfRequests, expectedRate, tolerance) {
-			t.Logf("success: %d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, numberOfRequests, version, actualRate, expectedRate, tolerance)
+			t.LogSuccessf("%d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, numberOfRequests, version, actualRate, expectedRate, tolerance)
 		} else {
-			t.Errorf("failure: %d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, numberOfRequests, version, actualRate, expectedRate, tolerance)
+			t.Errorf("%d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, numberOfRequests, version, actualRate, expectedRate, tolerance)
 		}
 	}
 }
