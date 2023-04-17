@@ -16,6 +16,10 @@ func GetIngressGatewayHost(t test.TestHelper, meshNamespace string) string {
 	return shell.Executef(t, "kubectl -n %s get routes istio-ingressgateway -o jsonpath='{.spec.host}'", meshNamespace)
 }
 
+func GetIngressGatewaySecurePort(t test.TestHelper, meshNamespace string) string {
+	return shell.Executef(t, `kubectl -n %s get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].port}'`, meshNamespace)
+}
+
 func GetProxyMetric(t test.TestHelper, oc *oc.OC, podLocator oc.PodLocatorFunc, metric string, labels ...string) *prometheus.Metric {
 	t.T().Helper()
 	metrics := GetProxyMetrics(t, oc, podLocator, metric, labels...)
