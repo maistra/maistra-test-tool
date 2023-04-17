@@ -30,9 +30,10 @@ import (
 func TestSMCPAnnotations(t *testing.T) {
 	NewTest(t).Id("T29").Groups(Full).Run(func(t TestHelper) {
 		t.Log("Test annotations: verify deployment with sidecar.maistra.io/proxyEnv annotations and Enable automatic injection in SMCP to propagate the annotations to the sidecar")
-		ns := "foo"
 
 		t.NewSubTest("proxyEnvoy").Run(func(t TestHelper) {
+			t.Parallel()
+			ns := "foo"
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, ns)
 			})
@@ -47,6 +48,8 @@ func TestSMCPAnnotations(t *testing.T) {
 
 		// Test that the SMCP automatic injection with quotes works
 		t.NewSubTest("quote_injection").Run(func(t TestHelper) {
+			t.Parallel()
+			ns := "bar"
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, ns)
 			})
