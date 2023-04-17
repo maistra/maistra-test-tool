@@ -25,56 +25,53 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestTrustDomainMigration(t *testing.T) {
 	NewTest(t).Id("T24").Groups(Full, InterOp).Run(func(t TestHelper) {
-		fooNamespace := "foo"
-		barNamespace := "bar"
+		foo := "foo"
+		bar := "bar"
 
-		defer func() {
-			t.Log("Cleanup")
-			oc.DeleteFromString(t, fooNamespace, TrustDomainPolicy)
+		t.Cleanup(func() {
+			oc.DeleteFromString(t, foo, TrustDomainPolicy)
+			oc.Patch(t, meshNamespace, "smcp", smcpName, "json", `[{"op": "remove", "path": "/spec/security"}]`)
+
 			app.Uninstall(t,
-				app.Httpbin(fooNamespace),
-				app.Sleep(fooNamespace),
-				app.Sleep(barNamespace))
-			applyTrustDomain(t, "cluster.local", "", false)
-		}()
+				app.Httpbin(foo),
+				app.Sleep(foo),
+				app.Sleep(bar))
+		})
 
-		t.Log("Trust Domain Migration")
 		applyTrustDomain(t, "old-td", "", true)
 
-		// Deploy workloads
 		app.InstallAndWaitReady(t,
-			app.Httpbin(fooNamespace),
-			app.Sleep(fooNamespace),
-			app.Sleep(barNamespace))
+			app.Httpbin(foo),
+			app.Sleep(foo),
+			app.Sleep(bar))
 
 		t.Log("Apply deny all policy except sleep in bar namespace")
-		oc.ApplyString(t, fooNamespace, TrustDomainPolicy)
+		oc.ApplyString(t, foo, TrustDomainPolicy)
 
 		t.NewSubTest("Case 1: Verifying policy works").Run(func(t TestHelper) {
-			runCurlInSleepPod(t, fooNamespace, http.StatusForbidden)
-			runCurlInSleepPod(t, barNamespace, http.StatusOK)
+			runCurlInSleepPod(t, foo, http.StatusForbidden)
+			runCurlInSleepPod(t, bar, http.StatusOK)
 		})
 
 		t.NewSubTest("Case 2: Migrate trust domain without trust domain aliases").Run(func(t TestHelper) {
 			applyTrustDomain(t, "new-td", "", true)
-			oc.RestartAllPodsAndWaitReady(t, fooNamespace, barNamespace)
+			oc.RestartAllPodsAndWaitReady(t, foo, bar)
 
-			runCurlInSleepPod(t, fooNamespace, http.StatusForbidden)
-			runCurlInSleepPod(t, barNamespace, http.StatusForbidden)
+			runCurlInSleepPod(t, foo, http.StatusForbidden)
+			runCurlInSleepPod(t, bar, http.StatusForbidden)
 		})
 
 		t.NewSubTest("Case 3: Migrate trust domain with trust domain aliases").Run(func(t TestHelper) {
 			applyTrustDomain(t, "new-td", "old-td", true)
-			oc.RestartAllPodsAndWaitReady(t, fooNamespace, barNamespace)
+			oc.RestartAllPodsAndWaitReady(t, foo, bar)
 
-			runCurlInSleepPod(t, fooNamespace, http.StatusForbidden)
-			runCurlInSleepPod(t, barNamespace, http.StatusOK)
+			runCurlInSleepPod(t, foo, http.StatusForbidden)
+			runCurlInSleepPod(t, bar, http.StatusOK)
 		})
 	})
 }
@@ -91,25 +88,41 @@ func runCurlInSleepPod(t TestHelper, ns string, expectedStatus int) {
 }
 
 func applyTrustDomain(t TestHelper, domain, alias string, mtls bool) {
-	t.Logf("Configuring  spec.security.trust.domain to %q and alias %q", domain, alias)
+	t.Logf("Configure spec.security.trust.domain to %q and alias %q", domain, alias)
 
 	if alias != "" {
 		alias = fmt.Sprintf("%q", alias)
 	}
 
-	shell.Executef(t, `oc -n %s patch smcp/%s --type merge -p '{"spec":{"security":{"dataPlane":{"mtls":%v}, "trust":{"domain":"%s", "additionalDomains": [%s]}}}}'`, meshNamespace, smcpName, mtls, domain, alias)
+	oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", fmt.Sprintf(`
+spec:
+  security:
+    dataPlane:
+      mtls: %v
+    trust:
+      domain: %s
+      additionalDomains: [%s]
+`, mtls, domain, alias))
 
-	// Wait for the operator to reconcile the changes
 	oc.WaitSMCPReady(t, meshNamespace, smcpName)
-
-	// TODO: figure out if restarting deployments is necessary; shouldn't the SMCP being ready indicate that the deployments were restarted?
-	// Restart istiod so it picks up the new trust domain
-	shell.Executef(t, `oc -n %s rollout restart deployment istiod-%s`, meshNamespace, smcpName)
-
-	// Restart ingress gateway since we changed the mtls setting
-	shell.Executef(t, `oc -n %s rollout restart deployment istio-ingressgateway`, meshNamespace)
-
-	// wait for both deployments to be restarted (the rollout status command blocks until pods are ready)
-	shell.Executef(t, `oc -n %s rollout status deployment istiod-%s`, meshNamespace, smcpName)
-	shell.Executef(t, `oc -n %s rollout status deployment istio-ingressgateway`, meshNamespace)
 }
+
+const TrustDomainPolicy = `
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: service-httpbin.foo.svc.cluster.local
+spec:
+  rules:
+  - from:
+    - source:
+        principals:
+        - old-td/ns/bar/sa/sleep
+    to:
+    - operation:
+        methods:
+        - GET
+  selector:
+    matchLabels:
+      app: httpbin
+`
