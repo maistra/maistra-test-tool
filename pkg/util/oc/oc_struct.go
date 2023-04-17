@@ -143,7 +143,7 @@ func (o OC) DeleteResource(t test.TestHelper, ns string, kind string, names ...s
 	t.T().Helper()
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		shell.Executef(t, "kubectl -n %s delete %s %s --ignore-not-found", ns, kind, strings.Join(names, " "))
+		shell.Executef(t, "kubectl %s delete %s %s --ignore-not-found", nsFlag(ns), kind, strings.Join(names, " "))
 	})
 }
 
