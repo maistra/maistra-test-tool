@@ -15,12 +15,10 @@ package ossm
 
 import (
 	_ "embed"
-	"fmt"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -55,7 +53,7 @@ func TestSSL(t *testing.T) {
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Install bookinfo with mTLS and testssl pod")
-		oc.ApplyString(t, ns, fmt.Sprintf(testSSLDeployment, env.GetTestSSLImage()))
+		oc.ApplyTemplate(t, ns, testSSLDeployment, nil)
 		app.InstallAndWaitReady(t, app.BookinfoWithMTLS(ns))
 		oc.WaitDeploymentRolloutComplete(t, ns, "testssl")
 
@@ -98,5 +96,5 @@ spec:
     spec:
       containers:
       - name: testssl
-        image: %s
+        image: {{ image "testssl" }}
 `
