@@ -42,26 +42,24 @@ func (t *RetryTestHelper) Failed() bool {
 
 func (t *RetryTestHelper) Error(args ...any) {
 	t.t.Helper()
-	t.Log("transient error " + t.attemptString() + ": " + fmt.Sprint(args...))
+	t.Log(Failure + ": " + fmt.Sprint(args...))
 	t.Fail()
 }
 
 func (t *RetryTestHelper) Errorf(format string, args ...any) {
 	t.t.Helper()
-	t.Logf("transient error "+t.attemptString()+": "+format, args...)
-	t.Fail()
+	t.Error(fmt.Sprintf(format, args...))
 }
 
 func (t *RetryTestHelper) Fatal(args ...any) {
 	t.t.Helper()
-	t.Log("transient error " + t.attemptString() + ": " + fmt.Sprint(args...))
+	t.Error(args...)
 	t.FailNow()
 }
 
 func (t *RetryTestHelper) Fatalf(format string, args ...any) {
 	t.t.Helper()
-	t.Logf("transient error "+t.attemptString()+": "+format, args...)
-	t.FailNow()
+	t.Fatal(fmt.Sprintf(format, args...))
 }
 
 // func (t *RetryTestHelper) LogStep(str string) {

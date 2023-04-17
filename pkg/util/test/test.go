@@ -60,6 +60,7 @@ func (t *topLevelTest) Run(f func(t TestHelper)) {
 	th := &testHelper{t: t.t}
 	disableLogrusForThisTest(th)
 	f(th)
+	t.t.Log()
 	t.t.Logf("Test completed in %.2fs (excluding cleanup)", time.Now().Sub(start).Seconds())
 }
 
