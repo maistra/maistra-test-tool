@@ -26,7 +26,9 @@ func TestSMMDelete(t *testing.T) {
 		oc.CreateNamespace(t, "bookinfo")
 		oc.CreateNamespace(t, "my-awesome-project")
 		oc.ApplyString(t, "bookinfo", ServiceMeshMember)
+		oc.WaitCondition(t, "bookinfo", "smm", "default", "Ready")
 		oc.ApplyString(t, "my-awesome-project", ServiceMeshMember)
+		oc.WaitCondition(t, "my-awesome-project", "smm", "default", "Ready")
 		oc.WaitCondition(t, meshNamespace, "smmr", "default", "Ready")
 
 		t.LogStep("Delete SMM in namespace: my-awesome-project. Expected: SMMR is not deleted")

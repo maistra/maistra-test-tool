@@ -127,8 +127,8 @@ func (o OC) WaitCondition(t test.TestHelper, ns string, kind string, name string
 		shell.Execute(t,
 			fmt.Sprintf(`oc wait -n %s %s/%s --for condition=%s  --timeout %s`, ns, kind, name, condition, "20s"),
 			assert.OutputContains(condition,
-				fmt.Sprintf("Condition %s met by %s %s/%s", condition, kind, ns, name),
-				fmt.Sprintf("Condition %s not met %s %s/%s, retrying", condition, kind, ns, name)))
+				fmt.Sprintf("Condition %s met by %s %s/%s", condition, ns, kind, name),
+				fmt.Sprintf("Condition %s not met %s %s/%s, retrying", condition, ns, kind, name)))
 	})
 }
 

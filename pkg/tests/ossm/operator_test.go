@@ -16,6 +16,7 @@ package ossm
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
@@ -104,19 +105,19 @@ func TestOperator(t *testing.T) {
 			t.LogStep("Verify that the smcp pods are running on the infra node")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				nsPods := shell.Executef(t, `oc get pods -n %s -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'`, meshNamespace)
-				for pod := range nsPods {
-					// Verify each pod is running on the infra node
+				for _, pod := range strings.Split(nsPods, "\n") {
 					node := shell.Executef(t, `oc get pod -n %s %s -o jsonpath='{.spec.nodeName}'`, meshNamespace, pod)
 					if node != workername {
-						// For some reason not all pods are relocated automatically, so we need to delete the pod and wait for it to be recreated
+						// Por alguna razón, algunos pods no se reubican automáticamente, así que debemos eliminar el pod y esperar a que se vuelva a crear
 						shell.Executef(t, `oc delete pod -n %s %s`, meshNamespace, pod)
 						shell.Executef(t, `kubectl -n %s wait --for condition=Ready pod %s --timeout 30s || true`, meshNamespace, pod)
 						node = shell.Executef(t, `oc get pod -n %s %s -o jsonpath='{.spec.nodeName}'`, meshNamespace, pod)
 						if node != workername {
-							t.Fatalf("Pod %s is not running on the infra node", pod)
+							t.Fatalf("Pod %s is not running on infra node", pod)
 						}
 					}
 				}
+
 			})
 		})
 	})
