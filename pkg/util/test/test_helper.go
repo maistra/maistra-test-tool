@@ -42,6 +42,8 @@ type TestHelper interface {
 
 	T() *testing.T
 
+	Parallel()
+
 	WillRetry() bool
 }
 
@@ -171,6 +173,10 @@ func (t *testHelper) NewSubTest(name string) Test {
 
 func (t *testHelper) T() *testing.T {
 	return t.t
+}
+
+func (t *testHelper) Parallel() {
+	t.t.Parallel()
 }
 
 func (t *testHelper) WillRetry() bool {
