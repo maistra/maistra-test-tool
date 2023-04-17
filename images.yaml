@@ -80,4 +80,4 @@ testssl:
 helloworld:
   x86: istio/examples-helloworld-v1
   p: quay.io/maistra/helloworld-v1:0.0-ibm-p
-  z: quay.io/maistra/helloworld-v1:0.0-ibm-z,
+  z: quay.io/maistra/helloworld-v1:0.0-ibm-z
