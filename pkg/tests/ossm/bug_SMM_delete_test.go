@@ -47,7 +47,7 @@ func TestSMMDelete(t *testing.T) {
 				fmt.Sprintf(`oc get smmr -n %s default || true`, meshNamespace),
 				assert.OutputContains(
 					"not found",
-					"Sucess: SMMR is deleted",
+					"Success: SMMR is deleted",
 					"Error: SMMR is not deleted"))
 		})
 	})

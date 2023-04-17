@@ -49,7 +49,7 @@ func TestMTlsMigration(t *testing.T) {
 		t.LogStep("Check connectivity from namespaces foo, bar, and legacy to namespace foo and bar")
 		for _, from := range fromNamespaces {
 			for _, to := range toNamespaces {
-				assertConnectionSucessful(t, from, to)
+				assertConnectionSuccessful(t, from, to)
 			}
 		}
 
@@ -64,7 +64,7 @@ func TestMTlsMigration(t *testing.T) {
 						if from == "legacy" && to == "foo" {
 							assertConnectionFailure(t, from, to)
 						} else {
-							assertConnectionSucessful(t, from, to)
+							assertConnectionSuccessful(t, from, to)
 						}
 					}
 				}
@@ -85,7 +85,7 @@ func TestMTlsMigration(t *testing.T) {
 						if from == "legacy" {
 							assertConnectionFailure(t, from, to)
 						} else {
-							assertConnectionSucessful(t, from, to)
+							assertConnectionSuccessful(t, from, to)
 						}
 					}
 				}
@@ -94,7 +94,7 @@ func TestMTlsMigration(t *testing.T) {
 	})
 }
 
-func assertConnectionSucessful(t test.TestHelper, from string, to string) {
+func assertConnectionSuccessful(t test.TestHelper, from string, to string) {
 	curlFromTo(t, from, to,
 		assert.OutputContains("200",
 			fmt.Sprintf("%s connects to %s", from, to),
