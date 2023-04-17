@@ -33,11 +33,15 @@ func TestTLSOriginationSDS(t *testing.T) {
 		app.InstallAndWaitReady(t, app.Sleep(ns))
 
 		t.NewSubTest("ServiceEntry").Run(func(t TestHelper) {
-			t.LogStep("Perform TLS origination with an egress gateway")
+			t.Log("Perform TLS origination with an egress gateway")
+
+			t.LogStep("Create a ServiceEntry for external address istio.io")
 			oc.ApplyString(t, ns, ExServiceEntry)
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, ns, ExServiceEntry)
 			})
+
+			t.LogStep("Verify that sleep pod can reach http://istio.io")
 			execInSleepPod(t, ns,
 				`curl -sSL -o /dev/null -D - http://istio.io`,
 				assert.OutputContains(
@@ -45,7 +49,7 @@ func TestTLSOriginationSDS(t *testing.T) {
 					"Expected 301 Moved Permanently",
 					"Unexpected response, expected 301 Moved Permanently"))
 
-			t.LogStep("Create a Gateway to external istio.io")
+			t.LogStep("Create a Gateway to external address istio.io")
 			oc.ApplyTemplate(t, ns, ExGatewayTLSFileTemplate, smcp)
 			t.Cleanup(func() {
 				oc.DeleteFromTemplate(t, ns, ExGatewayTLSFileTemplate, smcp)
