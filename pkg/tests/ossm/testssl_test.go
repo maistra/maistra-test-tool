@@ -29,25 +29,36 @@ func TestSSL(t *testing.T) {
 	NewTest(t).Id("T27").Groups(Full, InterOp).Run(func(t TestHelper) {
 		ns := "bookinfo"
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns)
+			oc.Patch(t, meshNamespace, "smcp", smcpName, "json", `[{"op": "remove", "path": "/spec/security/controlPlane/tls"}]`)
+			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
+spec:
+  security:
+    dataPlane:
+      mtls: false
+    controlPlane:
+      mtls: false
+`)
+			app.Uninstall(t, app.BookinfoWithMTLS(ns))
+			oc.DeleteFromTemplate(t, ns, testSSLDeployment, nil)
 		})
 
-		t.LogStep("Enable the Service Mesh Control Plane mTLS to true")
-		oc.Patch(t, meshNamespace,
-			"smcp", smcpName,
-			"merge",
-			`{"spec":{"security":{"dataPlane":{"mtls":true},"controlPlane":{"mtls":true}}}}`)
-
-		t.Log("Update SMCP spec.security.controlPlane.tls")
-		oc.Patch(t, meshNamespace,
-			"smcp", smcpName,
-			"merge",
-			`{"spec":{"security":{"controlPlane":{"tls":{`+
-				`"minProtocolVersion":"TLSv1_2",`+
-				`"maxProtocolVersion":"TLSv1_2",`+
-				`"cipherSuites":["TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"],`+
-				`"ecdhCurves":["CurveP256", "CurveP384"]`+
-				`}}}}}`)
+		t.LogStep("Patch SMCP to enable mTLS in dataPlane and controlPlane and set min/maxProtocolVersion, cipherSuites, and ecdhCurves")
+		oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
+spec:
+  security:
+    dataPlane:
+      mtls: true
+    controlPlane:
+      mtls: true
+      tls:
+        minProtocolVersion: TLSv1_2
+        maxProtocolVersion: TLSv1_2
+        cipherSuites:
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        ecdhCurves:
+        - CurveP256
+        - CurveP384
+`)
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Install bookinfo with mTLS and testssl pod")
@@ -60,7 +71,7 @@ func TestSSL(t *testing.T) {
 			oc.Exec(t,
 				pod.MatchingSelector("app=testssl", ns),
 				"testssl",
-				"./testssl/testssl.sh -6 productpage:9080 || true",
+				"./testssl/testssl.sh -P -6 productpage:9080 || true",
 				assert.OutputContains(
 					"TLSv1.2",
 					"Received the TLSv1.2 needed in the testssl.sh results",
@@ -92,6 +103,7 @@ spec:
       labels:
         app: testssl
     spec:
+      terminationGracePeriodSeconds: 0
       containers:
       - name: testssl
         image: {{ image "testssl" }}
