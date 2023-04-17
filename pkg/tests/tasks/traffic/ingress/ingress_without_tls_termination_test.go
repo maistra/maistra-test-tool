@@ -15,7 +15,6 @@
 package ingress
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
@@ -29,20 +28,22 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-// TestIngressWithoutTlsTermination validates configuring a HTTPS ingress access to a HTTPS service
 func TestIngressWithoutTlsTermination(t *testing.T) {
 	test.NewTest(t).Id("T10").Groups(test.Full, test.InterOp).Run(func(t test.TestHelper) {
+		t.Log("This test validates configuring an Gateway with TLS PassThrough")
+		t.Log("Doc reference: https://istio.io/v1.14/docs/tasks/traffic-management/ingress/ingress-sni-passthrough/")
+
 		ns := "bookinfo"
 
 		t.Cleanup(func() {
+			oc.DeleteFromString(t, ns, nginxIngressGateway)
 			app.Uninstall(t, app.Nginx(ns))
 		})
 
-		t.Log("This test validates configuring a HTTPS ingress access to a HTTPS service.")
-		t.Log("Doc reference: https://istio.io/v1.14/docs/tasks/traffic-management/ingress/ingress-sni-passthrough/")
-
-		t.LogStep("Install nginx")
+		t.LogStep("Create NGINX Deployment")
 		app.InstallAndWaitReady(t, app.Nginx(ns))
+
+		t.LogStep("Verify NGINX server is running by connecting to it via loopback")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			oc.Exec(t,
 				pod.MatchingSelector("run=my-nginx", ns),
@@ -50,25 +51,21 @@ func TestIngressWithoutTlsTermination(t *testing.T) {
 				"curl -sS -v -k --resolve nginx.example.com:8443:127.0.0.1 https://nginx.example.com:8443",
 				assert.OutputContains(
 					"Welcome to nginx",
-					"Got expected Welcome to nginx message",
-					"Expected return message Welcome to nginx, but failed"))
+					"Got expected Welcome to nginx response",
+					"Expected to receive response Welcome to nginx, but failed"))
 		})
 
-		t.NewSubTest("configure a passthrough ingress gateway").Run(func(t test.TestHelper) {
-			t.Cleanup(func() {
-				oc.DeleteFromString(t, ns, nginxIngressGateway)
-			})
-			t.LogStep("Configure a passthrough ingress gateway")
-			oc.ApplyString(t, ns, nginxIngressGateway)
-			gatewayHTTP := istio.GetIngressGatewayHost(t, meshNamespace)
-			secureIngressPort := istio.GetIngressGatewaySecurePort(t, meshNamespace)
+		t.LogStep("Configure Gateway resource with TLS passthrough for host nginx.example.com")
+		oc.ApplyString(t, ns, nginxIngressGateway)
 
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				curl.Request(t,
-					fmt.Sprintf("https://nginx.example.com:%s", secureIngressPort),
-					request.WithTLS(nginxServerCACert, "nginx.example.com", gatewayHTTP, secureIngressPort),
-					assert.ResponseContains("Welcome to nginx"))
-			})
+		t.LogStep("Verify NGINX is reachable from outside the cluster through the ingressgateway")
+		gatewayHTTP := istio.GetIngressGatewayHost(t, meshNamespace)
+		secureIngressPort := istio.GetIngressGatewaySecurePort(t, meshNamespace)
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			curl.Request(t,
+				"https://nginx.example.com:"+secureIngressPort,
+				request.WithTLS(nginxServerCACert, "nginx.example.com", gatewayHTTP, secureIngressPort),
+				assert.ResponseContains("Welcome to nginx"))
 		})
 	})
 }
