@@ -21,15 +21,12 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestAccessExternalServices(t *testing.T) {
 	test.NewTest(t).Id("T11").Groups(test.Full, test.InterOp).Run(func(t test.TestHelper) {
-		hack.DisableLogrusForThisTest(t)
-
 		ns := "bookinfo"
 		meshNamespace := env.GetDefaultMeshNamespace()
 		smcpName := env.GetDefaultSMCPName()

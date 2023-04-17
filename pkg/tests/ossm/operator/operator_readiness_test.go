@@ -7,7 +7,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
@@ -16,12 +15,10 @@ import (
 
 func TestOperatorPodHonorsReadinessProbe(t *testing.T) {
 	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
-		hack.DisableLogrusForThisTest(t)
+		t.Log("This test checks if the operator correctly reports its readiness status")
 
 		meshNamespace := env.GetDefaultMeshNamespace()
 		operatorPod := pod.MatchingSelector("name=istio-operator", env.GetOperatorNamespace())
-
-		t.Log("This test checks if the operator correctly reports its readiness status")
 
 		t.LogStep("Install SMCP and wait for it to be Ready")
 		ossm.InstallSMCP(t, meshNamespace, env.GetDefaultSMCPVersion())

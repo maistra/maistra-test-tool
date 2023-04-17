@@ -25,7 +25,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -37,8 +36,6 @@ import (
 
 func TestMultiClusterFederationFailover(t *testing.T) {
 	NewTest(t).Groups(Full).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
-
 		kubeconfig2 := env.Getenv("KUBECONFIG2", "")
 		if kubeconfig2 == "" {
 			t.Skip("this test only runs when the KUBECONFIG2 environment variable points to the kubeconfig of the second cluster")

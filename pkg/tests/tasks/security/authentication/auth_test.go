@@ -25,7 +25,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -36,8 +35,6 @@ import (
 
 func TestAuthPolicy(t *testing.T) {
 	NewTest(t).Id("T18").Groups(Full, InterOp).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
-
 		meshNamespace := env.GetDefaultMeshNamespace()
 
 		t.Cleanup(func() {

@@ -22,7 +22,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/request"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -45,7 +44,6 @@ var (
 
 func TestSecureGateways(t *testing.T) {
 	NewTest(t).Id("T9").Groups(Full, InterOp).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
 		ns := "bookinfo"
 
 		t.Cleanup(func() {

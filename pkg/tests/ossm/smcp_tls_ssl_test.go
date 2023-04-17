@@ -16,14 +16,12 @@ package ossm
 import (
 	"testing"
 
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestTLSVersionSMCP(t *testing.T) {
 	NewTest(t).Id("T26").Groups(Full, ARM, InterOp).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
 		t.Log("This test checks if the SMCP updated the tls.minProtocolVersion to TLSv1_0, TLSv1_1, and tls.maxProtocolVersion to TLSv1_3.")
 		t.Cleanup(func() {
 			oc.Patch(t, meshNamespace,

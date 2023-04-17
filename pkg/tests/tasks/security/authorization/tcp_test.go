@@ -20,7 +20,6 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -30,8 +29,6 @@ import (
 // TestAuthorizationTCPTraffic validates authorization polices for TCP traffic.
 func TestAuthorizationTCPTraffic(t *testing.T) {
 	test.NewTest(t).Id("T21").Groups(test.Full, test.InterOp).Run(func(t test.TestHelper) {
-		hack.DisableLogrusForThisTest(t)
-
 		ns := "foo"
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns)
