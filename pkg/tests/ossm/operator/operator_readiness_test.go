@@ -11,10 +11,14 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 func TestOperatorPodHonorsReadinessProbe(t *testing.T) {
 	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
+		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
+			t.Skip("The operator readiness probe was implemented in v2.4+")
+		}
 		t.Log("This test checks if the operator correctly reports its readiness status")
 
 		meshNamespace := env.GetDefaultMeshNamespace()
