@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+const (
+	Success = "SUCCESS"
+	Failure = "FAILURE"
+)
+
 func NewTestContext(t *testing.T) TestHelper {
 	ctx := &testHelper{
 		t: t,
@@ -102,13 +107,13 @@ func (t *testHelper) Logf(format string, args ...any) {
 
 func (t *testHelper) Error(args ...any) {
 	t.t.Helper()
-	t.Log("ERROR: " + fmt.Sprint(args...))
+	t.Log(Failure + ": " + fmt.Sprint(args...))
 	t.Fail()
 }
 
 func (t *testHelper) Errorf(format string, args ...any) {
 	t.t.Helper()
-	t.Logf("ERROR: "+format, args...)
+	t.Logf(Failure+": "+format, args...)
 	t.Fail()
 }
 
@@ -129,20 +134,18 @@ func (t *testHelper) Cleanup(f func()) {
 	t.t.Cleanup(func() {
 		t.T().Helper()
 		start := time.Now()
-		t.Log("Performing cleanup")
+		t.T().Log()
+		t.T().Log("Performing cleanup")
 		f()
-		t.Logf("Cleanup completed in %.2fs", time.Now().Sub(start).Seconds())
+		t.T().Logf("Cleanup completed in %.2fs", time.Now().Sub(start).Seconds())
 	})
 }
 
 func (t *testHelper) LogStep(str string) {
 	t.t.Helper()
 	t.currentStep++
-	if t.currentStep > 1 {
-		t.Log("")
-	}
-	t.t.Logf("STEP %d: %s", t.currentStep, str)
 	t.Log("")
+	t.t.Logf("STEP %d: %s", t.currentStep, str)
 }
 
 func (t *testHelper) LogStepf(format string, args ...any) {
@@ -156,7 +159,7 @@ func (t *testHelper) CurrentStep() int {
 
 func (t *testHelper) LogSuccess(str string) {
 	t.t.Helper()
-	t.Logf("SUCCESS: " + str)
+	t.Log(Success + ": " + str)
 }
 
 func (t *testHelper) LogSuccessf(format string, args ...any) {
@@ -185,7 +188,7 @@ func (t *testHelper) WillRetry() bool {
 
 func (t *testHelper) indent() string {
 	if t.currentStep > 0 {
-		return "  "
+		return "   "
 	}
 	return ""
 }

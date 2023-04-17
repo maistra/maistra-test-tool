@@ -20,6 +20,7 @@ func (t subTest) Run(f func(t TestHelper)) {
 		ctx := NewTestContext(t)
 		start := time.Now()
 		f(ctx)
+		t.Log()
 		t.Logf("Subtest completed in %.2fs (excluding cleanup)", time.Now().Sub(start).Seconds())
 	})
 }

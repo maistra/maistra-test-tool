@@ -17,11 +17,6 @@ func UntilSuccessWithOptions(t test.TestHelper, options RetryOptions, f func(t t
 	for i := 0; i < options.maxAttempts; i++ {
 		lastAttempt := i == options.maxAttempts-1
 
-		if i > 0 && options.logAttempts {
-			t.Log()
-			t.Logf("Attempt %d/%d:", i+1, options.maxAttempts)
-		}
-
 		var attemptHelper test.TestHelper
 		if lastAttempt {
 			attemptHelper = t
@@ -40,9 +35,9 @@ func UntilSuccessWithOptions(t test.TestHelper, options RetryOptions, f func(t t
 			} else {
 				if options.logAttempts {
 					if options.delayBetweenAttempts == defaultOptions.delayBetweenAttempts {
-						t.Logf("Attempt %d/%d failed. Retrying...", i+1, options.maxAttempts)
+						t.Logf("--- Attempt %d/%d failed. Retrying...", i+1, options.maxAttempts)
 					} else {
-						t.Logf("Attempt %d/%d failed. Retrying in %v...", i+1, options.maxAttempts, options.delayBetweenAttempts)
+						t.Logf("--- Attempt %d/%d failed. Retrying in %v...", i+1, options.maxAttempts, options.delayBetweenAttempts)
 					}
 				}
 				time.Sleep(options.delayBetweenAttempts)
@@ -51,7 +46,7 @@ func UntilSuccessWithOptions(t test.TestHelper, options RetryOptions, f func(t t
 			if i > 0 && options.logAttempts {
 				// there was at least one failed attempt, so let's log the current attempt as successful so that
 				// the user isn't left wondering
-				t.Logf("Attempt %d/%d successful; total time: %.2fs", i+1, options.maxAttempts, time.Now().Sub(start).Seconds())
+				t.Logf("--- Attempt %d/%d successful; total time: %.2fs", i+1, options.maxAttempts, time.Now().Sub(start).Seconds())
 			}
 			if options.maxAttempts > 1 {
 				percentage := i * 100 / options.maxAttempts
