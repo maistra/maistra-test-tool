@@ -51,6 +51,7 @@ func TestSMCPAnnotations(t *testing.T) {
 			t.Parallel()
 			ns := "bar"
 			t.Cleanup(func() {
+				oc.Patch(t, meshNamespace, "smcp", smcpName, "json", `[{"op": "remove", "path": "/spec/proxy"}]`)
 				oc.RecreateNamespace(t, ns)
 			})
 			t.LogStep("Enable annotation auto injection in SMCP")
