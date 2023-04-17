@@ -1,10 +1,10 @@
 package app
 
 import (
+	_ "embed"
 	"fmt"
 	"net/http/cookiejar"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
@@ -39,25 +39,25 @@ func (a *bookinfo) Install(t test.TestHelper) {
 	t.T().Helper()
 
 	t.Log("Creating Bookinfo Gateway")
-	oc.ApplyFile(t, a.ns, examples.BookinfoGatewayYamlFile())
+	oc.ApplyString(t, a.ns, BookinfoGateway)
 
 	t.Log("Creating Bookinfo Destination Rules (all)")
 	if a.mTLS {
-		oc.ApplyFile(t, a.ns, examples.BookinfoRuleAllMTLSYamlFile())
+		oc.ApplyString(t, a.ns, BookinfoRuleAllMTLS)
 	} else {
-		oc.ApplyFile(t, a.ns, examples.BookinfoRuleAllYamlFile())
+		oc.ApplyString(t, a.ns, BookinfoRuleAll)
 	}
 
 	t.Logf("Deploy Bookinfo in namespace %q", a.ns)
-	oc.ApplyFile(t, a.ns, examples.BookinfoYamlFile())
+	oc.ApplyTemplate(t, a.ns, BookinfoTemplate, nil)
 }
 
 func (a *bookinfo) Uninstall(t test.TestHelper) {
 	t.T().Helper()
 	t.Logf("Uninstalling Bookinfo from namespace %q", a.ns)
-	oc.DeleteFile(t, a.ns, examples.BookinfoRuleAllYamlFile())
-	oc.DeleteFile(t, a.ns, examples.BookinfoGatewayYamlFile())
-	oc.DeleteFile(t, a.ns, examples.BookinfoYamlFile())
+	oc.DeleteFromString(t, a.ns, BookinfoRuleAll)
+	oc.DeleteFromString(t, a.ns, BookinfoGateway)
+	oc.DeleteFromTemplate(t, a.ns, BookinfoTemplate, nil)
 }
 
 func (a *bookinfo) WaitReady(t test.TestHelper) {
@@ -118,3 +118,26 @@ var ProductPageResponseFiles = []string{
 	"productpage-test-user-v2-rating-unavailable.html",
 	"productpage-test-user-v2-review-timeout.html",
 }
+
+var (
+	//go:embed "yaml/bookinfo.yaml"
+	BookinfoTemplate string
+
+	//go:embed "yaml/bookinfo-db.yaml"
+	BookinfoDBTemplate string
+
+	//go:embed "yaml/bookinfo-ratings-v2.yaml"
+	BookinfoRatingsV2Template string
+
+	//go:embed "yaml/virtual-service-reviews-v3.yaml"
+	BookinfoVirtualServiceReviewsV3 string
+
+	//go:embed "yaml/bookinfo-gateway.yaml"
+	BookinfoGateway string
+
+	//go:embed "yaml/destination-rule-all.yaml"
+	BookinfoRuleAll string
+
+	//go:embed "yaml/destination-rule-all-mtls.yaml"
+	BookinfoRuleAllMTLS string
+)

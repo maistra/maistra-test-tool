@@ -15,7 +15,6 @@
 package app
 
 import (
-	"github.com/maistra/maistra-test-tool/pkg/examples"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
@@ -40,15 +39,59 @@ func (a *echoV2) Namespace() string {
 
 func (a *echoV2) Install(t test.TestHelper) {
 	t.T().Helper()
-	oc.ApplyFile(t, a.ns, examples.EchoV2YamlFile())
+	oc.ApplyTemplate(t, a.ns, tcpEchoV2Template, nil)
 }
 
 func (a *echoV2) Uninstall(t test.TestHelper) {
 	t.T().Helper()
-	oc.DeleteFile(t, a.ns, examples.EchoV2YamlFile())
+	oc.DeleteFromTemplate(t, a.ns, tcpEchoV2Template, nil)
 }
 
 func (a *echoV2) WaitReady(t test.TestHelper) {
 	t.T().Helper()
 	oc.WaitDeploymentRolloutComplete(t, a.ns, "tcp-echo-v2")
 }
+
+const tcpEchoV2Template = `
+apiVersion: v1
+kind: Service
+metadata:
+  name: tcp-echo
+  labels:
+    app: tcp-echo
+spec:
+  ports:
+  - name: tcp
+    port: 9000
+  #- name: tcp-other
+  #  port: 9001
+  ## Port 9002 is omitted intentionally for testing the pass through filter chain.
+  selector:
+    app: tcp-echo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tcp-echo-v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tcp-echo
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: tcp-echo
+        version: v2
+    spec:
+      containers:
+      - name: tcp-echo
+        image: {{ image "tcp-echo" }}
+        imagePullPolicy: IfNotPresent
+        #args: [ "9000,9001,9002", "two" ]
+        args: [ "9000", "two" ]
+        ports:
+        - containerPort: 9000
+        #- containerPort: 9001
+`

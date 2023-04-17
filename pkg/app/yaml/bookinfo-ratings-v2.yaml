@@ -42,25 +42,24 @@ spec:
       terminationGracePeriodSeconds: 0  # TODO: remove when ratings honors SIGINT
       containers:
       - name: ratings
-        image: quay.io/maistra/examples-bookinfo-ratings-v2:2.3.0
-        imagePullPolicy: IfNotPresent
+        image: {{ image "bookinfo-ratings-v2" }}
         env:
-          # ratings-v2 will use mongodb as the default db backend.
-          # if you would like to use mysqldb then set DB_TYPE = 'mysql', set
-          # the rest of the parameters shown here and also create the
-          # mysqldb service using bookinfo-mysql.yaml
-          # - name: DB_TYPE #default to
-          #   value: "mysql"
-          # - name: MYSQL_DB_HOST
-          #   value: mysqldb
-          # - name: MYSQL_DB_PORT
-          #   value: "3306"
-          # - name: MYSQL_DB_USER
-          #   value: root
-          # - name: MYSQL_DB_PASSWORD
-          #  value: password
-          - name: MONGO_DB_URL
-            value: mongodb://mongodb:27017/test
+        # ratings-v2 will use mongodb as the default db backend.
+        # if you would like to use mysqldb then set DB_TYPE = 'mysql', set
+        # the rest of the parameters shown here and also create the
+        # mysqldb service using bookinfo-mysql.yaml
+        # - name: DB_TYPE #default to
+        #   value: "mysql"
+        # - name: MYSQL_DB_HOST
+        #   value: mysqldb
+        # - name: MYSQL_DB_PORT
+        #   value: "3306"
+        # - name: MYSQL_DB_USER
+        #   value: root
+        # - name: MYSQL_DB_PASSWORD
+        #  value: password
+        - name: MONGO_DB_URL
+          value: mongodb://mongodb:27017/test
         ports:
         - containerPort: 9080
 ---

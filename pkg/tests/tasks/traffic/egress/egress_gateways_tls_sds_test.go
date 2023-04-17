@@ -20,14 +20,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
+	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func cleanupTLSOriginationSDS() {
+func cleanupTLSOriginationSDS(t *testing.T) {
 	log.Log.Info("Cleanup")
 	util.KubeDeleteContents(meshNamespace, OriginateSDS)
 	util.KubeDeleteContents(meshNamespace, meshExternalServiceEntry)
@@ -35,22 +34,18 @@ func cleanupTLSOriginationSDS() {
 	util.Shell(`kubectl delete -n %s secret client-credential`, meshNamespace)
 	util.KubeDeleteContents("bookinfo", util.RunTemplate(ExGatewayTLSFileTemplate, smcp))
 	util.KubeDeleteContents("bookinfo", ExServiceEntry)
-	sleep := examples.Sleep{Namespace: "bookinfo"}
-	nginx := examples.Nginx{Namespace: "mesh-external"}
-	sleep.Uninstall()
-	nginx.Uninstall()
+	app.Uninstall(test.NewTestContext(t), app.Sleep("bookinfo"), app.NginxWithMTLS("mesh-external"))
 	time.Sleep(time.Duration(20) * time.Second)
 }
 
 func TestTLSOriginationSDS(t *testing.T) {
 	test.NewTest(t).Id("T15").Groups(test.Full, test.InterOp).NotRefactoredYet()
 
-	defer cleanupTLSOriginationSDS()
+	defer cleanupTLSOriginationSDS(t)
 	defer util.RecoverPanic(t)
 
 	log.Log.Info("TestEgressGatewaysTLSOrigination SDS")
-	sleep := examples.Sleep{Namespace: "bookinfo"}
-	sleep.Install()
+	app.InstallAndWaitReady(test.NewTestContext(t), app.Sleep("bookinfo")) // replace test.NewTestContext(t) with t when you refactor this test
 	sleepPod, _ := util.GetPodName("bookinfo", "app=sleep")
 
 	t.Run("TrafficManagement_egress_gateway_perform_TLS_origination", func(t *testing.T) {
@@ -94,8 +89,8 @@ func TestTLSOriginationSDS(t *testing.T) {
 		defer util.RecoverPanic(t)
 
 		log.Log.Info("Deploy nginx mtls server")
-		nginx := examples.Nginx{Namespace: "mesh-external"}
-		nginx.Install_mTLS(env.GetRootDir() + "/testdata/examples/x86/nginx/nginx_mesh_external_ssl.conf")
+
+		app.InstallAndWaitReady(test.NewTestContext(t), app.NginxWithMTLS("mesh-external"))
 
 		log.Log.Info("Create client cert secret")
 		util.Shell(`kubectl create secret -n %s generic client-credential --from-file=tls.key=%s --from-file=tls.crt=%s --from-file=ca.crt=%s`,

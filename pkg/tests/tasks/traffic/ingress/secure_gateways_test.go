@@ -16,14 +16,12 @@ package ingress
 
 import (
 	_ "embed"
-	"fmt"
 	"net/http"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
-	. "github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/request"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -41,13 +39,7 @@ var (
 	gatewayHttpbinMTLSYaml string
 
 	//go:embed yaml/hello-world.yaml
-	helloWorldYaml string
-
-	helloWorldImages = map[string]string{
-		"p":   "quay.io/maistra/helloworld-v1:0.0-ibm-p",
-		"z":   "quay.io/maistra/helloworld-v1:0.0-ibm-z",
-		"x86": "istio/examples-helloworld-v1",
-	}
+	helloWorldTemplate string
 )
 
 func TestSecureGateways(t *testing.T) {
@@ -61,7 +53,7 @@ func TestSecureGateways(t *testing.T) {
 		})
 
 		app.InstallAndWaitReady(t, app.Httpbin(ns))
-		oc.ApplyString(t, ns, helloWorldYAML())
+		oc.ApplyTemplate(t, ns, helloWorldTemplate, nil)
 		oc.WaitDeploymentRolloutComplete(t, ns, "helloworld-v1")
 
 		t.LogStep("Create TLS secrets")
@@ -134,14 +126,4 @@ func TestSecureGateways(t *testing.T) {
 			})
 		})
 	})
-}
-
-func helloWorldYAML() string {
-	arch := Getenv("SAMPLEARCH", "x86")
-	image := helloWorldImages[arch]
-	if image == "" {
-		panic(fmt.Sprintf("unsupported SAMPLEARCH: %s", arch))
-	}
-
-	return fmt.Sprintf(helloWorldYaml, image)
 }
