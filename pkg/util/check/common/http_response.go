@@ -29,7 +29,7 @@ func CheckResponseMatchesFile(t test.TestHelper, resp *http.Response, responseBo
 			if matchedFile == "" {
 				detailMsg = fmt.Sprintf("expected the response to match file %q, but it didn't match that or any other file", file)
 				if !t.WillRetry() {
-					detailMsg += "\ndiff between the expected and actual response:\n" + err.Error()
+					detailMsg += "\ndiff between the expected (-) and actual response (+):\n" + err.Error()
 				}
 			} else {
 				detailMsg = fmt.Sprintf("expected the response to match file %q, but it matched %q", file, matchedFile)
@@ -37,7 +37,7 @@ func CheckResponseMatchesFile(t test.TestHelper, resp *http.Response, responseBo
 		} else {
 			detailMsg = fmt.Sprintf("expected the response to match file %q, but it didn't", file)
 			if !t.WillRetry() {
-				detailMsg += "\ndiff between the expected and actual response:\n" + err.Error()
+				detailMsg += "\ndiff between the expected (-) and actual response (+):\n" + err.Error()
 			}
 		}
 		failure(t, failureMsg, detailMsg)

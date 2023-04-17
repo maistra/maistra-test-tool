@@ -20,10 +20,9 @@ import (
 	"math"
 	"testing"
 
-	"github.com/maistra/maistra-test-tool/pkg/examples"
+	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -33,8 +32,6 @@ import (
 
 func TestSingleClusterFederation(t *testing.T) {
 	NewTest(t).Id("T31").Groups(Full, ARM).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
-
 		federationTest{
 			testdataPath: "testdata/traffic-splitting",
 			west: config{
@@ -61,8 +58,6 @@ func TestSingleClusterFederation(t *testing.T) {
 
 func TestSingleClusterFederationDifferentCerts(t *testing.T) {
 	NewTest(t).Id("T32").Groups(Full).Run(func(t TestHelper) {
-		hack.DisableLogrusForThisTest(t)
-
 		federationTest{
 			testdataPath: "testdata/traffic-splitting",
 			west: config{
@@ -97,16 +92,16 @@ func TestSingleClusterFederationDifferentCerts(t *testing.T) {
 func defaultBookinfoInstaller(t TestHelper, ft federationTest) {
 	t.LogStep("Install ratings-v2 and mongodb in west-mesh")
 	ft.west.oc.ApplyFile(t, ft.west.bookinfoNamespace, ft.testdataPath+"/west-mesh/bookinfo-ratings-service.yaml")
-	ft.west.oc.ApplyFile(t, ft.west.bookinfoNamespace, examples.BookinfoRatingsV2Yaml)
-	ft.west.oc.ApplyFile(t, ft.west.bookinfoNamespace, examples.BookinfoDBYaml)
-	ft.west.oc.ApplyFile(t, ft.west.bookinfoNamespace, examples.BookinfoRuleAllYamlFile())
+	ft.west.oc.ApplyTemplateString(t, ft.west.bookinfoNamespace, app.BookinfoRatingsV2Template, nil)
+	ft.west.oc.ApplyTemplateString(t, ft.west.bookinfoNamespace, app.BookinfoDBTemplate, nil)
+	ft.west.oc.ApplyString(t, ft.west.bookinfoNamespace, app.BookinfoRuleAll)
 
 	t.LogStep("Install full bookinfo in east-mesh")
-	ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, examples.BookinfoYamlFile())        // install base bookinfo services
-	ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, examples.BookinfoRatingsV2Yaml)     // install ratings-v2
-	ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, examples.BookinfoGatewayYamlFile()) // install gateway
-	ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, examples.BookinfoRuleAllYamlFile())
-	ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, examples.BookinfoVirtualServiceReviewsV3Yaml) // reviews always go to reviews-v3
+	ft.east.oc.ApplyTemplateString(t, ft.east.bookinfoNamespace, app.BookinfoTemplate, nil)          // install base bookinfo services
+	ft.east.oc.ApplyTemplateString(t, ft.east.bookinfoNamespace, app.BookinfoRatingsV2Template, nil) // install ratings-v2
+	ft.east.oc.ApplyString(t, ft.east.bookinfoNamespace, app.BookinfoGateway)                        // install gateway
+	ft.east.oc.ApplyString(t, ft.east.bookinfoNamespace, app.BookinfoRuleAll)
+	ft.east.oc.ApplyString(t, ft.east.bookinfoNamespace, app.BookinfoVirtualServiceReviewsV3) // reviews always go to reviews-v3
 	ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, ft.testdataPath+"/east-mesh/mongodb-service.yaml")
 	ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, ft.testdataPath+"/east-mesh/mongodb-remote-virtualservice.yaml") // mongodb always goes to west-mesh
 	ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, ft.testdataPath+"/east-mesh/ratings-split-virtualservice.yaml")  // 50-50 split between local ratings and ratings in west-mesh

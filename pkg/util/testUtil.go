@@ -23,25 +23,18 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"strings"
 	"testing"
 	"text/template"
 	"time"
 
-	"gopkg.in/yaml.v2"
-
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	template2 "github.com/maistra/maistra-test-tool/pkg/util/template"
 )
 
 // RunTemplate renders a yaml template string in the yaml_configs.go file
 func RunTemplate(tmpl string, input interface{}) string {
-	if input == nil {
-		log.Log.Fatal("input is nil")
-	}
-
 	tt, err := template.New("").
-		Funcs(templateFuncMap).
+		Funcs(template2.TemplateFuncMap).
 		Parse(tmpl)
 	if err != nil {
 		log.Log.Fatal(err)
@@ -51,49 +44,6 @@ func RunTemplate(tmpl string, input interface{}) string {
 		log.Log.Fatal(err)
 	}
 	return buf.String()
-}
-
-func RunTemplateWithTestHelper(t test.TestHelper, tmpl string, input interface{}) string {
-	if input == nil {
-		t.Fatal("input is nil")
-	}
-
-	tt, err := template.New("").
-		Funcs(templateFuncMap).
-		Parse(tmpl)
-	if err != nil {
-		t.Fatalf("could not execute template: %v:\n%s", err, tmpl)
-	}
-	var buf bytes.Buffer
-	if err := tt.Execute(&buf, input); err != nil {
-		t.Fatal(err)
-	}
-	return buf.String()
-}
-
-var templateFuncMap = template.FuncMap{
-	"toYaml": toYaml,
-	"indent": indent,
-	"until":  until,
-}
-
-func indent(spaces int, source string) string {
-	res := strings.Split(source, "\n")
-	for i, line := range res {
-		if i > 0 {
-			res[i] = fmt.Sprintf(fmt.Sprintf("%% %ds%%s", spaces), "", line)
-		}
-	}
-	return strings.Join(res, "\n")
-}
-
-func toYaml(value interface{}) string {
-	y, err := yaml.Marshal(value)
-	if err != nil {
-		panic(fmt.Sprintf("Unable to marshal %v", value))
-	}
-
-	return string(y)
 }
 
 // recover from panic if one occurred. This allows cleanup to be executed after panic.
@@ -170,15 +120,6 @@ func CheckUserGroup(url, ingress, ingressPort, user string) (*http.Response, err
 	req.Header.Set("user", user)
 	// Get response
 	return client.Do(req)
-}
-
-// Define an until function for template
-func until(n int) []int {
-	nums := make([]int, n)
-	for i := 0; i < n; i++ {
-		nums[i] = i
-	}
-	return nums
 }
 
 func GenerateStrings(prefix string, count int) []string {

@@ -17,11 +17,8 @@ package ossm
 import (
 	_ "embed"
 	"encoding/json"
-	"fmt"
 	"testing"
 
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -33,15 +30,15 @@ import (
 func TestSMCPAnnotations(t *testing.T) {
 	NewTest(t).Id("T29").Groups(Full).Run(func(t TestHelper) {
 		t.Log("Test annotations: verify deployment with sidecar.maistra.io/proxyEnv annotations and Enable automatic injection in SMCP to propagate the annotations to the sidecar")
-		hack.DisableLogrusForThisTest(t)
-		ns := "foo"
 
 		t.NewSubTest("proxyEnvoy").Run(func(t TestHelper) {
+			t.Parallel()
+			ns := "foo"
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, ns)
 			})
 			t.LogStep("Deploy TestSSL pod with annotations sidecar.maistra.io/proxyEnv")
-			oc.ApplyString(t, ns, getTestSSLManifestWithAnnotation())
+			oc.ApplyTemplate(t, ns, testSSLDeploymentWithAnnotation, nil)
 			oc.WaitDeploymentRolloutComplete(t, ns, "testenv")
 
 			t.LogStep("Get annotations and verify that the pod has the expected: sidecar.maistra.io/proxyEnv : { \"maistra_test_env\": \"env_value\", \"maistra_test_env_2\": \"env_value_2\" }")
@@ -51,6 +48,8 @@ func TestSMCPAnnotations(t *testing.T) {
 
 		// Test that the SMCP automatic injection with quotes works
 		t.NewSubTest("quote_injection").Run(func(t TestHelper) {
+			t.Parallel()
+			ns := "bar"
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, ns)
 			})
@@ -63,7 +62,7 @@ func TestSMCPAnnotations(t *testing.T) {
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 			t.LogStep("Deploy TestSSL pod with annotations sidecar.maistra.io/proxyEnv")
-			oc.ApplyString(t, ns, getTestSSLManifestWithAnnotation())
+			oc.ApplyTemplate(t, ns, testSSLDeploymentWithAnnotation, nil)
 			oc.WaitDeploymentRolloutComplete(t, ns, "testenv")
 
 			t.LogStep("Get annotations and verify that the pod has the expected: test1.annotation-from-smcp : test1, test2.annotation-from-smcp : [\"test2\"], test3.annotation-from-smcp : {test3}")
@@ -94,10 +93,6 @@ func assertAnnotationIsPresent(t TestHelper, annotations map[string]string, key 
 	}
 }
 
-func getTestSSLManifestWithAnnotation() string {
-	return fmt.Sprintf(testSSLDeploymentWithAnnotation, env.GetTestSSLImage())
-}
-
 const testSSLDeploymentWithAnnotation = `
 apiVersion: apps/v1
 kind: Deployment
@@ -118,5 +113,5 @@ spec:
       terminationGracePeriodSeconds: 0
       containers:
       - name: testenv
-        image: %s
+        image: {{ image "testssl" }}
 `

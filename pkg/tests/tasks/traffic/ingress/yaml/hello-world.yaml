@@ -32,7 +32,7 @@ spec:
       terminationGracePeriodSeconds: 0  # TODO: remove when helloworld honors SIGINT
       containers:
       - name: helloworld
-        image: %s
+        image: {{ image "helloworld" }}
         resources:
           requests:
             cpu: "100m"
