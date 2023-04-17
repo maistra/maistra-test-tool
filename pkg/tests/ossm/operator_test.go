@@ -19,13 +19,16 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"golang.org/x/exp/slices"
 )
 
 var workername string
@@ -88,37 +91,35 @@ func TestOperator(t *testing.T) {
 		t.NewSubTest("Run SMCP Infra Nodes").Run(func(t TestHelper) {
 			t.Log("Testing: Run OSSM Operator on infra nodes")
 			t.Cleanup(func() {
-				shell.Executef(t,
-					`kubectl -n %s patch smcp/%s --type=json -p='[{"op": "remove", "path": "/spec/runtime"}]'`,
-					meshNamespace,
-					smcpName)
-				oc.WaitSMCPReady(t, meshNamespace, smcpName) // Avoid go to the next test with the SMCP not ready
+				oc.RecreateNamespace(t, meshNamespace)
+				// Need to find a way to revert the patch
+				oc.ApplyString(t, meshNamespace, util.RunTemplate(getSMCPTemplate(env.GetDefaultSMCPVersion()), Smcp))
+				oc.WaitSMCPReady(t, meshNamespace, smcpName)
 			})
 
 			t.LogStep("Patch SMCP to run on infra nodes and wait for the SMCP to be ready")
-			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge",
-				fmt.Sprintf(`oc -n %s patch smcp/%s --type merge -p '{"spec":{"runtime":{"defaults":{"pod":{"nodeSelector":{"node-role.kubernetes.io/infra":""},"tolerations":[{"effect":"NoSchedule","key":"node-role.kubernetes.io/infra","value":"reserved"},{"effect":"NoExecute","key":"node-role.kubernetes.io/infra","value":"reserved"}]}}}}}'`,
-					meshNamespace,
-					smcpName))
+			oc.Patch(t,
+				meshNamespace,
+				"smcp", smcpName,
+				"merge",
+				`{"spec":{"runtime":{"defaults":{"pod":{"nodeSelector":{"node-role.kubernetes.io/infra":""},"tolerations":[{"effect":"NoSchedule","key":"node-role.kubernetes.io/infra","value":"reserved"},{"effect":"NoExecute","key":"node-role.kubernetes.io/infra","value":"reserved"}]}}}}}`)
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
-			t.LogStep("Verify that the smcp pods are running on the infra node")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				nsPods := shell.Executef(t, `oc get pods -n %s -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'`, meshNamespace)
-				for _, pod := range strings.Split(nsPods, "\n") {
-					node := shell.Executef(t, `oc get pod -n %s %s -o jsonpath='{.spec.nodeName}'`, meshNamespace, pod)
-					if node != workername {
-						// Por alguna razón, algunos pods no se reubican automáticamente, así que debemos eliminar el pod y esperar a que se vuelva a crear
-						shell.Executef(t, `oc delete pod -n %s %s`, meshNamespace, pod)
-						shell.Executef(t, `kubectl -n %s wait --for condition=Ready pod %s --timeout 30s || true`, meshNamespace, pod)
-						node = shell.Executef(t, `oc get pod -n %s %s -o jsonpath='{.spec.nodeName}'`, meshNamespace, pod)
-						if node != workername {
-							t.Fatalf("Pod %s is not running on infra node", pod)
+			t.LogStep("Verify that the smcp pods are running on the infra node. Pod expected to be moved: istiod, istio-ingressgateway, istio-egressgateway, jaeger, grafana, prometheus")
+			istioPods := []string{"istiod", "istio-ingressgateway", "istio-egressgateway", "jaeger", "grafana", "prometheus"}
+			for _, p := range istioPods {
+				retry.UntilSuccess(t, func(t test.TestHelper) {
+					nsPods := getAllPodsFromNode(t, meshNamespace)
+					if !slices.Contains(nsPods, p) {
+						t.Log("The pod is not running on the infra node, delete it and wait for it to be recreated")
+						oc.DeletePod(t, pod.MatchingSelector("app="+p, meshNamespace))
+						nsPods = getAllPodsFromNode(t, meshNamespace)
+						if !slices.Contains(nsPods, p) {
+							t.Fatalf("Error: Pod %s is not running on the infra node", p)
 						}
 					}
-				}
-
-			})
+				})
+			}
 		})
 	})
 }
@@ -132,4 +133,25 @@ func pickWorkerNode(t test.TestHelper) string {
 	}
 
 	return workername
+}
+
+func getAllPodsFromNode(t test.TestHelper, namespace string) []string {
+	// split the output into a list of strings
+	nsPodsOutput := shell.Executef(t,
+		`kubectl get pods -n %s --field-selector spec.nodeName=%s -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'`,
+		namespace,
+		workername)
+	nsPods := strings.Split(nsPodsOutput, "\n")
+	nonEmptyPods := []string{}
+	for _, pod := range nsPods {
+		if pod != "" {
+			nonEmptyPods = append(nonEmptyPods, pod)
+		}
+	}
+	for _, pod := range nonEmptyPods {
+		fmt.Println(pod)
+	}
+
+	// return the list of non-empty pod names
+	return nonEmptyPods
 }
