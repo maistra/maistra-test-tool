@@ -27,7 +27,7 @@ func ExecuteWithEnv(t test.TestHelper, env []string, cmd string, checks ...commo
 	t.T().Helper()
 	output, err := execShellCommand(cmd, env)
 	if err != nil {
-		t.Fatalf("Command failed: %q\nError: %s", cmd, err)
+		t.Fatalf("Command failed: %q\n%s\nError: %s", cmd, output, err)
 	}
 	for _, check := range checks {
 		check(t, output)
