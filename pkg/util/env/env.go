@@ -76,6 +76,10 @@ func GetSMCPVersion() version.Version {
 	return version.ParseVersion(GetDefaultSMCPVersion())
 }
 
+func GetSampleArch() string {
+	return Getenv("SAMPLEARCH", "x86")
+}
+
 func GetOperatorNamespace() string {
 	return "openshift-operators"
 }

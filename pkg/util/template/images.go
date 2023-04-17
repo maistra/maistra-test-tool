@@ -35,7 +35,7 @@ func image(image string) string {
 		panic(fmt.Sprintf("could not find image %q in %s", image, yamlFile))
 	}
 
-	arch := env.Getenv("SAMPLEARCH", "x86")
+	arch := env.GetSampleArch()
 	im, found := is[arch]
 	if !found {
 		panic(fmt.Sprintf("could not find image %q for architecture %q in %s", image, arch, yamlFile))
