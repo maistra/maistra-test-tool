@@ -39,7 +39,7 @@ func TestDeployOnInfraNodes(t *testing.T) {
 	NewTest(t).Id("T40").Groups(Full).Run(func(t TestHelper) {
 		t.Log("This test verifies that the OSSM operator and Istio components can be configured to run on infrastructure nodes")
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_3) {
-			t.T().Skip("Deploy On Infra node is available in SMCP versions v2.3+")
+			t.Skip("Deploy On Infra node is available in SMCP versions v2.3+")
 		}
 		if Smcp.Rosa {
 			t.Skip("Skipping test on ROSA due to lack of permissions")
