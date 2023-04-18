@@ -14,12 +14,6 @@ func WithHeader(name, value string) curl.RequestOption {
 	}
 }
 
-func WithHeaders(headers map[string]string) curl.RequestOption {
-	return headerModifier{
-		headers: headers,
-	}
-}
-
 type headerModifier struct {
 	headers map[string]string
 }

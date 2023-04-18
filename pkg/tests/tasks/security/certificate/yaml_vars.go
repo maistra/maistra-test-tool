@@ -26,6 +26,6 @@ var (
 )
 
 var (
-	smcpName      string = env.GetDefaultSMCPName()
-	meshNamespace string = env.GetDefaultMeshNamespace()
+	smcpName      = env.GetDefaultSMCPName()
+	meshNamespace = env.GetDefaultMeshNamespace()
 )
