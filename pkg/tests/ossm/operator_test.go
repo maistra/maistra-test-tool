@@ -34,8 +34,7 @@ import (
 
 var workername string
 
-// TestOperator tests scenario to cover all the test cases related to the OSSM operators
-func TestOperator(t *testing.T) {
+func TestDeployOnInfraNodes(t *testing.T) {
 	NewTest(t).Id("T40").Groups(Full).Run(func(t TestHelper) {
 		t.Log("This test verifies that the OSSM operator and Istio components can be configured to run on infrastructure nodes")
 		if Smcp.Rosa {
