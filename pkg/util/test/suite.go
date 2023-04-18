@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-type SetupFunc func()
+type SetupFunc func(t TestHelper)
 
 type TestSuite interface {
 	Run()
@@ -18,8 +18,9 @@ type testSuite struct {
 }
 
 func (s *testSuite) Run() {
+	t := NewSetupTestHelper()
 	for _, setupFn := range s.setupFns {
-		setupFn()
+		setupFn(t)
 	}
 
 	exitCode := s.m.Run()
