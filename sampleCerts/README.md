@@ -42,6 +42,6 @@ expected by Citadel's command line options. To differentiate between clusters, w
 Similarly, we set the `Subject Alternate Name` field to include the cluster name as part
 of the SPIFFE identity.
 
-Note that the Makefile generates long lived intermediate certificates. While this might be
-acceptable for demonstration purposes, a more realistic and secure deployment would use short
-lived and automatically renewed certificates for the intermediate Citadels.
+Note that the Makefile generates long-lived intermediate certificates. While this might be
+acceptable for demonstration purposes, a more realistic and secure deployment would use 
+short-lived and automatically renewed certificates for the intermediate Citadels.

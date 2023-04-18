@@ -11,7 +11,7 @@ type RequestOptionList []curl.RequestOption
 var _ curl.RequestOption = RequestOptionList{}
 
 func Options(options ...curl.RequestOption) RequestOptionList {
-	return RequestOptionList(options)
+	return options
 }
 
 func (l RequestOptionList) ApplyToRequest(req *http.Request) error {

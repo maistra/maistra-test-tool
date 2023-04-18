@@ -9,10 +9,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func ExecuteIgnoreError(t test.TestHelper, cmd string) {
-	_, _ = execShellCommand(cmd, nil)
-}
-
 func Executef(t test.TestHelper, format string, args ...any) string {
 	t.T().Helper()
 	return Execute(t, fmt.Sprintf(format, args...))

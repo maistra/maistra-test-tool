@@ -129,7 +129,7 @@ func deleteMemberNamespaces(t test.TestHelper, count int) {
 }
 
 func createMemberNamespaces(t test.TestHelper, count int) {
-	namespaces := []string{}
+	var namespaces []string
 	yaml := ""
 	for i := 0; i < count; i++ {
 		namespaces = append(namespaces, fmt.Sprintf("member-%d", i))

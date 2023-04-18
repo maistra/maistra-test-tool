@@ -16,16 +16,8 @@ package util
 
 import (
 	"bytes"
-	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
-	"io/ioutil"
-	"net"
-	"net/http"
-	"testing"
 	"text/template"
-	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/log"
 	template2 "github.com/maistra/maistra-test-tool/pkg/util/template"
@@ -46,80 +38,10 @@ func RunTemplate(tmpl string, input interface{}) string {
 	return buf.String()
 }
 
-// recover from panic if one occurred. This allows cleanup to be executed after panic.
-func RecoverPanic(t *testing.T) {
-	t.Helper()
-	if err := recover(); err != nil {
-		t.Errorf("Test panic: %v", err)
-	}
-}
-
 func IsWithinPercentage(count int, total int, rate float64, tolerance float64) bool {
 	minimum := int((rate - tolerance) * float64(total))
 	maximum := int((rate + tolerance) * float64(total))
 	return count >= minimum && count <= maximum
-}
-
-// curl command with CA
-func CurlWithCA(url, ingressHost, secureIngressPort, host, cacertFile string) (*http.Response, error) {
-	// Load CA cert
-	caCert, err := ioutil.ReadFile(cacertFile)
-	if err != nil {
-		return nil, err
-	}
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
-
-	// Setup HTTPS transport
-	tlsConfig := &tls.Config{
-		RootCAs: caCertPool,
-	}
-	tlsConfig.BuildNameToCertificate()
-	transport := &http.Transport{TLSClientConfig: tlsConfig}
-
-	// Custom DialContext
-	dialer := &net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
-		DualStack: true,
-	}
-
-	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
-		if addr == host+":"+secureIngressPort {
-			addr = ingressHost + ":" + secureIngressPort
-		}
-		return dialer.DialContext(ctx, network, addr)
-	}
-
-	// Setup HTTPS client
-	client := &http.Client{Transport: transport}
-
-	// GET something
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-	// Set host
-	req.Host = host
-	req.Header.Set("Host", req.Host)
-	// Get response
-	return client.Do(req)
-}
-
-// check user key from header
-func CheckUserGroup(url, ingress, ingressPort, user string) (*http.Response, error) {
-	// Declare http client
-	client := &http.Client{}
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Set header key user
-	req.Header.Set("user", user)
-	// Get response
-	return client.Do(req)
 }
 
 func GenerateStrings(prefix string, count int) []string {

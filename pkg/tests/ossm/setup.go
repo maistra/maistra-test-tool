@@ -74,7 +74,7 @@ func BasicSetup(t test.TestHelper) {
 	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
 }
 
-// Initialize a default SMCP and SMMR
+// SetupNamespacesAndControlPlane initializes a default SMCP and SMMR
 func SetupNamespacesAndControlPlane(t test.TestHelper) {
 	BasicSetup(t)
 	tmpl := GetSMCPTemplate(env.GetDefaultSMCPVersion())
