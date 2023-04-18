@@ -8,8 +8,8 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -26,7 +26,10 @@ func TestSMCPMultiple(t *testing.T) {
 			oc.RecreateNamespace(t, meshNamespace)
 
 			t.LogStep("Delete operator to recreate the ValidationWebhookConfiguration")
-			shell.Execute(t, "oc -n openshift-operators delete pod -l name=istio-operator")
+			oc.DeletePod(t, pod.MatchingSelector("name=istio-operator", env.GetOperatorNamespace()))
+
+			t.LogStep("Wait for operator pod to be ready")
+			oc.WaitPodReady(t, pod.MatchingSelector("name=istio-operator", env.GetOperatorNamespace()))
 
 			t.LogStep("Check whether ValidatingWebhookConfiguration exists")
 			retry.UntilSuccess(t, func(t TestHelper) {
