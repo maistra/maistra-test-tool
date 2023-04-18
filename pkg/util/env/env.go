@@ -68,12 +68,12 @@ func GetDefaultMeshNamespace() string {
 	return Getenv("MESHNAMESPACE", "istio-system")
 }
 
-func GetDefaultSMCPVersion() string {
-	return Getenv("SMCPVERSION", "2.4")
-}
-
 func GetSMCPVersion() version.Version {
-	return version.ParseVersion(GetDefaultSMCPVersion())
+	v := os.Getenv("SMCPVERSION")
+	if v == "" {
+		panic("SMCPVERSION environment variable not set")
+	}
+	return version.ParseVersion(v)
 }
 
 func GetSampleArch() string {

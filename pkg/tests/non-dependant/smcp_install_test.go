@@ -21,15 +21,12 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
-)
-
-var (
-	smmr             = ossm.GetSMMRTemplate()
-	versionTemplates = ossm.GetSMCPTemplates()
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 func TestSMCPInstall(t *testing.T) {
@@ -39,50 +36,50 @@ func TestSMCPInstall(t *testing.T) {
 			oc.RecreateNamespace(t, meshNamespace)
 		})
 
-		versions := []string{"2.1", "2.2", "2.3", "2.4"}
+		t.NewSubTest("install").Run(func(t TestHelper) {
+			t.Logf("This test checks whether SMCP %s becomes ready", env.GetSMCPVersion())
 
-		// Testing install of SMCP for all supported version
-		for i := 0; i < len(versions); i++ {
-			version := versions[i]
-			smcpTemplate := versionTemplates[version]
-			t.NewSubTest("install_" + version).Run(func(t TestHelper) {
-				t.LogStep("Delete Namespace, Create Namespace and Install SMCP v" + version)
-				oc.RecreateNamespace(t, meshNamespace)
-				assertSMCPDeploysAndIsReady(t, smcpTemplate, smcp)
-				assertUninstallDeletesAllResources(t, smcpTemplate, smcp)
-			})
-		}
+			t.LogStepf("Delete and re-create Namespace")
+			oc.RecreateNamespace(t, meshNamespace)
 
-		// Testing upgrade of SMCP to all supported version
-		for i := 0; i < len(versions)-1; i++ {
-			fromVersion := versions[i]
-			toVersion := versions[i+1]
-			fromTemplate := versionTemplates[fromVersion]
-			toTemplate := versionTemplates[toVersion]
+			t.LogStepf("Create SMCP %s and verify it becomes ready", env.GetSMCPVersion())
+			assertSMCPDeploysAndIsReady(t, env.GetSMCPVersion())
 
-			t.NewSubTest(fmt.Sprintf("upgrade_%s_to_%s", fromVersion, toVersion)).Run(func(t TestHelper) {
-				oc.RecreateNamespace(t, meshNamespace)
-				assertSMCPDeploysAndIsReady(t, fromTemplate, smcp)
-				t.LogStep(fmt.Sprintf("Upgrade SMCP from v%s to v%s", fromVersion, toVersion))
-				assertSMCPDeploysAndIsReady(t, toTemplate, smcp)
-			})
-		}
+			t.LogStep("Delete SMCP and verify if this deletes all resources")
+			assertUninstallDeletesAllResources(t, env.GetSMCPVersion())
+		})
+
+		toVersion := env.GetSMCPVersion()
+		fromVersion := toVersion.GetPreviousVersion()
+
+		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
+			t.Logf("This test checks whether SMCP becomes ready after it's upgraded from %s to %s", fromVersion, toVersion)
+
+			t.LogStepf("Delete and re-create Namespace")
+			oc.RecreateNamespace(t, meshNamespace)
+
+			t.LogStepf("Create SMCP %s and verify it becomes ready", fromVersion)
+			assertSMCPDeploysAndIsReady(t, fromVersion)
+
+			t.LogStepf("Upgrade SMCP from %s to %s", fromVersion, toVersion)
+			assertSMCPDeploysAndIsReady(t, toVersion)
+		})
 	})
 }
 
-func assertSMCPDeploysAndIsReady(t test.TestHelper, smcpTemplate string, data interface{}) {
+func assertSMCPDeploysAndIsReady(t test.TestHelper, ver version.Version) {
 	t.LogStep("Install SMCP")
-	oc.ApplyTemplate(t, meshNamespace, smcpTemplate, data)
+	ossm.InstallSMCPVersion(t, meshNamespace, ver)
 	oc.WaitSMCPReady(t, meshNamespace, smcpName)
-	oc.ApplyString(t, meshNamespace, smmr)
+	oc.ApplyString(t, meshNamespace, ossm.GetSMMRTemplate())
 	t.LogStep("Check SMCP is Ready")
 	oc.WaitSMCPReady(t, meshNamespace, smcpName)
 }
 
-func assertUninstallDeletesAllResources(t test.TestHelper, smcpTemplate string, data interface{}) {
+func assertUninstallDeletesAllResources(t test.TestHelper, ver version.Version) {
 	t.LogStep("Delete SMCP in namespace " + meshNamespace)
-	oc.DeleteFromString(t, meshNamespace, smmr)
-	oc.DeleteFromTemplate(t, meshNamespace, smcpTemplate, data)
+	oc.DeleteFromString(t, meshNamespace, ossm.GetSMMRTemplate())
+	ossm.DeleteSMCPVersion(t, meshNamespace, ver)
 	retry.UntilSuccess(t, func(t TestHelper) {
 		oc.GetAllResources(t,
 			meshNamespace,

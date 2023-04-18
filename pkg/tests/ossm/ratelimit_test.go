@@ -23,7 +23,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
@@ -41,10 +40,7 @@ var (
 )
 
 func TestRateLimiting(t *testing.T) {
-	NewTest(t).Id("T28").Groups(Full).Run(func(t TestHelper) {
-		if env.GetSMCPVersion().GreaterThanOrEqualTo(version.SMCP_2_3) {
-			t.T().Skip("Rate limiting is not supported for SMCP versions v2.3+")
-		}
+	NewTest(t).Id("T28").Groups(Full).MaxVersion(version.SMCP_2_2).Run(func(t TestHelper) {
 
 		ns := "bookinfo"
 		nsRedis := "redis"
@@ -75,7 +71,7 @@ func TestRateLimiting(t *testing.T) {
 				"ERROR: rls pod expected to be running, but it is not"))
 
 		t.LogStep("Create EnvoyFilter for rate limiting")
-		oc.ApplyTemplate(t, meshNamespace, rateLimitFilterTemplate, Smcp)
+		oc.ApplyTemplate(t, meshNamespace, rateLimitFilterTemplate, DefaultSMCP())
 
 		productPageURL := app.BookinfoProductPageURL(t, meshNamespace)
 		t.LogStep("Make 3 request to validate rate limit: first should work, second should fail with 429, third should work again after wait more than 1 seconds")

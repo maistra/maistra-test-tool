@@ -71,15 +71,3 @@ func until(n int) []int {
 	}
 	return nums
 }
-
-type SMCP struct {
-	Name      string `default:"basic"`
-	Namespace string `default:"istio-system"`
-	Rosa      bool   `default:"false"`
-}
-
-// WithName returns a copy of this SMCP with the name changed to the specified name
-func (s SMCP) WithName(name string) SMCP {
-	s.Name = name // NOTE: this doesn't change the SMCP that the WithName() method was invoked on, because the method receiver is not a pointer
-	return s
-}

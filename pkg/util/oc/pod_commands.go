@@ -168,6 +168,7 @@ func (o OC) DeletePod(t test.TestHelper, podLocator PodLocatorFunc) {
 		pod = podLocator(t, &o)
 	})
 	retry.UntilSuccess(t, func(t test.TestHelper) {
+		t.T().Helper()
 		shell.Execute(t,
 			fmt.Sprintf(`oc delete pod %s -n %s`, pod.Name, pod.Namespace),
 			assert.OutputContains("deleted",

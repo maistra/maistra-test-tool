@@ -18,8 +18,8 @@ func TestSMCPMultiple(t *testing.T) {
 		t.Log("This test verifies whether the operator only reconciles one SMCP when two exist in a namespace")
 		t.Log("See https://issues.redhat.com/browse/OSSM-2189")
 
-		smcp1 := ossm.SMCP{Name: "smcp1", Namespace: meshNamespace, Rosa: env.IsRosa()}
-		smcp2 := ossm.SMCP{Name: "smcp2", Namespace: meshNamespace, Rosa: env.IsRosa()}
+		smcp1 := ossm.DefaultSMCP().WithName("smcp1")
+		smcp2 := ossm.DefaultSMCP().WithName("smcp2")
 
 		t.Cleanup(func() {
 			t.LogStepf("Delete namespace %s", meshNamespace)
@@ -45,14 +45,14 @@ func TestSMCPMultiple(t *testing.T) {
 		oc.DeleteResource(t, "", "validatingwebhookconfiguration", "openshift-operators.servicemesh-resources.maistra.io")
 
 		t.LogStep("Create the first SMCP")
-		oc.ApplyTemplate(t, meshNamespace, ossm.GetDefaultSMCPTemplate(), smcp1)
+		ossm.InstallSMCPCustom(t, meshNamespace, smcp1)
 
 		t.LogStep("Check whether the first SMCP gets reconciled and becomes ready")
 		oc.WaitSMCPReady(t, meshNamespace, smcp1.Name)
 		t.LogSuccess("First SMCP is ready")
 
 		t.LogStep("Create the second SMCP")
-		oc.ApplyTemplate(t, meshNamespace, ossm.GetDefaultSMCPTemplate(), smcp2)
+		ossm.InstallSMCPCustom(t, meshNamespace, smcp2)
 
 		t.LogStep("Check whether the second SMCP shows ErrMultipleSMCPs")
 		retry.UntilSuccess(t, func(t TestHelper) {
