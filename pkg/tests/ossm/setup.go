@@ -87,6 +87,10 @@ func SetupNamespacesAndControlPlane(t test.TestHelper) {
 	}
 }
 
+func GetDefaultSMCPTemplate() string {
+	return GetSMCPTemplate(env.GetDefaultSMCPVersion())
+}
+
 func GetSMCPTemplate(version string) string {
 	versionTemplates := GetSMCPTemplates()
 
@@ -95,10 +99,6 @@ func GetSMCPTemplate(version string) string {
 	} else {
 		panic(fmt.Sprintf("Unsupported SMCP version: %s", version))
 	}
-}
-
-func GetDefaultSMCPTemplate() string {
-	return GetSMCPTemplate(env.GetDefaultSMCPVersion())
 }
 
 func InstallSMCP(t test.TestHelper, ns, version string) {
