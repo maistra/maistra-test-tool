@@ -89,7 +89,7 @@ func TestOperator(t *testing.T) {
 		})
 
 		// Reference: https://issues.redhat.com/browse/OSSM-3516
-		t.NewSubTest("Run SMCP Infra Nodes").Run(func(t TestHelper) {
+		t.NewSubTest("control plane").Run(func(t TestHelper) {
 			t.Log("Testing: Run OSSM Operator on infra nodes")
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
