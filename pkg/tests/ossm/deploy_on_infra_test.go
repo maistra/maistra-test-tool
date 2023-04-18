@@ -125,7 +125,7 @@ spec:
 				oc.WaitSMCPReady(t, meshNamespace, smcpName)
 			})
 
-			t.LogStep("Verify that the smcp pods are running on the infra node. Pod expected to be moved: istiod, istio-ingressgateway, istio-egressgateway, jaeger, grafana, prometheus")
+			t.LogStep("Verify that the following control plane pods are running on the infra node: istiod, istio-ingressgateway, istio-egressgateway, jaeger, grafana, prometheus")
 			verifyPodRunningInNode(t)
 		})
 	})
