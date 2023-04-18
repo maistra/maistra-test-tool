@@ -87,6 +87,17 @@ func (o OC) WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
 	}
 }
 
+func (o OC) WaitPodsReady(t test.TestHelper, ns, selector string) {
+	t.T().Helper()
+	output := o.Invokef(t, "kubectl -n %s wait --for condition=Ready pod -l %s --timeout 30s || true", ns, selector) // TODO: Change shell execute to do not fail on error
+	// check if "condition met" was returned for all pods matching selector
+	if strings.Count(output, "\n") == strings.Count(output, "condition met") {
+		t.Logf("Pods %s in namespace %s are ready!", selector, ns)
+	} else {
+		t.Fatalf("Error: pods %s in namespace %s are not ready: %s", selector, ns, output)
+	}
+}
+
 func (o OC) WaitDeploymentRolloutComplete(t test.TestHelper, ns string, deploymentNames ...string) {
 	t.T().Helper()
 	timeout := 3 * time.Minute // TODO: make this configurable?
