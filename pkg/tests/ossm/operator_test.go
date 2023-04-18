@@ -34,10 +34,9 @@ import (
 
 var workername string
 
-// TestOperator tests scenario to cover all the test cases related to the OSSM operators
-func TestOperator(t *testing.T) {
+func TestDeployOnInfraNodes(t *testing.T) {
 	NewTest(t).Id("T40").Groups(Full).Run(func(t TestHelper) {
-		t.Log("Test related to OSSM Operators and Istio resources")
+		t.Log("This test verifies that the OSSM operator and Istio components can be configured to run on infrastructure nodes")
 		if Smcp.Rosa {
 			t.Skip("Skipping test on ROSA") // Now in Rosa this test need to be skipped due to lack of permissions in ROSA cluster
 		}
@@ -52,9 +51,12 @@ func TestOperator(t *testing.T) {
 		oc.Label(t, "", "node", workername, "node-role.kubernetes.io=infra")
 		t.Log(fmt.Sprintf("Worker node selected: %s", workername))
 
-		// Reference: https://issues.redhat.com/browse/OSSM-2342
-		t.NewSubTest("Run on Infra Nodes").Run(func(t TestHelper) {
-			t.Log("Testing: Run OSSM Operator on infra nodes")
+		t.LogStep("Taint node and edit the subscription to add the infra node to the node selector")
+		shell.Execute(t,
+			`oc adm taint nodes -l node-role.kubernetes.io/infra node-role.kubernetes.io/infra=reserved:NoSchedule node-role.kubernetes.io/infra=reserved:NoExecute`)
+
+		t.NewSubTest("operator").Run(func(t TestHelper) {
+			t.Log("Verify OSSM Operator is deployed on infra node when configured")
 			t.Log("Reference: https://issues.redhat.com/browse/OSSM-2342")
 			t.Cleanup(func() {
 				// Untaint the infra node and remove modification in subscription
@@ -95,8 +97,7 @@ spec:
 			})
 		})
 
-		// Reference: https://issues.redhat.com/browse/OSSM-3516
-		t.NewSubTest("Run SMCP Infra Nodes").Run(func(t TestHelper) {
+		t.NewSubTest("control plane").Run(func(t TestHelper) {
 			t.Log("Testing: Run OSSM Operator on infra nodes")
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
