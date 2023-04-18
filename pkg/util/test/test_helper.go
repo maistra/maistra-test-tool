@@ -34,7 +34,6 @@ type TestHelper interface {
 	Fatalf(format string, args ...any)
 	Log(args ...any)
 	Logf(format string, args ...any)
-	Helper()
 
 	NewSubTest(name string) Test
 
@@ -89,10 +88,6 @@ func (t *testHelper) SkipNow() {
 
 func (t *testHelper) Skipped() bool {
 	return t.t.Skipped()
-}
-
-func (t *testHelper) Helper() {
-	t.t.Helper()
 }
 
 func (t *testHelper) Log(args ...any) {
