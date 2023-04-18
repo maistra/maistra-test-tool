@@ -137,7 +137,6 @@ spec:
 }
 
 func assertPodScheduledToNode(t TestHelper, pLabel string) {
-	t.Helper()
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		podLocator := pod.MatchingSelector(pLabel, meshNamespace)
 		po := podLocator(t, oc.DefaultOC)
