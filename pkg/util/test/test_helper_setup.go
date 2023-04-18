@@ -50,9 +50,6 @@ func (t *setupTestHelper) Skipped() bool {
 	panic("not applicable")
 }
 
-func (t *setupTestHelper) Helper() {
-}
-
 func (t *setupTestHelper) Log(args ...any) {
 	log.Log.Info(args...)
 }
