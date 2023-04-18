@@ -7,5 +7,5 @@ directories=$(find . -name "*_test.go" | xargs -n1 dirname | sort -u)
 for dir in $directories
 do
   echo "Compiling tests in $dir ..."
-  go test -c $dir
+  go test -c $dir -o /dev/null
 done
