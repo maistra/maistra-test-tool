@@ -25,7 +25,6 @@ import (
 	"golang.org/x/net/publicsuffix"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 var (
@@ -64,16 +63,6 @@ func containsSessionCookie(cookies []*http.Cookie) bool {
 		}
 	}
 	return false
-}
-
-// CloseResponseBody ...
-func CloseResponseBody(r *http.Response) {
-	if r == nil {
-		return
-	}
-	if err := r.Body.Close(); err != nil {
-		log.Log.Error(err)
-	}
 }
 
 // CompareHTTPResponse compares a HTTP Response body with a model HTML file

@@ -15,28 +15,8 @@
 package util
 
 import (
-	"bytes"
 	"fmt"
-	"text/template"
-
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
-	template2 "github.com/maistra/maistra-test-tool/pkg/util/template"
 )
-
-// RunTemplate renders a yaml template string in the yaml_configs.go file
-func RunTemplate(tmpl string, input interface{}) string {
-	tt, err := template.New("").
-		Funcs(template2.TemplateFuncMap).
-		Parse(tmpl)
-	if err != nil {
-		log.Log.Fatal(err)
-	}
-	var buf bytes.Buffer
-	if err := tt.Execute(&buf, input); err != nil {
-		log.Log.Fatal(err)
-	}
-	return buf.String()
-}
 
 func IsWithinPercentage(count int, total int, rate float64, tolerance float64) bool {
 	minimum := int((rate - tolerance) * float64(total))

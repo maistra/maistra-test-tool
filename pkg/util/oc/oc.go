@@ -1,18 +1,9 @@
 package oc
 
 import (
-	"fmt"
-	"math/rand"
-	"time"
-
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 var DefaultOC = NewOC("")
 
@@ -172,7 +163,7 @@ func WaitCondition(t test.TestHelper, ns string, kind string, name string, condi
 
 func WaitSMMRReady(t test.TestHelper, ns string) {
 	t.T().Helper()
-	shell.Executef(t, `oc -n %s wait --for condition=Ready smmr/default --timeout 300s`, ns)
+	DefaultOC.WaitSMMRReady(t, ns)
 }
 
 func GetAllResources(t test.TestHelper, ns string, checks ...common.CheckFunc) {
@@ -187,31 +178,31 @@ func DeletePod(t test.TestHelper, podLocator PodLocatorFunc) {
 
 func ScaleDeploymentAndWait(t test.TestHelper, ns string, name string, replicas int) {
 	t.T().Helper()
-	shell.Executef(t, `oc -n %s scale deployment %s --replicas %d`, ns, name, replicas)
-	WaitDeploymentRolloutComplete(t, ns, name)
+	DefaultOC.ScaleDeploymentAndWait(t, ns, name, replicas)
 }
 
 // TouchSMCP causes the SMCP to be fully reconciled
 func TouchSMCP(t test.TestHelper, ns string, name string) {
 	t.T().Helper()
-	Patch(t, ns, "smcp", name, "merge", fmt.Sprintf(`{"spec":{"techPreview":{"foo":"foo%d"}}}`, rand.Int()))
+	DefaultOC.TouchSMCP(t, ns, name)
 }
 
 func Label(t test.TestHelper, ns string, kind string, name string, labels string) {
 	t.T().Helper()
-	nsFlag := ""
-	if ns != "" {
-		nsFlag = "-n " + ns
-	}
-	shell.Executef(t, "oc %slabel %s %s %s", nsFlag, kind, name, labels)
+	DefaultOC.Label(t, ns, kind, name, labels)
 }
 
-func Get(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) {
+func Get(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) string {
 	t.T().Helper()
-	shell.Execute(t, fmt.Sprintf("oc %s get %s/%s", nsFlag(ns), kind, name), checks...)
+	return DefaultOC.Get(t, ns, kind, name, checks...)
 }
 
-func GetYaml(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) {
+func GetYaml(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) string {
 	t.T().Helper()
-	shell.Execute(t, fmt.Sprintf("oc %s get %s/%s -oyaml", nsFlag(ns), kind, name), checks...)
+	return DefaultOC.GetYaml(t, ns, kind, name, checks...)
+}
+
+func GetProxy(t test.TestHelper) Proxy {
+	t.T().Helper()
+	return DefaultOC.GetProxy(t)
 }

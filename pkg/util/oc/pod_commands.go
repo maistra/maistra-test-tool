@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -60,13 +59,17 @@ func (o OC) WaitPodRunning(t test.TestHelper, podLocator PodLocatorFunc) {
 	t.T().Helper()
 	retry.UntilSuccessWithOptions(t, retry.Options().LogAttempts(false), func(t test.TestHelper) {
 		t.T().Helper()
-		pod := podLocator(t, &o)
-		status := util.GetPodStatus(pod.Namespace, pod.Name)
-		if status == "Running" {
-			t.Logf("Pod %s/%s is running!", pod.Namespace, pod.Name)
-		} else {
-			t.Fatalf("Pod %s/%s is not running: %s", pod.Namespace, pod.Name, status)
-		}
+
+		o.withKubeconfig(t, func() {
+			t.T().Helper()
+			pod := podLocator(t, &o)
+			phase := shell.Executef(t, `kubectl -n %s get pods %s -o jsonpath="{.status.phase}"`, pod.Namespace, pod.Name)
+			if phase == "Running" {
+				t.Logf("Pod %s/%s is running!", pod.Namespace, pod.Name)
+			} else {
+				t.Fatalf("Pod %s/%s is not running: %s", pod.Namespace, pod.Name, phase)
+			}
+		})
 	})
 }
 
@@ -129,6 +132,14 @@ func (o OC) WaitCondition(t test.TestHelper, ns string, kind string, name string
 			assert.OutputContains(condition,
 				fmt.Sprintf("Condition %s met by %s %s/%s", condition, kind, ns, name),
 				fmt.Sprintf("Condition %s not met %s %s/%s, retrying", condition, kind, ns, name)))
+	})
+}
+
+func (o OC) WaitSMMRReady(t test.TestHelper, ns string) {
+	t.T().Helper()
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		shell.Executef(t, `oc -n %s wait --for condition=Ready smmr/default --timeout 300s`, ns)
 	})
 }
 
