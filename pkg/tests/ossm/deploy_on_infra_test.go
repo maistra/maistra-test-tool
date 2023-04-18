@@ -53,11 +53,9 @@ func TestDeployOnInfraNodes(t *testing.T) {
 
 		t.LogStep("Setup: Get a worker node from the cluster that does not have the istio operator installed, label it as infra")
 		workername = pickWorkerNode(t)
+		t.Log(fmt.Sprintf("Worker node selected: %s", workername))
 		oc.Label(t, "", "node", workername, "node-role.kubernetes.io/infra=")
 		oc.Label(t, "", "node", workername, "node-role.kubernetes.io=infra")
-		t.Log(fmt.Sprintf("Worker node selected: %s", workername))
-
-		t.LogStep("Taint node and edit the subscription to add the infra node to the node selector")
 		shell.Execute(t,
 			`oc adm taint nodes -l node-role.kubernetes.io/infra node-role.kubernetes.io/infra=reserved:NoSchedule node-role.kubernetes.io/infra=reserved:NoExecute`)
 
