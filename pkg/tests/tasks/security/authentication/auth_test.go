@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
-	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
@@ -168,9 +167,9 @@ func TestAuthPolicy(t *testing.T) {
 			})
 
 			t.LogStep("Apply a JWT policy")
-			oc.ApplyTemplate(t, meshNamespace, JWTAuthPolicyTemplate, ossm.Smcp)
+			oc.ApplyString(t, meshNamespace, JWTAuthPolicy)
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, meshNamespace, JWTAuthPolicyTemplate, ossm.Smcp)
+				oc.DeleteFromString(t, meshNamespace, JWTAuthPolicy)
 			})
 
 			t.LogStep("Check whether request without token returns 200")
@@ -195,9 +194,9 @@ func TestAuthPolicy(t *testing.T) {
 
 		t.NewSubTest("end-user require JWT").Run(func(t TestHelper) {
 			t.Log("Require a valid token")
-			oc.ApplyTemplate(t, meshNamespace, RequireTokenPolicyTemplate, ossm.Smcp)
+			oc.ApplyString(t, meshNamespace, RequireTokenPolicy)
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, meshNamespace, RequireTokenPolicyTemplate, ossm.Smcp)
+				oc.DeleteFromString(t, meshNamespace, RequireTokenPolicy)
 			})
 
 			retry.UntilSuccess(t, func(t TestHelper) {
@@ -207,9 +206,9 @@ func TestAuthPolicy(t *testing.T) {
 
 		t.NewSubTest("end-user require JWT per path").Run(func(t TestHelper) {
 			t.Log("Require valid tokens per-path")
-			oc.ApplyTemplate(t, meshNamespace, RequireTokenPathPolicyTemplate, ossm.Smcp)
+			oc.ApplyString(t, meshNamespace, RequireTokenPathPolicy)
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, meshNamespace, RequireTokenPathPolicyTemplate, ossm.Smcp)
+				oc.DeleteFromString(t, meshNamespace, RequireTokenPathPolicy)
 			})
 
 			retry.UntilSuccess(t, func(t TestHelper) {
@@ -342,7 +341,7 @@ spec:
         host: httpbin.foo.svc.cluster.local
 `
 
-	JWTAuthPolicyTemplate = `
+	JWTAuthPolicy = `
 apiVersion: security.istio.io/v1beta1
 kind: RequestAuthentication
 metadata:
@@ -356,7 +355,7 @@ spec:
     jwksUri: https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/jwks.json
 `
 
-	RequireTokenPolicyTemplate = `
+	RequireTokenPolicy = `
 apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
@@ -372,7 +371,7 @@ spec:
         notRequestPrincipals: ["*"]
 `
 
-	RequireTokenPathPolicyTemplate = `
+	RequireTokenPathPolicy = `
 apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
