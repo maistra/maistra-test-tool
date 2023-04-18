@@ -30,6 +30,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 var workername string
@@ -37,10 +38,15 @@ var workername string
 func TestDeployOnInfraNodes(t *testing.T) {
 	NewTest(t).Id("T40").Groups(Full).Run(func(t TestHelper) {
 		t.Log("This test verifies that the OSSM operator and Istio components can be configured to run on infrastructure nodes")
+		if !env.GetSMCPVersion().GreaterThanOrEqualTo(version.SMCP_2_3) {
+			t.T().Skip("Deploy On Infra node is available in SMCP versions v2.3+")
+		}
 		if Smcp.Rosa {
-			t.Skip("Skipping test on ROSA") // Now in Rosa this test need to be skipped due to lack of permissions in ROSA cluster
+			t.Skip("Skipping test on ROSA due to lack of permissions")
 		}
 		t.Cleanup(func() {
+			shell.Execute(t,
+				`oc adm taint nodes -l node-role.kubernetes.io/infra node-role.kubernetes.io/infra=reserved:NoSchedule- node-role.kubernetes.io/infra=reserved:NoExecute-`)
 			oc.Label(t, "", "node", workername, "node-role.kubernetes.io/infra-")
 			oc.Label(t, "", "node", workername, "node-role.kubernetes.io-")
 		})
@@ -59,14 +65,12 @@ func TestDeployOnInfraNodes(t *testing.T) {
 			t.Log("Verify OSSM Operator is deployed on infra node when configured")
 			t.Log("Reference: https://issues.redhat.com/browse/OSSM-2342")
 			t.Cleanup(func() {
-				// Untaint the infra node and remove modification in subscription
-				shell.Execute(t,
-					`oc adm taint nodes -l node-role.kubernetes.io/infra node-role.kubernetes.io/infra=reserved:NoSchedule- node-role.kubernetes.io/infra=reserved:NoExecute-`)
 				shell.Execute(t,
 					`oc patch subscription servicemeshoperator -n openshift-operators --type json -p='[{"op": "remove", "path": "/spec/config/tolerations"}]'`)
 				oc.WaitSMCPReady(t, meshNamespace, smcpName) // Wait for the SMCP to be ready before move to next subtest case (Because untaint)
 			})
 
+			t.LogStep("Patch subscription to run on infra nodes and wait for the operator pod to be ready")
 			oc.Patch(t, "openshift-operators", "subscription", "servicemeshoperator", "merge", `
 spec:
   config:
@@ -82,16 +86,14 @@ spec:
 `)
 
 			t.LogStep(fmt.Sprintf("Verify operator pod is running on the infra node. Node expected: %s", workername))
-			cmd := fmt.Sprintf(
-				`oc get pods -n openshift-operators -l name=istio-operator --field-selector spec.nodeName=%s -o jsonpath='{.items[0].metadata.name}'`,
-				workername)
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				operatorPod := pod.MatchingSelector("name=istio-operator", "openshift-operators")
-				oc.WaitPodReady(t, operatorPod)
+				locator := pod.MatchingSelector("name=istio-operator", "openshift-operators")
+				operatorPod := locator(t, oc.DefaultOC)
+				oc.WaitPodReady(t, locator)
 				shell.Execute(t,
 					fmt.Sprintf(`oc get pod -n openshift-operators %s -o jsonpath='{.spec.nodeName}'`, operatorPod.Name),
 					assert.OutputContains(
-						"istio-operator-",
+						workername,
 						"Success: Operator pod is running on the infra node",
 						"Error: Operator pod is not running on the infra node"))
 			})
@@ -101,7 +103,6 @@ spec:
 			t.Log("Testing: Run OSSM Operator on infra nodes")
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
-				// Need to find a way to revert the patch
 				oc.ApplyString(t, meshNamespace, util.RunTemplate(GetSMCPTemplate(env.GetDefaultSMCPVersion()), Smcp))
 				oc.WaitSMCPReady(t, meshNamespace, smcpName)
 			})
@@ -178,6 +179,5 @@ func getAllPodsFromNode(t test.TestHelper, namespace string) []string {
 		}
 	}
 
-	// return the list of non-empty pod names
 	return nonEmptyPods
 }
