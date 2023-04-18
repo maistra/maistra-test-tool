@@ -19,9 +19,6 @@ import (
 	"strings"
 	"testing"
 
-	"golang.org/x/exp/slices"
-
-	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
@@ -63,10 +60,14 @@ func TestDeployOnInfraNodes(t *testing.T) {
 			t.Log("Verify OSSM Operator is deployed on infra node when configured")
 			t.Log("Reference: https://issues.redhat.com/browse/OSSM-2342")
 			t.Cleanup(func() {
-				shell.Execute(t,
-					`oc patch subscription servicemeshoperator -n openshift-operators --type json -p='[{"op": "remove", "path": "/spec/config/tolerations"}]'`)
-				oc.WaitSMCPReady(t, meshNamespace, smcpName) // Wait for the SMCP to be ready before move to next subtest case (Because untaint)
+				oc.Patch(t, "openshift-operators", "subscription", "servicemeshoperator", "json", `[{"op": "remove", "path": "/spec/config/tolerations"}]`)
 			})
+
+			t.LogStep("Verify if subscription exists, if not exist test will be skipped")
+			output := shell.Execute(t, `oc get subscription -n openshift-operators servicemeshoperator || true`)
+			if strings.Contains(output, "NotFound") {
+				t.Skip("Subscription not found, test will be skipped")
+			}
 
 			t.LogStep("Patch subscription to run on infra nodes and wait for the operator pod to be ready")
 			oc.Patch(t, "openshift-operators", "subscription", "servicemeshoperator", "merge", `
@@ -83,7 +84,7 @@ spec:
       value: reserved
 `)
 
-			t.LogStep(fmt.Sprintf("Verify operator pod is running on the infra node. Node expected: %s", workername))
+			t.LogStepf("Verify operator pod is running on the infra node. Node expected: %s", workername)
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				locator := pod.MatchingSelector("name=istio-operator", "openshift-operators")
 				oc.WaitPodReady(t, locator)
@@ -92,13 +93,13 @@ spec:
 					fmt.Sprintf(`oc get pod -n openshift-operators %s -o jsonpath='{.spec.nodeName}'`, operatorPod.Name),
 					assert.OutputContains(
 						workername,
-						"Success: Operator pod is running on the infra node",
-						"Error: Operator pod is not running on the infra node"))
+						"Operator pod is running on the infra node",
+						"Operator pod is not running on the infra node"))
 			})
 		})
 
 		t.NewSubTest("control plane").Run(func(t TestHelper) {
-			t.Log("Testing: Run OSSM Operator on infra nodes")
+			t.Log("Verify that all control plane pods are deployed on infra node when configured")
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
 				oc.ApplyTemplate(t, meshNamespace, GetSMCPTemplate(env.GetDefaultSMCPVersion()), Smcp)
@@ -126,30 +127,27 @@ spec:
 			})
 
 			t.LogStep("Verify that the following control plane pods are running on the infra node: istiod, istio-ingressgateway, istio-egressgateway, jaeger, grafana, prometheus")
-			verifyPodRunningInNode(t)
+			istioPodLabelSelectors := []string{"app=istiod", "app=istio-ingressgateway", "app=istio-egressgateway", "app=jaeger", "app=grafana", "app=prometheus"}
+			for _, pLabel := range istioPodLabelSelectors {
+				assertPodScheduledToNode(t, pLabel)
+			}
+
 		})
 	})
 }
 
-func verifyPodRunningInNode(t TestHelper) {
-	istioPods := []string{"istiod", "istio-ingressgateway", "istio-egressgateway", "jaeger", "grafana", "prometheus"}
-	for _, p := range istioPods {
-		podLocator := pod.MatchingSelector("app="+p, meshNamespace)
+func assertPodScheduledToNode(t TestHelper, pLabel string) {
+	t.Helper()
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		podLocator := pod.MatchingSelector(pLabel, meshNamespace)
 		po := podLocator(t, oc.DefaultOC)
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			nsPods := getAllPodsFromNode(t, meshNamespace)
-			if !slices.Contains(nsPods, po.Name) {
-				t.Log("The pod is not running on the infra node, delete it and wait for it to be recreated")
-				oc.DeletePod(t, pod.MatchingSelector("app="+p, meshNamespace))
-				nsPods = getAllPodsFromNode(t, meshNamespace)
-				podLocator = pod.MatchingSelector("app="+p, meshNamespace)
-				po = podLocator(t, oc.DefaultOC)
-				if !slices.Contains(nsPods, po.Name) {
-					t.Fatalf("Pod %s is not running on the infra node", p)
-				}
-			}
-		})
-	}
+		shell.Execute(t,
+			fmt.Sprintf(`oc get pod -n %s %s -o jsonpath='{.spec.nodeName}'`, meshNamespace, po.Name),
+			assert.OutputContains(
+				workername,
+				fmt.Sprintf("%s is running on the infra node", po.Name),
+				fmt.Sprintf("%s is not running on the infra node", po.Name)))
+	})
 }
 
 func pickWorkerNode(t test.TestHelper) string {
@@ -161,21 +159,4 @@ func pickWorkerNode(t test.TestHelper) string {
 	}
 
 	return workername
-}
-
-func getAllPodsFromNode(t test.TestHelper, namespace string) []string {
-	// split the output into a list of strings
-	nsPodsOutput := shell.Executef(t,
-		`kubectl get pods -n %s --field-selector spec.nodeName=%s -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'`,
-		namespace,
-		workername)
-	nsPods := strings.Split(nsPodsOutput, "\n")
-	nonEmptyPods := []string{}
-	for _, pod := range nsPods {
-		if pod != "" {
-			nonEmptyPods = append(nonEmptyPods, pod)
-		}
-	}
-
-	return nonEmptyPods
 }

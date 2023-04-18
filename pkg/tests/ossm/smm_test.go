@@ -12,9 +12,9 @@ import (
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func TestSMM(t *testing.T) {
+func TestSMMCreationAndDeletion(t *testing.T) {
 	NewTest(t).Id("T39").Groups(Full).Run(func(t TestHelper) {
-		t.Log("This Suite verifies SMM and SMMR behaviors")
+		t.Log("This Suite verifies SMM and SMMR behaviors when SMM is created and deleted")
 		foo := "foo"
 		bar := "bar"
 		t.Cleanup(func() {
