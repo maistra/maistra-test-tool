@@ -40,7 +40,7 @@ func TestTrafficShifting(t *testing.T) {
 		app.InstallAndWaitReady(t, app.Bookinfo(ns))
 		productpageURL := app.BookinfoProductPageURL(t, meshNamespace)
 
-		oc.ApplyString(t, ns, bookinfoVirtualServicesAllV1)
+		oc.ApplyString(t, ns, app.BookinfoVirtualServicesAllV1)
 
 		t.NewSubTest("50 percent to v3").Run(func(t TestHelper) {
 			t.LogStep("configure VirtualService to split traffic 50% to v1 and 50% to v3")

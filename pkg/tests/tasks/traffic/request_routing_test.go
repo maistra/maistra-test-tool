@@ -39,7 +39,7 @@ func TestRequestRouting(t *testing.T) {
 		testUserCookieJar := app.BookinfoLogin(t, meshNamespace)
 
 		t.NewSubTest("not-logged-in").Run(func(t TestHelper) {
-			oc.ApplyString(t, ns, bookinfoVirtualServicesAllV1)
+			oc.ApplyString(t, ns, app.BookinfoVirtualServicesAllV1)
 
 			t.LogStep("get productpage without logging in; expect to get reviews-v1 (5x)")
 			retry.UntilSuccess(t, func(t TestHelper) {
@@ -56,7 +56,7 @@ func TestRequestRouting(t *testing.T) {
 		})
 
 		t.NewSubTest("logged-in").Run(func(t TestHelper) {
-			oc.ApplyString(t, ns, bookinfoReviewsVirtualServiceV2)
+			oc.ApplyString(t, ns, app.BookinfoVirtualServiceReviewsV2)
 
 			t.LogStep("get productpage as logged-in user; expect to get reviews-v2 (5x)")
 			retry.UntilSuccess(t, func(t TestHelper) {

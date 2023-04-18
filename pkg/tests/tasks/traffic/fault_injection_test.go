@@ -47,8 +47,8 @@ func TestFaultInjection(t *testing.T) {
 
 		testUserCookieJar := app.BookinfoLogin(t, meshNamespace)
 
-		oc.ApplyString(t, ns, bookinfoVirtualServicesAllV1)
-		oc.ApplyString(t, ns, bookinfoReviewsVirtualServiceV2)
+		oc.ApplyString(t, ns, app.BookinfoVirtualServicesAllV1)
+		oc.ApplyString(t, ns, app.BookinfoVirtualServiceReviewsV2)
 
 		t.NewSubTest("ratings-fault-delay").Run(func(t TestHelper) {
 			oc.ApplyString(t, ns, ratingsVirtualServiceWithFixedDelay)
