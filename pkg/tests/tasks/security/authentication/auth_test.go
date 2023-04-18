@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
@@ -40,6 +41,9 @@ func TestAuthPolicy(t *testing.T) {
 			oc.RecreateNamespace(t, "foo", "bar", "legacy")
 		})
 
+		ossm.DeployControlPlane(t)
+
+		t.LogStep("Install httpbin and sleep in multiple namespaces")
 		app.InstallAndWaitReady(t,
 			app.Httpbin("foo"),
 			app.Httpbin("bar"),

@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
@@ -38,6 +39,9 @@ func TestRequestTimeouts(t *testing.T) {
 			oc.RecreateNamespace(t, ns)
 		})
 
+		ossm.DeployControlPlane(t)
+
+		t.LogStep("Install Bookinfo")
 		app.InstallAndWaitReady(t, app.Bookinfo(ns))
 
 		productpageURL := app.BookinfoProductPageURL(t, meshNamespace)

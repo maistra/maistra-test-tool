@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	. "github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
@@ -34,6 +35,9 @@ func TestMirroring(t *testing.T) {
 			oc.RecreateNamespace(t, ns)
 		})
 
+		ossm.DeployControlPlane(t)
+
+		t.LogStep("Install httpbin-v1, httpbin-v2, and sleep")
 		app.InstallAndWaitReady(t,
 			app.HttpbinV1(ns),
 			app.HttpbinV2(ns),

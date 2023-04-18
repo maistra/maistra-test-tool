@@ -36,6 +36,8 @@ func TestBookinfoInjection(t *testing.T) {
 			app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
 		})
 
+		DeployControlPlane(t)
+
 		t.LogStep("Install bookinfo pods with sidecar and sleep pod without sidecar")
 		app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
 
