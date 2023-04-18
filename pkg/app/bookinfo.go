@@ -129,6 +129,9 @@ var (
 	//go:embed "yaml/bookinfo-ratings-v2.yaml"
 	BookinfoRatingsV2Template string
 
+	//go:embed "yaml/virtual-service-reviews-v2.yaml"
+	BookinfoVirtualServiceReviewsV2 string
+
 	//go:embed "yaml/virtual-service-reviews-v3.yaml"
 	BookinfoVirtualServiceReviewsV3 string
 
@@ -140,4 +143,7 @@ var (
 
 	//go:embed "yaml/destination-rule-all-mtls.yaml"
 	BookinfoRuleAllMTLS string
+
+	//go:embed "yaml/virtual-service-all-v1.yaml"
+	BookinfoVirtualServicesAllV1 string
 )

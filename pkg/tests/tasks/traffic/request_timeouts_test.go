@@ -42,7 +42,7 @@ func TestRequestTimeouts(t *testing.T) {
 
 		productpageURL := app.BookinfoProductPageURL(t, meshNamespace)
 
-		oc.ApplyString(t, ns, bookinfoVirtualServicesAllV1)
+		oc.ApplyString(t, ns, app.BookinfoVirtualServicesAllV1)
 
 		t.LogStep("make sure there is no timeout before applying delay and timeout in VirtualServices")
 		retry.UntilSuccess(t, func(t TestHelper) {
