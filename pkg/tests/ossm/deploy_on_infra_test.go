@@ -103,7 +103,7 @@ spec:
 			t.Log("Testing: Run OSSM Operator on infra nodes")
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
-				oc.ApplyString(t, meshNamespace, util.RunTemplate(GetSMCPTemplate(env.GetDefaultSMCPVersion()), Smcp))
+				oc.ApplyTemplate(t, meshNamespace, GetSMCPTemplate(env.GetDefaultSMCPVersion()), Smcp)
 				oc.WaitSMCPReady(t, meshNamespace, smcpName)
 			})
 
