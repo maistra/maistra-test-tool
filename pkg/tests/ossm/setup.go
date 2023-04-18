@@ -77,7 +77,7 @@ func BasicSetup() {
 // Initialize a default SMCP and SMMR
 func SetupNamespacesAndControlPlane() {
 	BasicSetup()
-	tmpl := getSMCPTemplate(env.GetDefaultSMCPVersion())
+	tmpl := GetSMCPTemplate(env.GetDefaultSMCPVersion())
 	util.KubeApplyContents(meshNamespace, util.RunTemplate(tmpl, Smcp))
 	util.KubeApplyContents(meshNamespace, smmr)
 	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, Smcp.Name)
@@ -87,7 +87,7 @@ func SetupNamespacesAndControlPlane() {
 	}
 }
 
-func getSMCPTemplate(version string) string {
+func GetSMCPTemplate(version string) string {
 	versionTemplates := GetSMCPTemplates()
 
 	if tmpl, ok := versionTemplates[version]; ok {
@@ -98,5 +98,5 @@ func getSMCPTemplate(version string) string {
 }
 
 func InstallSMCP(t test.TestHelper, ns, version string) {
-	oc.ApplyTemplate(t, ns, getSMCPTemplate(version), Smcp)
+	oc.ApplyTemplate(t, ns, GetSMCPTemplate(version), Smcp)
 }

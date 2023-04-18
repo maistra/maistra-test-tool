@@ -94,7 +94,7 @@ func TestOperator(t *testing.T) {
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
 				// Need to find a way to revert the patch
-				oc.ApplyString(t, meshNamespace, util.RunTemplate(getSMCPTemplate(env.GetDefaultSMCPVersion()), Smcp))
+				oc.ApplyString(t, meshNamespace, util.RunTemplate(GetSMCPTemplate(env.GetDefaultSMCPVersion()), Smcp))
 				oc.WaitSMCPReady(t, meshNamespace, smcpName)
 			})
 
