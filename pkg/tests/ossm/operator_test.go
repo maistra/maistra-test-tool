@@ -37,7 +37,7 @@ var workername string
 // TestOperator tests scenario to cover all the test cases related to the OSSM operators
 func TestOperator(t *testing.T) {
 	NewTest(t).Id("T40").Groups(Full).Run(func(t TestHelper) {
-		t.Log("Test related to OSSM Operators and Istio resources")
+		t.Log("This test verifies that the OSSM operator and Istio components can be configured to run on infrastructure nodes")
 		if Smcp.Rosa {
 			t.Skip("Skipping test on ROSA") // Now in Rosa this test need to be skipped due to lack of permissions in ROSA cluster
 		}
