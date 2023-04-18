@@ -52,7 +52,7 @@ func TestOperator(t *testing.T) {
 		oc.Label(t, "", "node", workername, "node-role.kubernetes.io=infra")
 
 		// Reference: https://issues.redhat.com/browse/OSSM-2342
-		t.NewSubTest("Run on Infra Nodes").Run(func(t TestHelper) {
+		t.NewSubTest("operator").Run(func(t TestHelper) {
 			t.Log("Testing: Run OSSM Operator on infra nodes")
 			t.Cleanup(func() {
 				// Untaint the infra node and remove modification in subscription
