@@ -4,10 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
 )
 
 type TestGroup string
@@ -57,7 +54,6 @@ func (t *topLevelTest) Run(f func(t TestHelper)) {
 	defer recoverPanic(t.t)
 	start := time.Now()
 	th := &testHelper{t: t.t}
-	disableLogrusForThisTest(th)
 	f(th)
 	t.t.Log()
 	t.t.Logf("Test completed in %.2fs (excluding cleanup)", time.Now().Sub(start).Seconds())
@@ -81,17 +77,4 @@ func (t *topLevelTest) isPartOfGroup(group TestGroup) bool {
 		}
 	}
 	return false
-}
-
-// This is a temporary hack used in refactored tests, which disables all logs
-// except the ones done via t.Log().
-// We want to get to a point, where we only log via t.Log(). Until then, we
-// want old tests to still use logrus, while the refactored tests use t.Log() and
-// disable logrus.
-func disableLogrusForThisTest(t TestHelper) {
-	originalLevel := log.Log.GetLevel()
-	log.Log.SetLevel(logrus.ErrorLevel)
-	t.T().Cleanup(func() {
-		log.Log.SetLevel(originalLevel)
-	})
 }

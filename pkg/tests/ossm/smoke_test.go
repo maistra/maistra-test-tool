@@ -15,11 +15,12 @@
 package ossm
 
 import (
+	"bufio"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
-	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -32,15 +33,14 @@ func TestBookinfoInjection(t *testing.T) {
 		ns := "bookinfo"
 
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns)
+			app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
 		})
 
-		app.InstallAndWaitReady(t, app.Bookinfo(ns))
+		t.LogStep("Install bookinfo pods with sidecar and sleep pod without sidecar")
+		app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
 
-		t.LogStep("Check pods running 2/2 ready and with Sidecar Injection")
-		assertSidecarInjectedInAllPods(t, ns)
-
-		app.InstallAndWaitReady(t, app.SleepNoSidecar(ns))
+		t.LogStep("Check whether sidecar is injected in all bookinfo pods")
+		assertSidecarInjectedInAllBookinfoPods(t, ns)
 
 		t.LogStep("Check if bookinfo productpage is running through the Proxy")
 		oc.Exec(t,
@@ -61,14 +61,19 @@ func TestBookinfoInjection(t *testing.T) {
 	})
 }
 
-func assertSidecarInjectedInAllPods(t TestHelper, ns string) {
-	response := util.GetPodNames(ns)
-	for _, podName := range response {
-		shell.Execute(t,
-			fmt.Sprintf(`oc get pod %s -n %s`, podName, ns),
-			assert.OutputContains(
-				"2/2",
-				fmt.Sprintf("Proxy container is injected and running in pod %s", podName),
-				fmt.Sprintf("Proxy container is not running in pod %s", podName)))
-	}
+func assertSidecarInjectedInAllBookinfoPods(t TestHelper, ns string) {
+	shell.Execute(t,
+		fmt.Sprintf(`oc -n %s get pods -l 'app in (productpage,details,reviews,ratings)' --no-headers`, ns),
+		func(t TestHelper, input string) {
+			scanner := bufio.NewScanner(strings.NewReader(input))
+			for scanner.Scan() {
+				line := scanner.Text()
+				podName := strings.Fields(line)[0]
+				if strings.Contains(line, "2/2") {
+					t.LogSuccessf("Sidecar injected and running in pod %s", podName)
+				} else {
+					t.Errorf("Sidecar either not injected or not running in pod %s: %s", podName, line)
+				}
+			}
+		})
 }

@@ -38,17 +38,17 @@ func (a *bookinfo) Namespace() string {
 func (a *bookinfo) Install(t test.TestHelper) {
 	t.T().Helper()
 
-	t.Log("Creating Bookinfo Gateway")
+	t.Log("Create Bookinfo Gateway")
 	oc.ApplyString(t, a.ns, BookinfoGateway)
 
-	t.Log("Creating Bookinfo Destination Rules (all)")
+	t.Log("Create Bookinfo Destination Rules (all)")
 	if a.mTLS {
 		oc.ApplyString(t, a.ns, BookinfoRuleAllMTLS)
 	} else {
 		oc.ApplyString(t, a.ns, BookinfoRuleAll)
 	}
 
-	t.Logf("Deploy Bookinfo in namespace %q", a.ns)
+	t.Log("Create Bookinfo Deployments")
 	oc.ApplyTemplate(t, a.ns, BookinfoTemplate, nil)
 }
 

@@ -60,7 +60,7 @@ func TestEgressTLSOrigination(t *testing.T) {
 
 			assertRequestSuccess := func(url string) {
 				execInSleepPod(t, ns,
-					fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(), url),
+					fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(t), url),
 					assert.OutputContains("200",
 						fmt.Sprintf("Got expected 200 OK from %s", url),
 						fmt.Sprintf("Expect 200 OK from %s, but got a different HTTP code", url)))

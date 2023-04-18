@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package log
+package test
 
 import (
 	"bytes"
@@ -22,8 +22,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 )
-
-var Log = NewTextLogger()
 
 type customFormatter struct {
 }
@@ -64,8 +62,8 @@ func (c customFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-// NewTextLogger a StandardLogger with TextFormatter
-func NewTextLogger() *logrus.Logger {
+// newSetupLogger returns a StandardLogger with TextFormatter
+func newSetupLogger() *logrus.Logger {
 	var log = logrus.New()
 	log.ReportCaller = true
 	log.Formatter = &customFormatter{}

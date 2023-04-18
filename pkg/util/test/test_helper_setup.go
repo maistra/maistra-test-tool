@@ -4,16 +4,19 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
+	"github.com/sirupsen/logrus"
 )
 
 func NewSetupTestHelper() TestHelper {
-	return &setupTestHelper{}
+	return &setupTestHelper{
+		log: newSetupLogger(),
+		t:   &testing.T{},
+	}
 }
 
-var dummyT = &testing.T{}
-
 type setupTestHelper struct {
+	log *logrus.Logger
+	t   *testing.T
 }
 
 var _ TestHelper = &setupTestHelper{}
@@ -51,20 +54,20 @@ func (t *setupTestHelper) Skipped() bool {
 }
 
 func (t *setupTestHelper) Log(args ...any) {
-	log.Log.Info(args...)
+	t.log.Info(args...)
 }
 
 func (t *setupTestHelper) Logf(format string, args ...any) {
-	log.Log.Infof(format, args...)
+	t.log.Infof(format, args...)
 }
 
 func (t *setupTestHelper) Error(args ...any) {
-	t.Log("ERROR: " + fmt.Sprint(args...))
+	t.Log(FailurePrefix + fmt.Sprint(args...))
 	t.Fail()
 }
 
 func (t *setupTestHelper) Errorf(format string, args ...any) {
-	t.Logf("ERROR: "+format, args...)
+	t.Logf(FailurePrefix+format, args...)
 	t.Fail()
 }
 
@@ -107,7 +110,7 @@ func (t *setupTestHelper) NewSubTest(name string) Test {
 }
 
 func (t *setupTestHelper) T() *testing.T {
-	return dummyT
+	return t.t
 }
 
 func (t *setupTestHelper) Parallel() {

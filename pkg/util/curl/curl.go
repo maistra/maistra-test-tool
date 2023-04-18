@@ -6,7 +6,6 @@ import (
 	"net/http/cookiejar"
 	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -42,16 +41,18 @@ func Request(t test.TestHelper, url string, requestOption RequestOption, checks 
 
 	var responseBody []byte
 	if resp != nil {
-		defer util.CloseResponseBody(resp)
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				t.Fatalf("failed to close response body: %v", err)
+			}
+		}()
 		responseBody, err = io.ReadAll(resp.Body)
 		if err != nil {
-			t.Fatalf("Failed to read response body: %v", err)
+			t.Fatalf("failed to read response body: %v", err)
 		}
 	}
 
 	duration := time.Since(startT)
-	// t.Logf("response received in %d ms", duration.Milliseconds())
-
 	for _, check := range checks {
 		check(t, resp, responseBody, duration)
 	}

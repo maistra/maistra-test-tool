@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	Success = "SUCCESS"
-	Failure = "FAILURE"
+	SuccessPrefix = "SUCCESS: "
+	FailurePrefix = "FAILURE: "
 )
 
 func NewTestContext(t *testing.T) TestHelper {
@@ -102,13 +102,13 @@ func (t *testHelper) Logf(format string, args ...any) {
 
 func (t *testHelper) Error(args ...any) {
 	t.t.Helper()
-	t.Log(Failure + ": " + fmt.Sprint(args...))
+	t.Log(FailurePrefix + fmt.Sprint(args...))
 	t.Fail()
 }
 
 func (t *testHelper) Errorf(format string, args ...any) {
 	t.t.Helper()
-	t.Logf(Failure+": "+format, args...)
+	t.Logf(FailurePrefix+format, args...)
 	t.Fail()
 }
 
@@ -154,7 +154,7 @@ func (t *testHelper) CurrentStep() int {
 
 func (t *testHelper) LogSuccess(str string) {
 	t.t.Helper()
-	t.Log(Success + ": " + str)
+	t.Log(SuccessPrefix + str)
 }
 
 func (t *testHelper) LogSuccessf(format string, args ...any) {
