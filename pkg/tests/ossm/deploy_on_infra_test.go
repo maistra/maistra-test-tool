@@ -105,7 +105,7 @@ spec:
 				oc.WaitSMCPReady(t, meshNamespace, smcpName)
 			})
 
-			t.LogStep("Patch SMCP to run on infra nodes and wait for the SMCP to be ready")
+			t.LogStep("Patch SMCP to run all control plane components on infra nodes and wait for the SMCP to be ready")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
 spec:
