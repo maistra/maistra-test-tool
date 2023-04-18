@@ -97,6 +97,10 @@ func GetSMCPTemplate(version string) string {
 	}
 }
 
+func GetDefaultSMCPTemplate() string {
+	return GetSMCPTemplate(env.GetDefaultSMCPVersion())
+}
+
 func InstallSMCP(t test.TestHelper, ns, version string) {
 	oc.ApplyTemplate(t, ns, GetSMCPTemplate(version), Smcp)
 }
