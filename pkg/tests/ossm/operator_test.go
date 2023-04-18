@@ -19,6 +19,8 @@ import (
 	"strings"
 	"testing"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
@@ -28,7 +30,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
-	"golang.org/x/exp/slices"
 )
 
 var workername string
