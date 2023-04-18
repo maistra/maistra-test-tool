@@ -25,8 +25,10 @@ func TestCertManager(t *testing.T) {
 			oc.RecreateNamespace(t, ns)
 		})
 
-		t.LogStep("Uninstall the SMCP")
+		t.LogStep("Uninstall existing SMCP")
 		oc.RecreateNamespace(t, meshNamespace)
+
+		t.LogStep("Create namespace for cert-manager")
 		oc.CreateNamespace(t, certManagerNs)
 
 		t.LogStep("Add jetstack repo to helm")

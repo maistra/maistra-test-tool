@@ -67,7 +67,7 @@ func (c cmd) Install(t test.TestHelper) {
 %s
 EOF`, c.valuesStdIn)
 	}
-	shell.ExecuteIgnoreError(t, cmd)
+	shell.Execute(t, cmd)
 }
 
 func (c cmd) Uninstall(t test.TestHelper) {
@@ -77,7 +77,7 @@ func (c cmd) Uninstall(t test.TestHelper) {
 	if c.namespace == "" {
 		t.Fatalf("namespace must be specified to uninstall helm release")
 	}
-	shell.ExecuteIgnoreError(t, fmt.Sprintf("helm uninstall %s -n %s", c.release, c.namespace))
+	shell.Executef(t, "helm uninstall %s -n %s", c.release, c.namespace)
 }
 
 type repo struct {
@@ -92,5 +92,5 @@ func (r repo) Add(t test.TestHelper, name string) {
 	if name == "" {
 		t.Fatalf("repo name must be specified")
 	}
-	shell.ExecuteIgnoreError(t, fmt.Sprintf("helm repo add %s %s", name, r.url))
+	shell.Executef(t, "helm repo add %s %s", name, r.url)
 }
