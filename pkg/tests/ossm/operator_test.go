@@ -53,7 +53,7 @@ func TestOperator(t *testing.T) {
 
 		// Reference: https://issues.redhat.com/browse/OSSM-2342
 		t.NewSubTest("operator").Run(func(t TestHelper) {
-			t.Log("Testing: Run OSSM Operator on infra nodes")
+			t.Log("Verify OSSM Operator is deployed on infra node when configured")
 			t.Cleanup(func() {
 				// Untaint the infra node and remove modification in subscription
 				shell.Execute(t,
