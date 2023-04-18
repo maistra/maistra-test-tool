@@ -49,7 +49,7 @@ func TestOperator(t *testing.T) {
 		t.LogStep("Setup: Get a worker node from the cluster that does not have the istio operator installed, label it as infra")
 		workername = pickWorkerNode(t)
 		oc.Label(t, "", "node", workername, "node-role.kubernetes.io/infra=")
-		oc.Label(t, "", "node", workername, "ode-role.kubernetes.io=infra")
+		oc.Label(t, "", "node", workername, "node-role.kubernetes.io=infra")
 
 		// Reference: https://issues.redhat.com/browse/OSSM-2342
 		t.NewSubTest("Run on Infra Nodes").Run(func(t TestHelper) {
