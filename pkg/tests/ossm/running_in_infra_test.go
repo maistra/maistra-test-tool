@@ -50,10 +50,12 @@ func TestOperator(t *testing.T) {
 		workername = pickWorkerNode(t)
 		oc.Label(t, "", "node", workername, "node-role.kubernetes.io/infra=")
 		oc.Label(t, "", "node", workername, "node-role.kubernetes.io=infra")
+		t.Log(fmt.Sprintf("Worker node selected: %s", workername))
 
 		// Reference: https://issues.redhat.com/browse/OSSM-2342
 		t.NewSubTest("Run on Infra Nodes").Run(func(t TestHelper) {
 			t.Log("Testing: Run OSSM Operator on infra nodes")
+			t.Log("Reference: https://issues.redhat.com/browse/OSSM-2342")
 			t.Cleanup(func() {
 				// Untaint the infra node and remove modification in subscription
 				shell.Execute(t,
@@ -62,15 +64,20 @@ func TestOperator(t *testing.T) {
 					`oc patch subscription servicemeshoperator -n openshift-operators --type json -p='[{"op": "remove", "path": "/spec/config/tolerations"}]'`)
 				oc.WaitSMCPReady(t, meshNamespace, smcpName) // Wait for the SMCP to be ready before move to next subtest case (Because untaint)
 			})
-			t.LogStep("Taint node and edit the subscription to add the infra node to the node selector")
-			shell.Execute(t,
-				`oc adm taint nodes -l node-role.kubernetes.io/infra node-role.kubernetes.io/infra=reserved:NoSchedule node-role.kubernetes.io/infra=reserved:NoExecute`)
-			oc.Patch(t,
-				"openshift-operators",
-				"subscription",
-				"servicemeshoperator",
-				"merge",
-				`{"spec":{"config":{"nodeSelector":{"node-role.kubernetes.io/infra":""},"tolerations":[{"effect":"NoSchedule","key":"node-role.kubernetes.io/infra","value":"reserved"},{"effect":"NoExecute","key":"node-role.kubernetes.io/infra","value":"reserved"}]}}}`)
+
+			oc.Patch(t, "openshift-operators", "subscription", "servicemeshoperator", "merge", `
+spec:
+  config:
+    nodeSelector:
+      node-role.kubernetes.io/infra: ""
+    tolerations:
+    - effect: NoSchedule
+      key: node-role.kubernetes.io/infra
+      value: reserved
+    - effect: NoExecute
+      key: node-role.kubernetes.io/infra
+      value: reserved
+`)
 
 			t.LogStep(fmt.Sprintf("Verify operator pod is running on the infra node. Node expected: %s", workername))
 			cmd := fmt.Sprintf(
@@ -80,7 +87,7 @@ func TestOperator(t *testing.T) {
 				operatorPod := pod.MatchingSelector("name=istio-operator", "openshift-operators")
 				oc.WaitPodReady(t, operatorPod)
 				shell.Execute(t,
-					cmd,
+					fmt.Sprintf(`oc get pod -n openshift-operators %s -o jsonpath='{.spec.nodeName}'`, operatorPod.Name),
 					assert.OutputContains(
 						"istio-operator-",
 						"Success: Operator pod is running on the infra node",
@@ -99,30 +106,50 @@ func TestOperator(t *testing.T) {
 			})
 
 			t.LogStep("Patch SMCP to run on infra nodes and wait for the SMCP to be ready")
-			oc.Patch(t,
-				meshNamespace,
-				"smcp", smcpName,
-				"merge",
-				`{"spec":{"runtime":{"defaults":{"pod":{"nodeSelector":{"node-role.kubernetes.io/infra":""},"tolerations":[{"effect":"NoSchedule","key":"node-role.kubernetes.io/infra","value":"reserved"},{"effect":"NoExecute","key":"node-role.kubernetes.io/infra","value":"reserved"}]}}}}}`)
-			oc.WaitSMCPReady(t, meshNamespace, smcpName)
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
+spec:
+  runtime:
+    defaults:
+      pod:
+        nodeSelector:
+          node-role.kubernetes.io/infra: ""
+        tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/infra
+          value: reserved
+        - effect: NoExecute
+          key: node-role.kubernetes.io/infra
+          value: reserved
+`)
+				oc.WaitSMCPReady(t, meshNamespace, smcpName)
+			})
 
 			t.LogStep("Verify that the smcp pods are running on the infra node. Pod expected to be moved: istiod, istio-ingressgateway, istio-egressgateway, jaeger, grafana, prometheus")
-			istioPods := []string{"istiod", "istio-ingressgateway", "istio-egressgateway", "jaeger", "grafana", "prometheus"}
-			for _, p := range istioPods {
-				retry.UntilSuccess(t, func(t test.TestHelper) {
-					nsPods := getAllPodsFromNode(t, meshNamespace)
-					if !slices.Contains(nsPods, p) {
-						t.Log("The pod is not running on the infra node, delete it and wait for it to be recreated")
-						oc.DeletePod(t, pod.MatchingSelector("app="+p, meshNamespace))
-						nsPods = getAllPodsFromNode(t, meshNamespace)
-						if !slices.Contains(nsPods, p) {
-							t.Fatalf("Error: Pod %s is not running on the infra node", p)
-						}
-					}
-				})
-			}
+			verifyPodRunningInNode(t)
 		})
 	})
+}
+
+func verifyPodRunningInNode(t TestHelper) {
+	istioPods := []string{"istiod", "istio-ingressgateway", "istio-egressgateway", "jaeger", "grafana", "prometheus"}
+	for _, p := range istioPods {
+		podLocator := pod.MatchingSelector("app="+p, meshNamespace)
+		po := podLocator(t, oc.DefaultOC)
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			nsPods := getAllPodsFromNode(t, meshNamespace)
+			if !slices.Contains(nsPods, po.Name) {
+				t.Log("The pod is not running on the infra node, delete it and wait for it to be recreated")
+				oc.DeletePod(t, pod.MatchingSelector("app="+p, meshNamespace))
+				nsPods = getAllPodsFromNode(t, meshNamespace)
+				podLocator = pod.MatchingSelector("app="+p, meshNamespace)
+				po = podLocator(t, oc.DefaultOC)
+				if !slices.Contains(nsPods, po.Name) {
+					t.Fatalf("Pod %s is not running on the infra node", p)
+				}
+			}
+		})
+	}
 }
 
 func pickWorkerNode(t test.TestHelper) string {
@@ -148,9 +175,6 @@ func getAllPodsFromNode(t test.TestHelper, namespace string) []string {
 		if pod != "" {
 			nonEmptyPods = append(nonEmptyPods, pod)
 		}
-	}
-	for _, pod := range nonEmptyPods {
-		fmt.Println(pod)
 	}
 
 	// return the list of non-empty pod names
