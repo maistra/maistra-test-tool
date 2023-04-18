@@ -15,7 +15,6 @@
 package ingress
 
 import (
-	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 )
 
@@ -34,7 +33,5 @@ var (
 
 var (
 	// OCP4.x
-	meshNamespace        string = env.Getenv("MESHNAMESPACE", "istio-system")
-	gatewayHTTP, _              = util.ShellSilent(`kubectl get routes -n %s istio-ingressgateway -o jsonpath='{.spec.host}'`, meshNamespace)
-	secureIngressPort, _        = util.ShellSilent(`kubectl -n %s get service %s -o jsonpath='{.spec.ports[?(@.name=="https")].port}'`, meshNamespace, "istio-ingressgateway")
+	meshNamespace string = env.Getenv("MESHNAMESPACE", "istio-system")
 )

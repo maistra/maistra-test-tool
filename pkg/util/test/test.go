@@ -27,7 +27,6 @@ type TopLevelTest interface {
 	Test
 	Groups(groups ...TestGroup) TopLevelTest
 	Id(id string) TopLevelTest
-	NotRefactoredYet()
 }
 
 func NewTest(t *testing.T) TopLevelTest {
@@ -64,13 +63,9 @@ func (t *topLevelTest) Run(f func(t TestHelper)) {
 	t.t.Logf("Test completed in %.2fs (excluding cleanup)", time.Now().Sub(start).Seconds())
 }
 
-func (t *topLevelTest) NotRefactoredYet() {
-	t.skipIfNecessary()
-}
-
 func (t *topLevelTest) skipIfNecessary() {
 	testGroup := TestGroup(env.Getenv("TEST_GROUP", string(Full)))
-	if env.Getenv("SAMPLEARCH", "x86") == "arm" {
+	if env.GetSampleArch() == "arm" {
 		testGroup = "arm"
 	}
 

@@ -208,10 +208,10 @@ func Label(t test.TestHelper, ns string, kind string, name string, labels string
 
 func Get(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) {
 	t.T().Helper()
-	shell.Execute(t, fmt.Sprintf("oc -n %s get %s/%s", ns, kind, name), checks...)
+	shell.Execute(t, fmt.Sprintf("oc %s get %s/%s", nsFlag(ns), kind, name), checks...)
 }
 
 func GetYaml(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) {
 	t.T().Helper()
-	shell.Execute(t, fmt.Sprintf("oc -n %s get %s/%s -oyaml", ns, kind, name), checks...)
+	shell.Execute(t, fmt.Sprintf("oc %s get %s/%s -oyaml", nsFlag(ns), kind, name), checks...)
 }

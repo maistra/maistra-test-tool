@@ -62,6 +62,7 @@ func TestSecureGateways(t *testing.T) {
 		oc.CreateTLSSecret(t, meshNamespace, "helloworld-credential", helloworldServerCertKey, helloworldServerCert)
 
 		gatewayHTTP := istio.GetIngressGatewayHost(t, meshNamespace)
+		secureIngressPort := istio.GetIngressGatewaySecurePort(t, meshNamespace)
 		helloWorldURL := "https://helloworld-v1.example.com:" + secureIngressPort + "/hello"
 		teapotURL := "https://httpbin.example.com:" + secureIngressPort + "/status/418"
 

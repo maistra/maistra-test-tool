@@ -59,12 +59,12 @@ func installNightlyOperators() {
 	time.Sleep(time.Duration(30) * time.Second)
 }
 
-func SetupEnvVars() {
+func SetupEnvVars(t test.TestHelper) {
 	env.InitEnvVarsFromFile()
 }
 
-func BasicSetup() {
-	SetupEnvVars()
+func BasicSetup(t test.TestHelper) {
+	SetupEnvVars(t)
 
 	log.Log.Info("Starting Basic Setup")
 	createNamespaces()
@@ -75,8 +75,8 @@ func BasicSetup() {
 }
 
 // Initialize a default SMCP and SMMR
-func SetupNamespacesAndControlPlane() {
-	BasicSetup()
+func SetupNamespacesAndControlPlane(t test.TestHelper) {
+	BasicSetup(t)
 	tmpl := GetSMCPTemplate(env.GetDefaultSMCPVersion())
 	util.KubeApplyContents(meshNamespace, util.RunTemplate(tmpl, Smcp))
 	util.KubeApplyContents(meshNamespace, smmr)

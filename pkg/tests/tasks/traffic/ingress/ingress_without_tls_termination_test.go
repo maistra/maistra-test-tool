@@ -1,4 +1,4 @@
-// Copyright 2021 Red Hat, Inc.
+// Copyright 2023 Red Hat, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,69 +15,58 @@
 package ingress
 
 import (
-	"fmt"
-	"io/ioutil"
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
-	"github.com/maistra/maistra-test-tool/pkg/util"
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/istio"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
+	"github.com/maistra/maistra-test-tool/pkg/util/request"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func cleanupIngressWithoutTLS(t *testing.T) {
-	log.Log.Info("Cleanup")
-	util.KubeDeleteContents("bookinfo", nginxIngressGateway)
-	app.Uninstall(test.NewTestContext(t), app.Nginx("bookinfo"))
-	time.Sleep(time.Duration(20) * time.Second)
-}
+func TestIngressWithoutTlsTermination(t *testing.T) {
+	test.NewTest(t).Id("T10").Groups(test.Full, test.InterOp).Run(func(t test.TestHelper) {
+		t.Log("This test validates configuring an Gateway with TLS PassThrough")
+		t.Log("Doc reference: https://istio.io/v1.14/docs/tasks/traffic-management/ingress/ingress-sni-passthrough/")
 
-func TestIngressWithoutTLS(t *testing.T) {
-	test.NewTest(t).Id("T10").Groups(test.Full, test.InterOp).NotRefactoredYet()
+		ns := "bookinfo"
 
-	defer cleanupIngressWithoutTLS(t)
-	defer util.RecoverPanic(t)
+		t.Cleanup(func() {
+			oc.DeleteFromString(t, ns, nginxIngressGateway)
+			app.Uninstall(t, app.Nginx(ns))
+		})
 
-	log.Log.Info("TestIngressWithOutTLS Termination")
-	app.InstallAndWaitReady(test.NewTestContext(t), app.Nginx("bookinfo"))
+		t.LogStep("Create NGINX Deployment")
+		app.InstallAndWaitReady(t, app.Nginx(ns))
 
-	log.Log.Info("Verify NGINX server")
-	pod, _ := util.GetPodName("bookinfo", "run=my-nginx")
-	cmd := fmt.Sprintf(`curl -sS -v -k --resolve nginx.example.com:8443:127.0.0.1 https://nginx.example.com:8443`)
-	msg, err := util.PodExec("bookinfo", pod, "istio-proxy", cmd, true)
-	util.Inspect(err, "failed to get response", "", t)
-	if !strings.Contains(msg, "Welcome to nginx") {
-		t.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)
-		log.Log.Errorf("Expected Welcome to nginx; Got unexpected response: %s", msg)
-	} else {
-		log.Log.Infof("Success. Get expected response: %s", msg)
-	}
+		t.LogStep("Verify NGINX server is running by connecting to it via loopback")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			oc.Exec(t,
+				pod.MatchingSelector("run=my-nginx", ns),
+				"istio-proxy",
+				"curl -sS -v -k --resolve nginx.example.com:8443:127.0.0.1 https://nginx.example.com:8443",
+				assert.OutputContains(
+					"Welcome to nginx",
+					"Got expected Welcome to nginx response",
+					"Expected to receive response Welcome to nginx, but failed"))
+		})
 
-	t.Run("TrafficManagement_ingress_configure_ingress_gateway_without_TLS_Termination", func(t *testing.T) {
-		defer util.RecoverPanic(t)
+		t.LogStep("Configure Gateway resource with TLS passthrough for host nginx.example.com")
+		oc.ApplyString(t, ns, nginxIngressGateway)
 
-		log.Log.Info("Configure an ingress gateway")
-		if err := util.KubeApplyContents("bookinfo", nginxIngressGateway); err != nil {
-			t.Errorf("Failed to configure NGINX ingress gateway")
-			log.Log.Errorf("Failed to configure NGINX ingress gateway")
-		}
-		time.Sleep(time.Duration(30) * time.Second)
-
-		url := "https://nginx.example.com:" + secureIngressPort
-		resp, err := util.CurlWithCA(url, gatewayHTTP, secureIngressPort, "nginx.example.com", nginxServerCACert)
-		defer util.CloseResponseBody(resp)
-		util.Inspect(err, "Failed to get response", "", t)
-
-		bodyByte, err := ioutil.ReadAll(resp.Body)
-		util.Inspect(err, "Failed to read response body", "", t)
-
-		if strings.Contains(string(bodyByte), "Welcome to nginx") {
-			log.Log.Info(string(bodyByte))
-		} else {
-			t.Errorf("Failed to get Welcome to nginx: %v", string(bodyByte))
-		}
+		t.LogStep("Verify NGINX is reachable from outside the cluster through the ingressgateway")
+		gatewayHTTP := istio.GetIngressGatewayHost(t, meshNamespace)
+		secureIngressPort := istio.GetIngressGatewaySecurePort(t, meshNamespace)
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			curl.Request(t,
+				"https://nginx.example.com:"+secureIngressPort,
+				request.WithTLS(nginxServerCACert, "nginx.example.com", gatewayHTTP, secureIngressPort),
+				assert.ResponseContains("Welcome to nginx"))
+		})
 	})
 }
 
@@ -117,4 +106,5 @@ spec:
     - destination:
         host: my-nginx
         port:
-          number: 443`
+          number: 443
+`
