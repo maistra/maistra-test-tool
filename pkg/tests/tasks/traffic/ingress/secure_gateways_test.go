@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
@@ -53,6 +54,9 @@ func TestSecureGateways(t *testing.T) {
 			oc.RecreateNamespace(t, ns)
 		})
 
+		ossm.DeployControlPlane(t)
+
+		t.LogStep("Install httpbin")
 		app.InstallAndWaitReady(t, app.Httpbin(ns))
 		oc.ApplyTemplate(t, ns, helloWorldTemplate, nil)
 		oc.WaitDeploymentRolloutComplete(t, ns, "helloworld-v1")

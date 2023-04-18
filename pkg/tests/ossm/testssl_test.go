@@ -42,6 +42,8 @@ spec:
 			oc.DeleteFromTemplate(t, ns, testSSLDeployment, nil)
 		})
 
+		DeployControlPlane(t) // TODO: integrate below patch here
+
 		t.LogStep("Patch SMCP to enable mTLS in dataPlane and controlPlane and set min/maxProtocolVersion, cipherSuites, and ecdhCurves")
 		oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
 spec:

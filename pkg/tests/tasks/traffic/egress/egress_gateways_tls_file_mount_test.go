@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -34,6 +35,10 @@ func TestTLSOrigination(t *testing.T) {
 		t.Cleanup(func() {
 			app.Uninstall(t, app.Sleep(ns))
 		})
+
+		ossm.DeployControlPlane(t)
+
+		t.LogStep("Install sleep pod")
 		app.InstallAndWaitReady(t, app.Sleep(ns))
 
 		t.NewSubTest("Egress Gateway without file mount").Run(func(t TestHelper) {

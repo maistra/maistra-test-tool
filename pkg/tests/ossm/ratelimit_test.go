@@ -53,6 +53,8 @@ func TestRateLimiting(t *testing.T) {
 			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `{"spec":{"techPreview":{"rateLimiting":null}}}`)
 		})
 
+		DeployControlPlane(t)
+
 		t.LogStep("Install Bookinfo and Redis")
 		app.InstallAndWaitReady(t, app.Bookinfo(ns), app.Redis(nsRedis))
 		t.Cleanup(func() {

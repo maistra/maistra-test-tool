@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
@@ -40,6 +41,8 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 
 		t.Log("This test validates authorization policies for HTTP traffic.")
 		t.Log("Doc reference: https://istio.io/v1.14/docs/tasks/security/authorization/authz-http/")
+
+		ossm.DeployControlPlane(t)
 
 		t.LogStep("Enable Service Mesh Control Plane mTLS")
 		oc.Patch(t,

@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
@@ -58,6 +59,8 @@ func TestAccessExternalServices(t *testing.T) {
 					"Got expected 504 response since the request was timeout",
 					"Expect a timeout response with 504, but got a different one"))
 		}
+
+		ossm.DeployControlPlane(t)
 
 		t.LogStepf("Install sleep into %s", ns)
 		app.InstallAndWaitReady(t, app.Sleep(ns))

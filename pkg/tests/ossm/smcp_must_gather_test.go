@@ -34,6 +34,8 @@ func TestMustGather(t *testing.T) {
 			oc.RecreateNamespace(t, ns)
 		})
 
+		DeployControlPlane(t)
+
 		t.LogStep("Deploy bookinfo in bookinfo ns")
 		app.InstallAndWaitReady(t, app.Bookinfo(ns))
 

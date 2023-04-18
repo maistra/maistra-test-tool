@@ -31,6 +31,8 @@ func TestTLSVersionSMCP(t *testing.T) {
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 		})
 
+		DeployControlPlane(t) // TODO: remove this and create the SMCP without the patch in each subtest
+
 		t.NewSubTest("minVersion_TLSv1_0").Run(func(t TestHelper) {
 			t.LogStep("Update SMCP spec.security.controlPlane.tls.minProtocolVersion: TLSv1_0")
 			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `{"spec":{"security":{"controlPlane":{"tls":{"minProtocolVersion":"TLSv1_0"}}}}}`)

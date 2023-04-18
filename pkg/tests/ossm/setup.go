@@ -51,7 +51,11 @@ func SetupEnvVars(t test.TestHelper) {
 }
 
 func BasicSetup(t test.TestHelper) {
+	t.T().Helper()
 	SetupEnvVars(t)
+	if ipv6 == "true" {
+		t.Log("Running the test with IPv6 configuration")
+	}
 
 	if env.Getenv("NIGHTLY", "false") == "true" {
 		installNightlyOperators(t)
@@ -59,17 +63,14 @@ func BasicSetup(t test.TestHelper) {
 	oc.CreateNamespace(t, meshNamespace, "bookinfo", "foo", "bar", "legacy", "mesh-external")
 }
 
-// SetupNamespacesAndControlPlane initializes a default SMCP and SMMR
-func SetupNamespacesAndControlPlane(t test.TestHelper) {
-	BasicSetup(t)
+func DeployControlPlane(t test.TestHelper) {
+	t.T().Helper()
+	t.LogStep("Apply default SMCP and SMMR manifests")
 	tmpl := GetSMCPTemplate(env.GetDefaultSMCPVersion())
 	oc.ApplyTemplate(t, meshNamespace, tmpl, Smcp)
 	oc.ApplyString(t, meshNamespace, smmr)
 	oc.WaitSMCPReady(t, meshNamespace, Smcp.Name)
 	oc.WaitSMMRReady(t, meshNamespace)
-	if ipv6 == "true" {
-		t.Log("Running the test with IPv6 configuration")
-	}
 }
 
 func GetDefaultSMCPTemplate() string {
