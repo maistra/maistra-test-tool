@@ -16,7 +16,7 @@ package util
 
 import (
 	"errors"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/pmezard/go-difflib/difflib"
@@ -48,12 +48,12 @@ func Compare(out, model []byte) error {
 func CompareFiles(outFile, modelFile string) error {
 	var out, model []byte
 	var err error
-	out, err = ioutil.ReadFile(outFile)
+	out, err = os.ReadFile(outFile)
 	if err != nil {
 		return err
 	}
 
-	model, err = ioutil.ReadFile(modelFile)
+	model, err = os.ReadFile(modelFile)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func CompareFiles(outFile, modelFile string) error {
 
 // CompareToFile compares a content with a file
 func CompareToFile(out []byte, modelFile string) error {
-	model, err := ioutil.ReadFile(modelFile)
+	model, err := os.ReadFile(modelFile)
 	if err != nil {
 		return err
 	}

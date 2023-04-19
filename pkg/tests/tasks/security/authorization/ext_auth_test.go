@@ -18,40 +18,76 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
-// External Authorization support the 2.4 SM. In the 2.3 SM, it is in techPreview. Please check the version and configure it.
-
-func TestExtAuthz(t *testing.T) {
+func TestEnvoyExtAuthzHttpExtensionProvider(t *testing.T) {
 	test.NewTest(t).Id("T37").Groups(test.Full, test.InterOp).Run(func(t test.TestHelper) {
-		ns := "foo"
-		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns)
-			oc.Patch(t, meshNamespace,
-				"smcp", smcpName,
-				"json",
-				`[{"op": "remove", "path": "/spec/techPreview"}]`)
-		})
-
+		if env.GetSMCPVersion().LessThan(version.SMCP_2_3) {
+			t.Skip("extensionProviders.envoyExtAuthzHttp was added in v2.3")
+		}
 		t.Log("This test validates authorization policies with a JWT Token")
+
+		ns := "foo"
+
+		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install httpbin and sleep")
 		app.InstallAndWaitReady(t, app.Httpbin(ns), app.Sleep(ns))
+		t.Cleanup(func() {
+			app.Uninstall(t, app.Httpbin(ns), app.Sleep(ns))
+		})
 
 		t.LogStep("Check if httpbin returns 200 OK when no authorization policies are in place")
 		assertHttpbinRequestSucceeds(t, ns, httpbinRequest("GET", "/ip"))
 
 		t.LogStep("Deploy the External Authorizer and Verify the sample external authorizer is up and running")
 		oc.ApplyString(t, ns, ExternalAuthzService)
+		t.Cleanup(func() {
+			oc.DeleteFromString(t, ns, ExternalAuthzService)
+		})
 
 		oc.WaitDeploymentRolloutComplete(t, ns, "ext-authz")
 
 		t.LogStep("Set envoyExtAuthzHttp extension provider in SMCP")
-		oc.Patch(t, meshNamespace, "smcp", smcpName, "merge",
-			`{"spec": {"techPreview": {"meshConfig": {"extensionProviders": [{"envoyExtAuthzHttp": {"includeRequestHeadersInCheck": ["x-ext-authz"],"port": "8000","service": "ext-authz.foo.svc.cluster.local"},"name": "sample-ext-authz-http"}]}}}}`,
-		)
+		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
+			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
+spec:
+  techPreview:
+    meshConfig:
+      extensionProviders:
+      - name: sample-ext-authz-http
+        envoyExtAuthzHttp:
+          includeRequestHeadersInCheck:
+          - x-ext-authz
+          port: "8000"
+          service: ext-authz.foo.svc.cluster.local`)
+
+			t.Cleanup(func() {
+				oc.Patch(t, meshNamespace, "smcp", smcpName, "json",
+					`[{"op": "remove", "path": "/spec/techPreview"}]`)
+			})
+
+		} else {
+			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
+spec:
+  extensionProviders:
+  - name: sample-ext-authz-http
+    envoyExtAuthzHttp:
+      includeRequestHeadersInCheck:
+      - x-ext-authz
+      port: 8000
+      service: ext-authz.foo.svc.cluster.local`)
+
+			t.Cleanup(func() {
+				oc.Patch(t, meshNamespace, "smcp", smcpName, "json",
+					`[{"op": "remove", "path": "/spec/extensionProviders"}]`)
+			})
+		}
 
 		t.LogStep("Deploy the external authorization in the Authorization policy")
 		t.Cleanup(func() {
@@ -67,7 +103,6 @@ func TestExtAuthz(t *testing.T) {
 
 		t.LogStep("Verify a request to path /ip is allowed and does not trigger the external authorization")
 		assertHttpbinRequestSucceeds(t, ns, httpbinRequest("GET", "/ip"))
-
 	})
 }
 

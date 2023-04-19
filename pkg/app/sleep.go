@@ -1,7 +1,6 @@
 package app
 
 import (
-	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
@@ -31,16 +30,16 @@ func (a *sleep) Namespace() string {
 
 func (a *sleep) Install(t test.TestHelper) {
 	t.T().Helper()
-	oc.ApplyTemplate(t, a.ns, sleepTemplate, a.values())
+	oc.ApplyTemplate(t, a.ns, sleepTemplate, a.values(t))
 }
 
 func (a *sleep) Uninstall(t test.TestHelper) {
 	t.T().Helper()
-	oc.DeleteFromTemplate(t, a.ns, sleepTemplate, a.values())
+	oc.DeleteFromTemplate(t, a.ns, sleepTemplate, a.values(t))
 }
 
-func (a *sleep) values() map[string]interface{} {
-	proxy, _ := util.GetProxy()
+func (a *sleep) values(t test.TestHelper) map[string]interface{} {
+	proxy := oc.GetProxy(t)
 	return map[string]interface{}{
 		"InjectSidecar": a.injectSidecar,
 		"HttpProxy":     proxy.HTTPProxy,

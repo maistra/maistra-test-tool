@@ -35,6 +35,8 @@ func TestIstiodPodFailsAfterRestarts(t *testing.T) {
 			oc.ApplyString(t, meshNamespace, smmr)
 		})
 
+		DeployControlPlane(t) // integrate below SMMR stuff here
+
 		t.LogStep("Create Namespaces and SMMR")
 		oc.CreateNamespace(t, namespaces...)
 		oc.ApplyString(t, meshNamespace, createSMMRManifest(namespaces...))

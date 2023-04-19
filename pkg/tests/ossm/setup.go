@@ -3,11 +3,8 @@ package ossm
 import (
 	_ "embed"
 	"fmt"
-	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/template"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -40,23 +37,13 @@ var (
 	ipv6 = env.Getenv("IPV6", "false")
 )
 
-func createNamespaces() {
-	log.Log.Info("creating namespaces")
-	util.ShellSilent(`oc new-project bookinfo`)
-	util.ShellSilent(`oc new-project foo`)
-	util.ShellSilent(`oc new-project bar`)
-	util.ShellSilent(`oc new-project legacy`)
-	util.ShellSilent(`oc new-project mesh-external`)
-}
-
 // Install nightly build operators from quay.io. This is used in Jenkins daily build pipeline.
-func installNightlyOperators() {
-	util.KubeApplyContents(env.GetOperatorNamespace(), jaegerSubscription)
-	util.KubeApplyContents(env.GetOperatorNamespace(), kialiSubscription)
-	util.KubeApplyContents(env.GetOperatorNamespace(), ossmSubscription)
-	time.Sleep(time.Duration(60) * time.Second)
-	util.CheckPodRunning(env.GetOperatorNamespace(), "name=istio-operator")
-	time.Sleep(time.Duration(30) * time.Second)
+func installNightlyOperators(t test.TestHelper) {
+	ns := env.GetOperatorNamespace()
+	oc.ApplyString(t, ns, jaegerSubscription)
+	oc.ApplyString(t, ns, kialiSubscription)
+	oc.ApplyString(t, ns, ossmSubscription)
+	oc.WaitDeploymentRolloutComplete(t, ns, "istio-operator", "jaeger-operator", "kiali-operator")
 }
 
 func SetupEnvVars(t test.TestHelper) {
@@ -64,27 +51,26 @@ func SetupEnvVars(t test.TestHelper) {
 }
 
 func BasicSetup(t test.TestHelper) {
+	t.T().Helper()
 	SetupEnvVars(t)
-
-	log.Log.Info("Starting Basic Setup")
-	createNamespaces()
-	if env.Getenv("NIGHTLY", "false") == "true" {
-		installNightlyOperators()
+	if ipv6 == "true" {
+		t.Log("Running the test with IPv6 configuration")
 	}
-	util.ShellMuteOutputError(`oc new-project %s`, meshNamespace)
+
+	if env.Getenv("NIGHTLY", "false") == "true" {
+		installNightlyOperators(t)
+	}
+	oc.CreateNamespace(t, meshNamespace, "bookinfo", "foo", "bar", "legacy", "mesh-external")
 }
 
-// Initialize a default SMCP and SMMR
-func SetupNamespacesAndControlPlane(t test.TestHelper) {
-	BasicSetup(t)
+func DeployControlPlane(t test.TestHelper) {
+	t.T().Helper()
+	t.LogStep("Apply default SMCP and SMMR manifests")
 	tmpl := GetSMCPTemplate(env.GetDefaultSMCPVersion())
-	util.KubeApplyContents(meshNamespace, util.RunTemplate(tmpl, Smcp))
-	util.KubeApplyContents(meshNamespace, smmr)
-	util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, Smcp.Name)
-	util.Shell(`oc -n %s wait --for condition=Ready smmr/default --timeout 180s`, meshNamespace)
-	if ipv6 == "true" {
-		log.Log.Info("Running the test with IPv6 configuration")
-	}
+	oc.ApplyTemplate(t, meshNamespace, tmpl, Smcp)
+	oc.ApplyString(t, meshNamespace, smmr)
+	oc.WaitSMCPReady(t, meshNamespace, Smcp.Name)
+	oc.WaitSMMRReady(t, meshNamespace)
 }
 
 func GetDefaultSMCPTemplate() string {

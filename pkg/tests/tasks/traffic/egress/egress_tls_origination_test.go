@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -31,6 +32,9 @@ func TestEgressTLSOrigination(t *testing.T) {
 			app.Uninstall(t, app.Sleep(ns))
 		})
 
+		ossm.DeployControlPlane(t)
+
+		t.LogStep("Install sleep pod")
 		app.InstallAndWaitReady(t, app.Sleep(ns))
 
 		t.NewSubTest("TrafficManagement_egress_configure_access_to_external_service").Run(func(t test.TestHelper) {
@@ -60,7 +64,7 @@ func TestEgressTLSOrigination(t *testing.T) {
 
 			assertRequestSuccess := func(url string) {
 				execInSleepPod(t, ns,
-					fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(), url),
+					fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(t), url),
 					assert.OutputContains("200",
 						fmt.Sprintf("Got expected 200 OK from %s", url),
 						fmt.Sprintf("Expect 200 OK from %s, but got a different HTTP code", url)))

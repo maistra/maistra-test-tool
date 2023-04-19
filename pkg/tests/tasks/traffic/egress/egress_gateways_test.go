@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -31,6 +32,9 @@ func TestEgressGateways(t *testing.T) {
 			oc.RecreateNamespace(t, ns)
 		})
 
+		ossm.DeployControlPlane(t)
+
+		t.LogStep("Install sleep pod")
 		app.InstallAndWaitReady(t, app.Sleep(ns))
 
 		t.NewSubTest("HTTP").Run(func(t TestHelper) {
@@ -43,7 +47,7 @@ func TestEgressGateways(t *testing.T) {
 			assertRequestSuccess := func(url string) {
 				t.LogStepf("Confirm that request to %s is successful", url)
 				execInSleepPod(t, ns,
-					fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(), url),
+					fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(t), url),
 					assert.OutputContains("200",
 						fmt.Sprintf("Got %s response", url),
 						fmt.Sprintf("Unexpected response from %s", url)))
@@ -51,7 +55,7 @@ func TestEgressGateways(t *testing.T) {
 			assertRequestFailure := func(url string) {
 				t.LogStepf("Confirm that request to %s fails", url)
 				execInSleepPod(t, ns,
-					fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(), url),
+					fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(t), url),
 					assert.OutputContains("503",
 						fmt.Sprintf("Got %s failure", url),
 						fmt.Sprintf("Unexpected response from %s", url)))

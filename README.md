@@ -30,7 +30,7 @@ The testing tasks are based on [istio.io Doc Tasks](https://istio.io/v1.9/docs/t
 3. RedHat Service Mesh Operator has been installed on the OpenShift cluster.
 
 ## Testing
-- In order to save results in a XML report, we can run a go test command with "github.com/jstemmer/go-junit-report".
+- In order to save results in an XML report, we can run a go test command with "github.com/jstemmer/go-junit-report".
     ```
     $ go install github.com/jstemmer/go-junit-report/v2@latest
     ```

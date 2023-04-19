@@ -42,7 +42,7 @@ func (t *RetryTestHelper) Failed() bool {
 
 func (t *RetryTestHelper) Error(args ...any) {
 	t.t.Helper()
-	t.Log(Failure + ": " + fmt.Sprint(args...))
+	t.Log(FailurePrefix + fmt.Sprint(args...))
 	t.Fail()
 }
 
@@ -61,13 +61,6 @@ func (t *RetryTestHelper) Fatalf(format string, args ...any) {
 	t.t.Helper()
 	t.Fatal(fmt.Sprintf(format, args...))
 }
-
-// func (t *RetryTestHelper) LogStep(str string) {
-// 	t.t.Helper()
-// 	t.Log("")
-// 	t.currentStep++
-// 	t.Logf("STEP %d (attempt #%d): %s", t.currentStep, t.attempt+1, str)
-// }
 
 func (t *RetryTestHelper) attemptString() string {
 	return "(will retry)"

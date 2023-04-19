@@ -14,7 +14,7 @@ import (
 
 var initEnvVarsOnce sync.Once
 
-// getenv loads test.env file and returns an environment variable value.
+// Getenv loads test.env file and returns an environment variable value.
 // If the environment variable is empty, it returns the fallback as a default value.
 func Getenv(key, fallback string) string {
 	InitEnvVarsFromFile()

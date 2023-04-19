@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -36,6 +37,8 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 
 		t.Log("This test validates authorization policies for TCP traffic.")
 		t.Log("Doc reference: https://istio.io/v1.14/docs/tasks/security/authorization/authz-tcp/")
+
+		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install sleep and echo")
 		app.InstallAndWaitReady(t, app.Sleep(ns), app.Echo(ns))

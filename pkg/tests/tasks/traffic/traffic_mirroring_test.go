@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	. "github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
@@ -34,6 +35,9 @@ func TestMirroring(t *testing.T) {
 			oc.RecreateNamespace(t, ns)
 		})
 
+		ossm.DeployControlPlane(t)
+
+		t.LogStep("Install httpbin-v1, httpbin-v2, and sleep")
 		app.InstallAndWaitReady(t,
 			app.HttpbinV1(ns),
 			app.HttpbinV2(ns),
@@ -100,3 +104,56 @@ func TestMirroring(t *testing.T) {
 		})
 	})
 }
+
+const (
+	httpbinAllv1 = `
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: httpbin
+spec:
+  hosts:
+    - httpbin
+  http:
+  - route:
+    - destination:
+        host: httpbin
+        subset: v1
+      weight: 100
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: httpbin
+spec:
+  host: httpbin
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+`
+
+	httpbinMirrorv2 = `
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: httpbin
+spec:
+  hosts:
+    - httpbin
+  http:
+  - route:
+    - destination:
+        host: httpbin
+        subset: v1
+      weight: 100
+    mirror:
+      host: httpbin
+      subset: v2
+    mirrorPercentage: 
+      value: 100
+`
+)

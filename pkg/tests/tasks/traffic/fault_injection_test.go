@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
@@ -43,12 +44,15 @@ func TestFaultInjection(t *testing.T) {
 			oc.RecreateNamespace(t, ns)
 		})
 
+		ossm.DeployControlPlane(t)
+
+		t.LogStep("Install Bookinfo")
 		app.InstallAndWaitReady(t, app.Bookinfo(ns))
 
 		testUserCookieJar := app.BookinfoLogin(t, meshNamespace)
 
-		oc.ApplyString(t, ns, bookinfoVirtualServicesAllV1)
-		oc.ApplyString(t, ns, bookinfoReviewsVirtualServiceV2)
+		oc.ApplyString(t, ns, app.BookinfoVirtualServicesAllV1)
+		oc.ApplyString(t, ns, app.BookinfoVirtualServiceReviewsV2)
 
 		t.NewSubTest("ratings-fault-delay").Run(func(t TestHelper) {
 			oc.ApplyString(t, ns, ratingsVirtualServiceWithFixedDelay)

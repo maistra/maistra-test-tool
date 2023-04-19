@@ -35,6 +35,8 @@ func TestInitContainerNotRemovedDuringInjection(t *testing.T) {
 			oc.RecreateNamespace(t, ns)
 		})
 
+		DeployControlPlane(t)
+
 		oc.RecreateNamespace(t, ns)
 
 		t.LogStep("Deploying test pod.")

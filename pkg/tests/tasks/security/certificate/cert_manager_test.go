@@ -1,52 +1,64 @@
 package certificate
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/helm"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestCertManager(t *testing.T) {
 	test.NewTest(t).Id("T38").Groups(test.Full, test.ARM, test.InterOp).Run(func(t test.TestHelper) {
-
 		ns := "foo"
-		cert := "cert-manager"
+		certManagerNs := "cert-manager"
+
 		t.Cleanup(func() {
-			oc.DeleteNamespace(t, cert)
+			helm.Namespace(meshNamespace).Release("istio-csr").Uninstall(t)
+			helm.Namespace(certManagerNs).Release("cert-manager").Uninstall(t)
+			oc.DeleteNamespace(t, certManagerNs)
 			oc.RecreateNamespace(t, ns)
 		})
 
-		t.LogStep("Uninstall the SMCP")
+		t.LogStep("Uninstall existing SMCP")
 		oc.RecreateNamespace(t, meshNamespace)
 
+		t.LogStep("Create namespace for cert-manager")
+		oc.CreateNamespace(t, certManagerNs)
+
 		t.LogStep("Add jetstack repo to helm")
-		shell.Execute(t, `helm repo add jetstack https://charts.jetstack.io`)
+		helm.Repo("https://charts.jetstack.io").Add(t, "jetstack")
 
 		t.LogStep("Install cert-manager")
-		shell.Execute(t,
-			`helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --version v1.11.0 --set installCRDs=true`,
-			assert.OutputContains("cert-manager v1.11.0 has been deployed successfully",
-				"Successfully installed cert-manager",
-				"Failed to installed cert-manager"))
+		helm.Namespace(certManagerNs).
+			Chart("jetstack/cert-manager").
+			Release("cert-manager").
+			Version("v1.11.0").
+			Set("installCRDs=true").
+			Install(t)
+		oc.WaitPodsReady(t, certManagerNs, "app=cert-manager")
 
-		t.LogStep("Provision certificates")
-		oc.ApplyString(t, meshNamespace, SelfSignedCa)
+		t.LogStep("Provision root certificate")
+		oc.ApplyString(t, certManagerNs, rootCA)
 
-		t.LogStep("Install cert-manager istio-csr Service")
-		shell.Execute(t,
-			`helm install -n cert-manager cert-manager-istio-csr jetstack/cert-manager-istio-csr -f https://raw.githubusercontent.com/maistra/istio-operator/maistra-2.4/deploy/examples/cert-manager/istio-csr-helm-values.yaml`,
-			assert.OutputContains("STATUS: deployed",
-				"Successfully, installed cert-manager-istio-csr",
-				"Failed to installed cert-manager-istio-csr"))
+		t.LogStep("Provision Istio certificate")
+		oc.ApplyString(t, meshNamespace, istioCA)
+
+		t.LogStep("Install cert-manager-istio-csr")
+		helm.Namespace(meshNamespace).
+			Chart("jetstack/cert-manager-istio-csr").
+			Release("istio-csr").
+			ValuesString(istioCsrValues(meshNamespace, smcpName)).
+			Install(t)
+		oc.WaitPodsReady(t, meshNamespace, "app=cert-manager-istio-csr")
 
 		t.LogStep("Deploy the cert-manager in SMCP")
-		oc.ApplyString(t, meshNamespace, CertManagerSMCP)
+		oc.ApplyString(t, meshNamespace, createSMCPWithCertManager(smcpName, meshNamespace, ns))
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Install httpbin and sleep")
@@ -57,58 +69,20 @@ func TestCertManager(t *testing.T) {
 			oc.Exec(t,
 				pod.MatchingSelector("app=sleep", ns),
 				"sleep",
-				`curl http://httpbin.foo:8000/ip -s -o /dev/null -w "%{http_code}"`,
+				`curl http://httpbin:8000/ip -s -o /dev/null -w "%{http_code}"`,
 				assert.OutputContains(
 					"200",
 					"Got expected 200 OK from httpbin",
 					"Expected 200 OK from httpbin, but got a different HTTP code"))
 		})
-
 	})
-
 }
 
-const (
-	SelfSignedCa = `
-apiVersion: cert-manager.io/v1
-kind: Issuer
-metadata:
-  name: selfsigned
-spec:
-  selfSigned: {}
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: istio-ca
-spec:
-  isCA: true
-  duration: 2160h # 90d
-  secretName: istio-ca
-  commonName: istio-ca
-  subject:
-    organizations:
-      - cluster.local
-      - cert-manager
-  issuerRef:
-    name: selfsigned
-    kind: Issuer
-    group: cert-manager.io
----
-apiVersion: cert-manager.io/v1
-kind: Issuer
-metadata:
-  name: istio-ca
-spec:
-  ca:
-    secretName: istio-ca
- `
-
-	CertManagerSMCP = `
-apiVersion: maistra.io/v2
+func createSMCPWithCertManager(smcpName, smcpNamespace, memberNs string) string {
+	return fmt.Sprintf(`apiVersion: maistra.io/v2
 kind: ServiceMeshControlPlane
 metadata:
-  name: basic
+  name: %s
 spec:
   addons:
     grafana:
@@ -117,10 +91,15 @@ spec:
       enabled: false
     prometheus:
       enabled: false
+  gateways:
+    egress:
+      enabled: false
+    openshiftRoute:
+      enabled: false
   security:
     certificateAuthority:
       cert-manager:
-        address: cert-manager-istio-csr.cert-manager.svc:443
+        address: cert-manager-istio-csr.%s.svc:443
       type: cert-manager
     dataPlane:
       mtls: true
@@ -136,6 +115,103 @@ metadata:
   name: default
 spec:
   members:
-  - foo
- `
+  - %s
+`, smcpName, smcpNamespace, memberNs)
+}
+
+func istioCsrValues(meshNamespace, smcpName string) string {
+	return fmt.Sprintf(`
+replicaCount: 2
+
+image:
+  repository: quay.io/jetstack/cert-manager-istio-csr
+  tag: v0.6.0
+  pullSecretName: ""
+
+app:
+  certmanager:
+    namespace: %[1]s
+    issuer:
+      group: cert-manager.io
+      kind: Issuer
+      name: istio-ca
+
+  controller:
+    configmapNamespaceSelector: "maistra.io/member-of=%[1]s"
+    leaderElectionNamespace: %[1]s
+
+  istio:
+    namespace: %[1]s
+    revisions: ["%[2]s"]
+
+  server:
+    maxCertificateDuration: 5m
+
+  tls:
+    certificateDNSNames:
+    # This DNS name must be set in the SMCP spec.security.certificateAuthority.cert-manager.address
+    - cert-manager-istio-csr.%[1]s.svc
+`, meshNamespace, smcpName)
+}
+
+const (
+	rootCA = `
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned-root-issuer
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: selfsigned-ca
+spec:
+  isCA: true
+  duration: 21600h # 900d
+  secretName: root-ca
+  commonName: root-ca.my-company.net
+  subject:
+    organizations:
+    - my-company.net
+  issuerRef:
+    name: selfsigned-root-issuer
+    kind: Issuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: root-ca
+spec:
+  ca:
+    secretName: root-ca
+`
+	istioCA = `
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: istio-ca
+spec:
+  isCA: true
+  duration: 21600h
+  secretName: istio-ca
+  commonName: istio-ca.my-company.net
+  subject:
+    organizations:
+    - my-company.net
+  issuerRef:
+    name: root-ca
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: istio-ca
+spec:
+  ca:
+    secretName: istio-ca
+`
 )

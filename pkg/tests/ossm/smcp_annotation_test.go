@@ -31,6 +31,8 @@ func TestSMCPAnnotations(t *testing.T) {
 	NewTest(t).Id("T29").Groups(Full).Run(func(t TestHelper) {
 		t.Log("Test annotations: verify deployment with sidecar.maistra.io/proxyEnv annotations and Enable automatic injection in SMCP to propagate the annotations to the sidecar")
 
+		DeployControlPlane(t) // TODO: move this to individual subtests and integrate patch if one exists
+
 		t.NewSubTest("proxyEnvoy").Run(func(t TestHelper) {
 			t.Parallel()
 			ns := "foo"

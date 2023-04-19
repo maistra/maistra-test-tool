@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -32,6 +33,8 @@ func TestAuthorizationJWT(t *testing.T) {
 		})
 
 		t.Log("This test validates authorization policies with JWT Token")
+
+		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install httpbin and sleep")
 		app.InstallAndWaitReady(t, app.Httpbin(ns), app.Sleep(ns))

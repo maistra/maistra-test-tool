@@ -37,7 +37,7 @@ var (
 	rateLimitSMCPPatch string
 
 	//go:embed yaml/envoyfilter-ratelimit.yaml
-	rateLimitFilterYaml_template string
+	rateLimitFilterTemplate string
 )
 
 func TestRateLimiting(t *testing.T) {
@@ -52,6 +52,8 @@ func TestRateLimiting(t *testing.T) {
 			t.Log("Revert SMCP to default")
 			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `{"spec":{"techPreview":{"rateLimiting":null}}}`)
 		})
+
+		DeployControlPlane(t)
 
 		t.LogStep("Install Bookinfo and Redis")
 		app.InstallAndWaitReady(t, app.Bookinfo(ns), app.Redis(nsRedis))
@@ -73,7 +75,7 @@ func TestRateLimiting(t *testing.T) {
 				"ERROR: rls pod expected to be running, but it is not"))
 
 		t.LogStep("Create EnvoyFilter for rate limiting")
-		oc.ApplyTemplate(t, meshNamespace, rateLimitFilterYaml_template, Smcp)
+		oc.ApplyTemplate(t, meshNamespace, rateLimitFilterTemplate, Smcp)
 
 		productPageURL := app.BookinfoProductPageURL(t, meshNamespace)
 		t.LogStep("Make 3 request to validate rate limit: first should work, second should fail with 429, third should work again after wait more than 1 seconds")
