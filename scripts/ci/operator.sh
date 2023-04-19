@@ -64,10 +64,10 @@ delete_clusterserviceversion() {
 delete_cni() {
   local ns=${ns:-openshift-operators}
   echo "Delete configmap"
-  kubectl delete cm istio-cni-config -n "${ns}" --ignore-not-found
+  kubectl delete cm -l app.kubernetes.io/component=istio_cni -n "${ns}" --ignore-not-found
 
   echo "Delete istio cni DaemonSet(s)"
-  kubectl delete ds istio-cni-node -n "${ns}" --ignore-not-found
+  kubectl delete ds -l app.kubernetes.io/component=istio_cni -n "${ns}" --ignore-not-found
 }
 
 get_operator() {
@@ -114,7 +114,7 @@ restart_operator() {
 
 # we can remove this function in testing 2.4
 wait_operator() {
-  echo "Temporary workaround before operator 2.4 release"
+  echo "Temporary workaround for running operator 2.3.x"
   echo
 
   echo -n "Waiting for Jaeger operator deployment to be created..."
@@ -160,6 +160,10 @@ wait_operator() {
 
   echo "Wait for the servicemesh mutating webhook to be created."
   while [ "$(kubectl get mutatingwebhookconfigurations -o name | grep servicemesh)" == "" ]; do echo -n '.'; sleep 5; done
+  echo "done."
+
+  echo "Wait for the smcp.mutation.maistra.io webhook to be created."
+  while [ "$(kubectl get mutatingwebhookconfigurations -o name | grep smcp.mutation.maistra.io)" == "" ]; do echo -n '.'; sleep 5; done
   echo "done."
 }
 
