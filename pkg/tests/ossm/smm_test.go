@@ -12,59 +12,71 @@ import (
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func TestSMMCreationAndDeletion(t *testing.T) {
+func TestSMMRAutoCreationAndDeletion(t *testing.T) {
 	NewTest(t).Id("T39").Groups(Full).Run(func(t TestHelper) {
-		t.Log("This Suite verifies SMM and SMMR behaviors when SMM is created and deleted")
+		t.Log("This test verifies what happens to the SMMR when SMM is created and deleted")
 		foo := "foo"
 		bar := "bar"
 		t.Cleanup(func() {
-			oc.ApplyString(t, meshNamespace, smmr) // If we apply the default SMMR over the current will be updated
+			oc.ApplyString(t, meshNamespace, smmr) // revert SMMR to original state
 		})
 
-		t.LogStep("Setup: Delete default SMMR in mesh namespace and create two namespaces: foo and bar")
+		DeployControlPlane(t)
+
+		t.LogStep("Delete SMMR")
 		oc.DeleteResource(t, meshNamespace, "smmr", "default")
-		oc.CreateNamespace(t, foo)
-		oc.CreateNamespace(t, bar)
 
-		t.NewSubTest("Create SMM creates SMMR").Run(func(t TestHelper) {
-			t.LogStep("Create SMM in namespace:foo and bar; expected: SMMR is created")
-			oc.ApplyString(t, foo, ServiceMeshMember)
-			oc.ApplyString(t, bar, ServiceMeshMember)
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				oc.WaitSMMRReady(t, meshNamespace)
-			})
+		t.LogStep("Create two namespaces")
+		oc.CreateNamespace(t, foo, bar)
 
-			t.LogStep("Check SMMR has the members foo and bar")
+		t.NewSubTest("create first SMM").Run(func(t TestHelper) {
+			t.Log("This test checks if the SMMR is created when you create a ServiceMeshMember")
+
+			t.LogStep("Create ServiceMeshMembers in namespaces foo and bar")
+			oc.ApplyString(t, foo, smm)
+			oc.ApplyString(t, bar, smm)
+
+			t.LogStep("Wait for SMMR to be ready")
+			oc.WaitSMMRReady(t, meshNamespace)
+
+			t.LogStep("Check both namespaces are shown as members in SMMR")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				shell.Execute(t,
 					fmt.Sprintf(`oc get smmr default -n %s -o=jsonpath='{.status.members[*]}{"\n"}'`, meshNamespace),
-					assert.OutputContains(foo, "SMMR has the members foo", "SMMR does not have the namespaces foo and bar"),
-					assert.OutputContains(bar, "SMMR has the members bar", "SMMR does not have the namespaces foo and bar"))
+					assert.OutputContains(foo, "SMMR has the member foo", "SMMR does not have the namespaces foo and bar"),
+					assert.OutputContains(bar, "SMMR has the member bar", "SMMR does not have the namespaces foo and bar"))
 			})
 		})
 
-		t.NewSubTest("Delete SMM with a SMMR with more than one members").Run(func(t TestHelper) {
-			t.Log("See https://issues.redhat.com/browse/OSSM-2374 as reference and https://issues.redhat.com/browse/OSSM-3450 for testing")
-			t.Log("Delete SMM in bar namespace; expected: SMMR is not deleted because has more than one namespace in configuration")
-			t.LogStep("Delete SMM in namespace: bar. Expected: SMMR is not deleted")
-			oc.DeleteFromString(t, bar, ServiceMeshMember)
+		t.NewSubTest("delete non-terminal SMM").Run(func(t TestHelper) {
+			t.Log("This test verifies that the SMMR isn't deleted when one SMM is deleted, but other SMMs still exist")
+			t.Log("See https://issues.redhat.com/browse/OSSM-2374 (implementation)")
+			t.Log("See https://issues.redhat.com/browse/OSSM-3450 (test)")
+
+			t.LogStep("Delete one SMM, but keep the other")
+			oc.DeleteFromString(t, bar, smm)
+
+			t.LogStep("Check if SMMR becomes ready (it won't be if it gets deleted)")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				oc.WaitSMMRReady(t, meshNamespace)
 			})
 		})
 
-		t.NewSubTest("Delete SMM with a SMMR with one members").Run(func(t TestHelper) {
-			t.Log("See https://issues.redhat.com/browse/OSSM-2374 as reference and https://issues.redhat.com/browse/OSSM-3450 for testing")
-			t.Log("Delete SMM in foo namespace; expected: SMMR is deleted because has only one namespace in configuration")
-			t.LogStep("Delete SMM in namespace: foo. Expected: SMMR is deleted")
-			oc.DeleteFromString(t, foo, ServiceMeshMember)
+		t.NewSubTest("delete terminal SMM").Run(func(t TestHelper) {
+			t.Log("This test verifies tht the SMMR is deleted when the last SMM is deleted")
+			t.Log("See https://issues.redhat.com/browse/OSSM-2374 (implementation)")
+			t.Log("See https://issues.redhat.com/browse/OSSM-3450 (test)")
+
+			t.LogStep("Delete last SMM")
+			oc.DeleteFromString(t, foo, smm)
+
+			t.LogStep("Check that SMMR is deleted")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				shell.Execute(t,
-					fmt.Sprintf(`oc get smmr -n %s default || true`, meshNamespace),
-					assert.OutputContains(
-						"not found",
-						"SMMR is deleted",
-						"SMMR is not deleted"))
+					fmt.Sprintf("oc get smmr -n %s default || true", meshNamespace),
+					assert.OutputContains("not found",
+						"SMMR has been deleted",
+						"SMMR hasn't been deleted"))
 			})
 		})
 
@@ -72,7 +84,7 @@ func TestSMMCreationAndDeletion(t *testing.T) {
 }
 
 var (
-	ServiceMeshMember = `
+	smm = `
 apiVersion: maistra.io/v1
 kind: ServiceMeshMember
 metadata:
