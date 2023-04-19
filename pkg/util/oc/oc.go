@@ -197,6 +197,11 @@ func Label(t test.TestHelper, ns string, kind string, name string, labels string
 	DefaultOC.Label(t, ns, kind, name, labels)
 }
 
+func TaintNode(t test.TestHelper, name string, taints ...string) {
+	t.T().Helper()
+	DefaultOC.TaintNode(t, name, taints...)
+}
+
 func Get(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) string {
 	t.T().Helper()
 	return DefaultOC.Get(t, ns, kind, name, checks...)

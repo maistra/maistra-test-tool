@@ -41,36 +41,37 @@ func TestDeployOnInfraNodes(t *testing.T) {
 		if Smcp.Rosa {
 			t.Skip("Skipping test on ROSA due to lack of permissions")
 		}
+		output := shell.Executef(t, `oc get subscription -n %s servicemeshoperator || true`, env.GetOperatorNamespace())
+		if strings.Contains(output, "NotFound") {
+			t.Skip("Skipping test because servicemeshoperator Subscription wass't found")
+		}
+
 		t.Cleanup(func() {
-			shell.Execute(t,
-				`oc adm taint nodes -l node-role.kubernetes.io/infra node-role.kubernetes.io/infra=reserved:NoSchedule- node-role.kubernetes.io/infra=reserved:NoExecute-`)
+			oc.TaintNode(t, "-l node-role.kubernetes.io/infra",
+				"node-role.kubernetes.io/infra=reserved:NoSchedule-",
+				"node-role.kubernetes.io/infra=reserved:NoExecute-")
 			oc.Label(t, "", "node", workername, "node-role.kubernetes.io/infra-")
 			oc.Label(t, "", "node", workername, "node-role.kubernetes.io-")
 		})
 
 		t.LogStep("Setup: Get a worker node from the cluster that does not have the istio operator installed, label it as infra")
 		workername = pickWorkerNode(t)
-		t.Log(fmt.Sprintf("Worker node selected: %s", workername))
+		t.Logf("Worker node selected: %s", workername)
 		oc.Label(t, "", "node", workername, "node-role.kubernetes.io/infra=")
 		oc.Label(t, "", "node", workername, "node-role.kubernetes.io=infra")
-		shell.Execute(t,
-			`oc adm taint nodes -l node-role.kubernetes.io/infra node-role.kubernetes.io/infra=reserved:NoSchedule node-role.kubernetes.io/infra=reserved:NoExecute`)
+		oc.TaintNode(t, "-l node-role.kubernetes.io/infra",
+			"node-role.kubernetes.io/infra=reserved:NoSchedule",
+			"node-role.kubernetes.io/infra=reserved:NoExecute")
 
 		t.NewSubTest("operator").Run(func(t TestHelper) {
 			t.Log("Verify OSSM Operator is deployed on infra node when configured")
 			t.Log("Reference: https://issues.redhat.com/browse/OSSM-2342")
 			t.Cleanup(func() {
-				oc.Patch(t, "openshift-operators", "subscription", "servicemeshoperator", "json", `[{"op": "remove", "path": "/spec/config/tolerations"}]`)
+				oc.Patch(t, env.GetOperatorNamespace(), "subscription", "servicemeshoperator", "json", `[{"op": "remove", "path": "/spec/config/tolerations"}]`)
 			})
 
-			t.LogStep("Verify if subscription exists, if not exist test will be skipped")
-			output := shell.Execute(t, `oc get subscription -n openshift-operators servicemeshoperator || true`)
-			if strings.Contains(output, "NotFound") {
-				t.Skip("Subscription not found, test will be skipped")
-			}
-
 			t.LogStep("Patch subscription to run on infra nodes and wait for the operator pod to be ready")
-			oc.Patch(t, "openshift-operators", "subscription", "servicemeshoperator", "merge", `
+			oc.Patch(t, env.GetOperatorNamespace(), "subscription", "servicemeshoperator", "merge", `
 spec:
   config:
     nodeSelector:
@@ -150,12 +151,13 @@ func assertPodScheduledToNode(t TestHelper, pLabel string) {
 }
 
 func pickWorkerNode(t test.TestHelper) string {
-	workername := shell.Execute(t, "oc get nodes -l node-role.kubernetes.io/worker= -o jsonpath='{.items[0].metadata.name}'")
-	actualNode := shell.Execute(t, `oc get pods -n openshift-operators -l name=istio-operator -o jsonpath='{.items[0].spec.nodeName}'`)
-	if workername == actualNode {
-		// If the worker node is the same as the node where the operator is running, pick the second worker node
-		workername = shell.Execute(t, "oc get nodes -l node-role.kubernetes.io/worker= -o jsonpath='{.items[1].metadata.name}'")
+	workerNodes := shell.Execute(t, "oc get nodes -l node-role.kubernetes.io/worker= -o jsonpath='{.items[*].metadata.name}'")
+	operatorNode := shell.Execute(t, "oc get pods -n openshift-operators -l name=istio-operator -o jsonpath='{.items[0].spec.nodeName}'")
+	for _, node := range strings.Split(workerNodes, "\n") {
+		if node != operatorNode {
+			return node
+		}
 	}
-
-	return workername
+	t.Fatalf("could not find worker node")
+	panic("we never get here because of the Fatalf call above")
 }
