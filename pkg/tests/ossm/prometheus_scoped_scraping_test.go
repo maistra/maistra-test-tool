@@ -7,8 +7,6 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/hack"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
@@ -17,14 +15,13 @@ import (
 
 func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
-		hack.DisableLogrusForThisTest(t)
-
 		t.Log("This test checks if the operator can update Prometheus ConfigMap when the SMMR is updated")
 
-		meshNamespace := env.GetDefaultMeshNamespace()
 		t.Cleanup(func() {
 			oc.ApplyString(t, meshNamespace, smmr)
 		})
+
+		DeployControlPlane(t)
 
 		t.LogStepf("Delete current SMMR %s", smmr)
 		oc.DeleteFromString(t, meshNamespace, smmr)
@@ -43,7 +40,9 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			updateDefaultSMMRWithNamespace(t, ns)
 
 			t.LogStepf("Look for %s in prometheus ConfigMap", ns)
-			shell.Execute(t, getPrometheusConfigCmd, checkForNamespace(ns))
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				shell.Execute(t, getPrometheusConfigCmd, checkForNamespace(ns))
+			})
 		})
 
 		t.NewSubTest("when adding a new namespace into existing SMMR").Run(func(t test.TestHelper) {
@@ -94,7 +93,9 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("[TODO] test under cluster scoped").Run(func(t test.TestHelper) {})
+		t.NewSubTest("[TODO] test under cluster scoped").Run(func(t test.TestHelper) {
+			t.Skip()
+		})
 	})
 }
 
