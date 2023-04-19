@@ -75,17 +75,18 @@ spec:
 		} else {
 			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
 spec:
-  extensionProviders:
-  - name: sample-ext-authz-http
-    envoyExtAuthzHttp:
-      includeRequestHeadersInCheck:
-      - x-ext-authz
-      port: 8000
-      service: ext-authz.foo.svc.cluster.local`)
+  meshConfig:
+    extensionProviders:
+    - name: sample-ext-authz-http
+      envoyExtAuthzHttp:
+        includeRequestHeadersInCheck:
+        - x-ext-authz
+        port: 8000
+        service: ext-authz.foo.svc.cluster.local`)
 
 			t.Cleanup(func() {
 				oc.Patch(t, meshNamespace, "smcp", smcpName, "json",
-					`[{"op": "remove", "path": "/spec/extensionProviders"}]`)
+					`[{"op": "remove", "path": "/spec/meshConfig"}]`)
 			})
 		}
 
