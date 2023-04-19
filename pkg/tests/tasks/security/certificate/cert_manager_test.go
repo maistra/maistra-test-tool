@@ -57,6 +57,7 @@ func TestCertManager(t *testing.T) {
 		helm.Namespace(meshNamespace).
 			Chart("jetstack/cert-manager-istio-csr").
 			Release("istio-csr").
+			Version("v0.6.0").
 			ValuesString(istioCsrValues(meshNamespace, smcpName)).
 			Install(t)
 		oc.WaitPodsReady(t, meshNamespace, "app=cert-manager-istio-csr")
