@@ -3,7 +3,6 @@ package certificate
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
@@ -74,8 +73,7 @@ func TestCertManager(t *testing.T) {
 				oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 				t.LogStep("Verify that istio-ca-root-cert created in proper namespaces")
-				retryOpts := retry.Options().MaxAttempts(10).DelayBetweenAttempts(1 * time.Second)
-				retry.UntilSuccessWithOptions(t, retryOpts, func(t test.TestHelper) {
+				retry.UntilSuccess(t, func(t test.TestHelper) {
 					oc.LogsFromPods(t, meshNamespace, "app=cert-manager-istio-csr",
 						assert.OutputContains(
 							fmt.Sprintf(`"msg"="creating configmap with root CA data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, meshNamespace),
