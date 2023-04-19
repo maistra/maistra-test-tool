@@ -42,7 +42,10 @@ func (cf *CertBuilder) NewServerCert(parentCert *x509.Certificate, parentKey *rs
 
 func (cf *CertBuilder) newCert(isCA bool) *CertBuilder {
 	if cf.privateKey == nil {
-		cf.newKey(2048) // default new key bits 2048
+		err := cf.newKey(2048) // default new key bits 2048
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	if cf.template == nil {
@@ -121,33 +124,24 @@ func (cf *CertBuilder) GetCertPEM() []byte {
 }
 
 func (cf *CertBuilder) SetTemplate(orgName, commonName string, expireYears int, isCA bool) {
+	cf.template = &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			Organization: []string{orgName},
+			CommonName:   commonName,
+		},
+		NotBefore:   time.Now(),
+		NotAfter:    time.Now().AddDate(expireYears, 0, 0),
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+	}
+
 	if isCA {
-		cf.template = &x509.Certificate{
-			SerialNumber: big.NewInt(1),
-			Subject: pkix.Name{
-				Organization: []string{orgName},
-				CommonName:   commonName,
-			},
-			NotBefore:             time.Now(),
-			NotAfter:              time.Now().AddDate(expireYears, 0, 0),
-			KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
-			ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
-			BasicConstraintsValid: true,
-			IsCA:                  true,
-		}
+		cf.template.KeyUsage = x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign | x509.KeyUsageCRLSign
+		cf.template.BasicConstraintsValid = true
+		cf.template.IsCA = true
 	} else {
-		cf.template = &x509.Certificate{
-			SerialNumber: big.NewInt(1),
-			Subject: pkix.Name{
-				Organization: []string{orgName},
-				CommonName:   commonName,
-			},
-			NotBefore:   time.Now(),
-			NotAfter:    time.Now().AddDate(expireYears, 0, 0),
-			ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
-			KeyUsage:    x509.KeyUsageDigitalSignature,
-			IPAddresses: []net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback},
-		}
+		cf.template.KeyUsage = x509.KeyUsageDigitalSignature
+		cf.template.IPAddresses = []net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback}
 	}
 }
 
