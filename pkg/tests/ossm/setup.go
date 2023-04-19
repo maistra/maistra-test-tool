@@ -4,6 +4,7 @@ import (
 	_ "embed"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/template"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -77,7 +78,7 @@ func BasicSetup(t test.TestHelper) {
 	if env.Getenv("NIGHTLY", "false") == "true" {
 		installNightlyOperators(t)
 	}
-	oc.CreateNamespace(t, meshNamespace, "bookinfo", "foo", "bar", "legacy", "mesh-external")
+	oc.CreateNamespace(t, meshNamespace, ns.Bookinfo, ns.Foo, ns.Bar, ns.Legacy, ns.MeshExternal)
 }
 
 func DeployControlPlane(t test.TestHelper) {

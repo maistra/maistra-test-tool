@@ -116,6 +116,11 @@ func Logs(t test.TestHelper, podLocator PodLocatorFunc, container string, checks
 	DefaultOC.Logs(t, podLocator, container, checks...)
 }
 
+func LogsFromPods(t test.TestHelper, ns, selector string, checks ...common.CheckFunc) {
+	t.T().Helper()
+	DefaultOC.LogsFromPods(t, ns, selector, checks...)
+}
+
 func WaitPodRunning(t test.TestHelper, podLocator PodLocatorFunc) {
 	t.T().Helper()
 	DefaultOC.WaitPodRunning(t, podLocator)

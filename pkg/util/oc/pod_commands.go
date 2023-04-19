@@ -55,6 +55,13 @@ func (o OC) Logs(t test.TestHelper, podLocator PodLocatorFunc, container string,
 		checks...)
 }
 
+func (o OC) LogsFromPods(t test.TestHelper, ns, selector string, checks ...common.CheckFunc) {
+	t.T().Helper()
+	o.Invoke(t,
+		fmt.Sprintf("kubectl -n %s logs -l %s --all-containers --tail=-1", ns, selector),
+		checks...)
+}
+
 func (o OC) WaitPodRunning(t test.TestHelper, podLocator PodLocatorFunc) {
 	t.T().Helper()
 	retry.UntilSuccessWithOptions(t, retry.Options().LogAttempts(false), func(t test.TestHelper) {

@@ -3,10 +3,12 @@ package certificate
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/helm"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -15,7 +17,6 @@ import (
 
 func TestCertManager(t *testing.T) {
 	test.NewTest(t).Id("T38").Groups(test.Full, test.ARM, test.InterOp).Run(func(t test.TestHelper) {
-		ns := "foo"
 		certManagerNs := "cert-manager"
 
 		t.Cleanup(func() {
@@ -26,7 +27,7 @@ func TestCertManager(t *testing.T) {
 			oc.DeleteSecret(t, meshNamespace, "istiod-tls")
 			oc.DeleteSecret(t, meshNamespace, "istio-ca")
 			oc.DeleteNamespace(t, certManagerNs)
-			oc.RecreateNamespace(t, ns)
+			oc.RecreateNamespace(t, ns.Foo)
 		})
 
 		t.LogStep("Uninstall existing SMCP")
@@ -65,20 +66,42 @@ func TestCertManager(t *testing.T) {
 		for _, ver := range []string{"v2.3", "v2.4"} {
 			t.NewSubTest(ver).Run(func(t test.TestHelper) {
 				t.Cleanup(func() {
-					app.Uninstall(t, app.Httpbin(ns), app.Sleep(ns))
+					app.Uninstall(t, app.Httpbin(ns.Foo), app.Sleep(ns.Foo))
 				})
 
 				t.LogStep("Deploy SMCP " + ver)
-				oc.ApplyString(t, meshNamespace, createSMCPWithCertManager(smcpName, meshNamespace, ns, ver))
+				oc.ApplyString(t, meshNamespace, createSMCPWithCertManager(smcpName, meshNamespace, ns.Foo, ver))
 				oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
+				t.LogStep("Verify that istio-ca-root-cert created in proper namespaces")
+				retryOpts := retry.Options().MaxAttempts(10).DelayBetweenAttempts(1 * time.Second)
+				retry.UntilSuccessWithOptions(t, retryOpts, func(t test.TestHelper) {
+					oc.LogsFromPods(t, meshNamespace, "app=cert-manager-istio-csr",
+						assert.OutputContains(
+							fmt.Sprintf(`"msg"="creating configmap with root CA data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, meshNamespace),
+							fmt.Sprintf("istio-ca-root-cert created in %s", meshNamespace),
+							fmt.Sprintf("istio-ca-root-cert not created in %s", meshNamespace)))
+					oc.LogsFromPods(t, meshNamespace, "app=cert-manager-istio-csr",
+						assert.OutputContains(
+							fmt.Sprintf(`"msg"="creating configmap with root CA data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, ns.Foo),
+							fmt.Sprintf("istio-ca-root-cert created in %s", ns.Foo),
+							fmt.Sprintf("istio-ca-root-cert not created in %s", ns.Foo)))
+				})
+
+				t.LogStep("Verify that istio-ca-root-cert not created in non-member namespaces")
+				oc.LogsFromPods(t, meshNamespace, "app=cert-manager-istio-csr",
+					assert.OutputDoesNotContain(
+						fmt.Sprintf(`"msg"="creating configmap with root CA data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, ns.Bar),
+						fmt.Sprintf("istio-ca-root-cert not created in %s", ns.Bar),
+						fmt.Sprintf("istio-ca-root-cert created in %s", ns.Bar)))
+
 				t.LogStep("Deploy httpbin and sleep")
-				app.InstallAndWaitReady(t, app.Httpbin(ns), app.Sleep(ns))
+				app.InstallAndWaitReady(t, app.Httpbin(ns.Foo), app.Sleep(ns.Foo))
 
 				t.LogStep("Check if httpbin returns 200 OK ")
 				retry.UntilSuccess(t, func(t test.TestHelper) {
 					oc.Exec(t,
-						pod.MatchingSelector("app=sleep", ns),
+						pod.MatchingSelector("app=sleep", ns.Foo),
 						"sleep",
 						`curl http://httpbin:8000/ip -s -o /dev/null -w "%{http_code}"`,
 						assert.OutputContains(
