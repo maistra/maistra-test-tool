@@ -305,6 +305,14 @@ func (o OC) UndoRollout(t test.TestHelper, ns string, kind, name string) {
 	shell.Executef(t, `kubectl -n %s rollout undo %s %s`, ns, kind, name)
 }
 
+func (o OC) TaintNode(t test.TestHelper, name string, taints ...string) {
+	t.T().Helper()
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		shell.Executef(t, `oc adm taint nodes %s %s`, name, strings.Join(taints, " "))
+	})
+}
+
 func (o OC) Label(t test.TestHelper, ns string, kind string, name string, labels string) {
 	t.T().Helper()
 	nsFlag := ""
