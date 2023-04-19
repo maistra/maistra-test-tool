@@ -6,7 +6,6 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/helm"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -20,8 +19,12 @@ func TestCertManager(t *testing.T) {
 		certManagerNs := "cert-manager"
 
 		t.Cleanup(func() {
-			helm.Namespace(certManagerNs).Release("cert-manager").Uninstall(t)
+			oc.DeleteFromString(t, meshNamespace, istioCA)
+			oc.DeleteFromString(t, certManagerNs, rootCA)
 			helm.Namespace(meshNamespace).Release("istio-csr").Uninstall(t)
+			helm.Namespace(certManagerNs).Release("cert-manager").Uninstall(t)
+			oc.DeleteSecret(t, meshNamespace, "istiod-tls")
+			oc.DeleteSecret(t, meshNamespace, "istio-ca")
 			oc.DeleteNamespace(t, certManagerNs)
 			oc.RecreateNamespace(t, ns)
 		})
@@ -58,28 +61,36 @@ func TestCertManager(t *testing.T) {
 			Install(t)
 		oc.WaitPodsReady(t, meshNamespace, "app=cert-manager-istio-csr")
 
-		t.LogStep("Deploy the cert-manager in SMCP")
-		oc.ApplyString(t, meshNamespace, createSMCPWithCertManager(smcpName, meshNamespace, ns))
-		oc.WaitSMCPReady(t, meshNamespace, smcpName)
+		for _, ver := range []string{"v2.3", "v2.4"} {
+			t.NewSubTest(ver).Run(func(t test.TestHelper) {
+				t.Cleanup(func() {
+					app.Uninstall(t, app.Httpbin(ns), app.Sleep(ns))
+				})
 
-		t.LogStep("Install httpbin and sleep")
-		app.InstallAndWaitReady(t, app.Httpbin(ns), app.Sleep(ns))
+				t.LogStep("Deploy SMCP " + ver)
+				oc.ApplyString(t, meshNamespace, createSMCPWithCertManager(smcpName, meshNamespace, ns, ver))
+				oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
-		t.LogStep("Check if httpbin returns 200 OK ")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			oc.Exec(t,
-				pod.MatchingSelector("app=sleep", ns),
-				"sleep",
-				`curl http://httpbin:8000/ip -s -o /dev/null -w "%{http_code}"`,
-				assert.OutputContains(
-					"200",
-					"Got expected 200 OK from httpbin",
-					"Expected 200 OK from httpbin, but got a different HTTP code"))
-		})
+				t.LogStep("Deploy httpbin and sleep")
+				app.InstallAndWaitReady(t, app.Httpbin(ns), app.Sleep(ns))
+
+				t.LogStep("Check if httpbin returns 200 OK ")
+				retry.UntilSuccess(t, func(t test.TestHelper) {
+					oc.Exec(t,
+						pod.MatchingSelector("app=sleep", ns),
+						"sleep",
+						`curl http://httpbin:8000/ip -s -o /dev/null -w "%{http_code}"`,
+						assert.OutputContains(
+							"200",
+							"Got expected 200 OK from httpbin",
+							"Expected 200 OK from httpbin, but got a different HTTP code"))
+				})
+			})
+		}
 	})
 }
 
-func createSMCPWithCertManager(smcpName, smcpNamespace, memberNs string) string {
+func createSMCPWithCertManager(smcpName, smcpNamespace, memberNs, version string) string {
 	return fmt.Sprintf(`apiVersion: maistra.io/v2
 kind: ServiceMeshControlPlane
 metadata:
@@ -117,7 +128,7 @@ metadata:
 spec:
   members:
   - %s
-`, smcpName, smcpNamespace, env.GetSMCPVersion(), memberNs)
+`, smcpName, smcpNamespace, version, memberNs)
 }
 
 func istioCsrValues(meshNamespace, smcpName string) string {
