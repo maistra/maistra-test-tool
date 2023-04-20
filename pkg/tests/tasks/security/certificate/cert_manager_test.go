@@ -2,12 +2,15 @@ package certificate
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/helm"
+	"github.com/maistra/maistra-test-tool/pkg/util/istio"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -104,6 +107,13 @@ func TestCertManager(t *testing.T) {
 					"200",
 					"Got expected 200 OK from httpbin",
 					"Expected 200 OK from httpbin, but got a different HTTP code"))
+		})
+
+		t.LogStep("Check mTLS traffic from ingress gateway to httpbin")
+		oc.ApplyFile(t, ns.Foo, "https://raw.githubusercontent.com/maistra/istio/maistra-2.4/samples/httpbin/httpbin-gateway.yaml")
+		httpbinURL := fmt.Sprintf("http://%s/headers", istio.GetIngressGatewayHost(t, meshNamespace))
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			curl.Request(t, httpbinURL, nil, assert.ResponseStatus(http.StatusOK))
 		})
 	})
 }
