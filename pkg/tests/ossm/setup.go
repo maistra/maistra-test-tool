@@ -46,7 +46,6 @@ var (
 
 	smcpName      = env.GetDefaultSMCPName()
 	meshNamespace = env.GetDefaultMeshNamespace()
-	ipv6          = env.Getenv("IPV6", "false")
 )
 
 func DefaultSMCP() SMCP {
@@ -74,9 +73,6 @@ func SetupEnvVars(t test.TestHelper) {
 func BasicSetup(t test.TestHelper) {
 	t.T().Helper()
 	SetupEnvVars(t)
-	if ipv6 == "true" {
-		t.Log("Running the test with IPv6 configuration")
-	}
 
 	if env.Getenv("NIGHTLY", "false") == "true" {
 		installNightlyOperators(t)
