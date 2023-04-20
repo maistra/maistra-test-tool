@@ -34,7 +34,7 @@ runAllTests() {
     fi
 
     go test -timeout 2h -v -count 1 -p 1 "$dir/..." 2>&1 \
-    | tee -a "$LOG_FILE" >(${GOPATH}/bin/go-junit-report > "$RESULTS_FILE")
+    | tee -a "$LOG_FILE" >(${GOPATH}/bin/go-junit-report > "$REPORT_FILE")
 }
 
 runTest() {
@@ -47,7 +47,7 @@ runTest() {
     logHeader "Executing $testName against SMCP $SMCPVERSION"
 
     go test -timeout 30m -v -count 1 -p 1 -run "^$testName$" "$dir/" 2>&1 \
-    | tee -a "$LOG_FILE" >(${GOPATH}/bin/go-junit-report > "$RESULTS_FILE")
+    | tee -a "$LOG_FILE" >(${GOPATH}/bin/go-junit-report > "$REPORT_FILE")
 }
 
 resetCluster() {
