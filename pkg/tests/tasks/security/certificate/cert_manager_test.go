@@ -6,6 +6,7 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/helm"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -19,8 +20,8 @@ func TestCertManager(t *testing.T) {
 		certManagerNs := "cert-manager"
 
 		t.Cleanup(func() {
-			helm.Namespace(meshNamespace).Release("istio-csr").Uninstall(t)
 			helm.Namespace(certManagerNs).Release("cert-manager").Uninstall(t)
+			helm.Namespace(meshNamespace).Release("istio-csr").Uninstall(t)
 			oc.DeleteNamespace(t, certManagerNs)
 			oc.RecreateNamespace(t, ns)
 		})
@@ -107,7 +108,7 @@ spec:
       type: ThirdParty
   tracing:
     type: None
-  version: v2.3
+  version: %s
 ---
 apiVersion: maistra.io/v1
 kind: ServiceMeshMemberRoll
@@ -116,7 +117,7 @@ metadata:
 spec:
   members:
   - %s
-`, smcpName, smcpNamespace, memberNs)
+`, smcpName, smcpNamespace, env.GetSMCPVersion(), memberNs)
 }
 
 func istioCsrValues(meshNamespace, smcpName string) string {

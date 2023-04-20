@@ -38,7 +38,7 @@ func TestDeployOnInfraNodes(t *testing.T) {
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_3) {
 			t.Skip("Deploy On Infra node is available in SMCP versions v2.3+")
 		}
-		if Smcp.Rosa {
+		if env.IsRosa() {
 			t.Skip("Skipping test on ROSA due to lack of permissions")
 		}
 		output := shell.Executef(t, `oc get subscription -n %s servicemeshoperator || true`, env.GetOperatorNamespace())
@@ -103,7 +103,7 @@ spec:
 			t.Log("Verify that all control plane pods are deployed on infra node when configured")
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
-				oc.ApplyTemplate(t, meshNamespace, GetSMCPTemplate(env.GetDefaultSMCPVersion()), Smcp)
+				InstallSMCP(t, meshNamespace)
 				oc.WaitSMCPReady(t, meshNamespace, smcpName)
 			})
 

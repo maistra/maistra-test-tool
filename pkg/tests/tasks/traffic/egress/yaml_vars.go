@@ -15,8 +15,8 @@
 package egress
 
 import (
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/template"
 )
 
 var (
@@ -26,10 +26,6 @@ var (
 )
 
 var (
-	smcpName      = env.Getenv("SMCPNAME", "basic")
-	meshNamespace = env.Getenv("MESHNAMESPACE", "istio-system")
-	smcp          = template.SMCP{
-		Name:      smcpName,
-		Namespace: meshNamespace,
-		Rosa:      env.IsRosa()}
+	meshNamespace = env.GetDefaultMeshNamespace()
+	smcp          = ossm.DefaultSMCP()
 )

@@ -14,16 +14,9 @@
 
 package non_dependant
 
-import (
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/template"
-)
+import "github.com/maistra/maistra-test-tool/pkg/util/env"
 
 var (
-	smcpName      = env.Getenv("SMCPNAME", "basic")
-	meshNamespace = env.Getenv("MESHNAMESPACE", "istio-system")
-	smcp          = template.SMCP{
-		Name:      smcpName,
-		Namespace: meshNamespace,
-		Rosa:      env.IsRosa()}
+	smcpName      = env.GetDefaultSMCPName()
+	meshNamespace = env.GetDefaultMeshNamespace()
 )

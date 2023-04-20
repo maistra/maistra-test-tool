@@ -148,7 +148,7 @@ spec:
           rootCADir: /etc/cacerts
   tracing:
     type: None
-  version: v2.3
+  version: %v
 ---
 apiVersion: maistra.io/v1
 kind: ServiceMeshMemberRoll
@@ -157,5 +157,5 @@ metadata:
 spec:
   members:
   - %s
-`, smcpName, memberNs)
+`, smcpName, env.GetSMCPVersion(), memberNs)
 }

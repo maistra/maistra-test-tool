@@ -4,7 +4,7 @@ metadata:
   name: west-mesh
   namespace: west-mesh-system
 spec:
-  version: v2.3
+  version: {{ .Version }}
 #  runtime:
 #    defaults:
 #      container:

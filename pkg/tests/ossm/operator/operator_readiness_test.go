@@ -15,17 +15,14 @@ import (
 )
 
 func TestOperatorPodHonorsReadinessProbe(t *testing.T) {
-	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
-		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
-			t.Skip("The operator readiness probe was implemented in v2.4+")
-		}
+	test.NewTest(t).Groups(test.Full).MinVersion(version.SMCP_2_4).Run(func(t test.TestHelper) {
 		t.Log("This test checks if the operator correctly reports its readiness status")
 
 		meshNamespace := env.GetDefaultMeshNamespace()
 		operatorPod := pod.MatchingSelector("name=istio-operator", env.GetOperatorNamespace())
 
 		t.LogStep("Install SMCP and wait for it to be Ready")
-		ossm.InstallSMCP(t, meshNamespace, env.GetDefaultSMCPVersion())
+		ossm.InstallSMCP(t, meshNamespace)
 		oc.WaitSMCPReady(t, meshNamespace, env.GetDefaultSMCPName())
 
 		t.LogStep("Delete istio-operator pod")

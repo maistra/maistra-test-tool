@@ -4,7 +4,7 @@ metadata:
   name: east-mesh
   namespace: east-mesh-system
 spec:
-  version: v2.3
+  version: {{ .Version }}
 #  runtime:
 #    defaults:
 #      container:

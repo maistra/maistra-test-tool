@@ -1,33 +1,38 @@
 FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
 WORKDIR /bin
 
-RUN microdnf install --nodocs tar gcc gzip git bind-utils sudo \
+RUN microdnf install --nodocs tar gcc gzip git bind-utils findutils sudo \
     && curl -Lo ./oc.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz \
     && tar -xf oc.tar.gz \
     && rm -f oc.tar.gz \
-    && curl -Lo ./golang.tar.gz https://go.dev/dl/go1.16.15.linux-amd64.tar.gz \
+    && curl -Lo ./golang.tar.gz https://go.dev/dl/go1.20.3.linux-amd64.tar.gz \
     && tar -xf golang.tar.gz -C / \
     && rm -f golang.tar.gz \
     && microdnf update \
     && microdnf clean all
 
 ENV GOROOT=/go
-ENV TEST_GROUP ${TEST_GROUP}
+ENV GOPATH=/root/go
+ENV GODEBUG "x509ignoreCN=0"
 ENV PATH=$GOROOT/bin:$PATH
-ENV SAMPLEARCH ${SAMPLEARCH}
+
+ENV OCP_API_URL ${OCP_API_URL}
 ENV OCP_CRED_USR ${OCP_CRED_USR}
 ENV OCP_CRED_PSW ${OCP_CRED_PSW}
 ENV OCP_TOKEN ${OCP_TOKEN}
-ENV OCP_API_URL ${OCP_API_URL}
-ENV NIGHTLY ${NIGHTLY}
+
+ENV TEST_GROUP ${TEST_GROUP}
 ENV TEST_CASE ${TEST_CASE}
+
+ENV SAMPLEARCH ${SAMPLEARCH}
+ENV NIGHTLY ${NIGHTLY}
 ENV ROSA ${ROSA}
-ENV GODEBUG "x509ignoreCN=0"
 ENV MUSTGATHERTAG ${MUSTGATHERTAG}
 ENV IPV6 ${IPV6}
 
 COPY . /opt/maistra-test-tool
-WORKDIR /opt/maistra-test-tool/tests
+WORKDIR /opt/maistra-test-tool
 
-# ENTRYPOINT is not a shell, if you need export environment variables, use ["/bin/bash/", "-c", "scripts"]
-ENTRYPOINT ["../scripts/pipeline/run_all_tests.sh"]
+RUN go install github.com/jstemmer/go-junit-report/v2@latest && go mod download
+
+ENTRYPOINT ["scripts/runtests.sh"]
