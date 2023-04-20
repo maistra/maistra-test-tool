@@ -69,9 +69,9 @@ func GetDefaultMeshNamespace() string {
 }
 
 func GetSMCPVersion() version.Version {
-	v := os.Getenv("SMCPVERSION")
+	v := os.Getenv("SMCP_VERSION")
 	if v == "" {
-		panic("SMCPVERSION environment variable not set")
+		panic("SMCP_VERSION environment variable not set")
 	}
 	return version.ParseVersion(v)
 }
