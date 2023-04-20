@@ -13,7 +13,6 @@ RUN microdnf install --nodocs tar gcc gzip git bind-utils findutils sudo \
 
 ENV GOROOT=/go
 ENV GOPATH=/root/go
-ENV GODEBUG "x509ignoreCN=0"
 ENV PATH=$GOROOT/bin:$PATH
 
 ENV OCP_API_URL ${OCP_API_URL}
@@ -28,7 +27,6 @@ ENV SAMPLEARCH ${SAMPLEARCH}
 ENV NIGHTLY ${NIGHTLY}
 ENV ROSA ${ROSA}
 ENV MUSTGATHERTAG ${MUSTGATHERTAG}
-ENV IPV6 ${IPV6}
 
 COPY . /opt/maistra-test-tool
 WORKDIR /opt/maistra-test-tool
