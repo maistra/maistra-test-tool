@@ -5,7 +5,7 @@ RUN microdnf install --nodocs tar gcc gzip git bind-utils findutils sudo \
     && curl -Lo ./oc.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz \
     && tar -xf oc.tar.gz \
     && rm -f oc.tar.gz \
-    && curl -Lo ./golang.tar.gz https://go.dev/dl/go1.19.8.linux-amd64.tar.gz \
+    && curl -Lo ./golang.tar.gz https://go.dev/dl/go1.20.3.linux-amd64.tar.gz \
     && tar -xf golang.tar.gz -C / \
     && rm -f golang.tar.gz \
     && microdnf update \
