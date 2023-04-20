@@ -37,9 +37,9 @@ The testing tasks are based on [istio.io Doc Tasks](https://istio.io/v1.9/docs/t
 
 - Optionally to run all the test cases customizing the SMCP namespace and the SMCP name: A user can update the expected values in the `tests/test.env`.
 
-- By default, the `tests/test.env` file uses `export SAMPLEARCH=x86`
-    - For Power environment testing, a user can update the `tests/test.env` file `export SAMPLEARCH=p`
-    - For Z environment testing, a user can update the `tests/test.env` file `export SAMPLEARCH=z`
+- By default, the `tests/test.env` file uses `export OCP_ARCH=x86`
+    - For Power environment testing, a user can update the `tests/test.env` file `export OCP_ARCH=p`
+    - For Z environment testing, a user can update the `tests/test.env` file `export OCP_ARCH=z`
 
 - To run all the test cases, run the following command:
   ```

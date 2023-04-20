@@ -77,7 +77,7 @@ func GetSMCPVersion() version.Version {
 }
 
 func GetSampleArch() string {
-	return Getenv("SAMPLEARCH", "x86")
+	return Getenv("OCP_ARCH", "x86")
 }
 
 func GetOperatorNamespace() string {
