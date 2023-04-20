@@ -27,8 +27,8 @@ runAllTests() {
     local dir="$1"
 
     echo > "$LOG_FILE"
-    if [ -n "$TESTGROUP" ]; then
-        logHeader "Executing tests in group '$TESTGROUP' against SMCP $SMCP_VERSION"
+    if [ -n "$TEST_GROUP" ]; then
+        logHeader "Executing tests in group '$TEST_GROUP' against SMCP $SMCP_VERSION"
     else
         logHeader "Executing all tests against SMCP $SMCP_VERSION"
     fi
