@@ -51,11 +51,11 @@ func TestCertManager(t *testing.T) {
 		oc.WaitPodReady(t, pod.MatchingSelector("name=cert-manager-operator", certManagerOperatorNs))
 		oc.WaitPodReady(t, pod.MatchingSelector("app=cert-manager", certManagerNs))
 
-		t.LogStep("Provision root certificate")
-		oc.ApplyString(t, certManagerNs, rootCA)
-
-		t.LogStep("Provision Istio certificate")
-		oc.ApplyString(t, meshNamespace, istioCA)
+		t.LogStep("Create certificates")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			oc.ApplyString(t, certManagerNs, rootCA)
+			oc.ApplyString(t, meshNamespace, istioCA)
+		})
 
 		t.LogStep("Add jetstack repo to helm")
 		helm.Repo("https://charts.jetstack.io").Add(t, "jetstack")
@@ -148,7 +148,7 @@ spec:
       type: ThirdParty
   tracing:
     type: None
-  version: v%s
+  version: %s
 ---
 apiVersion: maistra.io/v1
 kind: ServiceMeshMemberRoll
