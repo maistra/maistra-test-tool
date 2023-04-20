@@ -33,8 +33,13 @@ runAllTests() {
         logHeader "Executing all tests against SMCP $SMCP_VERSION"
     fi
 
-    go test -timeout 2h -v -count 1 -p 1 "$dir/..." 2>&1 \
-    | tee -a "$LOG_FILE" >(${GOPATH}/bin/go-junit-report > "$REPORT_FILE")
+#   add the following to re-run failed tests
+#     --rerun-fails=5 --rerun-fails-report "$RERUNS_FILE" \
+
+    gotestsum -f standard-verbose --junitfile "$REPORT_FILE" --packages "$dir/..." \
+    --junitfile-testsuite-name relative --junitfile-testcase-classname relative \
+    -- -timeout 2h -count 1 -p 1 2>&1 \
+    | tee -a "$LOG_FILE"
 }
 
 runTest() {
@@ -46,14 +51,19 @@ runTest() {
     echo > "$LOG_FILE"
     logHeader "Executing $testName against SMCP $SMCP_VERSION"
 
-    go test -timeout 30m -v -count 1 -p 1 -run "^$testName$" "$dir/" 2>&1 \
-    | tee -a "$LOG_FILE" >(${GOPATH}/bin/go-junit-report > "$REPORT_FILE")
+#   add the following to re-run failed tests
+#     --rerun-fails=5 --rerun-fails-report "$RERUNS_FILE" \
+
+    gotestsum -f standard-verbose --junitfile "$REPORT_FILE" --packages "$dir/" \
+    --junitfile-testsuite-name relative --junitfile-testcase-classname relative \
+    -- -timeout 30m -count 1 -p 1 -run "^$testName$" 2>&1 \
+    | tee -a "$LOG_FILE"
 }
 
 resetCluster() {
     echo
     echo "Resetting cluster by deleting namespaces used in the test suite"
-    oc delete namespace istio-system bookinfo foo bar legacy mesh-external --ignore-not-found
+    oc delete namespace istio-system bookinfo foo bar legacy mesh-external cert-manager --ignore-not-found
 }
 
 main() {
@@ -64,13 +74,14 @@ main() {
     else
         echo "Executing tests against SMCP version $SMCP_VERSION"
     fi
-    echo
 
     if [ -n "${OCP_CRED_PSW}" ]; then
         oc login -u ${OCP_CRED_USR} -p ${OCP_CRED_PSW} --server=${OCP_API_URL} --insecure-skip-tls-verify=true
     elif [ -n "${OCP_TOKEN}" ]; then
         oc login --token=${OCP_TOKEN} --server=${OCP_API_URL} --insecure-skip-tls-verify=true
     fi
+
+    resetCluster
 
     testName="${TEST_CASE:-$1}"
     if [ -n "$testName" ]; then
@@ -96,11 +107,21 @@ main() {
         echo "Found $testName in file $file."
     fi
 
+    declare -a versions=()
+    declare -A logFiles
+    declare -A reportFiles
+
     if [ -z "$SMCP_VERSION" ]; then
         for ver in ${SUPPORTED_VERSIONS[@]}; do
             export SMCP_VERSION="$ver"
             export LOG_FILE="$PWD/tests/output_${SMCP_VERSION}.log"
             export REPORT_FILE="$PWD/tests/report_${SMCP_VERSION}.xml"
+            export RERUNS_FILE="$PWD/tests/reruns_${SMCP_VERSION}.txt"
+
+            versions+=("$SMCP_VERSION")
+            logFiles["$SMCP_VERSION"]="$LOG_FILE"
+            reportFiles["$SMCP_VERSION"]="$REPORT_FILE"
+
             if [ -z "$testName" ]; then
                 runAllTests "$PWD/pkg/tests"
             else
@@ -108,29 +129,34 @@ main() {
             fi
             resetCluster
         done
-
-        echo
-        echo "=================================================================="
-        echo "The JUnit test reports are located in:"
-        for ver in ${SUPPORTED_VERSIONS[@]}; do
-            echo "    - $PWD/tests/report_${ver}.xml"
-        done
-
     else
-
         SMCP_VERSION="v${SMCP_VERSION#v}" # prepend "v" if necessary
         export LOG_FILE="$PWD/tests/output_${SMCP_VERSION}.log"
         export REPORT_FILE="$PWD/tests/report_${SMCP_VERSION}.xml"
+        export RERUNS_FILE="$PWD/tests/reruns_${SMCP_VERSION}.txt"
+
+        versions+=("$SMCP_VERSION")
+        logFiles["$SMCP_VERSION"]="$LOG_FILE"
+        reportFiles["$SMCP_VERSION"]="$REPORT_FILE"
+
         if [ -z "$testName" ]; then
             runAllTests "$PWD/pkg/tests"
         else
             runTest "$dir" "$testName"
         fi
-
-        echo
-        echo "The JUnit test report is located in:"
-        echo "    $REPORT_FILE"
     fi
+
+    echo
+    echo "====== JUnit report file(s)"
+    for ver in "${versions[@]}"; do
+        echo "$ver: ${reportFiles[$ver]}"
+    done
+
+    echo
+    echo "====== Test summary"
+    for ver in "${versions[@]}"; do
+        echo "${ver}: $(tail -1 ${logFiles[$ver]})"
+    done
 }
 
 time main $@

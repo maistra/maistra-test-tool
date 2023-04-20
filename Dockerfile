@@ -13,7 +13,7 @@ RUN microdnf install --nodocs tar gcc gzip git bind-utils findutils sudo \
 
 ENV GOROOT=/go
 ENV GOPATH=/root/go
-ENV PATH=$GOROOT/bin:$PATH
+ENV PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 
 ENV OCP_API_URL ${OCP_API_URL}
 ENV OCP_CRED_USR ${OCP_CRED_USR}
@@ -31,6 +31,6 @@ ENV MUST_GATHER_TAG ${MUST_GATHER_TAG}
 COPY . /opt/maistra-test-tool
 WORKDIR /opt/maistra-test-tool
 
-RUN go install github.com/jstemmer/go-junit-report/v2@latest && go mod download
+RUN go install gotest.tools/gotestsum@latest && go mod download
 
 ENTRYPOINT ["scripts/runtests.sh"]
