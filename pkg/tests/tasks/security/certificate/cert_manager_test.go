@@ -6,52 +6,56 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/helm"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 func TestCertManager(t *testing.T) {
 	test.NewTest(t).Id("T38").Groups(test.Full, test.ARM, test.InterOp).Run(func(t test.TestHelper) {
-		certManagerNs := "cert-manager"
+		smcpVer := env.GetSMCPVersion()
+		if smcpVer.LessThan(version.SMCP_2_3) {
+			t.Skip("cert-manager-istio-csr is not supported in SMCP older than v2.3.2")
+		}
 
+		certManagerOperatorNs := "cert-manager-operator"
+		certManagerNs := "cert-manager"
 		t.Cleanup(func() {
+			helm.Namespace(meshNamespace).Release("istio-csr").Uninstall(t)
 			oc.DeleteFromString(t, meshNamespace, istioCA)
 			oc.DeleteFromString(t, certManagerNs, rootCA)
-			helm.Namespace(meshNamespace).Release("istio-csr").Uninstall(t)
-			helm.Namespace(certManagerNs).Release("cert-manager").Uninstall(t)
+			oc.DeleteFromString(t, certManagerOperatorNs, certManagerOperator)
 			oc.DeleteSecret(t, meshNamespace, "istiod-tls")
 			oc.DeleteSecret(t, meshNamespace, "istio-ca")
 			oc.DeleteNamespace(t, certManagerNs)
+			oc.DeleteNamespace(t, certManagerOperatorNs)
 			oc.RecreateNamespace(t, ns.Foo)
 		})
 
 		t.LogStep("Uninstall existing SMCP")
 		oc.RecreateNamespace(t, meshNamespace)
 
-		t.LogStep("Create namespace for cert-manager")
-		oc.CreateNamespace(t, certManagerNs)
+		t.LogStep("Create namespace for cert-manager-operator")
+		oc.CreateNamespace(t, certManagerOperatorNs)
 
-		t.LogStep("Add jetstack repo to helm")
-		helm.Repo("https://charts.jetstack.io").Add(t, "jetstack")
-
-		t.LogStep("Install cert-manager")
-		helm.Namespace(certManagerNs).
-			Chart("jetstack/cert-manager").
-			Release("cert-manager").
-			Version("v1.11.0").
-			Set("installCRDs=true").
-			Install(t)
-		oc.WaitPodsReady(t, certManagerNs, "app=cert-manager")
+		t.LogStep("Install cert-manager-operator")
+		oc.ApplyString(t, certManagerOperatorNs, certManagerOperator)
+		oc.WaitPodReady(t, pod.MatchingSelector("name=cert-manager-operator", certManagerOperatorNs))
+		oc.WaitPodReady(t, pod.MatchingSelector("app=cert-manager", certManagerNs))
 
 		t.LogStep("Provision root certificate")
 		oc.ApplyString(t, certManagerNs, rootCA)
 
 		t.LogStep("Provision Istio certificate")
 		oc.ApplyString(t, meshNamespace, istioCA)
+
+		t.LogStep("Add jetstack repo to helm")
+		helm.Repo("https://charts.jetstack.io").Add(t, "jetstack")
 
 		t.LogStep("Install cert-manager-istio-csr")
 		helm.Namespace(meshNamespace).
@@ -62,58 +66,51 @@ func TestCertManager(t *testing.T) {
 			Install(t)
 		oc.WaitPodsReady(t, meshNamespace, "app=cert-manager-istio-csr")
 
-		for _, ver := range []string{"v2.3", "v2.4"} {
-			t.NewSubTest(ver).Run(func(t test.TestHelper) {
-				t.Cleanup(func() {
-					app.Uninstall(t, app.Httpbin(ns.Foo), app.Sleep(ns.Foo))
-				})
+		t.LogStep("Deploy SMCP " + smcpVer.String())
+		oc.ApplyString(t, meshNamespace, createSMCPWithCertManager(smcpName, meshNamespace, ns.Foo, smcpVer.String()))
+		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
-				t.LogStep("Deploy SMCP " + ver)
-				oc.ApplyString(t, meshNamespace, createSMCPWithCertManager(smcpName, meshNamespace, ns.Foo, ver))
-				oc.WaitSMCPReady(t, meshNamespace, smcpName)
+		t.LogStep("Verify that istio-ca-root-cert created in proper namespaces")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			oc.LogsFromPods(t, meshNamespace, "app=cert-manager-istio-csr",
+				assert.OutputContains(
+					fmt.Sprintf(`"msg"="creating configmap with root CA data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, meshNamespace),
+					fmt.Sprintf("istio-ca-root-cert created in %s", meshNamespace),
+					fmt.Sprintf("istio-ca-root-cert not created in %s", meshNamespace)))
+			oc.LogsFromPods(t, meshNamespace, "app=cert-manager-istio-csr",
+				assert.OutputContains(
+					fmt.Sprintf(`"msg"="creating configmap with root CA data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, ns.Foo),
+					fmt.Sprintf("istio-ca-root-cert created in %s", ns.Foo),
+					fmt.Sprintf("istio-ca-root-cert not created in %s", ns.Foo)))
+		})
 
-				t.LogStep("Verify that istio-ca-root-cert created in proper namespaces")
-				retry.UntilSuccess(t, func(t test.TestHelper) {
-					oc.LogsFromPods(t, meshNamespace, "app=cert-manager-istio-csr",
-						assert.OutputContains(
-							fmt.Sprintf(`"msg"="creating configmap with root CA data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, meshNamespace),
-							fmt.Sprintf("istio-ca-root-cert created in %s", meshNamespace),
-							fmt.Sprintf("istio-ca-root-cert not created in %s", meshNamespace)))
-					oc.LogsFromPods(t, meshNamespace, "app=cert-manager-istio-csr",
-						assert.OutputContains(
-							fmt.Sprintf(`"msg"="creating configmap with root CA data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, ns.Foo),
-							fmt.Sprintf("istio-ca-root-cert created in %s", ns.Foo),
-							fmt.Sprintf("istio-ca-root-cert not created in %s", ns.Foo)))
-				})
+		t.LogStep("Verify that istio-ca-root-cert not created in non-member namespaces")
+		oc.LogsFromPods(t, meshNamespace, "app=cert-manager-istio-csr",
+			assert.OutputDoesNotContain(
+				fmt.Sprintf(`"msg"="creating configmap with root CA data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, ns.Bar),
+				fmt.Sprintf("istio-ca-root-cert not created in %s", ns.Bar),
+				fmt.Sprintf("istio-ca-root-cert created in %s", ns.Bar)))
 
-				t.LogStep("Verify that istio-ca-root-cert not created in non-member namespaces")
-				oc.LogsFromPods(t, meshNamespace, "app=cert-manager-istio-csr",
-					assert.OutputDoesNotContain(
-						fmt.Sprintf(`"msg"="creating configmap with root CA data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, ns.Bar),
-						fmt.Sprintf("istio-ca-root-cert not created in %s", ns.Bar),
-						fmt.Sprintf("istio-ca-root-cert created in %s", ns.Bar)))
+		t.LogStep("Deploy httpbin and sleep")
+		app.InstallAndWaitReady(t, app.Httpbin(ns.Foo), app.Sleep(ns.Foo))
 
-				t.LogStep("Deploy httpbin and sleep")
-				app.InstallAndWaitReady(t, app.Httpbin(ns.Foo), app.Sleep(ns.Foo))
-
-				t.LogStep("Check if httpbin returns 200 OK ")
-				retry.UntilSuccess(t, func(t test.TestHelper) {
-					oc.Exec(t,
-						pod.MatchingSelector("app=sleep", ns.Foo),
-						"sleep",
-						`curl http://httpbin:8000/ip -s -o /dev/null -w "%{http_code}"`,
-						assert.OutputContains(
-							"200",
-							"Got expected 200 OK from httpbin",
-							"Expected 200 OK from httpbin, but got a different HTTP code"))
-				})
-			})
-		}
+		t.LogStep("Check if httpbin returns 200 OK ")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			oc.Exec(t,
+				pod.MatchingSelector("app=sleep", ns.Foo),
+				"sleep",
+				`curl http://httpbin:8000/ip -s -o /dev/null -w "%{http_code}"`,
+				assert.OutputContains(
+					"200",
+					"Got expected 200 OK from httpbin",
+					"Expected 200 OK from httpbin, but got a different HTTP code"))
+		})
 	})
 }
 
 func createSMCPWithCertManager(smcpName, smcpNamespace, memberNs, version string) string {
-	return fmt.Sprintf(`apiVersion: maistra.io/v2
+	return fmt.Sprintf(`
+apiVersion: maistra.io/v2
 kind: ServiceMeshControlPlane
 metadata:
   name: %s
@@ -141,7 +138,7 @@ spec:
       type: ThirdParty
   tracing:
     type: None
-  version: %s
+  version: v%s
 ---
 apiVersion: maistra.io/v1
 kind: ServiceMeshMemberRoll
@@ -189,6 +186,30 @@ app:
 }
 
 const (
+	certManagerOperator = `
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: cert-manager-operator-1
+spec:
+  targetNamespaces:
+  - cert-manager-operator
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: openshift-cert-manager-operator
+  labels:
+    operators.coreos.com/openshift-cert-manager-operator.cert-manager-operator: ""
+spec:
+  channel: stable-v1
+  installPlanApproval: Automatic
+  name: openshift-cert-manager-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  startingCSV: cert-manager-operator.v1.10.2
+`
+
 	rootCA = `
 apiVersion: cert-manager.io/v1
 kind: Issuer
