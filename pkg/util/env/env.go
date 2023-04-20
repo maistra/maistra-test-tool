@@ -61,23 +61,23 @@ func IsRosa() bool {
 }
 
 func GetDefaultSMCPName() string {
-	return Getenv("SMCPNAME", "basic")
+	return Getenv("SMCP_NAME", "basic")
 }
 
 func GetDefaultMeshNamespace() string {
-	return Getenv("MESHNAMESPACE", "istio-system")
+	return Getenv("SMCP_NAMESPACE", "istio-system")
 }
 
 func GetSMCPVersion() version.Version {
-	v := os.Getenv("SMCPVERSION")
+	v := os.Getenv("SMCP_VERSION")
 	if v == "" {
-		panic("SMCPVERSION environment variable not set")
+		panic("SMCP_VERSION environment variable not set")
 	}
 	return version.ParseVersion(v)
 }
 
 func GetSampleArch() string {
-	return Getenv("SAMPLEARCH", "x86")
+	return Getenv("OCP_ARCH", "x86")
 }
 
 func GetOperatorNamespace() string {

@@ -14,23 +14,23 @@ logHeader() {
     log
 }
 
-requireSMCPVERSION() {
-    if [ -z "$SMCPVERSION" ]; then
-        echo "ERROR: must specify version in SMCPVERSION env var"
+require_SMCP_VERSION() {
+    if [ -z "$SMCP_VERSION" ]; then
+        echo "ERROR: must specify version in SMCP_VERSION env var"
         exit 1
     fi
 }
 
 runAllTests() {
-    requireSMCPVERSION
+    require_SMCP_VERSION
 
     local dir="$1"
 
     echo > "$LOG_FILE"
-    if [ -n "$TESTGROUP" ]; then
-        logHeader "Executing tests in group '$TESTGROUP' against SMCP $SMCPVERSION"
+    if [ -n "$TEST_GROUP" ]; then
+        logHeader "Executing tests in group '$TEST_GROUP' against SMCP $SMCP_VERSION"
     else
-        logHeader "Executing all tests against SMCP $SMCPVERSION"
+        logHeader "Executing all tests against SMCP $SMCP_VERSION"
     fi
 
     go test -timeout 2h -v -count 1 -p 1 "$dir/..." 2>&1 \
@@ -38,13 +38,13 @@ runAllTests() {
 }
 
 runTest() {
-    requireSMCPVERSION
+    require_SMCP_VERSION
 
     local dir="$1"
     local testName="$2"
 
     echo > "$LOG_FILE"
-    logHeader "Executing $testName against SMCP $SMCPVERSION"
+    logHeader "Executing $testName against SMCP $SMCP_VERSION"
 
     go test -timeout 30m -v -count 1 -p 1 -run "^$testName$" "$dir/" 2>&1 \
     | tee -a "$LOG_FILE" >(${GOPATH}/bin/go-junit-report > "$REPORT_FILE")
@@ -57,12 +57,12 @@ resetCluster() {
 }
 
 main() {
-    if [ -z "$SMCPVERSION" ]; then
+    if [ -z "$SMCP_VERSION" ]; then
         echo
         echo "Executing tests against all supported versions: ${SUPPORTED_VERSIONS[*]}"
-        echo "    Note: To run tests against a specific version, set the SMCPVERSION environment variable."
+        echo "    Note: To run tests against a specific version, set the SMCP_VERSION environment variable."
     else
-        echo "Executing tests against SMCP version $SMCPVERSION"
+        echo "Executing tests against SMCP version $SMCP_VERSION"
     fi
     echo
 
@@ -96,11 +96,11 @@ main() {
         echo "Found $testName in file $file."
     fi
 
-    if [ -z "$SMCPVERSION" ]; then
+    if [ -z "$SMCP_VERSION" ]; then
         for ver in ${SUPPORTED_VERSIONS[@]}; do
-            export SMCPVERSION="$ver"
-            export LOG_FILE="$PWD/tests/output_${SMCPVERSION}.log"
-            export REPORT_FILE="$PWD/tests/report_${SMCPVERSION}.xml"
+            export SMCP_VERSION="$ver"
+            export LOG_FILE="$PWD/tests/output_${SMCP_VERSION}.log"
+            export REPORT_FILE="$PWD/tests/report_${SMCP_VERSION}.xml"
             if [ -z "$testName" ]; then
                 runAllTests "$PWD/pkg/tests"
             else
@@ -118,9 +118,9 @@ main() {
 
     else
 
-        SMCPVERSION="v${SMCPVERSION#v}" # prepend "v" if necessary
-        export LOG_FILE="$PWD/tests/output_${SMCPVERSION}.log"
-        export REPORT_FILE="$PWD/tests/report_${SMCPVERSION}.xml"
+        SMCP_VERSION="v${SMCP_VERSION#v}" # prepend "v" if necessary
+        export LOG_FILE="$PWD/tests/output_${SMCP_VERSION}.log"
+        export REPORT_FILE="$PWD/tests/report_${SMCP_VERSION}.xml"
         if [ -z "$testName" ]; then
             runAllTests "$PWD/pkg/tests"
         else

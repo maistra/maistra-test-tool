@@ -20,5 +20,5 @@ import (
 
 var (
 	// OCP4.x
-	meshNamespace = env.Getenv("MESHNAMESPACE", "istio-system")
+	meshNamespace = env.Getenv("SMCP_NAMESPACE", "istio-system")
 )
