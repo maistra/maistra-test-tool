@@ -61,11 +61,11 @@ func IsRosa() bool {
 }
 
 func GetDefaultSMCPName() string {
-	return Getenv("SMCPNAME", "basic")
+	return Getenv("SMCP_NAME", "basic")
 }
 
 func GetDefaultMeshNamespace() string {
-	return Getenv("MESHNAMESPACE", "istio-system")
+	return Getenv("SMCP_NAMESPACE", "istio-system")
 }
 
 func GetSMCPVersion() version.Version {
