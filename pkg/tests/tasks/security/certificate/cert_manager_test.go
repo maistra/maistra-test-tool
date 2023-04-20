@@ -190,7 +190,7 @@ const (
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
-  name: cert-manager-operator-1
+  name: cert-manager-operator
 spec:
   targetNamespaces:
   - cert-manager-operator
