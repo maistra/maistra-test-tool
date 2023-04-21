@@ -3,12 +3,9 @@ package env
 import (
 	"os"
 	"strings"
-	"sync"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
-
-var initEnvVarsOnce sync.Once
 
 // getenv returns an environment variable value or the given fallback as a default value.
 func getenv(key, fallback string) string {
