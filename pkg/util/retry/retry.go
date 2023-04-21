@@ -3,6 +3,7 @@ package retry
 import (
 	"time"
 
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -29,11 +30,11 @@ func UntilSuccessWithOptions(t test.TestHelper, options RetryOptions, f func(t t
 
 		if attemptHelper.Failed() {
 			if lastAttempt {
-				if options.logAttempts {
+				if options.logAttempts && env.IsLogFailedRetryAttempts() {
 					t.Logf("Last attempt (%d/%d) failed.", i+1, options.maxAttempts)
 				}
 			} else {
-				if options.logAttempts {
+				if options.logAttempts && env.IsLogFailedRetryAttempts() {
 					if options.delayBetweenAttempts == defaultOptions.delayBetweenAttempts {
 						t.Logf("--- Attempt %d/%d failed. Retrying...", i+1, options.maxAttempts)
 					} else {
@@ -43,10 +44,17 @@ func UntilSuccessWithOptions(t test.TestHelper, options RetryOptions, f func(t t
 				time.Sleep(options.delayBetweenAttempts)
 			}
 		} else {
-			if i > 0 && options.logAttempts {
-				// there was at least one failed attempt, so let's log the current attempt as successful so that
-				// the user isn't left wondering
-				t.Logf("--- Attempt %d/%d successful; total time: %.2fs", i+1, options.maxAttempts, time.Now().Sub(start).Seconds())
+			if env.IsLogFailedRetryAttempts() {
+				if i > 0 && options.logAttempts {
+					// there was at least one failed attempt, so let's log the current attempt as successful so that
+					// the user isn't left wondering
+					t.Logf("--- Attempt %d/%d successful; total time: %.2fs", i+1, options.maxAttempts, time.Now().Sub(start).Seconds())
+				}
+			} else {
+				// this attempt was successful, so we must flush the log buffer to display the SUCCESS messages
+				if retryTestHelper, ok := attemptHelper.(*test.RetryTestHelper); ok {
+					retryTestHelper.FlushLogBuffer()
+				}
 			}
 			if options.maxAttempts > 1 {
 				percentage := i * 100 / options.maxAttempts

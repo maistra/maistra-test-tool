@@ -72,3 +72,7 @@ func GetKubeconfig2() string {
 func GetOperatorNamespace() string {
 	return "openshift-operators"
 }
+
+func IsLogFailedRetryAttempts() bool {
+	return getenv("LOG_FAILED_RETRY_ATTEMPTS", "true") == "true"
+}
