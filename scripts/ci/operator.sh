@@ -162,8 +162,9 @@ wait_operator() {
   while [ "$(kubectl get mutatingwebhookconfigurations -o name | grep servicemesh)" == "" ]; do echo -n '.'; sleep 5; done
   echo "done."
 
-  echo "Wait for the smcp.mutation.maistra.io webhook to be created."
-  while [ "$(kubectl get mutatingwebhookconfigurations -o name | grep smcp.mutation.maistra.io)" == "" ]; do echo -n '.'; sleep 5; done
+  echo "Wait for the maistra-admission-controller to be created."
+  local operatorPodName="$(kubectl get pod -n openshift-operators -l name=istio-operator -o jsonpath='{.items..metadata.name}' 2> /dev/null)"
+  while [ "$(kubectl -n openshift-operators exec ${operatorPodName} -c istio-operator -- curl -k  https://maistra-admission-controller.openshift-operators.svc:443/mutate-smcp?timeout=10s)" == "" ]; do echo -n '.'; sleep 5; done
   echo "done."
 }
 

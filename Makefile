@@ -6,9 +6,9 @@
 .PHONY: lint-go
 .PHONY: test
 .PHONY: Test%
-.PHONY: test.presubmit
-.PHONY: test.presubmit.cleanup
-.PHONY: test.presubmit.install
+.PHONY: presubmit
+.PHONY: presubmit-cleanup-operator
+.PHONY: presubmit-install-operator
 
 FINDFILES=find . \( -path ./.git -o -path ./.github -o -path ./tmp \) -prune -o -type f
 
@@ -36,15 +36,15 @@ Test%:
 	@:
 
 # this will install production operators
-test.presubmit.install:
+presubmit-install-operator:
 	scripts/ci/operator.sh create wait get_csv
 
 # this will delete production operators
-test.presubmit.cleanup:
+presubmit-cleanup-operator:
 	scripts/ci/operator.sh delete delete_csv delete_cni
 
 # In an CI job, this will run tests on a remote OpenShift cluster
-test.presubmit:
-	$(MAKE) test.presubmit.install
+presubmit:
+	$(MAKE) presubmit-install-operator
 	$(MAKE) test
-	$(MAKE) test.presubmit.cleanup
+	$(MAKE) presubmit-cleanup-operator
