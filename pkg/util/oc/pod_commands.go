@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -56,17 +55,28 @@ func (o OC) Logs(t test.TestHelper, podLocator PodLocatorFunc, container string,
 		checks...)
 }
 
+func (o OC) LogsFromPods(t test.TestHelper, ns, selector string, checks ...common.CheckFunc) {
+	t.T().Helper()
+	o.Invoke(t,
+		fmt.Sprintf("kubectl -n %s logs -l %s --all-containers --tail=-1", ns, selector),
+		checks...)
+}
+
 func (o OC) WaitPodRunning(t test.TestHelper, podLocator PodLocatorFunc) {
 	t.T().Helper()
 	retry.UntilSuccessWithOptions(t, retry.Options().LogAttempts(false), func(t test.TestHelper) {
 		t.T().Helper()
-		pod := podLocator(t, &o)
-		status := util.GetPodStatus(pod.Namespace, pod.Name)
-		if status == "Running" {
-			t.Logf("Pod %s/%s is running!", pod.Namespace, pod.Name)
-		} else {
-			t.Fatalf("Pod %s/%s is not running: %s", pod.Namespace, pod.Name, status)
-		}
+
+		o.withKubeconfig(t, func() {
+			t.T().Helper()
+			pod := podLocator(t, &o)
+			phase := shell.Executef(t, `kubectl -n %s get pods %s -o jsonpath="{.status.phase}"`, pod.Namespace, pod.Name)
+			if phase == "Running" {
+				t.Logf("Pod %s/%s is running!", pod.Namespace, pod.Name)
+			} else {
+				t.Fatalf("Pod %s/%s is not running: %s", pod.Namespace, pod.Name, phase)
+			}
+		})
 	})
 }
 
@@ -75,12 +85,23 @@ func (o OC) WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
 	var pod NamespacedName
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		pod = podLocator(t, &o)
+		condition := o.Invokef(t, "kubectl -n %s wait --for condition=Ready pod %s --timeout 1s || true", pod.Namespace, pod.Name) // TODO: Change shell execute to do not fail on error
+		if strings.Contains(condition, "condition met") {
+			t.Logf("Pod %s in namespace %s is ready!", pod.Name, pod.Namespace)
+		} else {
+			t.Fatalf("Error: %s in namespace %s is not ready: %s", pod.Name, pod.Namespace, condition)
+		}
 	})
-	condition := o.Invokef(t, "kubectl -n %s wait --for condition=Ready pod %s --timeout 30s || true", pod.Namespace, pod.Name) // TODO: Change shell execute to do not fail on error
-	if strings.Contains(condition, "condition met") {
-		t.Logf("Pod %s in namespace %s is ready!", pod.Name, pod.Namespace)
+}
+
+func (o OC) WaitPodsReady(t test.TestHelper, ns, selector string) {
+	t.T().Helper()
+	output := o.Invokef(t, "kubectl -n %s wait --for condition=Ready pod -l %s --timeout 30s || true", ns, selector) // TODO: Change shell execute to do not fail on error
+	// check if "condition met" was returned for all pods matching selector
+	if strings.Count(output, "\n") == strings.Count(output, "condition met") {
+		t.Logf("Pods %s in namespace %s are ready!", selector, ns)
 	} else {
-		t.Fatalf("Error: %s in namespace %s is not ready: %s", pod.Name, pod.Namespace, condition)
+		t.Fatalf("Error: pods %s in namespace %s are not ready: %s", selector, ns, output)
 	}
 }
 
@@ -128,7 +149,15 @@ func (o OC) WaitCondition(t test.TestHelper, ns string, kind string, name string
 			fmt.Sprintf(`oc wait -n %s %s/%s --for condition=%s  --timeout %s`, ns, kind, name, condition, "10s"),
 			assert.OutputContains(condition,
 				fmt.Sprintf("Condition %s met by %s %s/%s", condition, kind, ns, name),
-				fmt.Sprintf("Condition %s not met %s %s/%s, retrying", condition, kind, ns, name)))
+				fmt.Sprintf("Condition %s not met by %s %s/%s, retrying", condition, kind, ns, name)))
+	})
+}
+
+func (o OC) WaitSMMRReady(t test.TestHelper, ns string) {
+	t.T().Helper()
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		shell.Executef(t, `oc -n %s wait --for condition=Ready smmr/default --timeout 300s`, ns)
 	})
 }
 
@@ -146,6 +175,7 @@ func (o OC) DeletePod(t test.TestHelper, podLocator PodLocatorFunc) {
 		pod = podLocator(t, &o)
 	})
 	retry.UntilSuccess(t, func(t test.TestHelper) {
+		t.T().Helper()
 		shell.Execute(t,
 			fmt.Sprintf(`oc delete pod %s -n %s`, pod.Name, pod.Namespace),
 			assert.OutputContains("deleted",

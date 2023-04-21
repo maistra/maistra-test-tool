@@ -18,9 +18,14 @@
 .vscode
 .history
 
+### Goland ###
+.idea
+
 ## results
 reports
-results.xml
+output_*.log
+report_*.xml
+reruns_*.xml
 test.log
 
 ## Jmeter

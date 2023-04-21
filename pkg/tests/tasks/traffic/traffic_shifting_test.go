@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	. "github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
@@ -37,10 +38,13 @@ func TestTrafficShifting(t *testing.T) {
 			oc.RecreateNamespace(t, ns)
 		})
 
+		ossm.DeployControlPlane(t)
+
+		t.LogStep("Install Bookinfo")
 		app.InstallAndWaitReady(t, app.Bookinfo(ns))
 		productpageURL := app.BookinfoProductPageURL(t, meshNamespace)
 
-		oc.ApplyString(t, ns, bookinfoVirtualServicesAllV1)
+		oc.ApplyString(t, ns, app.BookinfoVirtualServicesAllV1)
 
 		t.NewSubTest("50 percent to v3").Run(func(t TestHelper) {
 			t.LogStep("configure VirtualService to split traffic 50% to v1 and 50% to v3")

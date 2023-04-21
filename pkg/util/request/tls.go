@@ -4,9 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
@@ -45,7 +45,7 @@ func (m TLSRequestOption) ApplyToRequest(req *http.Request) error {
 
 func (m TLSRequestOption) ApplyToClient(client *http.Client) error {
 	// Load CA cert
-	caCert, err := ioutil.ReadFile(m.caCertFile)
+	caCert, err := os.ReadFile(m.caCertFile)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,6 @@ func (m TLSRequestOption) ApplyToClient(client *http.Client) error {
 	dialer := &net.Dialer{
 		Timeout:   30 * time.Second,
 		KeepAlive: 30 * time.Second,
-		DualStack: true,
 	}
 
 	transport := &http.Transport{TLSClientConfig: tlsConfig}

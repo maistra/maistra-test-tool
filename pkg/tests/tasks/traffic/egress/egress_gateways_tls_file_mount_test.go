@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -34,6 +35,10 @@ func TestTLSOrigination(t *testing.T) {
 		t.Cleanup(func() {
 			app.Uninstall(t, app.Sleep(ns))
 		})
+
+		ossm.DeployControlPlane(t)
+
+		t.LogStep("Install sleep pod")
 		app.InstallAndWaitReady(t, app.Sleep(ns))
 
 		t.NewSubTest("Egress Gateway without file mount").Run(func(t TestHelper) {
@@ -61,7 +66,7 @@ func TestTLSOrigination(t *testing.T) {
 
 			t.LogStep("Verify that request to http://istio.io is routed through the egress gateway (response 200 indicates that the TLS origination is done by the egress gateway)")
 			execInSleepPod(t, ns,
-				fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(), "http://istio.io"),
+				fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(t), "http://istio.io"),
 				assert.OutputContains("200",
 					"Got expected 200 response",
 					"Unexpected response from http://istio.io"))

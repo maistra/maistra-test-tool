@@ -34,10 +34,12 @@ func TestMustGather(t *testing.T) {
 			oc.RecreateNamespace(t, ns)
 		})
 
+		DeployControlPlane(t)
+
 		t.LogStep("Deploy bookinfo in bookinfo ns")
 		app.InstallAndWaitReady(t, app.Bookinfo(ns))
 
-		image := "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel8:" + env.Getenv("MUSTGATHERTAG", "2.3")
+		image := "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel8:" + env.GetMustGatherTag()
 
 		t.LogStepf("Capture must-gather using image %s", image)
 		dir := shell.CreateTempDir(t, "must-gather-")

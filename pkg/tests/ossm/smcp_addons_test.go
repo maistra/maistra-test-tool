@@ -32,6 +32,9 @@ func TestSMCPAddons(t *testing.T) {
 			t.Cleanup(func() {
 				shell.Execute(t, fmt.Sprintf(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"addons":{"3scale":{"enabled":false}}}}' || true`, meshNamespace, smcpName))
 			})
+
+			DeployControlPlane(t) // TODO: integrate patch here
+
 			shell.Execute(t,
 				fmt.Sprintf(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"addons":{"3scale":{"enabled":true}}}}' || true`, meshNamespace, smcpName),
 				assert.OutputContains("support for 3scale has been removed",

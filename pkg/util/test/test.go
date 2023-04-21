@@ -4,10 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	"github.com/maistra/maistra-test-tool/pkg/util/log"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 type TestGroup string
@@ -26,6 +24,8 @@ type Test interface {
 type TopLevelTest interface {
 	Test
 	Groups(groups ...TestGroup) TopLevelTest
+	MinVersion(v version.Version) TopLevelTest
+	MaxVersion(v version.Version) TopLevelTest
 	Id(id string) TopLevelTest
 }
 
@@ -36,13 +36,25 @@ func NewTest(t *testing.T) TopLevelTest {
 var _ Test = &topLevelTest{}
 
 type topLevelTest struct {
-	t      *testing.T
-	id     string
-	groups []TestGroup
+	t          *testing.T
+	id         string
+	groups     []TestGroup
+	minVersion *version.Version
+	maxVersion *version.Version
 }
 
 func (t *topLevelTest) Groups(groups ...TestGroup) TopLevelTest {
 	t.groups = groups
+	return t
+}
+
+func (t *topLevelTest) MinVersion(v version.Version) TopLevelTest {
+	t.minVersion = &v
+	return t
+}
+
+func (t *topLevelTest) MaxVersion(v version.Version) TopLevelTest {
+	t.maxVersion = &v
 	return t
 }
 
@@ -57,20 +69,27 @@ func (t *topLevelTest) Run(f func(t TestHelper)) {
 	defer recoverPanic(t.t)
 	start := time.Now()
 	th := &testHelper{t: t.t}
-	disableLogrusForThisTest(th)
 	f(th)
 	t.t.Log()
 	t.t.Logf("Test completed in %.2fs (excluding cleanup)", time.Now().Sub(start).Seconds())
 }
 
 func (t *topLevelTest) skipIfNecessary() {
-	testGroup := TestGroup(env.Getenv("TEST_GROUP", string(Full)))
-	if env.GetSampleArch() == "arm" {
+	testGroup := TestGroup(env.GetTestGroup())
+	if env.GetArch() == "arm" {
 		testGroup = "arm"
 	}
 
 	if !t.isPartOfGroup(testGroup) {
 		t.t.Skipf("This test is being skipped because it is not part of the %q test group", testGroup)
+	}
+
+	smcpVersion := env.GetSMCPVersion()
+	if t.minVersion != nil && smcpVersion.LessThan(*t.minVersion) {
+		t.t.Skipf("This test is being skipped because it doesn't support the current SMCP version %s (min version is %s)", smcpVersion, t.minVersion)
+	}
+	if t.maxVersion != nil && smcpVersion.GreaterThan(*t.maxVersion) {
+		t.t.Skipf("This test is being skipped because it doesn't support the current SMCP version %s (max version is %s)", smcpVersion, t.maxVersion)
 	}
 }
 
@@ -81,17 +100,4 @@ func (t *topLevelTest) isPartOfGroup(group TestGroup) bool {
 		}
 	}
 	return false
-}
-
-// This is a temporary hack used in refactored tests, which disables all logs
-// except the ones done via t.Log().
-// We want to get to a point, where we only log via t.Log(). Until then, we
-// want old tests to still use logrus, while the refactored tests use t.Log() and
-// disable logrus.
-func disableLogrusForThisTest(t TestHelper) {
-	originalLevel := log.Log.GetLevel()
-	log.Log.SetLevel(logrus.ErrorLevel)
-	t.T().Cleanup(func() {
-		log.Log.SetLevel(originalLevel)
-	})
 }

@@ -16,19 +16,17 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	test "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 func TestClusterWideMode(t *testing.T) {
-	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
-		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
-			t.Skip("Cluster-Wide mode is supported in v2.4+")
-		}
+	test.NewTest(t).Groups(test.Full).MinVersion(version.SMCP_2_4).Run(func(t test.TestHelper) {
 		t.Log("This test verifies the behavior of SMCP.spec.mode: ClusterWide")
 
+		smcpName := env.GetDefaultSMCPName()
 		meshNamespace := env.GetDefaultMeshNamespace()
-		istiodDeployment := fmt.Sprintf("istiod-%s", ossm.Smcp.Name)
+		istiodDeployment := fmt.Sprintf("istiod-%s", smcpName)
 
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, meshNamespace)
@@ -39,10 +37,10 @@ func TestClusterWideMode(t *testing.T) {
 		oc.RecreateNamespace(t, meshNamespace)
 
 		t.LogStep("Install cluster-wide SMCP")
-		oc.ApplyTemplate(t, meshNamespace, clusterWideSMCP, ossm.Smcp)
+		oc.ApplyTemplate(t, meshNamespace, clusterWideSMCP, ossm.DefaultSMCP())
 
 		t.LogStep("Wait for SMCP to be Ready")
-		oc.WaitSMCPReady(t, meshNamespace, env.GetDefaultSMCPName())
+		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.NewSubTest("SMMR auto-creation").Run(func(t test.TestHelper) {
 			t.LogStep("Check whether SMMR is created automatically")
@@ -129,7 +127,7 @@ func deleteMemberNamespaces(t test.TestHelper, count int) {
 }
 
 func createMemberNamespaces(t test.TestHelper, count int) {
-	namespaces := []string{}
+	var namespaces []string
 	yaml := ""
 	for i := 0; i < count; i++ {
 		namespaces = append(namespaces, fmt.Sprintf("member-%d", i))
@@ -172,7 +170,7 @@ kind: ServiceMeshControlPlane
 metadata:
   name: {{ .Name }}
 spec:
-  version: v2.4
+  version: {{ .Version }}
   mode: ClusterWide
   general:
     logging:

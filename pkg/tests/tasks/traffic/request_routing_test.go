@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
@@ -33,13 +34,16 @@ func TestRequestRouting(t *testing.T) {
 			oc.RecreateNamespace(t, ns)
 		})
 
+		ossm.DeployControlPlane(t)
+
+		t.LogStep("Install Bookinfo")
 		app.InstallAndWaitReady(t, app.Bookinfo(ns))
 
 		productpageURL := app.BookinfoProductPageURL(t, meshNamespace)
 		testUserCookieJar := app.BookinfoLogin(t, meshNamespace)
 
 		t.NewSubTest("not-logged-in").Run(func(t TestHelper) {
-			oc.ApplyString(t, ns, bookinfoVirtualServicesAllV1)
+			oc.ApplyString(t, ns, app.BookinfoVirtualServicesAllV1)
 
 			t.LogStep("get productpage without logging in; expect to get reviews-v1 (5x)")
 			retry.UntilSuccess(t, func(t TestHelper) {
@@ -56,7 +60,7 @@ func TestRequestRouting(t *testing.T) {
 		})
 
 		t.NewSubTest("logged-in").Run(func(t TestHelper) {
-			oc.ApplyString(t, ns, bookinfoReviewsVirtualServiceV2)
+			oc.ApplyString(t, ns, app.BookinfoVirtualServiceReviewsV2)
 
 			t.LogStep("get productpage as logged-in user; expect to get reviews-v2 (5x)")
 			retry.UntilSuccess(t, func(t TestHelper) {

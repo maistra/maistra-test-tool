@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
@@ -40,6 +41,9 @@ func TestAuthPolicy(t *testing.T) {
 			oc.RecreateNamespace(t, "foo", "bar", "legacy")
 		})
 
+		ossm.DeployControlPlane(t)
+
+		t.LogStep("Install httpbin and sleep in multiple namespaces")
 		app.InstallAndWaitReady(t,
 			app.Httpbin("foo"),
 			app.Httpbin("bar"),
@@ -55,7 +59,7 @@ func TestAuthPolicy(t *testing.T) {
 		retry.UntilSuccess(t, func(t TestHelper) {
 			for _, from := range fromNamespaces {
 				for _, to := range toNamespaces {
-					assertConnectionSucessful(t, from, to)
+					assertConnectionSuccessful(t, from, to)
 				}
 			}
 		})
@@ -117,7 +121,7 @@ func TestAuthPolicy(t *testing.T) {
 						if from == "legacy" && to == "foo" {
 							assertConnectionFailure(t, from, to)
 						} else {
-							assertConnectionSucessful(t, from, to)
+							assertConnectionSuccessful(t, from, to)
 						}
 					}
 				}
@@ -137,7 +141,7 @@ func TestAuthPolicy(t *testing.T) {
 			t.LogStep("Refine mutual TLS per port")
 			oc.ApplyString(t, "bar", PortPolicy)
 			retry.UntilSuccess(t, func(t TestHelper) {
-				assertConnectionSucessful(t, "legacy", "bar")
+				assertConnectionSuccessful(t, "legacy", "bar")
 			})
 		})
 
@@ -148,7 +152,7 @@ func TestAuthPolicy(t *testing.T) {
 				oc.DeleteFromString(t, "foo", OverwritePolicy)
 			})
 			retry.UntilSuccess(t, func(t TestHelper) {
-				assertConnectionSucessful(t, "legacy", "foo")
+				assertConnectionSuccessful(t, "legacy", "foo")
 			})
 		})
 

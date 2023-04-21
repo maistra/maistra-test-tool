@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
@@ -39,6 +40,8 @@ func TestIngressWithoutTlsTermination(t *testing.T) {
 			oc.DeleteFromString(t, ns, nginxIngressGateway)
 			app.Uninstall(t, app.Nginx(ns))
 		})
+
+		ossm.DeployControlPlane(t)
 
 		t.LogStep("Create NGINX Deployment")
 		app.InstallAndWaitReady(t, app.Nginx(ns))

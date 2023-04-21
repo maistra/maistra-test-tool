@@ -8,6 +8,6 @@ import (
 
 func TestMain(m *testing.M) {
 	test.NewSuite(m).
-		Setup(SetupNamespacesAndControlPlane).
+		Setup(BasicSetup).
 		Run()
 }

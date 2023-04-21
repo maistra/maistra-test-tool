@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
@@ -39,6 +40,8 @@ func TestCircuitBreaking(t *testing.T) {
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns)
 		})
+
+		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install httpbin and fortio")
 		app.InstallAndWaitReady(t, app.Httpbin(ns), app.Fortio(ns))

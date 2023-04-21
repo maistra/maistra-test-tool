@@ -3,6 +3,8 @@ package test
 import (
 	"fmt"
 	"testing"
+
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 )
 
 const retryPanicKey = "RetryTestHelper.FailNow"
@@ -23,9 +25,45 @@ type RetryTestHelper struct {
 	failed      bool
 	attempt     int
 	maxAttempts int
+
+	logBuffer []string
 }
 
 var _ TestHelper = &RetryTestHelper{}
+
+func (t *RetryTestHelper) Log(args ...any) {
+	t.t.Helper()
+	t.logOrAppendToBuffer(fmt.Sprint(args...))
+}
+
+func (t *RetryTestHelper) Logf(format string, args ...any) {
+	t.t.Helper()
+	t.logOrAppendToBuffer(fmt.Sprintf(format, args...))
+}
+
+func (t *RetryTestHelper) LogSuccess(str string) {
+	t.t.Helper()
+	t.Log(SuccessPrefix + str)
+}
+
+func (t *RetryTestHelper) logOrAppendToBuffer(str string) {
+	t.t.Helper()
+	if env.IsLogFailedRetryAttempts() {
+		t.t.Log(t.indent() + str)
+	} else {
+		t.logBuffer = append(t.logBuffer, str)
+	}
+}
+
+func (t *RetryTestHelper) FlushLogBuffer() {
+	t.t.Helper()
+	if !env.IsLogFailedRetryAttempts() {
+		for _, s := range t.logBuffer {
+			t.t.Log(t.indent() + s)
+		}
+		t.logBuffer = nil
+	}
+}
 
 func (t *RetryTestHelper) Fail() {
 	t.failed = true
@@ -42,7 +80,7 @@ func (t *RetryTestHelper) Failed() bool {
 
 func (t *RetryTestHelper) Error(args ...any) {
 	t.t.Helper()
-	t.Log(Failure + ": " + fmt.Sprint(args...))
+	t.Log(FailurePrefix + fmt.Sprint(args...))
 	t.Fail()
 }
 
@@ -60,18 +98,6 @@ func (t *RetryTestHelper) Fatal(args ...any) {
 func (t *RetryTestHelper) Fatalf(format string, args ...any) {
 	t.t.Helper()
 	t.Fatal(fmt.Sprintf(format, args...))
-}
-
-// func (t *RetryTestHelper) LogStep(str string) {
-// 	t.t.Helper()
-// 	t.Log("")
-// 	t.currentStep++
-// 	t.Logf("STEP %d (attempt #%d): %s", t.currentStep, t.attempt+1, str)
-// }
-
-func (t *RetryTestHelper) attemptString() string {
-	return "(will retry)"
-	// return fmt.Sprintf("(will retry; attempt %d/%d)", t.attempt+1, t.maxAttempts)
 }
 
 func (t *RetryTestHelper) WillRetry() bool {

@@ -9,6 +9,6 @@ func assertFailure(t test.TestHelper, msg string, detailMsg string) {
 	if detailMsg == "" {
 		t.Error(msg)
 	} else {
-		t.Errorf("%s\n%s", msg, detailMsg)
+		t.Errorf("%s (%s)", msg, detailMsg)
 	}
 }

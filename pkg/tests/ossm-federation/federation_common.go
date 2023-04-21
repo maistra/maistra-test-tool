@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
@@ -157,7 +158,9 @@ func getRootCertificate(t TestHelper, c config) string {
 
 func installSMCPandSMMR(t TestHelper, c config, smcpFile, smmrFile string) {
 	t.Logf("Install ServiceMeshControlPlane %s in namespace %s", c.smcpName, c.smcpNamespace)
-	c.oc.ApplyFile(t, c.smcpNamespace, smcpFile)
+	c.oc.ApplyTemplateFile(t, c.smcpNamespace, smcpFile, map[string]string{
+		"Version": env.GetSMCPVersion().String(),
+	})
 
 	t.Log("Create ServiceMeshMemberRoll")
 	c.oc.ApplyFile(t, c.smcpNamespace, smmrFile)

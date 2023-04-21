@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -39,6 +40,8 @@ func TestTcpTrafficShifting(t *testing.T) {
 
 		t.Log("This test validates traffic shifting for TCP traffic.")
 		t.Log("Doc reference: https://istio.io/v1.14/docs/tasks/traffic-management/tcp-traffic-shifting/")
+
+		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install sleep, echoV1 and echoV2")
 		app.InstallAndWaitReady(t, app.Sleep(ns), app.EchoV1(ns), app.EchoV2(ns))
