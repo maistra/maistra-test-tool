@@ -7,6 +7,7 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -84,6 +85,7 @@ func (o OC) WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
 	t.T().Helper()
 	var pod NamespacedName
 	retry.UntilSuccess(t, func(t test.TestHelper) {
+		t.T().Helper()
 		pod = podLocator(t, &o)
 		condition := o.Invokef(t, "kubectl -n %s wait --for condition=Ready pod %s --timeout 1s || true", pod.Namespace, pod.Name) // TODO: Change shell execute to do not fail on error
 		if strings.Contains(condition, "condition met") {
@@ -92,17 +94,6 @@ func (o OC) WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
 			t.Fatalf("Error: %s in namespace %s is not ready: %s", pod.Name, pod.Namespace, condition)
 		}
 	})
-}
-
-func (o OC) WaitPodsReady(t test.TestHelper, ns, selector string) {
-	t.T().Helper()
-	output := o.Invokef(t, "kubectl -n %s wait --for condition=Ready pod -l %s --timeout 30s || true", ns, selector) // TODO: Change shell execute to do not fail on error
-	// check if "condition met" was returned for all pods matching selector
-	if strings.Count(output, "\n") == strings.Count(output, "condition met") {
-		t.Logf("Pods %s in namespace %s are ready!", selector, ns)
-	} else {
-		t.Fatalf("Error: pods %s in namespace %s are not ready: %s", selector, ns, output)
-	}
 }
 
 func (o OC) WaitDeploymentRolloutComplete(t test.TestHelper, ns string, deploymentNames ...string) {
@@ -145,9 +136,10 @@ func (o OC) DeletePodNoWait(t test.TestHelper, podLocator PodLocatorFunc) {
 func (o OC) WaitCondition(t test.TestHelper, ns string, kind string, name string, condition string) {
 	t.T().Helper()
 	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(30), func(t test.TestHelper) {
+		t.T().Helper()
 		shell.Execute(t,
 			fmt.Sprintf(`oc wait -n %s %s/%s --for condition=%s  --timeout %s`, ns, kind, name, condition, "10s"),
-			assert.OutputContains(condition,
+			require.OutputContains("condition met",
 				fmt.Sprintf("Condition %s met by %s %s/%s", condition, kind, ns, name),
 				fmt.Sprintf("Condition %s not met by %s %s/%s, retrying", condition, kind, ns, name)))
 	})
