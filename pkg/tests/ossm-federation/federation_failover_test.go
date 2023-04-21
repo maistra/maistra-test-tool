@@ -36,7 +36,7 @@ import (
 
 func TestMultiClusterFederationFailover(t *testing.T) {
 	NewTest(t).Groups(Full).Run(func(t TestHelper) {
-		kubeconfig2 := env.Getenv("KUBECONFIG2", "")
+		kubeconfig2 := env.GetKubeconfig2()
 		if kubeconfig2 == "" {
 			t.Skip("this test only runs when the KUBECONFIG2 environment variable points to the kubeconfig of the second cluster")
 		}

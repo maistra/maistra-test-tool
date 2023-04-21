@@ -19,6 +19,6 @@ import (
 )
 
 var (
-	smcpName      = env.Getenv("SMCP_NAME", "basic")
-	meshNamespace = env.Getenv("SMCP_NAMESPACE", "istio-system")
+	smcpName      = env.GetDefaultSMCPName()
+	meshNamespace = env.GetDefaultMeshNamespace()
 )

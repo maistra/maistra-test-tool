@@ -11,6 +11,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/template"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -294,7 +295,7 @@ func (o OC) withKubeconfig(t test.TestHelper, f func()) {
 	if o.kubeconfig == "" {
 		f()
 	} else {
-		oldValue := os.Getenv("KUBECONFIG")
+		oldValue := env.GetKubeconfig()
 		setEnv(t, "KUBECONFIG", o.kubeconfig)
 		f()
 		setEnv(t, "KUBECONFIG", oldValue)

@@ -33,5 +33,5 @@ var (
 
 var (
 	// OCP4.x
-	meshNamespace = env.Getenv("SMCP_NAMESPACE", "istio-system")
+	meshNamespace = env.GetDefaultMeshNamespace()
 )
