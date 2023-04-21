@@ -66,12 +66,9 @@ func TestIOR(t *testing.T) {
 
 		t.NewSubTest("check IOR off by default v2.4").Run(func(t test.TestHelper) {
 			t.LogStep("Check whether the IOR has the correct default setting")
-			if env.GetSMCPVersion().GreaterThanOrEqualTo(version.SMCP_2_4) {
+			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
 				if getIORSetting(t, meshNamespace, meshName) != "false" {
-					t.Fatalf(
-						"Expect to find IOR disabled by default in %s, but it is currently enabled",
-						env.GetDefaultSMCPVersion(),
-					)
+					t.Fatal("Expect to find IOR disabled by default in v2.4+, but it is currently enabled")
 				} else {
 					t.LogSuccess("Got the expected false for IOR setting")
 				}
@@ -80,13 +77,13 @@ func TestIOR(t *testing.T) {
 
 		t.NewSubTest("check IOR basic functionalities").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
-				if env.GetSMCPVersion().GreaterThanOrEqualTo(version.SMCP_2_4) {
+				if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
 					removeIORCustomSetting(t, meshNamespace, meshName)
 				}
 			})
 
 			t.LogStep("Ensure the IOR enabled")
-			if env.GetSMCPVersion().GreaterThanOrEqualTo(version.SMCP_2_4) {
+			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
 				enableIOR(t, meshNamespace, meshName)
 			}
 
@@ -135,7 +132,7 @@ func TestIOR(t *testing.T) {
 			gateways := []string{}
 
 			t.Cleanup(func() {
-				if env.GetSMCPVersion().GreaterThanOrEqualTo(version.SMCP_2_4) {
+				if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
 					removeIORCustomSetting(t, meshNamespace, meshName)
 				}
 
@@ -145,7 +142,7 @@ func TestIOR(t *testing.T) {
 			})
 
 			t.LogStep("Ensure the IOR enabled")
-			if env.GetSMCPVersion().GreaterThanOrEqualTo(version.SMCP_2_4) {
+			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
 				enableIOR(t, meshNamespace, meshName)
 			}
 
@@ -262,12 +259,12 @@ func getRoutes(t test.TestHelper, ns string) []Route {
 }
 
 func setupDefaultSMCP(t test.TestHelper, ns string) {
-	oc.ApplyTemplate(t, ns, GetDefaultSMCPTemplate(), Smcp)
+	InstallSMCP(t, ns)
 	oc.WaitSMCPReady(t, ns, env.GetDefaultSMCPName())
 }
 
 func setupV23SMCP(t test.TestHelper, ns, name string) {
-	oc.ApplyTemplate(t, ns, GetSMCPTemplate("2.3"), Smcp)
+	InstallSMCPVersion(t, ns, version.SMCP_2_3)
 	oc.WaitSMCPReady(t, ns, name)
 
 	oc.ApplyString(t, ns, GetSMMRTemplate())
