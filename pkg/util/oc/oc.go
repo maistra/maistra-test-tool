@@ -16,9 +16,19 @@ func ApplyString(t test.TestHelper, ns string, yamls ...string) {
 	DefaultOC.ApplyString(t, ns, yamls...)
 }
 
+func ReplaceOrApplyString(t test.TestHelper, ns string, yaml string) {
+	t.T().Helper()
+	DefaultOC.ReplaceOrApplyString(t, ns, yaml)
+}
+
 func ApplyTemplate(t test.TestHelper, ns string, template string, input interface{}) {
 	t.T().Helper()
 	DefaultOC.ApplyTemplateString(t, ns, template, input)
+}
+
+func ReplaceOrApplyTemplate(t test.TestHelper, ns string, template string, input interface{}) {
+	t.T().Helper()
+	DefaultOC.ReplaceOrApplyTemplate(t, ns, template, input)
 }
 
 func DeleteFromTemplate(t test.TestHelper, ns string, yaml string, data interface{}) {

@@ -37,6 +37,25 @@ func (o OC) ApplyTemplateString(t test.TestHelper, ns string, tmpl string, input
 	})
 }
 
+func (o OC) ReplaceOrApplyString(t test.TestHelper, ns string, yaml string) {
+	t.T().Helper()
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		output := shell.ExecuteWithInput(t, fmt.Sprintf("oc %s replace -f - || echo 'error captured'", nsFlag(ns)), yaml)
+		if strings.Contains(output, "NotFound") {
+			shell.ExecuteWithInput(t, fmt.Sprintf("oc %s apply -f -", nsFlag(ns)), yaml)
+		}
+	})
+}
+
+func (o OC) ReplaceOrApplyTemplate(t test.TestHelper, ns string, tmpl string, input interface{}) {
+	t.T().Helper()
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		o.ReplaceOrApplyString(t, ns, template.Run(t, tmpl, input))
+	})
+}
+
 func (o OC) DeleteFromTemplate(t test.TestHelper, ns string, tmpl string, input interface{}) {
 	t.T().Helper()
 	o.DeleteFromString(t, ns, template.Run(t, tmpl, input))
@@ -194,7 +213,7 @@ func (o OC) WaitSMCPReady(t test.TestHelper, ns string, name string) {
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
 		t.Logf("Wait for SMCP %s/%s to be ready", ns, name)
-		o.Invokef(t, `oc -n %s wait --for condition=Ready smcp/%s --timeout 300s`, ns, name)
+		o.WaitCondition(t, ns, "smcp", name, "Ready")
 	})
 }
 
