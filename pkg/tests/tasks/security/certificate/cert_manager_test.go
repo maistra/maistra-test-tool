@@ -67,7 +67,7 @@ func TestCertManager(t *testing.T) {
 			Version("v0.6.0").
 			ValuesString(istioCsrValues(meshNamespace, smcpName)).
 			Install(t)
-		oc.WaitPodsReady(t, meshNamespace, "app=cert-manager-istio-csr")
+		oc.WaitDeploymentRolloutComplete(t, meshNamespace, "cert-manager-istio-csr")
 
 		t.LogStep("Deploy SMCP " + smcpVer.String())
 		oc.ApplyString(t, meshNamespace, createSMCPWithCertManager(smcpName, meshNamespace, ns.Foo, smcpVer.String()))
@@ -79,8 +79,7 @@ func TestCertManager(t *testing.T) {
 				assert.OutputContains(
 					fmt.Sprintf(`"msg"="creating configmap with root CA data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, meshNamespace),
 					fmt.Sprintf("istio-ca-root-cert created in %s", meshNamespace),
-					fmt.Sprintf("istio-ca-root-cert not created in %s", meshNamespace)))
-			oc.LogsFromPods(t, meshNamespace, "app=cert-manager-istio-csr",
+					fmt.Sprintf("istio-ca-root-cert not created in %s", meshNamespace)),
 				assert.OutputContains(
 					fmt.Sprintf(`"msg"="creating configmap with root CA data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, ns.Foo),
 					fmt.Sprintf("istio-ca-root-cert created in %s", ns.Foo),

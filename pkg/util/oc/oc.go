@@ -141,11 +141,6 @@ func WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
 	DefaultOC.WaitPodReady(t, podLocator)
 }
 
-func WaitPodsReady(t test.TestHelper, ns, selector string) {
-	t.T().Helper()
-	DefaultOC.WaitPodsReady(t, ns, selector)
-}
-
 func UndoRollout(t test.TestHelper, ns string, kind, name string) {
 	t.T().Helper()
 	DefaultOC.UndoRollout(t, ns, kind, name)
