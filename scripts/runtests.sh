@@ -2,6 +2,9 @@
 
 set -e
 
+# ensure that this script fails when gotestsum fails  (without this option, the command never fails, because we pipe the output to `tee`, which always returns exit code 0
+set -o pipefail
+
 SUPPORTED_VERSIONS=("v2.2" "v2.3" "v2.4")
 
 log() {
