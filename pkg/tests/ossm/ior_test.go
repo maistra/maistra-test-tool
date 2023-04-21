@@ -2,176 +2,323 @@ package ossm
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
+	"github.com/maistra/maistra-test-tool/pkg/util/shell"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 type RouteMetadata struct {
-	Name         string `json:"name"`
-	CreationTime string `json:"creationTimestamp"`
+	Uid             string            `json:"uid"`
+	Name            string            `json:"name"`
+	ResourceVersion string            `json:"resourceVersion"`
+	Labels          map[string]string `json:"labels"`
+	Annotations     map[string]string `json:"annotations"`
 }
 
-type Routes struct {
+type Route struct {
 	Metadata RouteMetadata `json:"metadata"`
 }
 
-func cleanupMultipleIOR() {
-	util.Log.Info("Delete the namespaces and smmr")
-	util.Shell(`../scripts/smmr/clean_members_50.sh`)
-	//Remove the gateways
-	util.Shell(`oc patch smcp/%s -n %s --type json -p='[{"op": "remove", "path": "/spec/gateways/additionalEgress"}]'`, smcpName, meshNamespace)
-	util.Shell(`oc patch smcp/%s -n %s --type json -p='[{"op": "remove", "path": "/spec/gateways/additionalIngress"}]'`, smcpName, meshNamespace)
-	time.Sleep(time.Duration(40) * time.Second)
-}
+const (
+	originalHostAnnotation = "maistra.io/original-host"
+)
 
 // TestIOR tests IOR error regarding routes recreated: https://issues.redhat.com/browse/OSSM-1974. IOR will be deprecated on 2.4 and willl be removed on 3.0
 func TestIOR(t *testing.T) {
-	defer cleanupMultipleIOR()
-	//For 2.4 we need to enable IOR, by default should be disable
-	defer util.RecoverPanic(t)
-	smcpVersion, _ := util.ShellMuteOutput(`oc get smcp/%s -n %s -o jsonpath='{.spec.version}'`, smcpName, meshNamespace)
-	util.Log.Info("SMCP version: ", smcpVersion)
-	iorEnabled, _ := util.ShellMuteOutput(`oc get smcp/%s -n %s -o jsonpath='{.status.appliedValues.istio.gateways.istio-ingressgateway.ior_enabled}'`, smcpName, meshNamespace)
-	util.Log.Info("IOR enabled: ", iorEnabled)
+	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
+		t.Log("This test verifies the behavior of IOR.")
 
-	// Check if IOR is enabled or not by default. Note: for >= 2.4 IOR is disabled by default, so we need to enable it in another subtest. For < 2.4 IOR is enabled by default.
-	t.Run("check_default_ior_state", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-		if strings.Contains(smcpVersion, "v2.4") {
-			util.Log.Info("IOR should be disabled by default")
-			if iorEnabled == "true" {
-				t.Errorf("IOR should be disabled by default")
-			}
-		} else {
-			if iorEnabled == "false" {
-				t.Errorf("IOR should be enabled by default")
-			}
+		meshNamespace := env.GetDefaultMeshNamespace()
+		meshName := env.GetDefaultSMCPName()
+
+		t.Cleanup(func() {
+			// oc.RecreateNamespace(t, meshNamespace)
+		})
+
+		host := "www.test.ocp"
+
+		createSimpleGateway := func(t test.TestHelper) {
+			t.Logf("Creating Gateway for %s host", host)
+			oc.ApplyString(t, "", generateGateway("gw", meshNamespace, host))
 		}
-	})
-	// Check if we can enable ior for >= 2.4. IOR is disabled by default.
-	t.Run("enable_ior", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-		if strings.Contains(smcpVersion, "v2.4") {
-			util.Log.Info("IOR should be disabled by default")
-			if iorEnabled == "true" {
-				t.Errorf("IOR should be disabled by default")
-			} else {
-				//Need to enable ior on the smcp
-				util.Log.Info("Enabling IOR")
-				util.Shell(`oc patch smcp/%s -n %s --type json -p='[{"op": "add", "path": "/spec/gateways/openshiftRoute/enabled", "value": true}]'`, smcpName, meshNamespace)
-				_, err := util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName)
-				if err != nil {
-					t.Fatal("SMCP is not ready")
+
+		checkSimpleGateway := func(t test.TestHelper) {
+			t.Logf("Checking whether a Route is generated for %s", host)
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				routes := getRoutes(t, meshNamespace)
+				found := routes[0].Metadata.Annotations[originalHostAnnotation]
+				if found != host {
+					t.Fatalf("Expect a route set for %s host, but got %s instead", host, found)
+				} else {
+					t.LogSuccessf("Got an expected Route for %s", host)
 				}
-				iorEnabled, _ := util.ShellMuteOutput(`oc get smcp/%s -n %s -o jsonpath='{.status.appliedValues.istio.gateways.istio-ingressgateway.ior_enabled}'`, smcpName, meshNamespace)
-				util.Log.Info("IOR enabled: ", iorEnabled)
-				if iorEnabled == "false" {
-					t.Errorf("IOR should be enabled")
+			})
+		}
+
+		t.NewSubTest("check IOR off by default v2.4").Run(func(t test.TestHelper) {
+			t.LogStep("Check whether the IOR has the correct default setting")
+			if env.GetSMCPVersion().GreaterThanOrEqualTo(version.SMCP_2_4) {
+				if getIORSetting(t, meshNamespace, meshName) != "false" {
+					t.Fatalf(
+						"Expect to find IOR disabled by default in %s, but it is currently enabled",
+						env.GetDefaultSMCPVersion(),
+					)
+				} else {
+					t.LogSuccess("Got the expected false for IOR setting")
 				}
 			}
-		} else {
-			util.Log.Info("IOR should be enabled by default")
-			if iorEnabled == "false" {
-				t.Errorf("IOR should be enabled by default")
+		})
+
+		t.NewSubTest("check IOR basic functionalities").Run(func(t test.TestHelper) {
+			t.Cleanup(func() {
+				if env.GetSMCPVersion().GreaterThanOrEqualTo(version.SMCP_2_4) {
+					removeIORCustomSetting(t, meshNamespace, meshName)
+				}
+			})
+
+			t.LogStep("Ensure the IOR enabled")
+			if env.GetSMCPVersion().GreaterThanOrEqualTo(version.SMCP_2_4) {
+				enableIOR(t, meshNamespace, meshName)
+			}
+
+			t.LogStep("Check whether the IOR creates Routes for hosts specified in the Gateway")
+			createSimpleGateway(t)
+			checkSimpleGateway(t)
+		})
+
+		t.NewSubTest("check routes that are not deleted during v2.3 to v2.4 upgrade").Run(func(t test.TestHelper) {
+			t.Cleanup(func() {
+				oc.RecreateNamespace(t, meshNamespace)
+				setupDefaultSMCP(t, meshNamespace)
+			})
+
+			t.LogStepf("Delete and recreate namespace %s", meshNamespace)
+			oc.RecreateNamespace(t, meshNamespace)
+
+			t.LogStep("Deploy SMCP v2.3")
+			setupV23SMCP(t, meshNamespace, meshName)
+
+			t.LogStep("Check whether IOR creates Routes for hosts specified in the Gateway")
+			createSimpleGateway(t)
+			checkSimpleGateway(t)
+
+			t.LogStepf("Record the Route before the upgrade")
+			before := getRoutes(t, meshNamespace)
+
+			t.LogStep("Upgrade SMCP to v2.4")
+			updateToV24SMCP(t, meshNamespace, meshName)
+
+			t.LogStep("Check the Routes existed afther the upgrade")
+			checkSimpleGateway(t)
+			after := getRoutes(t, meshNamespace)
+
+			t.LogStep("Check the Routes unchanged afther the upgrade")
+			if before[0].Metadata.ResourceVersion != after[0].Metadata.ResourceVersion {
+				t.Fatal("Expect the route to be unchanged, but it is changed after the upgrade")
 			} else {
-				t.Skip("IOR is enabled by default, no need to enable it. Skipping this test")
+				t.LogSuccess("Got the same resourceVersion before and after the upgrade")
 			}
-		}
-	})
-	util.Log.Info("Setup IOR")
-	util.Log.Info("Create 50 new namespaces")
-	util.Shell(`../scripts/smmr/create_members_50.sh`)
-	util.Log.Info("Namespaces and smmr created...")
-	util.Log.Info("Create gateway in each namespace")
-	util.Shell(`../scripts/gateway/create_multiple_gateway.sh`)
-	util.Log.Info("Gateways created...")
-	routes, _ := util.ShellMuteOutput(`oc get -n %s route -o jsonpath='{.items}'`, meshNamespace)
-	routesData := ParseRoutes(routes)
-	for k, v := range routesData {
-		util.Log.Info("Route: ", k, " CreationTime: ", v)
-	}
-	// // Check that the routes are not recreated after deleting the istiod pod
-	t.Run("check_routes_recreation", func(t *testing.T) {
-		defer util.RecoverPanic(t)
-		util.Log.Info("Delete istiod pod multiple times")
-		if _, err := util.Shell(`for n in $(seq 1 10):; do oc rollout restart deployment/istiod-basic -n %s; oc -n %s wait --for condition=Ready smcp/%s --timeout 60s; done`, meshNamespace, meshNamespace, smcpName); err != nil {
-			t.Fatal("SMCP is not ready after istiod pod deletion", err)
-		}
-		//Get the routes again to compare the routes
-		routes, _ = util.ShellMuteOutput(`oc get -n %s route -o jsonpath='{.items}'`, meshNamespace)
-		routesDataNew := ParseRoutes(routes)
-		for k, v := range routesDataNew {
-			util.Log.Info("Route: ", k, " CreationTime: ", v)
-		}
-		if len(routesData) != len(routesDataNew) {
-			t.Errorf("The number of routes has changed")
-		}
-		//Compare the routes list to check that the routes are not recreated. The routes are recreated if the creation time is different
-		for k, v := range routesData {
-			if v != routesDataNew[k] {
-				t.Errorf("The route %s has been recreated", k)
+		})
+
+		t.NewSubTest("check IOR does not delete routes after deleting Istio pod").Run(func(t test.TestHelper) {
+			total := 3
+			nsNames := []string{}
+			gateways := []string{}
+
+			t.Cleanup(func() {
+				if env.GetSMCPVersion().GreaterThanOrEqualTo(version.SMCP_2_4) {
+					removeIORCustomSetting(t, meshNamespace, meshName)
+				}
+
+				oc.DeleteNamespace(t, nsNames...)
+				oc.ApplyString(t, meshNamespace, GetSMMRTemplate())
+				oc.WaitSMMRReady(t, meshNamespace)
+			})
+
+			t.LogStep("Ensure the IOR enabled")
+			if env.GetSMCPVersion().GreaterThanOrEqualTo(version.SMCP_2_4) {
+				enableIOR(t, meshNamespace, meshName)
 			}
-		}
-		//Patch the SMCP to create a aditional ingressgateway and egressgateway. Can not do it 100 time because we run out of memory on the nodes
-		err := AddAdditionalGateway(10)
-		if err != nil {
-			t.Fatal("Error adding aditional ingress and egress", err)
-		}
-		routes, _ = util.ShellMuteOutput(`oc get -n %s route -o jsonpath='{.items}'`, meshNamespace)
-		routesDataNew = ParseRoutes(routes)
-		for k, v := range routesDataNew {
-			util.Log.Info("Route: ", k, " CreationTime: ", v)
-		}
-		if len(routesData) != len(routesDataNew) {
-			t.Errorf("The number of routes has changed")
-		}
-		for k, v := range routesData {
-			if v != routesDataNew[k] {
-				t.Errorf("The route %s has been recreated", k)
+
+			t.LogStepf("Create %d Gateways and they are in their own Namespace", total)
+			for i := 0; i < total; i++ {
+				ns := fmt.Sprintf("ns-%d", i)
+				nsNames = append(nsNames, ns)
+				gateways = append(gateways, generateGateway(fmt.Sprintf("gw-%d", i), ns, fmt.Sprintf("www-%d.test.ocp", i)))
 			}
-		}
+			oc.CreateNamespace(t, nsNames...)
+			oc.ApplyString(t, "", gateways...)
+
+			t.LogStepf("Update SMMR to include %d Namespaces", total)
+			start := time.Now()
+			oc.ApplyString(t, meshNamespace, fmt.Sprintf(`
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  members:
+  - bookinfo
+  - foo
+  - bar
+  - legacy
+  - %s
+  `, strings.Join(nsNames, "\n  - ")))
+
+			var end time.Time
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				routes := getRoutes(t, meshNamespace)
+				if len(routes) == total {
+					end = time.Now()
+					t.LogSuccessf("Found all %d Routes in %.2f", total, end.Sub(start).Seconds())
+				} else {
+					t.Fatalf("Expect to find %d Routes but found %d instead", total, len(routes))
+				}
+			})
+
+			before := getRoutes(t, meshNamespace)
+			detectRouteChanges := func() {
+				retry.UntilSuccess(t, func(t test.TestHelper) {
+					after := getRoutes(t, meshNamespace)
+
+					if len(after) != total {
+						t.Fatalf("Expect %d Routes, but got %d instead", total, len(after))
+					}
+
+					if fmt.Sprint(buildRouteMap(before)) != fmt.Sprint(buildRouteMap(after)) {
+						t.Fatalf("Expect %d Routes remain unchanged, but they changed\nBefore: %v\nAfter: %v", total, before, after)
+					}
+
+					t.LogSuccessf("Got %d Routes unchanged", total)
+				})
+			}
+
+			t.LogStepf("Check whether the Routes changes when the istio pod restarts")
+			restartPod(t, meshName, meshNamespace, 10)
+			detectRouteChanges()
+
+			t.LogStepf("Check weather the Routes changes when adding new IngressGateway")
+			addAdditionalIngressGateway(t, meshName, meshNamespace, "additional-test-ior-ingress-gateway")
+			detectRouteChanges()
+		})
 	})
 }
 
-func ParseRoutes(routes string) map[string]string {
-	var routesdata []Routes
-	routesMap := make(map[string]string)
-	err := json.Unmarshal([]byte(routes), &routesdata)
+func addAdditionalIngressGateway(t test.TestHelper, meshName, meshNamespace, gatewayName string) {
+	oc.Patch(t, meshNamespace,
+		"smcp", meshName,
+		"merge", fmt.Sprintf(`
+{
+  "spec": {
+    "gateways": {
+      "additionalIngress": {
+        "%s": {}
+      }
+    }
+  }
+}
+`, gatewayName))
+	oc.WaitSMCPReady(t, meshNamespace, meshName)
+}
+
+func restartPod(t test.TestHelper, name, ns string, count int) {
+	for i := 0; i < count; i++ {
+		istiodPod := pod.MatchingSelector("app=istiod", meshNamespace)
+		t.Logf("Deleting %s pod in %s", name, ns)
+		oc.DeletePod(t, istiodPod)
+		oc.WaitPodRunning(t, istiodPod)
+		oc.WaitPodReady(t, istiodPod)
+	}
+}
+
+func buildRouteMap(routes []Route) map[string]string {
+	routeMap := make(map[string]string)
+
+	for _, route := range routes {
+		routeMap[route.Metadata.Uid] = route.Metadata.ResourceVersion
+	}
+
+	return routeMap
+}
+
+func getRoutes(t test.TestHelper, ns string) []Route {
+	res := shell.Executef(t, "oc -n %s get --selector 'maistra.io/generated-by=ior' --output 'jsonpath={.items}' route", ns)
+	var routes []Route
+	err := json.Unmarshal([]byte(res), &routes)
 	if err != nil {
-		util.Log.Error("Error parsing routes: ", err)
-		return nil
+		t.Fatalf("Error parsing data %s: %v", res, err)
 	}
-	for _, route := range routesdata {
-		if strings.Contains(route.Metadata.Name, "gw-http") && route.Metadata.Name != "" {
-			routesMap[route.Metadata.Name] = route.Metadata.CreationTime
-		}
-	}
-	return routesMap
+
+	return routes
 }
 
-func AddAdditionalGateway(number int) error {
-	//Patch the SMCP to create a aditionals (by number variable) ingressgateway and egressgateway
-	var err error
-	for i := 0; i < number; i++ {
-		_, err = util.Shell(`oc patch smcp/%s -n %s --type merge -p '{"spec":{"gateways":{"additionalEgress":
-		{"eg%d":{"enabled":true,"namespace":"%s","runtime":{"container":{"resources":
-		{"limits":{"cpu":"1000m","memory":"1028Mi"},"requests":{"cpu":"300m","memory":"250Mi"}}},
-		"deployment":{"autoScaling":{"enabled":false},"replicas":1}}}},"additionalIngress":
-		{"ig%d":{"enabled":true,"namespace":"%s","runtime":
-		{"container":{"resources":{"limits":{"cpu":"1000m","memory":"1024Mi"},"requests":
-		{"cpu":"200m","memory":"150Mi"}}},"deployment":{"autoScaling":{"enabled":false}}}}}}}}'`,
-			smcpName, meshNamespace, i, meshNamespace, i, meshNamespace)
-		if err != nil {
-			return err
-		}
-		util.Log.Info("Verify SMCP status and pods")
-		if _, err = util.Shell(`oc -n %s wait --for condition=Ready smcp/%s --timeout 180s`, meshNamespace, smcpName); err != nil {
-			return err
-		}
-	}
-	return err
+func setupDefaultSMCP(t test.TestHelper, ns string) {
+	oc.ApplyTemplate(t, ns, GetDefaultSMCPTemplate(), Smcp)
+	oc.WaitSMCPReady(t, ns, env.GetDefaultSMCPName())
+}
 
+func setupV23SMCP(t test.TestHelper, ns, name string) {
+	oc.ApplyTemplate(t, ns, GetSMCPTemplate("2.3"), Smcp)
+	oc.WaitSMCPReady(t, ns, name)
+
+	oc.ApplyString(t, ns, GetSMMRTemplate())
+	oc.WaitSMMRReady(t, ns)
+}
+
+func updateToV24SMCP(t test.TestHelper, ns, name string) {
+	oc.Patch(t, ns,
+		"smcp", name,
+		"json", `[{"op": "add", "path": "/spec/version", "value": "v2.4"}]`)
+	oc.WaitSMCPReady(t, ns, name)
+}
+
+func getIORSetting(t test.TestHelper, ns, name string) string {
+	return shell.Executef(t,
+		`oc -n %s get smcp/%s -o jsonpath='{.status.appliedValues.istio.gateways.istio-ingressgateway.ior_enabled}'`,
+		ns, name)
+}
+
+func enableIOR(t test.TestHelper, ns, name string) {
+	oc.Patch(t,
+		ns, "smcp", name, "json",
+		`[{"op": "add", "path": "/spec/gateways", "value": {"openshiftRoute": {"enabled": true}}}]`,
+	)
+}
+
+func removeIORCustomSetting(t test.TestHelper, ns, name string) {
+	oc.Patch(t,
+		ns, "smcp", name, "json",
+		`[{"op": "remove", "path": "/spec/gateways"}]`,
+	)
+}
+
+func generateGateway(name, ns, host string) string {
+	return fmt.Sprintf(`
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: "%s"
+  namespace: "%s"
+spec:
+  selector:
+    istio: "ingressgateway"
+  servers:
+  - hosts:
+    - "%s"
+    port:
+      name: "http"
+      number: 80
+      protocol: "HTTP"
+---`,
+		name, ns, host,
+	)
 }
