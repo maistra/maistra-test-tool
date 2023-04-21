@@ -39,12 +39,10 @@ func TestExternalCertificate(t *testing.T) {
 
 		t.Cleanup(func() {
 			if tmpDir != "" {
-				t.Log("Removing temporary directory")
 				os.RemoveAll(tmpDir)
 			}
 
-			t.Logf("Recreate namespace %s", ns)
-			oc.RecreateNamespace(t, ns)
+			oc.RecreateNamespace(t, ns, meshNamespace)
 		})
 
 		t.LogStep("Create cacerts Secret")
@@ -68,7 +66,7 @@ func TestExternalCertificate(t *testing.T) {
 				assert.ResponseStatus(200))
 		})
 
-		if env.GetSampleArch() == "p" || env.GetSampleArch() == "z" {
+		if env.GetArch() == "p" || env.GetArch() == "z" {
 			t.Log("NOTE: Not checking certificates, because test is running in P or Z environment")
 			return
 		}

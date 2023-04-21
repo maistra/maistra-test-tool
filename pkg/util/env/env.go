@@ -1,46 +1,22 @@
 package env
 
 import (
-	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/joho/godotenv"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 var initEnvVarsOnce sync.Once
 
-// Getenv loads test.env file and returns an environment variable value.
-// If the environment variable is empty, it returns the fallback as a default value.
-func Getenv(key, fallback string) string {
-	InitEnvVarsFromFile()
+// getenv returns an environment variable value or the given fallback as a default value.
+func getenv(key, fallback string) string {
 	value := os.Getenv(key)
 	if len(value) == 0 {
 		return fallback
 	}
 	return value
-}
-
-func GetenvAsInt(key string, fallback int) int {
-	value := Getenv(key, strconv.Itoa(fallback))
-	num, err := strconv.Atoi(value)
-	if err != nil {
-		panic(fmt.Sprintf("env var %s must be an integer, but was: %s", key, value))
-	}
-	return num
-}
-
-func InitEnvVarsFromFile() {
-	initEnvVarsOnce.Do(func() {
-		envFilePath := GetRootDir() + "/tests/test.env"
-		if err := godotenv.Load(envFilePath); err != nil {
-			panic(fmt.Sprintf("Error loading file %s", envFilePath))
-		}
-	})
 }
 
 // GetRootDir gets the project root dir from the current working directory (which is usually the current test's package dir)
@@ -57,27 +33,43 @@ func GetRootDir() string {
 }
 
 func IsRosa() bool {
-	return Getenv("ROSA", "false") == "true"
+	return getenv("ROSA", "false") == "true"
+}
+
+func IsNightly() bool {
+	return getenv("NIGHTLY", "false") == "true"
 }
 
 func GetDefaultSMCPName() string {
-	return Getenv("SMCP_NAME", "basic")
+	return getenv("SMCP_NAME", "basic")
 }
 
 func GetDefaultMeshNamespace() string {
-	return Getenv("SMCP_NAMESPACE", "istio-system")
+	return getenv("SMCP_NAMESPACE", "istio-system")
 }
 
 func GetSMCPVersion() version.Version {
-	v := os.Getenv("SMCP_VERSION")
-	if v == "" {
-		panic("SMCP_VERSION environment variable not set")
-	}
-	return version.ParseVersion(v)
+	return version.ParseVersion(getenv("SMCP_VERSION", "v2.4"))
 }
 
-func GetSampleArch() string {
-	return Getenv("OCP_ARCH", "x86")
+func GetArch() string {
+	return getenv("OCP_ARCH", "x86")
+}
+
+func GetTestGroup() string {
+	return getenv("TEST_GROUP", "full")
+}
+
+func GetMustGatherTag() string {
+	return getenv("MUST_GATHER_TAG", "2.3")
+}
+
+func GetKubeconfig() string {
+	return getenv("KUBECONFIG", "")
+}
+
+func GetKubeconfig2() string {
+	return getenv("KUBECONFIG2", "")
 }
 
 func GetOperatorNamespace() string {

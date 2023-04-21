@@ -67,15 +67,10 @@ func installNightlyOperators(t test.TestHelper) {
 	oc.WaitDeploymentRolloutComplete(t, ns, "istio-operator", "jaeger-operator", "kiali-operator")
 }
 
-func SetupEnvVars(t test.TestHelper) {
-	env.InitEnvVarsFromFile()
-}
-
 func BasicSetup(t test.TestHelper) {
 	t.T().Helper()
-	SetupEnvVars(t)
 
-	if env.Getenv("NIGHTLY", "false") == "true" {
+	if env.IsNightly() {
 		installNightlyOperators(t)
 	}
 	oc.CreateNamespace(t, meshNamespace, ns.Bookinfo, ns.Foo, ns.Bar, ns.Legacy, ns.MeshExternal)

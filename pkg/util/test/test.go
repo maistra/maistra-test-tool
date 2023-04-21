@@ -75,8 +75,8 @@ func (t *topLevelTest) Run(f func(t TestHelper)) {
 }
 
 func (t *topLevelTest) skipIfNecessary() {
-	testGroup := TestGroup(env.Getenv("TEST_GROUP", string(Full)))
-	if env.GetSampleArch() == "arm" {
+	testGroup := TestGroup(env.GetTestGroup())
+	if env.GetArch() == "arm" {
 		testGroup = "arm"
 	}
 
