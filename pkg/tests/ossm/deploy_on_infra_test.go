@@ -86,10 +86,11 @@ spec:
 `)
 
 			t.LogStepf("Verify operator pod is running on the infra node. Node expected: %s", workername)
+			locator := pod.MatchingSelector("name=istio-operator", "openshift-operators")
+			oc.WaitPodReady(t, locator)
+			operatorPod := locator(t, oc.DefaultOC)
+
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				locator := pod.MatchingSelector("name=istio-operator", "openshift-operators")
-				oc.WaitPodReady(t, locator)
-				operatorPod := locator(t, oc.DefaultOC)
 				shell.Execute(t,
 					fmt.Sprintf(`oc get pod -n openshift-operators %s -o jsonpath='{.spec.nodeName}'`, operatorPod.Name),
 					assert.OutputContains(

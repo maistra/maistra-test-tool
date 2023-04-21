@@ -85,13 +85,13 @@ func (o OC) WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
 	var pod NamespacedName
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		pod = podLocator(t, &o)
+		condition := o.Invokef(t, "kubectl -n %s wait --for condition=Ready pod %s --timeout 1s || true", pod.Namespace, pod.Name) // TODO: Change shell execute to do not fail on error
+		if strings.Contains(condition, "condition met") {
+			t.Logf("Pod %s in namespace %s is ready!", pod.Name, pod.Namespace)
+		} else {
+			t.Fatalf("Error: %s in namespace %s is not ready: %s", pod.Name, pod.Namespace, condition)
+		}
 	})
-	condition := o.Invokef(t, "kubectl -n %s wait --for condition=Ready pod %s --timeout 30s || true", pod.Namespace, pod.Name) // TODO: Change shell execute to do not fail on error
-	if strings.Contains(condition, "condition met") {
-		t.Logf("Pod %s in namespace %s is ready!", pod.Name, pod.Namespace)
-	} else {
-		t.Fatalf("Error: %s in namespace %s is not ready: %s", pod.Name, pod.Namespace, condition)
-	}
 }
 
 func (o OC) WaitPodsReady(t test.TestHelper, ns, selector string) {
