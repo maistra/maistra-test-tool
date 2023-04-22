@@ -45,12 +45,15 @@ func TestExternalCertificate(t *testing.T) {
 			oc.RecreateNamespace(t, ns, meshNamespace)
 		})
 
+		t.LogStep("Uninstall existing SMCP")
+		oc.RecreateNamespace(t, meshNamespace)
+
 		t.LogStep("Create cacerts Secret")
 		oc.CreateGenericSecretFromFiles(t, meshNamespace, "cacerts",
-			fmt.Sprintf("ca-cert.pem=%s", sampleCACert),
-			fmt.Sprintf("ca-key.pem=%s", sampleCAKey),
-			fmt.Sprintf("root-cert.pem=%s", sampleCARoot),
-			fmt.Sprintf("cert-chain.pem=%s", sampleCAChain))
+			"ca-cert.pem="+sampleCACert,
+			"ca-key.pem="+sampleCAKey,
+			"root-cert.pem="+sampleCARoot,
+			"cert-chain.pem="+sampleCAChain)
 
 		t.LogStep("Apply SMCP to configure certificate authority to use cacerts Secret")
 		oc.ApplyString(t, meshNamespace, createSMCPWithCustomCert(smcpName, ns))
