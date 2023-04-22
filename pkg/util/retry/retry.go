@@ -23,9 +23,7 @@ func UntilSuccessWithOptions(t test.TestHelper, options RetryOptions, f func(t t
 			attemptHelper = t
 			f(attemptHelper)
 		} else {
-			retryTestHelper := test.NewRetryTestHelper(t.T(), t.CurrentStep(), i, options.maxAttempts)
-			attemptHelper = retryTestHelper
-			retryTestHelper.Attempt(f)
+			attemptHelper = attemptInternal(t, f, i, options.maxAttempts)
 		}
 
 		if attemptHelper.Failed() {
@@ -67,4 +65,20 @@ func UntilSuccessWithOptions(t test.TestHelper, options RetryOptions, f func(t t
 			break
 		}
 	}
+}
+
+// Attempt runs the given function, captures any errors thrown by the function, and
+// returns a RetryTestHelper, which you can use to:
+// - check if the attempt failed by invoking retryTestHelper.Failed()
+// - print everything that the function logged by invoking retryTestHelper.FlushLogBuffer()
+func Attempt(t test.TestHelper, f func(t test.TestHelper)) *test.RetryTestHelper {
+	t.T().Helper()
+	return attemptInternal(t, f, 0, 1)
+}
+
+func attemptInternal(t test.TestHelper, f func(t test.TestHelper), currentAttempt, maxAttempts int) *test.RetryTestHelper {
+	t.T().Helper()
+	retryTestHelper := test.NewRetryTestHelper(t.T(), t.CurrentStep(), currentAttempt, maxAttempts)
+	retryTestHelper.Attempt(f)
+	return retryTestHelper
 }
