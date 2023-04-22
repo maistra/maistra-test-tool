@@ -16,12 +16,19 @@ func (t subTest) Run(f func(t TestHelper)) {
 	t.t.Helper()
 	t.t.Run(t.name, func(t *testing.T) {
 		t.Helper()
-		defer recoverPanic(t)
-		ctx := NewTestContext(t)
 		start := time.Now()
-		f(ctx)
-		t.Log()
-		t.Logf("Subtest completed in %.2fs (excluding cleanup)", time.Now().Sub(start).Seconds())
+		th := NewTestHelper(t)
+		defer func() {
+			recoverPanic(t)
+			t.Log()
+			if th.Failed() {
+				t.Logf("Subtest failed in %.2fs (excluding cleanup)", time.Now().Sub(start).Seconds())
+				captureMustGather(t)
+			} else {
+				t.Logf("Subtest completed in %.2fs (excluding cleanup)", time.Now().Sub(start).Seconds())
+			}
+		}()
+		f(th)
 	})
 }
 

@@ -11,7 +11,7 @@ const (
 	FailurePrefix = "FAILURE: "
 )
 
-func NewTestContext(t *testing.T) TestHelper {
+func NewTestHelper(t *testing.T) TestHelper {
 	ctx := &testHelper{
 		t: t,
 	}
