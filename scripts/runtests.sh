@@ -33,12 +33,12 @@ runAllTests() {
         logHeader "Executing all tests against SMCP $SMCP_VERSION"
     fi
 
-#   add the following to re-run failed tests
-#     --rerun-fails=5 --rerun-fails-report "$RERUNS_FILE" \
-
-    gotestsum -f standard-verbose --junitfile "$REPORT_FILE" --packages "$dir/..." \
+    gotestsum -f standard-verbose --packages "$dir/..." \
+    --max-fails 10 \
+    --rerun-fails=5 --rerun-fails-max-failures 10 --rerun-fails-run-root-test --rerun-fails-report "$RERUNS_FILE" \
+    --junitfile "$REPORT_FILE" --junitfile-project-name "maistra-test-tool-$SMCP_VERSION" --junitfile-hide-empty-pkg \
     --junitfile-testsuite-name relative --junitfile-testcase-classname relative \
-    -- -timeout 2h -count 1 -p 1 2>&1 \
+    -- -timeout 1h -count 1 -p 1 2>&1 \
     | tee -a "$LOG_FILE"
 }
 
@@ -51,10 +51,9 @@ runTest() {
     echo > "$LOG_FILE"
     logHeader "Executing $testName against SMCP $SMCP_VERSION"
 
-#   add the following to re-run failed tests
-#     --rerun-fails=5 --rerun-fails-report "$RERUNS_FILE" \
-
-    gotestsum -f standard-verbose --junitfile "$REPORT_FILE" --packages "$dir/" \
+    gotestsum -f standard-verbose --packages "$dir/" \
+    --rerun-fails=5 --rerun-fails-run-root-test --rerun-fails-report "$RERUNS_FILE" \
+    --junitfile "$REPORT_FILE" --junitfile-project-name "maistra-test-tool-$SMCP_VERSION" --junitfile-hide-empty-pkg \
     --junitfile-testsuite-name relative --junitfile-testcase-classname relative \
     -- -timeout 30m -count 1 -p 1 -run "^$testName$" 2>&1 \
     | tee -a "$LOG_FILE"
@@ -81,8 +80,6 @@ main() {
         oc login --token=${OCP_TOKEN} --server=${OCP_API_URL} --insecure-skip-tls-verify=true
     fi
 
-    resetCluster
-
     testName="${TEST_CASE:-$1}"
     if [ -n "$testName" ]; then
         # find the directory containing the specified test
@@ -106,6 +103,8 @@ main() {
         fi
         echo "Found $testName in file $file."
     fi
+
+    resetCluster
 
     declare -a versions=()
     declare -A logFiles
