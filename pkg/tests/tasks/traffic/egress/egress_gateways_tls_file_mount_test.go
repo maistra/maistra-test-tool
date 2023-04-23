@@ -22,6 +22,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -78,10 +79,14 @@ func TestTLSOrigination(t *testing.T) {
 			t.Cleanup(func() {
 				app.Uninstall(t, app.NginxWithMTLS(nsNginx))
 				oc.DeleteSecret(t, meshNamespace, "nginx-client-certs", "nginx-ca-certs")
-				// Rollout undo to istio-egressgateway to revert patch
-				oc.UndoRollout(t, meshNamespace, "deploy", "istio-egressgateway")
 				oc.DeleteFromTemplate(t, ns, nginxGatewayTLSTemplate, smcp)
 				oc.DeleteFromString(t, meshNamespace, meshExternalServiceEntry, nginxMeshRule)
+				// revert patch to istio-egressgateway
+				oc.TouchSMCP(t, meshNamespace, smcp.Name)
+				// TODO: this is a potential bug; investigate why the following is necessary
+				// ingressgateway needs to be restarted or it will continue reporting the following error:
+				// error	cache	resource:file-root:/etc/istio/nginx-ca-certs/example.com.crt failed to generate secret for proxy from file: open /etc/istio/nginx-ca-certs/example.com.crt: no such file or directory
+				oc.DeletePod(t, pod.MatchingSelector("app=istio-ingressgateway", meshNamespace))
 			})
 
 			t.LogStep("Deploy nginx mTLS server and create secrets in the mesh namespace")
