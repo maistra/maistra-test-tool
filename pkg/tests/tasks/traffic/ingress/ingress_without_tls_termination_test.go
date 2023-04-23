@@ -21,12 +21,14 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/request"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 func TestIngressWithoutTlsTermination(t *testing.T) {
@@ -60,6 +62,10 @@ func TestIngressWithoutTlsTermination(t *testing.T) {
 
 		t.LogStep("Configure Gateway resource with TLS passthrough for host nginx.example.com")
 		oc.ApplyString(t, ns, nginxIngressGateway)
+
+		if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
+			createRouteWithTLS(t, meshNamespace, "nginx.example.com", "https", "istio-ingressgateway", "passthrough")
+		}
 
 		t.LogStep("Verify NGINX is reachable from outside the cluster through the ingressgateway")
 		gatewayHTTP := istio.GetIngressGatewayHost(t, meshNamespace)
