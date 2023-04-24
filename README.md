@@ -150,7 +150,7 @@ LOG_FAILED_RETRY_ATTEMPTS=false make test
 
 ### Running tests in a container
 
-You can also run the test suite in a container, using the image `quay.io/maistra/maistra-test-tool:2.4`. 
+You can also run the test suite in a container, using the image `quay.io/maistra/maistra-test-tool:latest`. 
 In addition to the environment variables explained above, you must also set the following environment variables:
 - `OCP_API_URL` - The URL of the OpenShift API server.
 - `OCP_TOKEN` - The authentication token for OpenShift. Alternatively, you can set the username and password via the `OCP_CRED_USR` and `OCP_CRED_PSW` environment variables.
@@ -164,7 +164,7 @@ podman run -it \
   --add-host api.crc.testing:$(crc ip) \
   -e OCP_API_URL=https://api.crc.testing:6443 \
   -e OCP_TOKEN=<token> \ 
-  quay.io/maistra/maistra-test-tool:2.4
+  quay.io/maistra/maistra-test-tool:latest
 ```
 
 Use the `-e` option to set the environment variables that affect the execution of the test suite, as described in the previous sections. 
