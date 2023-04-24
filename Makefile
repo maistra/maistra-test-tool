@@ -41,3 +41,6 @@ image:
 
 push: image
 	podman push ${CONTAINER_IMAGE}
+
+clean:
+	rm -rf tests/result-*
