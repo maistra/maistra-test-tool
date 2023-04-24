@@ -222,6 +222,11 @@ func GetYaml(t test.TestHelper, ns, kind, name string, checks ...common.CheckFun
 	return DefaultOC.GetYaml(t, ns, kind, name, checks...)
 }
 
+func GetJson(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) string {
+	t.T().Helper()
+	return DefaultOC.GetJson(t, ns, kind, name, checks...)
+}
+
 func GetProxy(t test.TestHelper) Proxy {
 	t.T().Helper()
 	return DefaultOC.GetProxy(t)
