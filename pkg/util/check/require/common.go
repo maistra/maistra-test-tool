@@ -9,6 +9,6 @@ func requireFailure(t test.TestHelper, msg string, detailMsg string) {
 	if detailMsg == "" {
 		t.Fatalf(msg)
 	} else {
-		t.Fatalf("%s (%s)", msg, detailMsg)
+		t.Fatalf("%s; %s", msg, detailMsg)
 	}
 }

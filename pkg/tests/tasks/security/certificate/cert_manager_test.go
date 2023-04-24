@@ -7,6 +7,7 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/helm"
@@ -76,14 +77,8 @@ func TestCertManager(t *testing.T) {
 		t.LogStep("Verify that istio-ca-root-cert created in proper namespaces")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			oc.LogsFromPods(t, meshNamespace, "app=cert-manager-istio-csr",
-				assert.OutputContains(
-					fmt.Sprintf(`"msg"="creating configmap with root CA data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, meshNamespace),
-					fmt.Sprintf("istio-ca-root-cert created in %s", meshNamespace),
-					fmt.Sprintf("istio-ca-root-cert not created in %s", meshNamespace)),
-				assert.OutputContains(
-					fmt.Sprintf(`"msg"="creating configmap with root CA data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, ns.Foo),
-					fmt.Sprintf("istio-ca-root-cert created in %s", ns.Foo),
-					fmt.Sprintf("istio-ca-root-cert not created in %s", ns.Foo)))
+				assertIstioCARootCertCreatedOrUpdated(meshNamespace),
+				assertIstioCARootCertCreatedOrUpdated(ns.Foo))
 		})
 
 		t.LogStep("Verify that istio-ca-root-cert not created in non-member namespaces")
@@ -115,6 +110,16 @@ func TestCertManager(t *testing.T) {
 			curl.Request(t, httpbinURL, nil, assert.ResponseStatus(http.StatusOK))
 		})
 	})
+}
+
+func assertIstioCARootCertCreatedOrUpdated(ns string) common.CheckFunc {
+	return assert.OutputContainsAny(
+		[]string{
+			fmt.Sprintf(`"msg"="creating configmap with root CA data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, ns),
+			fmt.Sprintf(`"msg"="updating ConfigMap data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, ns),
+		},
+		fmt.Sprintf("istio-ca-root-cert created or updated in %s", ns),
+		fmt.Sprintf("istio-ca-root-cert neither created nor updated in %s", ns))
 }
 
 func createSMCPWithCertManager(smcpName, smcpNamespace, memberNs, version string) string {
