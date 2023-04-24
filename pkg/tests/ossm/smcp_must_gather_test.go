@@ -39,7 +39,7 @@ func TestMustGather(t *testing.T) {
 		t.LogStep("Deploy bookinfo in bookinfo ns")
 		app.InstallAndWaitReady(t, app.Bookinfo(ns))
 
-		image := "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel8:" + env.GetMustGatherTag()
+		image := env.GetMustGatherImage()
 
 		t.LogStepf("Capture must-gather using image %s", image)
 		dir := shell.CreateTempDir(t, "must-gather-")

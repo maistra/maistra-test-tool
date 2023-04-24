@@ -73,6 +73,9 @@ main() {
     else
         echo "Executing tests against SMCP version $SMCP_VERSION"
     fi
+    export OUTPUT_DIR="$PWD/tests/result-$(date +%Y%m%d%H%M%S)"
+    echo "Output dir: $OUTPUT_DIR"
+    mkdir -p "$OUTPUT_DIR"
 
     if [ -n "${OCP_CRED_PSW}" ]; then
         oc login -u ${OCP_CRED_USR} -p ${OCP_CRED_PSW} --server=${OCP_API_URL} --insecure-skip-tls-verify=true
@@ -113,9 +116,9 @@ main() {
     if [ -z "$SMCP_VERSION" ]; then
         for ver in ${SUPPORTED_VERSIONS[@]}; do
             export SMCP_VERSION="$ver"
-            export LOG_FILE="$PWD/tests/output_${SMCP_VERSION}.log"
-            export REPORT_FILE="$PWD/tests/report_${SMCP_VERSION}.xml"
-            export RERUNS_FILE="$PWD/tests/reruns_${SMCP_VERSION}.txt"
+            export LOG_FILE="$OUTPUT_DIR/output_${SMCP_VERSION}.log"
+            export REPORT_FILE="$OUTPUT_DIR/report_${SMCP_VERSION}.xml"
+            export RERUNS_FILE="$OUTPUT_DIR/reruns_${SMCP_VERSION}.txt"
 
             versions+=("$SMCP_VERSION")
             logFiles["$SMCP_VERSION"]="$LOG_FILE"
@@ -130,9 +133,9 @@ main() {
         done
     else
         SMCP_VERSION="v${SMCP_VERSION#v}" # prepend "v" if necessary
-        export LOG_FILE="$PWD/tests/output_${SMCP_VERSION}.log"
-        export REPORT_FILE="$PWD/tests/report_${SMCP_VERSION}.xml"
-        export RERUNS_FILE="$PWD/tests/reruns_${SMCP_VERSION}.txt"
+        export LOG_FILE="$OUTPUT_DIR/output_${SMCP_VERSION}.log"
+        export REPORT_FILE="$OUTPUT_DIR/report_${SMCP_VERSION}.xml"
+        export RERUNS_FILE="$OUTPUT_DIR/reruns_${SMCP_VERSION}.txt"
 
         versions+=("$SMCP_VERSION")
         logFiles["$SMCP_VERSION"]="$LOG_FILE"

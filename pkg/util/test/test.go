@@ -1,6 +1,9 @@
 package test
 
 import (
+	"fmt"
+	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -66,12 +69,36 @@ func (t *topLevelTest) Id(id string) TopLevelTest {
 func (t *topLevelTest) Run(f func(t TestHelper)) {
 	t.t.Helper()
 	t.skipIfNecessary()
-	defer recoverPanic(t.t)
 	start := time.Now()
 	th := &testHelper{t: t.t}
+	defer func() {
+		recoverPanic(t.t)
+		t.t.Log()
+		if th.Failed() {
+			t.t.Logf("Test failed in %.2fs (excluding cleanup)", time.Now().Sub(start).Seconds())
+			captureMustGather(t.t)
+		} else {
+			t.t.Logf("Test completed in %.2fs (excluding cleanup)", time.Now().Sub(start).Seconds())
+		}
+	}()
 	f(th)
-	t.t.Log()
-	t.t.Logf("Test completed in %.2fs (excluding cleanup)", time.Now().Sub(start).Seconds())
+}
+
+func captureMustGather(t *testing.T) {
+	image := env.GetMustGatherImage()
+	dir := fmt.Sprintf("%s/failures-must-gather/%s-%s",
+		env.GetOutputDir(),
+		time.Now().Format("20060102150405"),
+		strings.ReplaceAll(t.Name(), "/", "-"))
+
+	t.Logf("Capturing cluster state using must-gather %s", image)
+	cmd := exec.Command("sh", "-c", fmt.Sprintf(`rm -rf %s; mkdir -p %s; oc adm must-gather --dest-dir=%s --image=%s`, dir, dir, dir, image))
+	_, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Log(dir)
+	} else {
+		t.Logf("failed to create must-gather: %v", err)
+	}
 }
 
 func (t *topLevelTest) skipIfNecessary() {

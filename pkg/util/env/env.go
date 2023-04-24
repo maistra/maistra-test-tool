@@ -1,11 +1,15 @@
 package env
 
 import (
+	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
+
+var initTime = time.Now()
 
 // getenv returns an environment variable value or the given fallback as a default value.
 func getenv(key, fallback string) string {
@@ -57,8 +61,8 @@ func GetTestGroup() string {
 	return getenv("TEST_GROUP", "full")
 }
 
-func GetMustGatherTag() string {
-	return getenv("MUST_GATHER_TAG", "2.3")
+func GetMustGatherImage() string {
+	return "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel8:" + getenv("MUST_GATHER_TAG", "2.3")
 }
 
 func GetKubeconfig() string {
@@ -75,4 +79,8 @@ func GetOperatorNamespace() string {
 
 func IsLogFailedRetryAttempts() bool {
 	return getenv("LOG_FAILED_RETRY_ATTEMPTS", "true") == "true"
+}
+
+func GetOutputDir() string {
+	return getenv("OUTPUT_DIR", fmt.Sprintf("%s/tests/result-%s", GetRootDir(), initTime.Format("20060102150405")))
 }
