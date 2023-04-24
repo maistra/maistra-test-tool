@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
-	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -32,14 +31,6 @@ func TestConversionDiscoverySelectors(t *testing.T) {
 
 		ns := "bookinfo"
 
-		ossm.DeployControlPlane(t)
-
-		t.NewSubTest("discoverySelecotrs").Run(func(t TestHelper) {
-			t.LogStep("Update SMCP spec.controlPlane.meshConfig.discoverySelectors: Enabled")
-			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `{"spec":{"controlPlane":{"disoverySelectors"}}}}}`)
-			oc.WaitSMCPReady(t, meshNamespace, smcpName)
-		})
-
 		t.LogStep("Install httpbin and sleep pod")
 		app.InstallAndWaitReady(t, app.Httpbin(ns), app.Sleep(ns))
 		t.Cleanup(func() {
@@ -50,9 +41,14 @@ func TestConversionDiscoverySelectors(t *testing.T) {
 			app.Uninstall(t, app.Httpbin(ns), app.Sleep(ns))
 		})
 
-		t.NewSubTest("Helmtospec").Run(func(t TestHelper) {
+		t.NewSubTest("discoverySelectors").Run(func(t TestHelper) {
+			t.LogStep("Update SMCP spec.controlPlane.meshConfig.discoverySelectors: Enabled")
+			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `{"spec":{"controlPlane":{"disoverySelectors"}}}}}`)
+			oc.WaitSMCPReady(t, meshNamespace, smcpName)
+		})
+
+		t.NewSubTest("Convertion").Run(func(t TestHelper) {
 			t.LogStep("Convert the Helm Values to smcp spec Values")
-			oc.ApplyString(t, ns, DSEnabled)
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, ns, DSEnabled)
 			})
@@ -87,7 +83,7 @@ metadata:
 spec:
 	# You may override parts of meshconfig by uncommenting the following lines.
   meshConfig:
-	discoverySelectors:
+    discoverySelectors:
     - matchLabels:
-		istio-discovery: enabled`
+        istio-discovery: enabled`
 )
