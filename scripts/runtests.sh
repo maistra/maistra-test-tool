@@ -40,13 +40,13 @@ runTestsAgainstVersion() {
         -- -timeout 1h -count 1 -p 1 2>&1 \
         | tee -a "$LOG_FILE"
     else
-        logHeader "Executing $testName against SMCP $SMCP_VERSION"
+        logHeader "Executing $TEST_CASE against SMCP $SMCP_VERSION"
 
         gotestsum -f standard-verbose --packages "$TEST_DIR" \
         --rerun-fails=5 --rerun-fails-run-root-test --rerun-fails-report "$RERUNS_FILE" \
         --junitfile "$REPORT_FILE" --junitfile-project-name "maistra-test-tool-$SMCP_VERSION" --junitfile-hide-empty-pkg \
         --junitfile-testsuite-name relative --junitfile-testcase-classname relative \
-        -- -timeout 30m -count 1 -p 1 -run "^$testName$" 2>&1 \
+        -- -timeout 30m -count 1 -p 1 -run "^$TEST_CASE$" 2>&1 \
         | tee -a "$LOG_FILE"
     fi
 
@@ -105,7 +105,7 @@ main() {
             exit 1
         fi
         TEST_DIR="$TEST_DIR/"
-        echo "Found $TEST_CASE in file $file."
+        echo "Found $TEST_CASE in file $file"
     else
         TEST_DIR="$PWD/pkg/tests/..."
     fi
