@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/yaml.v2"
-
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
@@ -364,6 +362,16 @@ func (o OC) GetYaml(t test.TestHelper, ns, kind, name string, checks ...common.C
 	return val
 }
 
+func (o OC) GetJson(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) string {
+	t.T().Helper()
+	var val string
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		val = shell.Execute(t, fmt.Sprintf("oc %s get %s/%s -ojson", nsFlag(ns), kind, name), checks...)
+	})
+	return val
+}
+
 // GetProxy returns the Proxy object from the cluster
 func (o OC) GetProxy(t test.TestHelper) Proxy {
 	type ProxyResource struct {
@@ -372,8 +380,8 @@ func (o OC) GetProxy(t test.TestHelper) Proxy {
 
 	proxyResource := ProxyResource{}
 
-	proxyYaml := o.GetYaml(t, "", "proxy", "cluster")
-	err := yaml.Unmarshal([]byte(proxyYaml), &proxyResource)
+	proxyYaml := o.GetJson(t, "", "proxy", "cluster")
+	err := json.Unmarshal([]byte(proxyYaml), &proxyResource)
 	if err != nil {
 		t.Fatalf("Could not parse Proxy resource: %v", err)
 	}
