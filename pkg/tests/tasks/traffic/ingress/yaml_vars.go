@@ -16,6 +16,8 @@ package ingress
 
 import (
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 var (
@@ -35,3 +37,42 @@ var (
 	// OCP4.x
 	meshNamespace = env.GetDefaultMeshNamespace()
 )
+
+func createRoute(t test.TestHelper, ns string, host, targetPort, serviceName string) {
+	createRouteWithTLS(t, ns, host, targetPort, serviceName, "")
+}
+
+func createRouteWithTLS(t test.TestHelper, ns string, host, targetPort, serviceName string, tlsTermination string) {
+	t.LogStepf("Create OpenShift Route for host %s to %s port %s", host, serviceName, targetPort)
+	t.Log("NOTE: This is necessary in OSSM 2.4+, because IOR is disabled by default")
+	data := map[string]string{
+		"host":           host,
+		"targetPort":     targetPort,
+		"serviceName":    serviceName,
+		"tlsTermination": tlsTermination,
+	}
+	oc.ApplyTemplate(t, ns, routeTemplate, data)
+	t.Cleanup(func() {
+		oc.DeleteFromTemplate(t, ns, routeTemplate, data)
+	})
+}
+
+const routeTemplate = `
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .host }}
+spec:
+  host: {{ .host }}
+  port:
+    targetPort: {{ .targetPort }}
+{{ if .tlsTermination }}
+  tls:
+    termination: {{ .tlsTermination }}
+{{ end }}
+  to:
+    kind: Service
+    name: {{ .serviceName }}
+    weight: 100
+  wildcardPolicy: None
+`

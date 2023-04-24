@@ -23,11 +23,13 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/request"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 func TestIngressGateways(t *testing.T) {
@@ -47,6 +49,10 @@ func TestIngressGateways(t *testing.T) {
 		t.NewSubTest("TrafficManagement_ingress_status_200_test").Run(func(t TestHelper) {
 			t.LogStep("Create httpbin Gateway and VirtualService with host set to httpbin.example.com")
 			oc.ApplyString(t, ns, httpbinGateway1)
+
+			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
+				createRoute(t, meshNamespace, "httpbin.example.com", "http2", "istio-ingressgateway")
+			}
 
 			t.LogStep("Check if httpbin service is reachable through istio-ingressgateway")
 			retry.UntilSuccess(t, func(t TestHelper) {
