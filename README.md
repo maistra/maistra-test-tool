@@ -47,12 +47,21 @@ For information about the test results, refer to section [Test Results](#Test re
 
 ### Running all tests
 
-To run all the test cases against all the supported `ServiceMeshControlPlane` versions, run the following command:
+To run all the test cases against all the `ServiceMeshControlPlane` versions supported by the current version of the OSSM operator, run the following command:
 ```console
 make test
 ```
 
-This command runs the entire test suite against the minimum supported `ServiceMeshControlPlane` version, then for the next, and so on. 
+This command runs the entire test suite against the minimum supported `ServiceMeshControlPlane` version, then for the next, and so on.
+
+#### Running against a specific Operator version
+
+By default, maistra-test-tool assumes that the OSSM Operator version is `2.4.0` and runs tests against the `v2.2`, `v2.3`, and `v2.4` version of the ServiceMeshControlPlane.
+To run against the '2.3.x' version of the Operator, run the tests with the `OPERATOR_VERSION` environment variable set to `2.3.x`. For example, for Operator version `2.3.3`, run the tests as follows:
+
+```console
+OPERATOR_VERSION=2.3.3 make test
+```
 
 ### Running a group of tests
 
