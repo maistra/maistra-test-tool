@@ -1,0 +1,11 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+namespace: istio-system
+spec:
+# You may override parts of meshconfig by uncommenting the following lines.
+  meshConfig:
+    discoverySelectors:
+      - matchLabels:
+          istio-discovery: enabled
+
