@@ -82,5 +82,5 @@ func IsLogFailedRetryAttempts() bool {
 }
 
 func GetOutputDir() string {
-	return getenv("OUTPUT_DIR", fmt.Sprintf("%s/tests/result-%s", GetRootDir(), initTime.Format("20060102150405")))
+	return getenv("OUTPUT_DIR", fmt.Sprintf("%s/tests/result-%s/%s", GetRootDir(), initTime.Format("20060102150405"), GetSMCPVersion()))
 }
