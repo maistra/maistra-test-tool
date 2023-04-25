@@ -32,6 +32,7 @@ func TestDiscoverySelectors(t *testing.T) {
 	NewTest(t).Groups(Full).Run(func(t TestHelper) {
 		t.Log("This test checks if discoverySelectors are being honored")
 		t.Log("See https://issues.redhat.com/browse/OSSM-3802")
+		t.Log("Test case is based on https://istio.io/latest/blog/2021/discovery-selectors/")
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
 			t.Skip("Skipped because spec.meshConfig.discoverySelectors is only available in v2.4+")
 		}
