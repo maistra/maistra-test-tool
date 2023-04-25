@@ -91,7 +91,7 @@ func (o OC) WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
 		if strings.Contains(condition, "condition met") {
 			t.Logf("Pod %s in namespace %s is ready!", pod.Name, pod.Namespace)
 		} else {
-			t.Fatalf("Error: %s in namespace %s is not ready: %s", pod.Name, pod.Namespace, condition)
+			t.Fatalf("error: %s in namespace %s is not ready: %s", pod.Name, pod.Namespace, condition)
 		}
 	})
 }
