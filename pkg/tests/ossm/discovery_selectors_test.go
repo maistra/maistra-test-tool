@@ -19,16 +19,22 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 func TestDiscoverySelectors(t *testing.T) {
 	NewTest(t).Groups(Full).Run(func(t TestHelper) {
 		t.Log("This test checks if discoverySelectors are being honored")
+		t.Log("See https://issues.redhat.com/browse/OSSM-3802")
+		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
+			t.Skip("Skipped because spec.meshConfig.discoverySelectors is only available in v2.4+")
+		}
 
 		DeployControlPlane(t)
 
