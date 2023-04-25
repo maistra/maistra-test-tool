@@ -1,36 +1,36 @@
 FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
-WORKDIR /bin
 
-RUN microdnf install --nodocs tar gcc gzip git bind-utils findutils sudo \
-    && curl -Lo ./oc.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz \
-    && tar -xf oc.tar.gz \
-    && rm -f oc.tar.gz \
-    && curl -Lo ./golang.tar.gz https://go.dev/dl/go1.20.3.linux-amd64.tar.gz \
-    && tar -xf golang.tar.gz -C / \
-    && rm -f golang.tar.gz \
-    && microdnf update \
-    && microdnf clean all
+ARG HELM_VERSION="v3.11.3"
+ARG GO_VERSION="1.20.3"
 
-ENV GOROOT=/go
-ENV GOPATH=/root/go
-ENV PATH=$GOROOT/bin:$GOPATH/bin:$PATH
+ENV GOPATH=/go
+ENV PATH=/usr/local/go/bin:$GOPATH/bin:$PATH
+# we need to set HOME when running on OCP with random UID, otherwise the home is set to / and any writing there will fail with permission denied
+ENV HOME=$GOPATH/src/maistra-test-tool
 
-ENV OCP_API_URL ${OCP_API_URL}
-ENV OCP_CRED_USR ${OCP_CRED_USR}
-ENV OCP_CRED_PSW ${OCP_CRED_PSW}
-ENV OCP_TOKEN ${OCP_TOKEN}
+RUN microdnf install --nodocs tar gzip openssl findutils && \
+    curl -Lo ./oc.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz && \
+    tar -xf oc.tar.gz && \
+    rm -f oc.tar.gz && \
+    curl -Lo ./golang.tar.gz https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
+    tar -xf golang.tar.gz -C /usr/local && \
+    rm -f golang.tar.gz && \
+    curl -LOk https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz && \
+    tar -xzf helm-${HELM_VERSION}-linux-amd64.tar.gz && \
+    mv linux-amd64/helm /usr/bin/ && \
+    rm -rf helm-${HELM_VERSION}-linux-amd64.tar.gz linux-amd64 && \
+    microdnf update && \
+    microdnf clean all && \
+    mkdir -p "$GOPATH/src/maistra-test-tool" "$GOPATH/bin"
 
-ENV TEST_GROUP ${TEST_GROUP}
-ENV TEST_CASE ${TEST_CASE}
+COPY . $HOME
+WORKDIR $HOME
 
-ENV OCP_ARCH ${OCP_ARCH}
-ENV NIGHTLY ${NIGHTLY}
-ENV ROSA ${ROSA}
-ENV MUST_GATHER_TAG ${MUST_GATHER_TAG}
+RUN go install gotest.tools/gotestsum@latest \
+    && go mod download
 
-COPY . /opt/maistra-test-tool
-WORKDIR /opt/maistra-test-tool
-
-RUN go install gotest.tools/gotestsum@latest && go mod download
+# Set required permissions for OpenShift usage
+RUN chgrp -R 0 $GOPATH \
+    && chmod -R g=u $GOPATH
 
 ENTRYPOINT ["scripts/runtests.sh"]
