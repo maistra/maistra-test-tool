@@ -60,10 +60,10 @@ runTestsAgainstVersion() {
     fi
 
     # extract skipped tests into skipped.log
-    sed -n '/=== Skipped/,/=== Failed\|DONE/{/=== Failed\|DONE/!p}' "$LOG_FILE" > "$OUTPUT_DIR/skipped.log"
+    sed -En '/=== Skipped/,/=== Failed|DONE/ { /=== Failed|DONE/!p }' "$LOG_FILE" > "$OUTPUT_DIR/skipped.log"
 
     # extract failed tests into failed.log
-    sed -n '/=== Failed/,/DONE/{/DONE/!p}' "$LOG_FILE" > "$OUTPUT_DIR/failed.log"
+    sed -En '/=== Failed/,/DONE/ { /DONE/!p }' "$LOG_FILE" > "$OUTPUT_DIR/failed.log"
 }
 
 resetCluster() {
