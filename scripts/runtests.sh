@@ -60,10 +60,10 @@ runTestsAgainstVersion() {
     fi
 
     # extract skipped tests into skipped.log
-    sed -n '/=== Skipped/,/=== Failed\|DONE/{/=== Failed\|DONE/!p}' "$LOG_FILE" > "$OUTPUT_DIR/skipped.log"
+    sed -En '/=== Skipped/,/=== Failed|DONE/ { /=== Failed|DONE/!p }' "$LOG_FILE" > "$OUTPUT_DIR/skipped.log"
 
     # extract failed tests into failed.log
-    sed -n '/=== Failed/,/DONE/{/DONE/!p}' "$LOG_FILE" > "$OUTPUT_DIR/failed.log"
+    sed -En '/=== Failed/,/DONE/ { /DONE/!p }' "$LOG_FILE" > "$OUTPUT_DIR/failed.log"
 }
 
 resetCluster() {
@@ -122,11 +122,11 @@ main() {
     resetCluster
 
     declare -a versions=()
-    declare -A logFiles
-    declare -A reportFiles
+    declare -a logFiles=()
+    declare -a reportFiles=()
 
     if [ -z "$SMCP_VERSION" ]; then
-        for ver in ${SUPPORTED_VERSIONS[@]}; do
+        for ver in "${SUPPORTED_VERSIONS[@]}"; do
             export SMCP_VERSION="$ver"
             export OUTPUT_DIR="${OUTPUT_DIR_BASE}/${SMCP_VERSION}"  # also used in env.GetOutputDir(), so must be exported
             export LOG_FILE="$OUTPUT_DIR/output.log"
@@ -134,8 +134,8 @@ main() {
             export RERUNS_FILE="$OUTPUT_DIR/reruns.txt"
 
             versions+=("$SMCP_VERSION")
-            logFiles["$SMCP_VERSION"]="$LOG_FILE"
-            reportFiles["$SMCP_VERSION"]="$REPORT_FILE"
+            logFiles+=("$LOG_FILE")
+            reportFiles+=("$REPORT_FILE")
 
             runTestsAgainstVersion
             resetCluster
@@ -148,22 +148,22 @@ main() {
         export RERUNS_FILE="$OUTPUT_DIR/reruns.txt"
 
         versions+=("$SMCP_VERSION")
-        logFiles["$SMCP_VERSION"]="$LOG_FILE"
-        reportFiles["$SMCP_VERSION"]="$REPORT_FILE"
+        logFiles+=("$LOG_FILE")
+        reportFiles+=("$REPORT_FILE")
 
         runTestsAgainstVersion
     fi
 
     echo
     echo "====== JUnit report file(s)"
-    for ver in "${versions[@]}"; do
-        echo "$ver: ${reportFiles[$ver]}"
+    for (( i=0; i<${#versions[@]}; i++ )); do
+        echo "${versions[$i]}: ${reportFiles[$i]}"
     done
 
     echo
     echo "====== Test summary"
-    for ver in "${versions[@]}"; do
-        tail -10 ${logFiles[$ver]} | tac | sed -n -e "0,/DONE/{s/^/${ver}: /p}" | tac
+    for (( i=0; i<${#versions[@]}; i++ )); do
+        tail -10 ${logFiles[$i]} | tac | sed -n -e "0,/DONE/{s/^/${versions[$i]}: /p}" | tac
     done
 }
 
