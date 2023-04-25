@@ -53,7 +53,8 @@ func TestDiscoverySelectors(t *testing.T) {
 		})
 
 		retry.UntilSuccess(t, func(t TestHelper) {
-			shell.Execute(t, "istioctl pc endpoint deploy/sleep",
+			shell.Execute(t,
+				fmt.Sprintf("istioctl pc endpoint deploy/sleep -n %s", ns.Foo),
 				assert.OutputContains("sleep",
 					"Sleep was discovered",
 					"Expected sleep to be discovered, but it was not found"),
@@ -81,7 +82,8 @@ spec:
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		retry.UntilSuccess(t, func(t TestHelper) {
-			shell.Execute(t, "istioctl pc endpoint deploy/sleep",
+			shell.Execute(t,
+				fmt.Sprintf("istioctl pc endpoint deploy/sleep -n %s", ns.Foo),
 				assert.OutputContains("sleep",
 					"Sleep was discovered",
 					"Expected sleep to be discovered, but it was not found"),
