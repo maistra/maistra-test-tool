@@ -36,8 +36,8 @@ func TestCertManager(t *testing.T) {
 			oc.DeleteFromString(t, certManagerOperatorNs, certManagerOperator)
 			oc.DeleteSecret(t, meshNamespace, "istiod-tls")
 			oc.DeleteSecret(t, meshNamespace, "istio-ca")
-			oc.DeleteNamespace(t, certManagerNs)
 			oc.DeleteNamespace(t, certManagerOperatorNs)
+			oc.DeleteNamespace(t, certManagerNs)
 			oc.RecreateNamespace(t, ns.Foo)
 		})
 
