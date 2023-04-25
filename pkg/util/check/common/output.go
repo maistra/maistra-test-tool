@@ -14,7 +14,7 @@ func CheckOutputContainsAny(t test.TestHelper, output string, expected []string,
 	for _, str := range expected {
 		if strings.Contains(output, str) {
 			if successMsg == "" {
-				successMsg = fmt.Sprintf("string '%s' found in output", expected)
+				successMsg = fmt.Sprintf("string '%s' found in output", str)
 			}
 			logSuccess(t, successMsg)
 			return
