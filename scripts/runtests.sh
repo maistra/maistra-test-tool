@@ -43,7 +43,7 @@ runTestsAgainstVersion() {
 
         gotestsum -f standard-verbose --packages "$TEST_DIR" \
         --max-fails 10 \
-        --rerun-fails=5 --rerun-fails-max-failures 10 --rerun-fails-run-root-test --rerun-fails-report "$RERUNS_FILE" \
+        --rerun-fails=2 --rerun-fails-max-failures 10 --rerun-fails-run-root-test --rerun-fails-report "$RERUNS_FILE" \
         --junitfile "$REPORT_FILE" --junitfile-project-name "maistra-test-tool-$SMCP_VERSION" --junitfile-hide-empty-pkg \
         --junitfile-testsuite-name relative --junitfile-testcase-classname relative \
         -- -timeout 1h -count 1 -p 1 2>&1 \
@@ -52,7 +52,7 @@ runTestsAgainstVersion() {
         logHeader "Executing $TEST_CASE against SMCP $SMCP_VERSION"
 
         gotestsum -f standard-verbose --packages "$TEST_DIR" \
-        --rerun-fails=5 --rerun-fails-run-root-test --rerun-fails-report "$RERUNS_FILE" \
+        --rerun-fails=2 --rerun-fails-run-root-test --rerun-fails-report "$RERUNS_FILE" \
         --junitfile "$REPORT_FILE" --junitfile-project-name "maistra-test-tool-$SMCP_VERSION" --junitfile-hide-empty-pkg \
         --junitfile-testsuite-name relative --junitfile-testcase-classname relative \
         -- -timeout 30m -count 1 -p 1 -run "^$TEST_CASE$" 2>&1 \
