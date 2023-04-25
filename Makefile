@@ -5,6 +5,7 @@
 .PHONY: lint
 .PHONY: lint-go
 .PHONY: test
+.PHONY: test-cleanup
 .PHONY: Test%
 .PHONY: image
 .PHONY: push
@@ -35,6 +36,9 @@ test:
 # this prevents errors like "No rule to make target 'TestFaultInjection'" when you run "make test TestFaultInjection"
 Test%:
 	@:
+
+test-cleanup:
+	kubectl delete ns istio-system bookinfo foo bar mesh-external legacy
 
 image:
 	podman build -t ${CONTAINER_IMAGE} .
