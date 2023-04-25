@@ -15,6 +15,7 @@
 package ossm
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
@@ -24,6 +25,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
+	"github.com/maistra/maistra-test-tool/pkg/util/template"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
@@ -37,7 +39,12 @@ func TestDiscoverySelectors(t *testing.T) {
 			t.Skip("Skipped because spec.meshConfig.discoverySelectors is only available in v2.4+")
 		}
 
-		DeployControlPlane(t)
+		t.LogStep("Apply cluster-wide SMCP and standard SMMR")
+		oc.RecreateNamespace(t, meshNamespace)
+		oc.ApplyString(t, meshNamespace, smmr)
+		oc.ReplaceOrApplyString(t, meshNamespace, template.Run(t, clusterWideSMCP, DefaultSMCP()))
+		oc.WaitSMCPReady(t, meshNamespace, DefaultSMCP().Name)
+		oc.WaitSMMRReady(t, meshNamespace)
 
 		t.LogStep("Install httpbin and sleep pod")
 		app.InstallAndWaitReady(t, app.Sleep(ns.Foo), app.Httpbin(ns.MeshExternal))
@@ -84,3 +91,28 @@ spec:
 		})
 	})
 }
+
+const (
+	clusterWideSMCP = `
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: {{ .Name }}
+spec:
+  version: {{ .Version }}
+  mode: ClusterWide
+  tracing:
+    type: None
+  addons:
+    grafana:
+      enabled: false
+    kiali:
+      enabled: false
+    prometheus:
+      enabled: false
+  {{ if .Rosa }} 
+  security:
+    identity:
+      type: ThirdParty
+  {{ end }}`
+)
