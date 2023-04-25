@@ -113,7 +113,7 @@ spec:
 	if env.GetSMCPVersion().LessThan(version.SMCP_2_2) {
 		t.Log("Restarting deployments")
 		oc.RestartAllPods(t, meshNamespace)
-		oc.WaitSMCPReady(t, meshNamespace, smcpName)
+		oc.WaitAllPodsReady(t, meshNamespace)
 	}
 }
 
