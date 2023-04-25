@@ -52,6 +52,7 @@ func TestDiscoverySelectors(t *testing.T) {
 			app.Uninstall(t, app.Sleep(ns.Foo), app.Httpbin(ns.MeshExternal))
 		})
 
+		t.LogStep("Confirm that the httpbin and sleep services have been discovered")
 		retry.UntilSuccess(t, func(t TestHelper) {
 			shell.Execute(t,
 				fmt.Sprintf("istioctl pc endpoint deploy/sleep -n %s", ns.Foo),
@@ -63,8 +64,8 @@ func TestDiscoverySelectors(t *testing.T) {
 					"Expected Httpbin to be discovered, but it was not found."))
 		})
 
+		t.LogStep("Configure discoverySelectors so that only namespace foo is discovered")
 		oc.Label(t, "", "namespace", ns.Foo, "istio-discovery=enabled")
-
 		oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
 spec:
   meshConfig:
@@ -81,6 +82,7 @@ spec:
 
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
+		t.LogStep("Verify that sleep service has been discovered, whereas httpbin hasn't")
 		retry.UntilSuccess(t, func(t TestHelper) {
 			shell.Execute(t,
 				fmt.Sprintf("istioctl pc endpoint deploy/sleep -n %s", ns.Foo),
