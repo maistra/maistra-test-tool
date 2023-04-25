@@ -51,11 +51,13 @@ func TestMTlsMigration(t *testing.T) {
 		toNamespaces := []string{"foo", "bar"}
 
 		t.LogStep("Check connectivity from namespaces foo, bar, and legacy to namespace foo and bar")
-		for _, from := range fromNamespaces {
-			for _, to := range toNamespaces {
-				assertConnectionSuccessful(t, from, to)
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			for _, from := range fromNamespaces {
+				for _, to := range toNamespaces {
+					assertConnectionSuccessful(t, from, to)
+				}
 			}
-		}
+		})
 
 		t.NewSubTest("mTLS enabled in foo").Run(func(t test.TestHelper) {
 			t.LogStep("Apply strict mTLS in namespace foo")
