@@ -8,7 +8,6 @@ ENV PATH=/usr/local/go/bin:$GOPATH/bin:$PATH
 # we need to set HOME when running on OCP with random UID, otherwise the home is set to / and any writing there will fail with permission denied
 ENV HOME=$GOPATH/src/maistra-test-tool
 
-WORKDIR /bin
 RUN microdnf install --nodocs tar gzip openssl findutils && \
     curl -Lo ./oc.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz && \
     tar -xf oc.tar.gz && \
@@ -34,5 +33,4 @@ RUN go install gotest.tools/gotestsum@latest \
 RUN chgrp -R 0 $GOPATH \
     && chmod -R g=u $GOPATH
 
-# using CMD here so it can be easily overwritten when using this in OpenShiftCI
-CMD ["/bin/bash", "-c", "scripts/runtests.sh"]
+ENTRYPOINT ["scripts/runtests.sh"]
