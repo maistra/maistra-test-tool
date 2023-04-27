@@ -86,10 +86,11 @@ main() {
         echo "Executing tests against SMCP version $SMCP_VERSION"
     fi
 
-    if [ -n "${OCP_CRED_PSW}" ]; then
-        oc login -u ${OCP_CRED_USR} -p ${OCP_CRED_PSW} --server=${OCP_API_URL} --insecure-skip-tls-verify=true
-    elif [ -n "${OCP_TOKEN}" ]; then
+    # make sure the token takes precedence over usr/pass
+    if [ -n "${OCP_TOKEN}" ]; then
         oc login --token=${OCP_TOKEN} --server=${OCP_API_URL} --insecure-skip-tls-verify=true
+    elif [ -n "${OCP_CRED_PSW}" ]; then
+        oc login -u ${OCP_CRED_USR} -p ${OCP_CRED_PSW} --server=${OCP_API_URL} --insecure-skip-tls-verify=true
     fi
 
     export TEST_DIR=""
