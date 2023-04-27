@@ -23,8 +23,8 @@ import (
 func TestCertManager(t *testing.T) {
 	test.NewTest(t).Id("T38").Groups(test.Full, test.ARM, test.InterOp).Run(func(t test.TestHelper) {
 		smcpVer := env.GetSMCPVersion()
-		if smcpVer.LessThan(version.SMCP_2_3) {
-			t.Skip("cert-manager-istio-csr is not supported in SMCP older than v2.3.2")
+		if smcpVer.LessThan(version.SMCP_2_4) {
+			t.Skip("cert-manager-istio-csr is not supported in SMCP older than v2.4.0")
 		}
 
 		certManagerOperatorNs := "cert-manager-operator"
