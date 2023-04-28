@@ -10,7 +10,7 @@ ENV HOME=$GOPATH/src/maistra-test-tool
 
 RUN microdnf install --nodocs tar gzip openssl findutils make && \
     curl -Lo ./oc.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz && \
-    tar -xf oc.tar.gz && \
+    tar -xf oc.tar.gz -C /usr/bin && \
     rm -f oc.tar.gz && \
     curl -Lo ./golang.tar.gz https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
     tar -xf golang.tar.gz -C /usr/local && \
