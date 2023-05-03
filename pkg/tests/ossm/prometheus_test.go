@@ -40,25 +40,47 @@ func TestExternalPrometheus(t *testing.T) {
 			app.Uninstall(t, app.Sleep(ns))
 		})
 
-		retry.UntilSuccess(t, func(t TestHelper) {
-			shell.Execute(t, "istioctl pc endpoint deploy/sleep",
-				assert.OutputContains("sleep",
-					"Sleep was discovered",
-					"Expected sleep to be discovered, but it was not found"),
-				assert.OutputContains("httpbin",
-					"Httpbin was discovered",
-					"Expected Httpbin to be discovered, but it was not found."))
+		oc.Label(t, "", "namespace", ns, "meshConfig.extenstionProviders.Name=Prometheus")
+
+		oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
+spec:
+  addons: 
+    grafana: 
+      enabled: false
+    kiali: 
+      enabled: false
+    prometheus: 
+      enabled: false
+   meshConfig: 
+     extensionProviders: 
+     - name: prometheus
+       prometheus: {}
+  gateways: 
+    egress: 
+      enabled: false
+    openshiftRoute: 
+      enabled: false
+  security: 
+    dataPlane: 
+      mtls: true
+    manageNetworkPolicy: false
+  tracing: 
+    type: None`)
+
+		t.Cleanup(func() {
+			oc.Patch(t, meshNamespace,
+				"smcp", smcpName,
+				"json",
+				`[{"op": "remove", "path": "/spec/meshConfig"}]`)
 		})
 
-		assertRequestFailure := func(url string) {
-			t.LogStepf("Confirm that request to %s fails", url)
-			execInSleepPod(t, ns,
-				fmt.Sprintf(`curl -sSL -o /dev/null -w "%%{http_code}" %s || echo "connection failed"`, url),
-				assert.OutputContains("connection failed",
-					fmt.Sprintf("Got %s failure", url),
-					fmt.Sprintf("Unexpected response from %s", url)))
-		}
 
+		//deploy user workload monitoring stack
+
+
+		// enable collecting traffic metrics
+
+		//deploy bookinfo and generate some ingress traffic
 			assertRequestSuccess("http://istio.io")
 
 			t.LogStep("Create a Gateway to external istio.io")
@@ -75,52 +97,11 @@ func TestExternalPrometheus(t *testing.T) {
 			oc.ScaleDeploymentAndWait(t, meshNamespace, "istio-egressgateway", 1)
 			assertRequestSuccess("http://istio.io")
 		})
+		// Query Thanos and verify that metrics istio_requests_total exist.
 
-		oc.Label(t, "", "namespace", ns, "istio-discovery=enabled")
-
-		oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
-spec:
-  addons: 
-    grafana: 
-      enabled: false
-    kiali: 
-      enabled: false
-    prometheus: 
-  enabled: false
-meshConfig: 
-extensionProviders: 
-- name: prometheus
-  prometheus: {}
-gateways: 
-egress: 
-  enabled: false
-openshiftRoute: 
-  enabled: false
-security: 
-dataPlane: 
-  mtls: true
-manageNetworkPolicy: false
-tracing: 
-type: None`)
-
-		t.Cleanup(func() {
-			oc.Patch(t, meshNamespace,
-				"smcp", smcpName,
-				"json",
-				`[{"op": "remove", "path": "/spec/meshConfig"}]`)
-		})
 
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
-		retry.UntilSuccess(t, func(t TestHelper) {
-			shell.Execute(t, "istioctl pc endpoint deploy/sleep",
-				assert.OutputContains("sleep",
-					"Sleep was discovered",
-					"Expected sleep to be discovered, but it was not found"),
-				assert.OutputDoesNotContain("httpbin",
-					"Httpbin was not discovered",
-					"Expected Httpbin to not be discovered, but it was."))
-		})
 	})
 }
 
