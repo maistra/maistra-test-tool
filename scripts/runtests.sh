@@ -59,6 +59,9 @@ runTestsAgainstVersion() {
         | tee -a "$LOG_FILE"
     fi
 
+    # prepend SMCP version to testcase names in JUnit XML
+    sed -i -E "s~<testcase .* name=\"~\0${SMCP_VERSION}/~g" "$REPORT_FILE"
+
     # extract skipped tests into skipped.log
     sed -En '/=== Skipped/,/=== Failed|DONE/ { /=== Failed|DONE/!p }' "$LOG_FILE" > "$OUTPUT_DIR/skipped.log"
 
