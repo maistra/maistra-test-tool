@@ -37,7 +37,7 @@ func TestSMCPAnnotations(t *testing.T) {
 			t.Parallel()
 			ns := "foo"
 			t.Cleanup(func() {
-				oc.RecreateNamespace(t, ns)
+				oc.DeleteFromTemplate(t, ns, testSSLDeploymentWithAnnotation, nil)
 			})
 			t.LogStep("Deploy TestSSL pod with annotations sidecar.maistra.io/proxyEnv")
 			oc.ApplyTemplate(t, ns, testSSLDeploymentWithAnnotation, nil)
@@ -54,7 +54,7 @@ func TestSMCPAnnotations(t *testing.T) {
 			ns := "bar"
 			t.Cleanup(func() {
 				oc.Patch(t, meshNamespace, "smcp", smcpName, "json", `[{"op": "remove", "path": "/spec/proxy"}]`)
-				oc.RecreateNamespace(t, ns)
+				oc.DeleteFromTemplate(t, ns, testSSLDeploymentWithAnnotation, nil)
 			})
 			t.LogStep("Enable annotation auto injection in SMCP")
 			oc.Patch(t,
@@ -85,6 +85,9 @@ func GetPodAnnotations(t TestHelper, podLocator oc.PodLocatorFunc) map[string]st
 		err := json.Unmarshal([]byte(output), &annotations)
 		if err != nil {
 			t.Fatalf("Error parsing pod annotations json: %v", err)
+		}
+		if len(annotations) == 0 {
+			t.Fatal("Pod annotations are empty, retrying...")
 		}
 	})
 	return annotations
