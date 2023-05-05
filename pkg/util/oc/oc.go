@@ -161,6 +161,11 @@ func RestartAllPods(t test.TestHelper, namespaces ...string) {
 	DefaultOC.RestartAllPods(t, namespaces...)
 }
 
+func WaitPodsExist(t test.TestHelper, namespaces ...string) {
+	t.T().Helper()
+	DefaultOC.WaitPodsExist(t, namespaces...)
+}
+
 func WaitAllPodsReady(t test.TestHelper, namespaces ...string) {
 	t.T().Helper()
 	DefaultOC.WaitAllPodsReady(t, namespaces...)
