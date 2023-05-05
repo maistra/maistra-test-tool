@@ -69,7 +69,7 @@ func TestCircuitBreaking(t *testing.T) {
 			msg := oc.Exec(t,
 				pod.MatchingSelector("app=fortio", ns),
 				"fortio",
-				fmt.Sprintf("/usr/bin/fortio load -c %d -qps 0.1 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount))
+				fmt.Sprintf("/usr/bin/fortio load -c %d -qps 4 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount))
 
 			c200 := getNumberOfResponses(t, msg, `Code 200.*`)
 			c503 := getNumberOfResponses(t, msg, `Code 503.*`)
