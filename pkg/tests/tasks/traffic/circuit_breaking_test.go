@@ -76,14 +76,17 @@ func TestCircuitBreaking(t *testing.T) {
 			successRate503 := 100 * c503 / reqCount
 			t.Log(fmt.Sprintf("Success rate 200: %d%%", successRate200))
 			t.Log(fmt.Sprintf("Success rate 503: %d%%", successRate503))
+			if successRate503 == 0 {
+				t.Fatalf("Failed to trip the circuit breaker")
+			}
 
 			t.LogStep("Validate the circuit breaker is tripped by checking the istio-proxy log")
 			t.Log("Verify istio-proxy pilot-agent stats, expected upstream_rq_pending_overflow value to be more than zero")
-	oc.Exec(t,
-		pod.MatchingSelector("app=fortio", ns),
-		"istio-proxy",
-		"pilot-agent request GET stats | grep httpbin | grep pending",
-		assertProxyContainsUpstreamRqPendingOverflow)
+			oc.Exec(t,
+				pod.MatchingSelector("app=fortio", ns),
+				"istio-proxy",
+				"pilot-agent request GET stats | grep httpbin | grep pending",
+				assertProxyContainsUpstreamRqPendingOverflow)
 		})
 	})
 }
