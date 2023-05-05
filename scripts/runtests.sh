@@ -92,7 +92,7 @@ writeDocumentation() {
         fi
         if [[ $line == *"STEP"* ]]; then
             step_desc=$(echo $line | awk '{for(i=3;i<=NF;++i) printf "%s ", $i; print ""}')
-            echo "* $step_desc" >> $DOCUMENTATION_FILE
+            echo "Step $step_desc" >> $DOCUMENTATION_FILE
         fi
         if [[ $line == *"Skipping test"* ]]; then
             echo "This Test cases is Skipped for this run" >> $DOCUMENTATION_FILE
@@ -168,6 +168,7 @@ main() {
 
             runTestsAgainstVersion
             resetCluster
+            writeDocumentation
         done
     else
         SMCP_VERSION="v${SMCP_VERSION#v}" # prepend "v" if necessary
@@ -182,6 +183,7 @@ main() {
         reportFiles+=("$REPORT_FILE")
 
         runTestsAgainstVersion
+        writeDocumentation
     fi
 
     echo
@@ -195,7 +197,6 @@ main() {
     for (( i=0; i<${#versions[@]}; i++ )); do
         tail -10 ${logFiles[$i]} | tac | sed -n -e "0,/DONE/{s/^/${versions[$i]}: /p}" | tac
     done
-    writeDocumentation
 }
 
 timedMain() {
