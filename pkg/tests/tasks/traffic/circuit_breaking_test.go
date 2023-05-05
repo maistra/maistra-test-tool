@@ -15,6 +15,7 @@
 package traffic
 
 import (
+	"bufio"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -23,7 +24,6 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
-	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -34,7 +34,7 @@ import (
 
 func TestCircuitBreaking(t *testing.T) {
 	NewTest(t).Id("T6").Groups(Full, InterOp).Run(func(t TestHelper) {
-		t.Log("This test checks whether the circuit breaker functions correctly")
+		t.Log("This test checks whether the circuit breaker functions correctly. Check documentation: https://istio.io/latest/docs/tasks/traffic-management/circuit-breaking/")
 
 		ns := "bookinfo"
 		t.Cleanup(func() {
@@ -62,25 +62,28 @@ func TestCircuitBreaking(t *testing.T) {
 
 		connection := 2
 		reqCount := 50
-		tolerance := 0.1
 		t.LogStep("Trip the circuit breaker by sending 50 requests to httpbin with 2 connections")
-		t.Logf("We expect 60%% of responses to return 200 OK, and 40%% to return 503 Service Unavailable (tolerance %d%%)", int(100*tolerance))
+		t.Log("We expect request with response code 503")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			msg := oc.Exec(t,
 				pod.MatchingSelector("app=fortio", ns),
 				"fortio",
-				fmt.Sprintf("/usr/bin/fortio load -c %d -qps 4 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount))
+				fmt.Sprintf("/usr/bin/fortio load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount))
 
 			c200 := getNumberOfResponses(t, msg, `Code 200.*`)
 			c503 := getNumberOfResponses(t, msg, `Code 503.*`)
 			successRate200 := 100 * c200 / reqCount
 			successRate503 := 100 * c503 / reqCount
+			t.Log(fmt.Sprintf("Success rate 200: %d%%", successRate200))
+			t.Log(fmt.Sprintf("Success rate 503: %d%%", successRate503))
 
-			if util.IsWithinPercentage(c200, reqCount, 0.6, tolerance) && util.IsWithinPercentage(c503, reqCount, 0.4, tolerance) {
-				t.LogSuccessf("%d%% of responses were 200 OK, and %d%% were 503 Service Unavailable", successRate200, successRate503)
-			} else {
-				t.Fatalf("%d%% of responses were 200 OK, and %d%% were 503 Service Unavailable", successRate200, successRate503)
-			}
+			t.LogStep("Validate the circuit breaker is tripped by checking the istio-proxy log")
+			t.Log("Verify istio-proxy pilot-agent stats, expected upstream_rq_pending_overflow value to be more than zero")
+			output := oc.Exec(t,
+				pod.MatchingSelector("app=fortio", ns),
+				"istio-proxy",
+				"pilot-agent request GET stats | grep httpbin | grep pending")
+			assertProxyContainsUpstreamRqPendingOverflow(t, output)
 		})
 	})
 }
@@ -96,6 +99,29 @@ func getNumberOfResponses(t test.TestHelper, msg string, codeText string) int {
 	}
 
 	return count
+}
+
+func assertProxyContainsUpstreamRqPendingOverflow(t test.TestHelper, output string) {
+	var v int
+	scanner := bufio.NewScanner(strings.NewReader(output))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "upstream_rq_pending_overflow") {
+			parts := strings.Split(line, ": ")
+			var err error
+			v, err = strconv.Atoi(parts[len(parts)-1])
+			if err != nil {
+				t.Errorf("failed to parse upstream_rq_pending_overflow value: %v", err)
+			}
+			if v > 0 {
+				t.LogSuccessf("Found Upstream_rq_pending_overflow : %d", v)
+				break
+			}
+		}
+	}
+	if v == 0 {
+		t.Errorf("failed to get upstream_rq_pending_overflow value: %v", v)
+	}
 }
 
 var httpbinCircuitBreaker = `
