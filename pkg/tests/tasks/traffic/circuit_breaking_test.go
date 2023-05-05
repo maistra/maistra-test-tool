@@ -79,11 +79,11 @@ func TestCircuitBreaking(t *testing.T) {
 
 			t.LogStep("Validate the circuit breaker is tripped by checking the istio-proxy log")
 			t.Log("Verify istio-proxy pilot-agent stats, expected upstream_rq_pending_overflow value to be more than zero")
-			output := oc.Exec(t,
-				pod.MatchingSelector("app=fortio", ns),
-				"istio-proxy",
-				"pilot-agent request GET stats | grep httpbin | grep pending")
-			assertProxyContainsUpstreamRqPendingOverflow(t, output)
+	oc.Exec(t,
+		pod.MatchingSelector("app=fortio", ns),
+		"istio-proxy",
+		"pilot-agent request GET stats | grep httpbin | grep pending",
+		assertProxyContainsUpstreamRqPendingOverflow)
 		})
 	})
 }
