@@ -46,6 +46,9 @@ func appendNewLine(str string) string {
 	if str == "" {
 		return ""
 	}
+	if strings.HasSuffix(str, "\n") {
+		return str
+	}
 	return str + "\n"
 }
 
