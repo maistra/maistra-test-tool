@@ -78,18 +78,26 @@ resetCluster() {
 
 writeDocumentation() {
     echo "Note: This file contains all the test cases executed in this test Run" >> $DOCUMENTATION_FILE
+
     while read line; do
         if [[ $line == *"RUN"* ]]; then
             test_name=$(echo $line | awk '{print $3}')
-            echo " " >> $DOCUMENTATION_FILE
-            echo "TEST CASE NAME: $test_name" >> $DOCUMENTATION_FILE
+            if [[ $test_name =~ "/" ]]; then
+                echo " " >> $DOCUMENTATION_FILE
+                echo "SUB TEST: $test_name" >> $DOCUMENTATION_FILE
+            else
+                echo " " >> $DOCUMENTATION_FILE
+                echo "TEST CASE: $test_name" >> $DOCUMENTATION_FILE
+            fi
         fi
         if [[ $line == *"STEP"* ]]; then
-            step_num=$(echo $line | awk '{print $2}')
             step_desc=$(echo $line | awk '{for(i=3;i<=NF;++i) printf "%s ", $i; print ""}')
-            echo "$step_num: $step_desc" >> $DOCUMENTATION_FILE
+            echo "* $step_desc" >> $DOCUMENTATION_FILE
         fi
-    done < $LOG_FILE
+        if [[ $line == *"Skipping test"* ]]; then
+            echo "This Test cases is Skipped for this run" >> $DOCUMENTATION_FILE
+        fi
+    done < $LOG_FILE | awk '!seen[$0]++'
 }
 
 main() {
