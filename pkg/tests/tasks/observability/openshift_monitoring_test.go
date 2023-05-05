@@ -44,10 +44,13 @@ func TestOpenShiftMonitoring(t *testing.T) {
 		}
 
 		t.Cleanup(func() {
+			oc.DeleteFromString(t, meshNamespace, istiodServiceMonitor)
+			oc.DeleteFromString(t, ns.Foo, istioProxyMonitor)
+			oc.DeleteFromString(t, meshNamespace, enableTrafficMetrics)
 			oc.DeleteFromTemplate(t, monitoringNs, clusterMonitoringConfig, map[string]bool{"Enabled": false})
 			oc.DeleteFromString(t, meshNamespace, enableTrafficMetrics)
-			oc.DeleteFromTemplate(t, meshNamespace, mesh, smcpValues)
 			app.Uninstall(t, app.Httpbin(ns.Foo))
+			oc.DeleteFromTemplate(t, meshNamespace, mesh, smcpValues)
 		})
 
 		t.LogStep("Waiting until user workload monitoring stack is up and running")
@@ -68,7 +71,7 @@ func TestOpenShiftMonitoring(t *testing.T) {
 		oc.WaitAllPodsReady(t, ns.Foo)
 
 		t.LogStep("Apply Prometheus monitors")
-		oc.ApplyString(t, meshNamespace, istiodServiceMonitor, istioProxyMonitor)
+		oc.ApplyString(t, meshNamespace, istiodServiceMonitor)
 		oc.ApplyString(t, ns.Foo, istioProxyMonitor)
 
 		t.LogStep("Generate some ingress traffic")
