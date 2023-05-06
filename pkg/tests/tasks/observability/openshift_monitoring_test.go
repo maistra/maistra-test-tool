@@ -23,6 +23,7 @@ import (
 const (
 	monitoringNs             = "openshift-monitoring"
 	userWorkloadMonitoringNs = "openshift-user-workload-monitoring"
+	thanosTokenPrefix        = "prometheus-user-workload-token-"
 )
 
 // TestOpenShiftMonitoring requires OpenShift Monitoring stack to be enabled.
@@ -85,12 +86,12 @@ func TestOpenShiftMonitoring(t *testing.T) {
 		var secret string
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			secret = shell.Executef(t,
-				`kubectl get secrets --no-headers -o custom-columns=":metadata.name" -n %s | grep prometheus-user-workload-token-`, userWorkloadMonitoringNs)
+				`kubectl get secrets --no-headers -o custom-columns=":metadata.name" -n %s | grep %s`, userWorkloadMonitoringNs, thanosTokenPrefix)
 			if strings.Contains(secret, "Error") {
 				t.Errorf("unexpected error: %s", secret)
-			} else {
-				secret = strings.TrimSuffix(secret, "\n")
 			}
+			// secret name contains '\n', because it's parsed from a single output column
+			secret = strings.TrimSuffix(secret, "\n")
 		})
 
 		t.LogStep("Fetch Thanos token")
@@ -103,29 +104,31 @@ func TestOpenShiftMonitoring(t *testing.T) {
 		})
 
 		t.LogStep("Check istiod metrics")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			oc.Exec(t,
-				pod.MatchingSelector("app.kubernetes.io/instance=thanos-querier", monitoringNs),
-				"thanos-query",
-				fmt.Sprintf(`curl -X GET -kG "https://localhost:9092/api/v1/query?namespace=%s&query=pilot_info"`+
-					` --data-urlencode "query=up" -H "Authorization: Bearer %s"`, meshNamespace, thanosToken),
-				assert.OutputContains(`"result":[{"metric":{"__name__":"pilot_info"`,
-					"Successfully fetched pilot_info metrics", "Did not find pilot_info metric"),
-			)
-		})
+		checkMetricExists(t, meshNamespace, "pilot_info", thanosToken)
 
 		t.LogStep("Check httpbin metrics")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			oc.Exec(t,
-				pod.MatchingSelector("app.kubernetes.io/instance=thanos-querier", monitoringNs),
-				"thanos-query",
-				fmt.Sprintf(`curl -X GET -kG "https://localhost:9092/api/v1/query?namespace=%s&query=istio_requests_total"`+
-					` --data-urlencode "query=up" -H "Authorization: Bearer %s"`, ns.Foo, thanosToken),
-				assert.OutputContains(`"result":[{"metric":{"__name__":"istio_requests_total"`,
-					"Successfully fetched istio_requests_total metrics", "Did not find istio_requests_total metric"),
-			)
-		})
+		checkMetricExists(t, ns.Foo, "istio_requests_total", thanosToken)
 	})
+}
+
+func checkMetricExists(t test.TestHelper, ns, metricName, token string) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		oc.Exec(t,
+			pod.MatchingSelector("app.kubernetes.io/instance=thanos-querier", monitoringNs),
+			"thanos-query",
+			prometheusQuery(ns, metricName, token),
+			assert.OutputContains(
+				fmt.Sprintf(`"result":[{"metric":{"__name__":"%s"`, metricName),
+				fmt.Sprintf("Successfully fetched %s metrics", metricName),
+				fmt.Sprintf("Did not find %s metric", metricName)),
+		)
+	})
+}
+
+func prometheusQuery(ns, metricName, token string) string {
+	return fmt.Sprintf(
+		`curl -X GET -kG "https://localhost:9092/api/v1/query?namespace=%s&query=%s" --data-urlencode "query=up" -H "Authorization: Bearer %s"`,
+		ns, metricName, token)
 }
 
 const (
@@ -243,7 +246,7 @@ spec:
       action: replace
       targetLabel: pod_name
     - action: replace
-      replacement: "eu-west-1"
+      replacement: "my_mesh"
       targetLabel: mesh_id
 `
 )
