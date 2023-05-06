@@ -87,7 +87,7 @@ func TestOpenShiftMonitoring(t *testing.T) {
 			secret = shell.Executef(t,
 				`kubectl get secrets --no-headers -o custom-columns=":metadata.name" -n %s | grep prometheus-user-workload-token-`, userWorkloadMonitoringNs)
 			if strings.Contains(secret, "Error") {
-				t.Errorf("unexpected secret name: %s", secret)
+				t.Errorf("unexpected error: %s", secret)
 			} else {
 				secret = strings.TrimSuffix(secret, "\n")
 			}
