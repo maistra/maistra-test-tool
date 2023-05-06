@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
@@ -41,7 +40,7 @@ func TestIOR(t *testing.T) {
 		meshName := env.GetDefaultSMCPName()
 
 		t.Cleanup(func() {
-			// oc.RecreateNamespace(t, meshNamespace)
+			oc.RecreateNamespace(t, meshNamespace)
 		})
 
 		host := "www.test.ocp"
@@ -63,6 +62,8 @@ func TestIOR(t *testing.T) {
 				}
 			})
 		}
+
+		DeployControlPlane(t)
 
 		t.NewSubTest("check IOR off by default v2.4").Run(func(t test.TestHelper) {
 			t.LogStep("Check whether the IOR has the correct default setting")
@@ -156,7 +157,6 @@ func TestIOR(t *testing.T) {
 			oc.ApplyString(t, "", gateways...)
 
 			t.LogStepf("Update SMMR to include %d Namespaces", total)
-			start := time.Now()
 			oc.ApplyString(t, meshNamespace, fmt.Sprintf(`
 apiVersion: maistra.io/v1
 kind: ServiceMeshMemberRoll
@@ -171,12 +171,10 @@ spec:
   - %s
   `, strings.Join(nsNames, "\n  - ")))
 
-			var end time.Time
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				routes := getRoutes(t, meshNamespace)
 				if len(routes) == total {
-					end = time.Now()
-					t.LogSuccessf("Found all %d Routes in %.2f", total, end.Sub(start).Seconds())
+					t.LogSuccessf("Found all %d Routes", total)
 				} else {
 					t.Fatalf("Expect to find %d Routes but found %d instead", total, len(routes))
 				}
@@ -230,7 +228,7 @@ func addAdditionalIngressGateway(t test.TestHelper, meshName, meshNamespace, gat
 func restartPod(t test.TestHelper, name, ns string, count int) {
 	for i := 0; i < count; i++ {
 		istiodPod := pod.MatchingSelector("app=istiod", meshNamespace)
-		t.Logf("Deleting %s pod in %s", name, ns)
+		// t.Logf("Deleting %s pod in %s", name, ns)
 		oc.DeletePod(t, istiodPod)
 		oc.WaitPodRunning(t, istiodPod)
 		oc.WaitPodReady(t, istiodPod)
