@@ -1,10 +1,10 @@
 package observability
 
 import (
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
