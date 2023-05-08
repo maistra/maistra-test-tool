@@ -89,7 +89,7 @@ func GetPodAnnotations(t TestHelper, podLocator oc.PodLocatorFunc) map[string]st
 		if len(annotations) == 0 {
 			oc.DeletePod(t, podLocator)
 			oc.WaitPodReady(t, podLocator)
-			t.Log("Pod annotations are empty")
+			t.Fatalf("Pod annotations are empty")
 		}
 	})
 	return annotations
