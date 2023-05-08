@@ -10,6 +10,7 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/template"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -73,18 +74,58 @@ func (o OC) ApplyTemplateFile(t test.TestHelper, ns string, tmplFile string, inp
 
 func (o OC) ApplyString(t test.TestHelper, ns string, yamls ...string) {
 	t.T().Helper()
-	o.withKubeconfig(t, func() {
-		t.T().Helper()
-		shell.ExecuteWithInput(t, fmt.Sprintf("oc %s apply -f -", nsFlag(ns)), concatenateYamls(yamls...))
-	})
+	maxAttempts := 30
+	var attemptT *test.RetryTestHelper
+	for i := 0; i < maxAttempts; i++ {
+		attemptT = retry.Attempt(t, func(t test.TestHelper) {
+			t.T().Helper()
+			o.withKubeconfig(t, func() {
+				t.T().Helper()
+				shell.ExecuteWithInput(t, fmt.Sprintf("oc %s apply -f -", nsFlag(ns)), concatenateYamls(yamls...))
+			})
+		})
+		if !attemptT.Failed() {
+			attemptT.FlushLogBuffer()
+			return
+		} else {
+			t.Logf("WARNING: Apply yaml attempt %d of %d failed. Retrying...", i+1, maxAttempts)
+		}
+		// Wait for 1 second before retrying
+		time.Sleep(1 * time.Second)
+	}
+
+	// the last attempt has failed, so we print the buffered log statements
+	attemptT.FlushLogBuffer()
+	t.Logf("Running apply yaml command failed after %d attempts.", maxAttempts)
+	t.FailNow()
 }
 
 func (o OC) ApplyFile(t test.TestHelper, ns string, file string) {
 	t.T().Helper()
-	o.withKubeconfig(t, func() {
-		t.T().Helper()
-		o.Invokef(t, "oc %s apply -f %s", nsFlag(ns), file)
-	})
+	maxAttempts := 30
+	var attemptT *test.RetryTestHelper
+	for i := 0; i < maxAttempts; i++ {
+		attemptT = retry.Attempt(t, func(t test.TestHelper) {
+			t.T().Helper()
+			o.withKubeconfig(t, func() {
+				t.T().Helper()
+				o.Invokef(t, "oc %s apply -f %s", nsFlag(ns), file)
+			})
+		})
+		if !attemptT.Failed() {
+			attemptT.FlushLogBuffer()
+			return
+		} else {
+			t.Logf("WARNING: Apply yaml from file attempt %d of %d failed. Retrying...", i+1, maxAttempts)
+		}
+		// Wait for 1 second before retrying
+		time.Sleep(1 * time.Second)
+	}
+
+	// the last attempt has failed, so we print the buffered log statements
+	attemptT.FlushLogBuffer()
+	t.Logf("Running apply yaml from file command failed after %d attempts.", maxAttempts)
+	t.FailNow()
 }
 
 func (o OC) DeleteFromString(t test.TestHelper, ns string, yamls ...string) {
