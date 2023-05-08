@@ -120,6 +120,19 @@ func (o OC) RestartAllPods(t test.TestHelper, namespaces ...string) {
 	}
 }
 
+func (o OC) WaitPodsExist(t test.TestHelper, namespaces ...string) {
+	t.T().Helper()
+	for _, ns := range namespaces {
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			shell.Execute(t, fmt.Sprintf("oc get pods -n %s", ns), assert.OutputDoesNotContain(
+				fmt.Sprintf("No resources found in %s namespace.", ns),
+				fmt.Sprintf("Found pods in %s", ns),
+				fmt.Sprintf("Did not find any pod in %s", ns),
+			))
+		})
+	}
+}
+
 func (o OC) WaitAllPodsReady(t test.TestHelper, namespaces ...string) {
 	t.T().Helper()
 	for _, ns := range namespaces {
