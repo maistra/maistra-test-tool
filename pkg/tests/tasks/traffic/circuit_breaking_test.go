@@ -76,7 +76,7 @@ func TestCircuitBreaking(t *testing.T) {
 			failureRate503 := 100 * c503 / reqCount
 			t.Log(fmt.Sprintf("Success rate 200: %d%%", successRate200))
 			t.Log(fmt.Sprintf("Success rate 503: %d%%", failureRate503))
-			if failureRate503 > 5 {
+			if failureRate503 < 5 {
 				t.Fatalf("Failed to trip the circuit breaker")
 			}
 
