@@ -19,47 +19,129 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
-func TestBookinfoInjection(t *testing.T) {
-	NewTest(t).Id("A2").Groups(ARM, Full, Smoke, InterOp).Run(func(t TestHelper) {
+func TestBasics(t *testing.T) {
+	NewTest(t).Groups(ARM, Full, Smoke, InterOp).Run(func(t TestHelper) {
+		t.Log("Test basics of SMCP: deploy, upgrade, bookinfo and uninstall")
 		ns := "bookinfo"
 
 		t.Cleanup(func() {
 			app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
 		})
 
-		DeployControlPlane(t)
+		toVersion := env.GetSMCPVersion()
+		fromVersion := toVersion.GetPreviousVersion()
 
-		t.LogStep("Install bookinfo pods with sidecar and sleep pod without sidecar")
-		app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+		t.NewSubTest(fmt.Sprintf("install smcp %s", toVersion)).Run(func(t TestHelper) {
+			t.Logf("This test checks whether SMCP %s becomes ready", env.GetSMCPVersion())
 
-		t.LogStep("Check whether sidecar is injected in all bookinfo pods")
-		assertSidecarInjectedInAllBookinfoPods(t, ns)
+			t.LogStepf("Delete and re-create Namespace")
+			oc.RecreateNamespace(t, meshNamespace)
 
-		t.LogStep("Check if bookinfo productpage is running through the Proxy")
-		oc.Exec(t,
-			pod.MatchingSelector("app=sleep", ns), "sleep",
-			"curl -sI http://productpage:9080",
-			assert.OutputContains(
-				"HTTP/1.1 200 OK",
-				"ProductPage returns 200 OK",
-				"ProductPage didn't return 200 OK"),
-			assert.OutputContains(
-				"server: istio-envoy",
-				"HTTP header 'server: istio-envoy' is present in the response",
-				"HTTP header 'server: istio-envoy' is missing from the response"),
-			assert.OutputContains(
-				"x-envoy-decorator-operation",
-				"HTTP header 'x-envoy-decorator-operation' is present in the response",
-				"HTTP header 'x-envoy-decorator-operation' is missing from the response"))
+			t.LogStepf("Create SMCP %s and verify it becomes ready", env.GetSMCPVersion())
+			assertSMCPDeploysAndIsReady(t, env.GetSMCPVersion())
+
+			t.LogStep("Delete SMCP and verify if this deletes all resources")
+			assertUninstallDeletesAllResources(t, env.GetSMCPVersion())
+		})
+
+		t.NewSubTest(fmt.Sprintf("install bookinfo with smcp %s", fromVersion)).Run(func(t TestHelper) {
+
+			t.LogStepf("Create SMCP %s and verify it becomes ready", fromVersion)
+			assertSMCPDeploysAndIsReady(t, fromVersion)
+
+			t.LogStep("Install bookinfo pods with sidecar and sleep pod without sidecar")
+			app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+			start := time.Now()
+
+			t.LogStep("Check whether sidecar is injected in all bookinfo pods")
+			assertSidecarInjectedInAllBookinfoPods(t, ns)
+
+			t.LogStep("Check if bookinfo productpage is running through the Proxy")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				oc.Exec(t,
+					pod.MatchingSelector("app=sleep", ns), "sleep",
+					"curl -sI http://productpage:9080",
+					assert.OutputContains(
+						"HTTP/1.1 200 OK",
+						"ProductPage returns 200 OK",
+						"ProductPage didn't return 200 OK"),
+					assert.OutputContains(
+						"server: istio-envoy",
+						"HTTP header 'server: istio-envoy' is present in the response",
+						"HTTP header 'server: istio-envoy' is missing from the response"),
+					assert.OutputContains(
+						"x-envoy-decorator-operation",
+						"HTTP header 'x-envoy-decorator-operation' is present in the response",
+						"HTTP header 'x-envoy-decorator-operation' is missing from the response"))
+			})
+
+			t.LogStep("Validate that proxy time is less than 5 seconds")
+			elapsed := time.Since(start)
+			t.Logf("Timer stopped: %s", elapsed)
+			if elapsed.Seconds() > 5 {
+				t.Errorf("Proxy took too long to start: %s", elapsed)
+			}
+		})
+
+		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
+			t.Logf("This test checks whether SMCP becomes ready after it's upgraded from %s to %s and bookinfo is still working after the upgrade", fromVersion, toVersion)
+
+			t.LogStepf("Upgrade SMCP from %s to %s", fromVersion, toVersion)
+			assertSMCPDeploysAndIsReady(t, toVersion)
+
+			t.LogStep("Check if bookinfo productpage is running through the Proxy after the upgrade")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				oc.Exec(t,
+					pod.MatchingSelector("app=sleep", ns), "sleep",
+					"curl -sI http://productpage:9080",
+					assert.OutputContains(
+						"HTTP/1.1 200 OK",
+						"ProductPage returns 200 OK",
+						"ProductPage didn't return 200 OK"),
+					assert.OutputContains(
+						"server: istio-envoy",
+						"HTTP header 'server: istio-envoy' is present in the response",
+						"HTTP header 'server: istio-envoy' is missing from the response"),
+					assert.OutputContains(
+						"x-envoy-decorator-operation",
+						"HTTP header 'x-envoy-decorator-operation' is present in the response",
+						"HTTP header 'x-envoy-decorator-operation' is missing from the response"))
+			})
+
+			t.LogStep("Delete Bookinfo pods to validate proxy is still working after recreation and upgrade")
+			oc.RestartAllPodsAndWaitReady(t, ns)
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				oc.Exec(t,
+					pod.MatchingSelector("app=sleep", ns), "sleep",
+					"curl -sI http://productpage:9080",
+					assert.OutputContains(
+						"HTTP/1.1 200 OK",
+						"ProductPage returns 200 OK",
+						"ProductPage didn't return 200 OK"),
+					assert.OutputContains(
+						"server: istio-envoy",
+						"HTTP header 'server: istio-envoy' is present in the response",
+						"HTTP header 'server: istio-envoy' is missing from the response"),
+					assert.OutputContains(
+						"x-envoy-decorator-operation",
+						"HTTP header 'x-envoy-decorator-operation' is present in the response",
+						"HTTP header 'x-envoy-decorator-operation' is missing from the response"))
+			})
+		})
 	})
 }
 
@@ -78,4 +160,26 @@ func assertSidecarInjectedInAllBookinfoPods(t TestHelper, ns string) {
 				}
 			}
 		})
+}
+
+func assertSMCPDeploysAndIsReady(t test.TestHelper, ver version.Version) {
+	t.LogStep("Install SMCP")
+	InstallSMCPVersion(t, meshNamespace, ver)
+	oc.WaitSMCPReady(t, meshNamespace, smcpName)
+	oc.ApplyString(t, meshNamespace, GetSMMRTemplate())
+	t.LogStep("Check SMCP is Ready")
+	oc.WaitSMCPReady(t, meshNamespace, smcpName)
+}
+
+func assertUninstallDeletesAllResources(t test.TestHelper, ver version.Version) {
+	t.LogStep("Delete SMCP in namespace " + meshNamespace)
+	oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
+	DeleteSMCPVersion(t, meshNamespace, ver)
+	retry.UntilSuccess(t, func(t TestHelper) {
+		oc.GetAllResources(t,
+			meshNamespace,
+			assert.OutputContains("No resources found in",
+				"All resources deleted from namespace",
+				"Still waiting for resources to be deleted from namespace"))
+	})
 }
