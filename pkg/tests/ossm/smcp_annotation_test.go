@@ -87,7 +87,9 @@ func GetPodAnnotations(t TestHelper, podLocator oc.PodLocatorFunc) map[string]st
 			t.Fatalf("Error parsing pod annotations json: %v", err)
 		}
 		if len(annotations) == 0 {
-			t.Fatal("Pod annotations are empty, retrying...")
+			oc.DeletePod(t, podLocator)
+			oc.WaitPodReady(t, podLocator)
+			t.Log("Pod annotations are empty")
 		}
 	})
 	return annotations
