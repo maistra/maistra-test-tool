@@ -85,6 +85,42 @@ func TestClusterWideMode(t *testing.T) {
 						"expected SMMR to show 2 member namespaces, but that wasn't the case"))
 			})
 
+			t.LogStep("Check the use of IN operator in member selector matchExpressions")
+			oc.ApplyString(t, meshNamespace, customSMMR2)
+			oc.WaitSMMRReady(t, meshNamespace)
+
+			t.LogStep("Check whether the SMMR shows only one namespace as members: member-0")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				shell.Execute(t,
+					fmt.Sprintf("oc -n %s get smmr default", meshNamespace),
+					require.OutputContains("1/1",
+						"one namespace are in members",
+						"expected SMMR to show 1 member namespace, but that wasn't the case"))
+				shell.Execute(t,
+					fmt.Sprintf("oc -n %s describe smmr default", meshNamespace),
+					require.OutputContains("member-0",
+						"member-0 is in members",
+						"expected SMMR to show member-0 as member namespace, but that wasn't the case"))
+			})
+
+			t.LogStep("Check the use of NotIn operator in member selector matchExpressions")
+			oc.ApplyString(t, meshNamespace, customSMMR3)
+			oc.WaitSMMRReady(t, meshNamespace)
+
+			t.LogStep("Check whether the SMMR shows only one namespace as members: member-1")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				shell.Execute(t,
+					fmt.Sprintf("oc -n %s get smmr default", meshNamespace),
+					require.OutputContains("1/1",
+						"one namespace are in members",
+						"expected SMMR to show 1 member namespace, but that wasn't the case"))
+				shell.Execute(t,
+					fmt.Sprintf("oc -n %s describe smmr default", meshNamespace),
+					require.OutputContains("member-1",
+						"member-1 is in members",
+						"expected SMMR to show member-1 as member namespace, but that wasn't the case"))
+			})
+
 			t.LogStep("Reset member selector back to default")
 			oc.ApplyString(t, meshNamespace, defaultSMMR)
 			oc.WaitSMMRReady(t, meshNamespace)
@@ -220,4 +256,30 @@ spec:
   memberSelectors:
   - matchLabels:
       istio-injection: enabled`
+
+	customSMMR2 = `
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  memberSelectors:
+  - matchExpressions:
+    - key: kubernetes.io/metadata.name
+      operator: In
+      values:
+      - member-0`
+
+	customSMMR3 = `
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+	name: default
+spec:
+	memberSelectors:
+	- matchExpressions:
+	  - key: kubernetes.io/metadata.name
+		operator: NotIn
+		values:
+		- member-0`
 )
