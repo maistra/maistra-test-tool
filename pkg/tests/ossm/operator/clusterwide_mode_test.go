@@ -139,6 +139,10 @@ func TestClusterWideMode(t *testing.T) {
 		t.NewSubTest("verify sidecar injection").Run(func(t test.TestHelper) {
 			t.Log("Check if sidecar injeection works properly in clustewide mode")
 
+			t.Cleanup(func() {
+				app.Uninstall(t, app.Httpbin("member-0"))
+			})
+
 			t.LogStep("Install httpbin in member-0 namespace")
 			app.InstallAndWaitReady(t,
 				app.Httpbin("member-0"))
