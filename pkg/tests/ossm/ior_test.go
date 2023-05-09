@@ -73,6 +73,8 @@ func TestIOR(t *testing.T) {
 				} else {
 					t.LogSuccess("Got the expected false for IOR setting")
 				}
+			} else {
+				t.Skip("IOR is not set by default versions less than v2.3")
 			}
 		})
 
@@ -94,6 +96,10 @@ func TestIOR(t *testing.T) {
 		})
 
 		t.NewSubTest("check routes that are not deleted during v2.3 to v2.4 upgrade").Run(func(t test.TestHelper) {
+			if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
+				t.Skip("This test only applies for v2.3 to v2.4 upgrade")
+			}
+
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
 				setupDefaultSMCP(t, meshNamespace)
