@@ -197,8 +197,15 @@ spec:
 				})
 			}
 
-			t.LogStepf("Check whether the Routes changes when the istio pod restarts")
-			restartPod(t, meshNamespace, 10)
+			t.LogStepf("Check whether the Routes changes when the istio pod restarts multiple times")
+			t.Log("Restart pod 10 times to make sure the Routes are not changed")
+			count := 10
+			for i := 0; i < count; i++ {
+				istiodPod := pod.MatchingSelector("app=istiod", meshNamespace)
+				oc.DeletePod(t, istiodPod)
+				oc.WaitPodRunning(t, istiodPod)
+				oc.WaitPodReady(t, istiodPod)
+			}
 			detectRouteChanges()
 
 			t.LogStepf("Check weather the Routes changes when adding new IngressGateway")
@@ -223,15 +230,6 @@ func addAdditionalIngressGateway(t test.TestHelper, meshName, meshNamespace, gat
 }
 `, gatewayName))
 	oc.WaitSMCPReady(t, meshNamespace, meshName)
-}
-
-func restartPod(t test.TestHelper, ns string, count int) {
-	for i := 0; i < count; i++ {
-		istiodPod := pod.MatchingSelector("app=istiod", meshNamespace)
-		oc.DeletePod(t, istiodPod)
-		oc.WaitPodRunning(t, istiodPod)
-		oc.WaitPodReady(t, istiodPod)
-	}
 }
 
 func buildRouteMap(routes []Route) map[string]string {
