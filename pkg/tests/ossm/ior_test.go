@@ -198,7 +198,7 @@ spec:
 			}
 
 			t.LogStepf("Check whether the Routes changes when the istio pod restarts")
-			restartPod(t, meshName, meshNamespace, 10)
+			restartPod(t, meshNamespace, 10)
 			detectRouteChanges()
 
 			t.LogStepf("Check weather the Routes changes when adding new IngressGateway")
@@ -225,10 +225,9 @@ func addAdditionalIngressGateway(t test.TestHelper, meshName, meshNamespace, gat
 	oc.WaitSMCPReady(t, meshNamespace, meshName)
 }
 
-func restartPod(t test.TestHelper, name, ns string, count int) {
+func restartPod(t test.TestHelper, ns string, count int) {
 	for i := 0; i < count; i++ {
 		istiodPod := pod.MatchingSelector("app=istiod", meshNamespace)
-		// t.Logf("Deleting %s pod in %s", name, ns)
 		oc.DeletePod(t, istiodPod)
 		oc.WaitPodRunning(t, istiodPod)
 		oc.WaitPodReady(t, istiodPod)
