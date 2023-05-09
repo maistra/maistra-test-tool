@@ -17,6 +17,5 @@ package non_dependant
 import "github.com/maistra/maistra-test-tool/pkg/util/env"
 
 var (
-	smcpName      = env.GetDefaultSMCPName()
 	meshNamespace = env.GetDefaultMeshNamespace()
 )
