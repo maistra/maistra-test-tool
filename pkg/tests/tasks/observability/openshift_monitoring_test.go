@@ -38,29 +38,29 @@ func TestOpenShiftMonitoring(t *testing.T) {
 		if smcpVer.LessThan(version.SMCP_2_4) {
 			t.Skip("integration with OpenShift Monitoring stack is not supported in OSSM older than v2.4.0")
 		}
-		smcpValues := map[string]string{
+		meshValues := map[string]string{
 			"Name":    smcpName,
 			"Version": smcpVer.String(),
 			"Member":  ns.Foo,
 		}
 
 		t.Cleanup(func() {
-			oc.DeleteFromString(t, meshNamespace, istiodServiceMonitor)
+			oc.DeleteFromString(t, meshNamespace, istiodMonitor)
 			oc.DeleteFromString(t, ns.Foo, istioProxyMonitor)
 			oc.DeleteFromString(t, meshNamespace, enableTrafficMetrics)
-			oc.DeleteFromTemplate(t, monitoringNs, clusterMonitoringConfig, map[string]bool{"Enabled": false})
+			oc.DeleteFromTemplate(t, monitoringNs, clusterMonitoringConfigTmpl, map[string]bool{"Enabled": false})
 			oc.DeleteFromString(t, meshNamespace, enableTrafficMetrics)
 			app.Uninstall(t, app.Httpbin(ns.Foo))
-			oc.DeleteFromTemplate(t, meshNamespace, mesh, smcpValues)
+			oc.DeleteFromTemplate(t, meshNamespace, meshTmpl, meshValues)
 		})
 
 		t.LogStep("Waiting until user workload monitoring stack is up and running")
-		oc.ApplyTemplate(t, monitoringNs, clusterMonitoringConfig, map[string]bool{"Enabled": true})
+		oc.ApplyTemplate(t, monitoringNs, clusterMonitoringConfigTmpl, map[string]bool{"Enabled": true})
 		oc.WaitPodsExist(t, userWorkloadMonitoringNs)
 		oc.WaitAllPodsReady(t, userWorkloadMonitoringNs)
 
 		t.LogStep("Deploying SMCP")
-		oc.ApplyTemplate(t, meshNamespace, mesh, smcpValues)
+		oc.ApplyTemplate(t, meshNamespace, meshTmpl, meshValues)
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Enable Prometheus telemetry")
@@ -72,7 +72,7 @@ func TestOpenShiftMonitoring(t *testing.T) {
 		oc.WaitAllPodsReady(t, ns.Foo)
 
 		t.LogStep("Apply Prometheus monitors")
-		oc.ApplyString(t, meshNamespace, istiodServiceMonitor)
+		oc.ApplyString(t, meshNamespace, istiodMonitor)
 		oc.ApplyString(t, ns.Foo, istioProxyMonitor)
 
 		t.LogStep("Generate some ingress traffic")
@@ -130,123 +130,3 @@ func prometheusQuery(ns, metricName, token string) string {
 		`curl -X GET -kG "https://localhost:9092/api/v1/query?namespace=%s&query=%s" --data-urlencode "query=up" -H "Authorization: Bearer %s"`,
 		ns, metricName, token)
 }
-
-const (
-	clusterMonitoringConfig = `
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cluster-monitoring-config
-data:
-  config.yaml: |
-    enableUserWorkload: {{ .Enabled }}
-`
-	mesh = `
-apiVersion: maistra.io/v2
-kind: ServiceMeshControlPlane
-metadata:
-  name: {{ .Name }}
-spec:
-  addons:
-    grafana:
-      enabled: false
-    kiali:
-      enabled: false
-    prometheus:
-      enabled: false
-  extensionProviders:
-  - name: prometheus
-    prometheus: {}
-  gateways:
-    egress:
-      enabled: false
-    openshiftRoute:
-      enabled: false
-  security:
-    dataPlane:
-      mtls: true
-    manageNetworkPolicy: false
-  tracing:
-    type: None
-  version: {{ .Version }}
----
-apiVersion: maistra.io/v1
-kind: ServiceMeshMemberRoll
-metadata:
-  name: default
-spec:
-  members:
-  - {{ .Member }}
-`
-	enableTrafficMetrics = `
-apiVersion: telemetry.istio.io/v1alpha1
-kind: Telemetry
-metadata:
-  name: enable-prometheus-metrics
-spec:
-  metrics:
-  - providers:
-    - name: prometheus
-`
-	istiodServiceMonitor = `
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: istiod-monitor
-spec:
-  targetLabels:
-  - app
-  selector:
-    matchLabels:
-      istio: pilot
-  endpoints:
-  - port: http-monitoring
-    interval: 15s
-`
-	istioProxyMonitor = `
-apiVersion: monitoring.coreos.com/v1
-kind: PodMonitor
-metadata:
-  name: istio-proxies-monitor
-spec:
-  selector:
-    matchExpressions:
-    - key: istio-prometheus-ignore
-      operator: DoesNotExist
-  podMetricsEndpoints:
-  - path: /stats/prometheus
-    interval: 15s
-    relabelings:
-    - action: keep
-      sourceLabels: [__meta_kubernetes_pod_container_name]
-      regex: "istio-proxy"
-    - action: keep
-      sourceLabels: [__meta_kubernetes_pod_annotationpresent_prometheus_io_scrape]
-    - action: replace
-      regex: (\d+);(([A-Fa-f0-9]{1,4}::?){1,7}[A-Fa-f0-9]{1,4})
-      replacement: '[$2]:$1'
-      sourceLabels: [__meta_kubernetes_pod_annotation_prometheus_io_port, __meta_kubernetes_pod_ip]
-      targetLabel: __address__
-    - action: replace
-      regex: (\d+);((([0-9]+?)(\.|$)){4})
-      replacement: $2:$1
-      sourceLabels: [__meta_kubernetes_pod_annotation_prometheus_io_port, __meta_kubernetes_pod_ip]
-      targetLabel: __address__
-    - action: replace
-      regex: .*[revision]\":\"([^\"]+).*
-      replacement: $1
-      sourceLabels: [__meta_kubernetes_pod_annotation_sidecar_istio_io_status]
-      targetLabel: revision
-    - action: labeldrop
-      regex: "__meta_kubernetes_pod_label_(.+)"
-    - sourceLabels: [__meta_kubernetes_namespace]
-      action: replace
-      targetLabel: namespace
-    - sourceLabels: [__meta_kubernetes_pod_name]
-      action: replace
-      targetLabel: pod_name
-    - action: replace
-      replacement: "my_mesh"
-      targetLabel: mesh_id
-`
-)
