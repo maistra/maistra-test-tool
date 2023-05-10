@@ -35,7 +35,7 @@ import (
 )
 
 func TestSmoke(t *testing.T) {
-	NewTest(t).Groups(ARM, Full, Smoke, InterOp).Run(func(t TestHelper) {
+	NewTest(t).Groups(ARM, Full, Smoke, InterOp, Disconnected).Run(func(t TestHelper) {
 		t.Log("Smoke Test for SMCP: deploy, upgrade, bookinfo and uninstall")
 		ns := "bookinfo"
 
