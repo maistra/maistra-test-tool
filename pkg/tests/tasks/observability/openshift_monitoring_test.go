@@ -114,7 +114,7 @@ func TestOpenShiftMonitoring(t *testing.T) {
 func checkMetricExists(t test.TestHelper, ns, metricName, token string) {
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		oc.Exec(t,
-			pod.MatchingSelector("app.kubernetes.io/instance=thanos-querier", monitoringNs),
+			pod.MatchingSelector("app.kubernetes.io/instance=thanos-querier", monitoringNs, true),
 			"thanos-query",
 			prometheusQuery(ns, metricName, token),
 			assert.OutputContains(
