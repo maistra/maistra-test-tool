@@ -62,7 +62,7 @@ func (a *bookinfo) Uninstall(t test.TestHelper) {
 
 func (a *bookinfo) WaitReady(t test.TestHelper) {
 	t.T().Helper()
-	oc.WaitDeploymentRolloutComplete(t, a.ns, "productpage-v1", "ratings-v1", "reviews-v1", "reviews-v2", "reviews-v3")
+	oc.WaitDeploymentRolloutComplete(t, a.ns, "details-v1", "productpage-v1", "ratings-v1", "reviews-v1", "reviews-v2", "reviews-v3")
 }
 
 func BookinfoLogin(t test.TestHelper, meshNamespace string) *cookiejar.Jar {
