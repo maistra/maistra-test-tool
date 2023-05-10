@@ -69,10 +69,12 @@ func TestSMCPAnnotations(t *testing.T) {
 			oc.WaitDeploymentRolloutComplete(t, ns, "testenv")
 
 			t.LogStep("Get annotations and verify that the pod has the expected: test1.annotation-from-smcp : test1, test2.annotation-from-smcp : [\"test2\"], test3.annotation-from-smcp : {test3}")
-			annotations := GetPodAnnotations(t, pod.MatchingSelector("app=env", ns))
-			assertAnnotationIsPresent(t, annotations, "test1.annotation-from-smcp", "test1")
-			assertAnnotationIsPresent(t, annotations, "test2.annotation-from-smcp", `["test2"]`)
-			assertAnnotationIsPresent(t, annotations, "test3.annotation-from-smcp", "{test3}")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				annotations := GetPodAnnotations(t, pod.MatchingSelector("app=env", ns))
+				assertAnnotationIsPresent(t, annotations, "test1.annotation-from-smcp", "test1")
+				assertAnnotationIsPresent(t, annotations, "test2.annotation-from-smcp", `["test2"]`)
+				assertAnnotationIsPresent(t, annotations, "test3.annotation-from-smcp", "{test3}")
+			})
 		})
 	})
 }
@@ -80,18 +82,16 @@ func TestSMCPAnnotations(t *testing.T) {
 func GetPodAnnotations(t TestHelper, podLocator oc.PodLocatorFunc) map[string]string {
 	annotations := map[string]string{}
 	po := podLocator(t, oc.DefaultOC)
-	retry.UntilSuccess(t, func(t test.TestHelper) {
-		output := shell.Executef(t, "kubectl get pod %s -n %s -o jsonpath='{.metadata.annotations}'", po.Name, po.Namespace)
-		err := json.Unmarshal([]byte(output), &annotations)
-		if err != nil {
-			t.Fatalf("Error parsing pod annotations json: %v", err)
-		}
-		if len(annotations) == 0 {
-			oc.DeletePod(t, podLocator)
-			oc.WaitPodReady(t, podLocator)
-			t.Fatal("Pod annotations are empty")
-		}
-	})
+	output := shell.Executef(t, "kubectl get pod %s -n %s -o jsonpath='{.metadata.annotations}'", po.Name, po.Namespace)
+	err := json.Unmarshal([]byte(output), &annotations)
+	if err != nil {
+		t.Fatalf("Error parsing pod annotations json: %v", err)
+	}
+	if len(annotations) == 0 {
+		oc.DeletePod(t, podLocator)
+		oc.WaitPodReady(t, podLocator)
+		t.Fatal("Pod annotations are empty")
+	}
 	return annotations
 }
 
