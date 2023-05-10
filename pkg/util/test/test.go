@@ -14,10 +14,11 @@ import (
 type TestGroup string
 
 const (
-	ARM     TestGroup = "arm"
-	Full    TestGroup = "full"
-	Smoke   TestGroup = "smoke"
-	InterOp TestGroup = "interop"
+	ARM          TestGroup = "arm"
+	Full         TestGroup = "full"
+	Smoke        TestGroup = "smoke"
+	InterOp      TestGroup = "interop"
+	Disconnected TestGroup = "disconnected"
 )
 
 type Test interface {
