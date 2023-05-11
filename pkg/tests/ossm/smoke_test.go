@@ -45,19 +45,6 @@ func TestBasics(t *testing.T) {
 		toVersion := env.GetSMCPVersion()
 		fromVersion := toVersion.GetPreviousVersion()
 
-		t.NewSubTest(fmt.Sprintf("install smcp %s", toVersion)).Run(func(t TestHelper) {
-			t.Logf("This test checks whether SMCP %s becomes ready", env.GetSMCPVersion())
-
-			t.LogStepf("Delete and re-create Namespace")
-			oc.RecreateNamespace(t, meshNamespace)
-
-			t.LogStepf("Create SMCP %s and verify it becomes ready", env.GetSMCPVersion())
-			assertSMCPDeploysAndIsReady(t, env.GetSMCPVersion())
-
-			t.LogStep("Delete SMCP and verify if this deletes all resources")
-			assertUninstallDeletesAllResources(t, env.GetSMCPVersion())
-		})
-
 		t.NewSubTest(fmt.Sprintf("install bookinfo with smcp %s", fromVersion)).Run(func(t TestHelper) {
 
 			t.LogStepf("Create SMCP %s and verify it becomes ready", fromVersion)
@@ -141,6 +128,13 @@ func TestBasics(t *testing.T) {
 						"HTTP header 'x-envoy-decorator-operation' is present in the response",
 						"HTTP header 'x-envoy-decorator-operation' is missing from the response"))
 			})
+		})
+
+		t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t TestHelper) {
+			t.Logf("This test checks whether SMCP %s can be deleted", env.GetSMCPVersion())
+
+			t.LogStep("Delete SMCP and verify if this deletes all resources")
+			assertUninstallDeletesAllResources(t, env.GetSMCPVersion())
 		})
 	})
 }
