@@ -46,9 +46,9 @@ func TestEnvoyExtAuthzHttpExtensionProvider(t *testing.T) {
 		assertHttpbinRequestSucceeds(t, ns, httpbinRequest("GET", "/ip"))
 
 		t.LogStep("Deploy the External Authorizer and Verify the sample external authorizer is up and running")
-		oc.ApplyString(t, ns, ExternalAuthzService)
+		oc.ApplyTemplate(t, ns, ExternalAuthzService, nil)
 		t.Cleanup(func() {
-			oc.DeleteFromString(t, ns, ExternalAuthzService)
+			oc.DeleteFromTemplate(t, ns, ExternalAuthzService, nil)
 		})
 
 		oc.WaitDeploymentRolloutComplete(t, ns, "ext-authz")
@@ -163,7 +163,7 @@ spec:
         app: ext-authz
     spec:
       containers:
-      - image: gcr.io/istio-testing/ext-authz:latest
+      - image: {{ image "ext-authz" }}
         imagePullPolicy: IfNotPresent
         name: ext-authz
         ports:
