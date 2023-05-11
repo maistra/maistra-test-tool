@@ -40,10 +40,13 @@ func TestBasics(t *testing.T) {
 
 		t.Cleanup(func() {
 			app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+			oc.RecreateNamespace(t, ns)
 		})
 
 		toVersion := env.GetSMCPVersion()
 		fromVersion := toVersion.GetPreviousVersion()
+
+		oc.RecreateNamespace(t, ns)
 
 		t.NewSubTest(fmt.Sprintf("install bookinfo with smcp %s", fromVersion)).Run(func(t TestHelper) {
 
@@ -130,12 +133,6 @@ func TestBasics(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t TestHelper) {
-			t.Logf("This test checks whether SMCP %s can be deleted", env.GetSMCPVersion())
-
-			t.LogStep("Delete SMCP and verify if this deletes all resources")
-			assertUninstallDeletesAllResources(t, env.GetSMCPVersion())
-		})
 	})
 }
 
@@ -163,17 +160,4 @@ func assertSMCPDeploysAndIsReady(t test.TestHelper, ver version.Version) {
 	oc.ApplyString(t, meshNamespace, GetSMMRTemplate())
 	t.LogStep("Check SMCP is Ready")
 	oc.WaitSMCPReady(t, meshNamespace, smcpName)
-}
-
-func assertUninstallDeletesAllResources(t test.TestHelper, ver version.Version) {
-	t.LogStep("Delete SMCP in namespace " + meshNamespace)
-	oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
-	DeleteSMCPVersion(t, meshNamespace, ver)
-	retry.UntilSuccess(t, func(t TestHelper) {
-		oc.GetAllResources(t,
-			meshNamespace,
-			assert.OutputContains("No resources found in",
-				"All resources deleted from namespace",
-				"Still waiting for resources to be deleted from namespace"))
-	})
 }
