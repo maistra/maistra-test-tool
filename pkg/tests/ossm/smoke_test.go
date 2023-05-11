@@ -29,7 +29,7 @@ import (
 )
 
 func TestBookinfoInjection(t *testing.T) {
-	NewTest(t).Id("A2").Groups(ARM, Full, Smoke, InterOp).Run(func(t TestHelper) {
+	NewTest(t).Id("A2").Groups(ARM, Full, Smoke, InterOp, Disconnected).Run(func(t TestHelper) {
 		ns := "bookinfo"
 
 		t.Cleanup(func() {

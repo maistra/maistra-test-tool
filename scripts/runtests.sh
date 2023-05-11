@@ -76,6 +76,30 @@ resetCluster() {
     echo
 }
 
+writeDocumentation() {
+    echo "Note: This file contains all the test cases executed in this test Run" >> $DOCUMENTATION_FILE
+
+    while read line; do
+        if [[ $line == *"RUN"* ]]; then
+            test_name=$(echo $line | awk '{print $3}')
+            if [[ $test_name =~ "/" ]]; then
+                echo " " >> $DOCUMENTATION_FILE
+                echo "SUB TEST: $test_name" >> $DOCUMENTATION_FILE
+            else
+                echo " " >> $DOCUMENTATION_FILE
+                echo "TEST CASE: $test_name" >> $DOCUMENTATION_FILE
+            fi
+        fi
+        if [[ $line == *"STEP"* ]]; then
+            step_desc=$(echo $line | awk '{for(i=3;i<=NF;++i) printf "%s ", $i; print ""}')
+            echo "Step $step_desc" >> $DOCUMENTATION_FILE
+        fi
+        if [[ $line == *"Skipping test"* ]]; then
+            echo "This Test cases is Skipped for this run" >> $DOCUMENTATION_FILE
+        fi
+    done < $LOG_FILE | awk '!seen[$0]++'
+}
+
 main() {
     if [ -n "$1" ]; then
         export TEST_CASE="$1"
@@ -134,6 +158,7 @@ main() {
             export SMCP_VERSION="$ver"
             export OUTPUT_DIR="${OUTPUT_DIR_BASE}/${SMCP_VERSION}"  # also used in env.GetOutputDir(), so must be exported
             export LOG_FILE="$OUTPUT_DIR/output.log"
+            export DOCUMENTATION_FILE="$OUTPUT_DIR/documentation.txt"
             export REPORT_FILE="$OUTPUT_DIR/report.xml"
             export RERUNS_FILE="$OUTPUT_DIR/reruns.txt"
 
@@ -143,11 +168,13 @@ main() {
 
             runTestsAgainstVersion
             resetCluster
+            writeDocumentation
         done
     else
         SMCP_VERSION="v${SMCP_VERSION#v}" # prepend "v" if necessary
         export OUTPUT_DIR="${OUTPUT_DIR_BASE}/${SMCP_VERSION}"  # also used in env.GetOutputDir(), so must be exported
         export LOG_FILE="$OUTPUT_DIR/output.log"
+        export DOCUMENTATION_FILE="$OUTPUT_DIR/documentation.txt"
         export REPORT_FILE="$OUTPUT_DIR/report.xml"
         export RERUNS_FILE="$OUTPUT_DIR/reruns.txt"
 
@@ -156,6 +183,7 @@ main() {
         reportFiles+=("$REPORT_FILE")
 
         runTestsAgainstVersion
+        writeDocumentation
     fi
 
     echo
