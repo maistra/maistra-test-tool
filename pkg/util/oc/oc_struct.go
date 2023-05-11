@@ -72,10 +72,12 @@ func (o OC) ApplyTemplateFile(t test.TestHelper, ns string, tmplFile string, inp
 	})
 }
 
+// By default we made retries inside this funct if fails so we do not need to wrap apply into a reytr.Until...
 func (o OC) ApplyString(t test.TestHelper, ns string, yamls ...string) {
 	t.T().Helper()
-	maxAttempts := 30
+	maxAttempts := 5
 	var attemptT *test.RetryTestHelper
+	warning := false
 	for i := 0; i < maxAttempts; i++ {
 		attemptT = retry.Attempt(t, func(t test.TestHelper) {
 			t.T().Helper()
@@ -85,25 +87,28 @@ func (o OC) ApplyString(t test.TestHelper, ns string, yamls ...string) {
 			})
 		})
 		if !attemptT.Failed() {
+			if warning {
+				t.Logf("WARNING: Apply yaml attempt %d of %d succeeded after previous failures.", i+1, maxAttempts)
+			}
 			attemptT.FlushLogBuffer()
 			return
-		} else {
-			t.Logf("WARNING: Apply yaml attempt %d of %d failed. Retrying...", i+1, maxAttempts)
 		}
 		// Wait for 1 second before retrying
+		warning = true
 		time.Sleep(1 * time.Second)
 	}
 
 	// the last attempt has failed, so we print the buffered log statements
 	attemptT.FlushLogBuffer()
-	t.Logf("Running apply yaml command failed after %d attempts.", maxAttempts)
-	t.FailNow()
+	t.Fatalf("Running apply yaml command failed after %d attempts.", maxAttempts)
 }
 
+// By default we made retries inside this funct if fails so we do not need to wrap apply into a reytr.Until...
 func (o OC) ApplyFile(t test.TestHelper, ns string, file string) {
 	t.T().Helper()
-	maxAttempts := 30
+	maxAttempts := 5
 	var attemptT *test.RetryTestHelper
+	warning := false
 	for i := 0; i < maxAttempts; i++ {
 		attemptT = retry.Attempt(t, func(t test.TestHelper) {
 			t.T().Helper()
@@ -113,19 +118,20 @@ func (o OC) ApplyFile(t test.TestHelper, ns string, file string) {
 			})
 		})
 		if !attemptT.Failed() {
+			if warning {
+				t.Logf("WARNING: Apply yaml from file attempt %d of %d failed. Retrying...", i+1, maxAttempts)
+			}
 			attemptT.FlushLogBuffer()
 			return
-		} else {
-			t.Logf("WARNING: Apply yaml from file attempt %d of %d failed. Retrying...", i+1, maxAttempts)
 		}
 		// Wait for 1 second before retrying
+		warning = true
 		time.Sleep(1 * time.Second)
 	}
 
 	// the last attempt has failed, so we print the buffered log statements
 	attemptT.FlushLogBuffer()
-	t.Logf("Running apply yaml from file command failed after %d attempts.", maxAttempts)
-	t.FailNow()
+	t.Fatalf("Running apply yaml from file command failed after %d attempts.", maxAttempts)
 }
 
 func (o OC) DeleteFromString(t test.TestHelper, ns string, yamls ...string) {
