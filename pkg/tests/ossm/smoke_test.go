@@ -40,7 +40,6 @@ func TestBasics(t *testing.T) {
 		ns := "bookinfo"
 
 		t.Cleanup(func() {
-			app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
 			oc.RecreateNamespace(t, meshNamespace)
 		})
 
@@ -96,6 +95,10 @@ func TestBasics(t *testing.T) {
 		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
 			t.Logf("This test checks whether SMCP becomes ready after it's upgraded from %s to %s and bookinfo is still working after the upgrade", fromVersion, toVersion)
 
+			t.Cleanup(func() {
+				app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+			})
+
 			t.LogStepf("Upgrade SMCP from %s to %s", fromVersion, toVersion)
 			assertSMCPDeploysAndIsReady(t, toVersion)
 
@@ -139,50 +142,50 @@ func TestBasics(t *testing.T) {
 			})
 		})
 
+		t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t TestHelper) {
+			t.Logf("This test checks whether SMCP %s deletion delete all the resources", env.GetSMCPVersion())
+
+			t.LogStep("Delete SMCP and verify if this deletes all resources")
+			assertUninstallDeletesAllResources(t, env.GetSMCPVersion())
+		})
 	})
 }
 
 func ExtractProxyTimes(t TestHelper, yamlString string) (time.Time, time.Time) {
-	var data struct {
-		Status struct {
-			ContainerStatuses []struct {
-				Name  string
-				State struct {
-					Running struct {
-						StartedAt string
-					}
-				}
-			}
-			Conditions []struct {
-				Type               string
-				LastTransitionTime string
-			}
-		}
-	}
-
-	if err := yaml.Unmarshal([]byte(yamlString), &data); err != nil {
+	var data map[string]interface{}
+	err := yaml.Unmarshal([]byte(yamlString), &data)
+	if err != nil {
 		t.Fatalf("Failed to unmarshal yaml: %s", err)
 	}
 
-	var startedAt, lastTransitionTime time.Time
-	for _, status := range data.Status.ContainerStatuses {
-		if status.Name == "istio-proxy" {
-			startedAt, _ = time.Parse(time.RFC3339, status.State.Running.StartedAt)
+	containerStatuses := data["status"].(map[interface{}]interface{})["containerStatuses"].([]interface{})
+	var startedAtString string
+	for _, status := range containerStatuses {
+		if status.(map[interface{}]interface{})["name"].(string) == "istio-proxy" {
+			startedAtString = status.(map[interface{}]interface{})["state"].(map[interface{}]interface{})["running"].(map[interface{}]interface{})["startedAt"].(string)
 			break
 		}
 	}
 
-	for _, condition := range data.Status.Conditions {
-		if condition.Type == "Ready" {
-			lastTransitionTime, _ = time.Parse(time.RFC3339, condition.LastTransitionTime)
+	conditions := data["status"].(map[interface{}]interface{})["conditions"].([]interface{})
+	var lastTransitionTimeString string
+	for _, condition := range conditions {
+		if condition.(map[interface{}]interface{})["type"].(string) == "Ready" {
+			lastTransitionTimeString = condition.(map[interface{}]interface{})["lastTransitionTime"].(string)
 			break
 		}
 	}
-
+	startedAt, err := time.Parse(time.RFC3339, startedAtString)
+	if err != nil {
+		t.Fatalf("Failed to parse startedAt time: %s", err)
+	}
+	lastTransitionTime, err := time.Parse(time.RFC3339, lastTransitionTimeString)
+	if err != nil {
+		t.Fatalf("Failed to parse lastTransitionTime time: %s", err)
+	}
 	if startedAt.IsZero() || lastTransitionTime.IsZero() {
 		t.Fatal("Failed to extract proxy times from yaml")
 	}
-
 	return startedAt, lastTransitionTime
 }
 
@@ -210,4 +213,17 @@ func assertSMCPDeploysAndIsReady(t test.TestHelper, ver version.Version) {
 	oc.ApplyString(t, meshNamespace, GetSMMRTemplate())
 	t.LogStep("Check SMCP is Ready")
 	oc.WaitSMCPReady(t, meshNamespace, smcpName)
+}
+
+func assertUninstallDeletesAllResources(t test.TestHelper, ver version.Version) {
+	t.LogStep("Delete SMCP in namespace " + meshNamespace)
+	oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
+	DeleteSMCPVersion(t, meshNamespace, ver)
+	retry.UntilSuccess(t, func(t TestHelper) {
+		oc.GetAllResources(t,
+			meshNamespace,
+			assert.OutputContains("No resources found in",
+				"All resources deleted from namespace",
+				"Still waiting for resources to be deleted from namespace"))
+	})
 }
