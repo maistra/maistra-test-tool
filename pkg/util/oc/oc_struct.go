@@ -72,8 +72,8 @@ func (o OC) ApplyTemplateFile(t test.TestHelper, ns string, tmplFile string, inp
 	})
 }
 
-// This function can be called by both ApplyString and ApplyFile
-func (o OC) applyWithRetry(t test.TestHelper, ns string, applyCommand string) {
+// This function can be called by both ApplyString and ApplyFile. Accept as argument: multiple yaml string or yaml file to apply
+func (o OC) applyWithRetry(t test.TestHelper, ns string, inputKind string, arg string) {
 	t.T().Helper()
 	maxAttempts := 5
 	var attemptT *test.RetryTestHelper
@@ -83,7 +83,13 @@ func (o OC) applyWithRetry(t test.TestHelper, ns string, applyCommand string) {
 			t.T().Helper()
 			o.withKubeconfig(t, func() {
 				t.T().Helper()
-				o.Invokef(t, applyCommand, nsFlag(ns))
+				if inputKind == "string" {
+					shell.ExecuteWithInput(t, fmt.Sprintf("oc %s apply -f -", nsFlag(ns)), arg)
+				} else if inputKind == "file" {
+					o.Invokef(t, "oc %s apply -f %s", nsFlag(ns), arg)
+				} else {
+					t.Fatalf("Invalid inputKind: %s", inputKind)
+				}
 			})
 		})
 		if !attemptT.Failed() {
@@ -105,12 +111,12 @@ func (o OC) applyWithRetry(t test.TestHelper, ns string, applyCommand string) {
 
 // By default we made retries inside this function if it fails, so we do not need to wrap apply into a retry.Until...
 func (o OC) ApplyString(t test.TestHelper, ns string, yamls ...string) {
-	o.applyWithRetry(t, ns, "oc %s apply -f - "+concatenateYamls(yamls...))
+	o.applyWithRetry(t, ns, "string", concatenateYamls(yamls...))
 }
 
 // By default we made retries inside this function if it fails, so we do not need to wrap apply into a retry.Until...
 func (o OC) ApplyFile(t test.TestHelper, ns string, file string) {
-	o.applyWithRetry(t, ns, "oc %s apply -f "+file)
+	o.applyWithRetry(t, ns, "file", file)
 }
 
 func (o OC) DeleteFromString(t test.TestHelper, ns string, yamls ...string) {
