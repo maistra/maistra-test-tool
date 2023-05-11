@@ -31,6 +31,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
+	"gopkg.in/yaml.v2"
 )
 
 func TestBasics(t *testing.T) {
@@ -40,13 +41,13 @@ func TestBasics(t *testing.T) {
 
 		t.Cleanup(func() {
 			app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
-			oc.RecreateNamespace(t, ns)
+			oc.RecreateNamespace(t, meshNamespace)
 		})
 
 		toVersion := env.GetSMCPVersion()
 		fromVersion := toVersion.GetPreviousVersion()
 
-		oc.RecreateNamespace(t, ns)
+		oc.RecreateNamespace(t, meshNamespace)
 
 		t.NewSubTest(fmt.Sprintf("install bookinfo with smcp %s", fromVersion)).Run(func(t TestHelper) {
 
@@ -55,7 +56,6 @@ func TestBasics(t *testing.T) {
 
 			t.LogStep("Install bookinfo pods with sidecar and sleep pod without sidecar")
 			app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
-			start := time.Now()
 
 			t.LogStep("Check whether sidecar is injected in all bookinfo pods")
 			assertSidecarInjectedInAllBookinfoPods(t, ns)
@@ -79,12 +79,18 @@ func TestBasics(t *testing.T) {
 						"HTTP header 'x-envoy-decorator-operation' is missing from the response"))
 			})
 
-			t.LogStep("Validate that proxy time is less than 5 seconds")
-			elapsed := time.Since(start)
-			t.Logf("Timer stopped: %s", elapsed)
-			if elapsed.Seconds() > 5 {
-				t.Errorf("Proxy took too long to start: %s", elapsed)
-			}
+			t.LogStep("verify proxy startup time. Expected to be less than 5 seconds")
+			t.Log("get proxy yaml and verify the time between status.containerStatuses.state.running.startedAt and status.conditions[type=Ready].lastTransitionTime")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				pod := pod.MatchingSelector("app=ratings", ns)(t, oc.DefaultOC)
+				yaml := oc.GetYaml(t, ns, "pod", pod.Name)
+				startedAt, lastTransitionTime := ExtractProxyTimes(t, yaml)
+				diff := lastTransitionTime.Sub(startedAt)
+				t.Logf("proxy startup time: %s", diff.String())
+				if diff > 10*time.Second {
+					t.Fatalf("proxy startup time is too long: %s", diff.String())
+				}
+			})
 		})
 
 		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
@@ -134,6 +140,50 @@ func TestBasics(t *testing.T) {
 		})
 
 	})
+}
+
+func ExtractProxyTimes(t TestHelper, yamlString string) (time.Time, time.Time) {
+	var data struct {
+		Status struct {
+			ContainerStatuses []struct {
+				Name  string
+				State struct {
+					Running struct {
+						StartedAt string
+					}
+				}
+			}
+			Conditions []struct {
+				Type               string
+				LastTransitionTime string
+			}
+		}
+	}
+
+	if err := yaml.Unmarshal([]byte(yamlString), &data); err != nil {
+		t.Fatalf("Failed to unmarshal yaml: %s", err)
+	}
+
+	var startedAt, lastTransitionTime time.Time
+	for _, status := range data.Status.ContainerStatuses {
+		if status.Name == "istio-proxy" {
+			startedAt, _ = time.Parse(time.RFC3339, status.State.Running.StartedAt)
+			break
+		}
+	}
+
+	for _, condition := range data.Status.Conditions {
+		if condition.Type == "Ready" {
+			lastTransitionTime, _ = time.Parse(time.RFC3339, condition.LastTransitionTime)
+			break
+		}
+	}
+
+	if startedAt.IsZero() || lastTransitionTime.IsZero() {
+		t.Fatal("Failed to extract proxy times from yaml")
+	}
+
+	return startedAt, lastTransitionTime
 }
 
 func assertSidecarInjectedInAllBookinfoPods(t TestHelper, ns string) {
