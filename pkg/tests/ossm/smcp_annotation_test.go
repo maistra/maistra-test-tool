@@ -16,15 +16,14 @@ package ossm
 
 import (
 	_ "embed"
-	"encoding/json"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"gopkg.in/yaml.v2"
 )
 
 func TestSMCPAnnotations(t *testing.T) {
@@ -44,8 +43,8 @@ func TestSMCPAnnotations(t *testing.T) {
 			oc.WaitDeploymentRolloutComplete(t, ns, "testenv")
 
 			t.LogStep("Get annotations and verify that the pod has the expected: sidecar.maistra.io/proxyEnv : { \"maistra_test_env\": \"env_value\", \"maistra_test_env_2\": \"env_value_2\" }")
-			annotations := GetPodAnnotations(t, pod.MatchingSelector("app=env", ns))
-			assertAnnotationIsPresent(t, annotations, "sidecar.maistra.io/proxyEnv", `{ "maistra_test_env": "env_value", "maistra_test_env_2": "env_value_2" }`)
+			annotations := VerifyAndGetPodAnnotation(t, pod.MatchingSelector("app=env", ns))
+			assertAnnotationIsPresent(t, pod.MatchingSelector("app=env", ns), annotations, "sidecar.maistra.io/proxyEnv", `{ "maistra_test_env": "env_value", "maistra_test_env_2": "env_value_2" }`)
 		})
 
 		// Test that the SMCP automatic injection with quotes works
@@ -70,33 +69,42 @@ func TestSMCPAnnotations(t *testing.T) {
 
 			t.LogStep("Get annotations and verify that the pod has the expected: test1.annotation-from-smcp : test1, test2.annotation-from-smcp : [\"test2\"], test3.annotation-from-smcp : {test3}")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				annotations := GetPodAnnotations(t, pod.MatchingSelector("app=env", ns))
-				assertAnnotationIsPresent(t, annotations, "test1.annotation-from-smcp", "test1")
-				assertAnnotationIsPresent(t, annotations, "test2.annotation-from-smcp", `["test2"]`)
-				assertAnnotationIsPresent(t, annotations, "test3.annotation-from-smcp", "{test3}")
+				annotations := VerifyAndGetPodAnnotation(t, pod.MatchingSelector("app=env", ns))
+				assertAnnotationIsPresent(t, pod.MatchingSelector("app=env", ns), annotations, "test1.annotation-from-smcp", "test1")
+				assertAnnotationIsPresent(t, pod.MatchingSelector("app=env", ns), annotations, "test2.annotation-from-smcp", `["test2"]`)
+				assertAnnotationIsPresent(t, pod.MatchingSelector("app=env", ns), annotations, "test3.annotation-from-smcp", "{test3}")
 			})
 		})
 	})
 }
 
-func GetPodAnnotations(t TestHelper, podLocator oc.PodLocatorFunc) map[string]string {
-	annotations := map[string]string{}
+func VerifyAndGetPodAnnotation(t TestHelper, podLocator oc.PodLocatorFunc) map[string]string {
+	var data map[string]interface{}
 	po := podLocator(t, oc.DefaultOC)
-	output := shell.Executef(t, "kubectl get pod %s -n %s -o jsonpath='{.metadata.annotations}'", po.Name, po.Namespace)
-	err := json.Unmarshal([]byte(output), &annotations)
+	yamlString := oc.GetYaml(t, po.Namespace, "pod", po.Name)
+	err := yaml.Unmarshal([]byte(yamlString), &data)
 	if err != nil {
-		t.Fatalf("Error parsing pod annotations json: %v", err)
+		t.Fatalf("Failed to unmarshal yaml: %s", err)
+	}
+
+	annotationsMap := data["metadata"].(map[interface{}]interface{})["annotations"].(map[interface{}]interface{})
+	annotations := make(map[string]string, len(annotationsMap))
+
+	for k, v := range annotationsMap {
+		annotations[k.(string)] = v.(string)
 	}
 	if len(annotations) == 0 {
 		oc.DeletePod(t, podLocator)
 		oc.WaitPodReady(t, podLocator)
-		t.Fatal("Pod annotations are empty")
+		t.Fatalf("Failed to get annotations from pod %s", po.Name)
 	}
 	return annotations
 }
 
-func assertAnnotationIsPresent(t TestHelper, annotations map[string]string, key string, expectedValue string) {
+func assertAnnotationIsPresent(t TestHelper, podLocator oc.PodLocatorFunc, annotations map[string]string, key string, expectedValue string) {
 	if annotations[key] != expectedValue {
+		oc.DeletePod(t, podLocator)
+		oc.WaitPodReady(t, podLocator)
 		t.Fatalf("Expected annotation %s=%s, but got %s", key, expectedValue, annotations[key])
 	}
 }
