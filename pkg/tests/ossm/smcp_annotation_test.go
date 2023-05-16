@@ -27,12 +27,12 @@ import (
 )
 
 func TestSMCPAnnotations(t *testing.T) {
-	NewTest(t).Id("T29").Groups(Full, Disconnected).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T29").Groups(test.Full, test.Disconnected).Run(func(t test.TestHelper) {
 		t.Log("Test annotations: verify deployment with sidecar.maistra.io/proxyEnv annotations and Enable automatic injection in SMCP to propagate the annotations to the sidecar")
 
 		DeployControlPlane(t) // TODO: move this to individual subtests and integrate patch if one exists
 
-		t.NewSubTest("proxyEnvoy").Run(func(t TestHelper) {
+		t.NewSubTest("proxyEnvoy").Run(func(t test.TestHelper) {
 			t.Parallel()
 			ns := "foo"
 			t.Cleanup(func() {
@@ -48,7 +48,7 @@ func TestSMCPAnnotations(t *testing.T) {
 		})
 
 		// Test that the SMCP automatic injection with quotes works
-		t.NewSubTest("quote_injection").Run(func(t TestHelper) {
+		t.NewSubTest("quote_injection").Run(func(t test.TestHelper) {
 			t.Parallel()
 			ns := "bar"
 			t.Cleanup(func() {
@@ -78,7 +78,7 @@ func TestSMCPAnnotations(t *testing.T) {
 	})
 }
 
-func VerifyAndGetPodAnnotation(t TestHelper, podLocator oc.PodLocatorFunc) map[string]string {
+func VerifyAndGetPodAnnotation(t test.TestHelper, podLocator oc.PodLocatorFunc) map[string]string {
 	var data map[string]interface{}
 	po := podLocator(t, oc.DefaultOC)
 	yamlString := oc.GetYaml(t, po.Namespace, "pod", po.Name)
@@ -101,7 +101,7 @@ func VerifyAndGetPodAnnotation(t TestHelper, podLocator oc.PodLocatorFunc) map[s
 	return annotations
 }
 
-func assertAnnotationIsPresent(t TestHelper, podLocator oc.PodLocatorFunc, annotations map[string]string, key string, expectedValue string) {
+func assertAnnotationIsPresent(t test.TestHelper, podLocator oc.PodLocatorFunc, annotations map[string]string, key string, expectedValue string) {
 	if annotations[key] != expectedValue {
 		oc.DeletePod(t, podLocator)
 		oc.WaitPodReady(t, podLocator)

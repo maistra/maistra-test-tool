@@ -32,7 +32,7 @@ import (
 var workername string
 
 func TestDeployOnInfraNodes(t *testing.T) {
-	NewTest(t).Id("T40").Groups(Full, Disconnected).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T40").Groups(test.Full, test.Disconnected).Run(func(t test.TestHelper) {
 		t.Log("This test verifies that the OSSM operator and Istio components can be configured to run on infrastructure nodes")
 		t.Skip("Skipping test due to https://issues.redhat.com/browse/OSSM-3837")
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_3) {
@@ -63,7 +63,7 @@ func TestDeployOnInfraNodes(t *testing.T) {
 			"node-role.kubernetes.io/infra=reserved:NoSchedule",
 			"node-role.kubernetes.io/infra=reserved:NoExecute")
 
-		t.NewSubTest("operator").Run(func(t TestHelper) {
+		t.NewSubTest("operator").Run(func(t test.TestHelper) {
 			t.Log("Verify OSSM Operator is deployed on infra node when configured")
 			t.Log("Reference: https://issues.redhat.com/browse/OSSM-2342")
 			t.Cleanup(func() {
@@ -90,7 +90,7 @@ spec:
 			oc.WaitPodReady(t, locator)
 			operatorPod := locator(t, oc.DefaultOC)
 
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				shell.Execute(t,
 					fmt.Sprintf(`oc get pod -n openshift-operators %s -o jsonpath='{.spec.nodeName}'`, operatorPod.Name),
 					assert.OutputContains(
@@ -100,7 +100,7 @@ spec:
 			})
 		})
 
-		t.NewSubTest("control plane").Run(func(t TestHelper) {
+		t.NewSubTest("control plane").Run(func(t test.TestHelper) {
 			t.Log("Verify that all control plane pods are deployed on infra node when configured")
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
@@ -111,7 +111,7 @@ spec:
 			DeployControlPlane(t)
 
 			t.LogStep("Patch SMCP to run all control plane components on infra nodes and wait for the SMCP to be ready")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
 spec:
   runtime:
@@ -140,8 +140,8 @@ spec:
 	})
 }
 
-func assertPodScheduledToNode(t TestHelper, pLabel string) {
-	retry.UntilSuccess(t, func(t TestHelper) {
+func assertPodScheduledToNode(t test.TestHelper, pLabel string) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
 		podLocator := pod.MatchingSelector(pLabel, meshNamespace)
 		po := podLocator(t, oc.DefaultOC)
 		shell.Execute(t,
@@ -153,7 +153,7 @@ func assertPodScheduledToNode(t TestHelper, pLabel string) {
 	})
 }
 
-func pickWorkerNode(t TestHelper) string {
+func pickWorkerNode(t test.TestHelper) string {
 	workerNodes := shell.Execute(t, "oc get nodes -l node-role.kubernetes.io/worker= -o jsonpath='{.items[*].metadata.name}'")
 	operatorNode := shell.Execute(t, "oc get pods -n openshift-operators -l name=istio-operator -o jsonpath='{.items[0].spec.nodeName}'")
 	for _, node := range strings.Split(workerNodes, "\n") {
