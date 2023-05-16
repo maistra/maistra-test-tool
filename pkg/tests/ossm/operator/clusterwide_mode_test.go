@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
@@ -85,6 +86,37 @@ func TestClusterWideMode(t *testing.T) {
 						"expected SMMR to show 2 member namespaces, but that wasn't the case"))
 			})
 
+			t.LogStep("Check the use of IN operator in member selector matchExpressions")
+			oc.ApplyString(t, meshNamespace, smmrInOperator)
+			oc.WaitSMMRReady(t, meshNamespace)
+
+			t.LogStep("Check whether the SMMR shows only one namespace as members: member-0")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				shell.Execute(t,
+					fmt.Sprintf("oc -n %s get smmr default", meshNamespace),
+					require.OutputContains("1/1",
+						"one namespace are in members",
+						"expected SMMR to show 1 member namespace, but that wasn't the case"))
+				shell.Execute(t,
+					fmt.Sprintf("oc -n %s describe smmr default", meshNamespace),
+					require.OutputContains("member-0",
+						"member-0 is in members",
+						"expected SMMR to show member-0 as member namespace, but that wasn't the case"))
+			})
+
+			t.LogStep("Check the use of NotIn operator in member selector matchExpressions")
+			oc.ApplyString(t, meshNamespace, smmrNotInOperator)
+			oc.WaitSMMRReady(t, meshNamespace)
+
+			t.LogStep("Check whether the SMMR shows all the namespaces except: member-0")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				shell.Execute(t,
+					fmt.Sprintf("oc -n %s get smmr default", meshNamespace),
+					require.OutputContains("55/55",
+						"All the namespaces are in members except member-0",
+						"expected SMMR to show 55 member namespace, but that wasn't the case"))
+			})
+
 			t.LogStep("Reset member selector back to default")
 			oc.ApplyString(t, meshNamespace, defaultSMMR)
 			oc.WaitSMMRReady(t, meshNamespace)
@@ -97,6 +129,26 @@ func TestClusterWideMode(t *testing.T) {
 						"all 50 namespaces are members",
 						"expected SMMR to show 50 member namespaces, but that wasn't the case"))
 			})
+		})
+
+		t.NewSubTest("verify sidecar injection").Run(func(t test.TestHelper) {
+			t.Log("Check if sidecar injeection works properly in clustewide mode")
+
+			t.Cleanup(func() {
+				app.Uninstall(t, app.Httpbin("member-0"))
+			})
+
+			t.LogStep("Install httpbin in member-0 namespace")
+			app.InstallAndWaitReady(t,
+				app.Httpbin("member-0"))
+
+			t.LogStep("Verify that sidecar is injected in httpbin pod")
+			shell.Execute(t,
+				`oc -n member-0 get pods -l app=httpbin --no-headers`,
+				assert.OutputContains(
+					"2/2",
+					"Side car injected in httpbin pod",
+					"Expected 2 pods with sidecar injected, but that wasn't the case"))
 		})
 
 		t.NewSubTest("cluster-scoped watches in istiod").Run(func(t test.TestHelper) {
@@ -119,6 +171,34 @@ func TestClusterWideMode(t *testing.T) {
 					assertNumberOfAPIRequestsBetween(10, 100))
 			})
 		})
+
+		// t.NewSubTest("cluster wide works with profiles").Run(func(t test.TestHelper) {
+		// 	t.Log("Check whether the cluster wide feature works with profiles")
+
+		// 	t.LogStep("Delete SMCP and SMMR")
+		// 	oc.RecreateNamespace(t, meshNamespace)
+
+		// 	t.LogStep("Create a profile with a cluster wide feature and restart OSSM operator")
+		// 	oc.CreateConfigMapFromFiles(t,
+		// 		"openshift-operators",
+		// 		"smcp-templates",
+		// 		ossm.GetProfileFile())
+		// 	podLocator := pod.MatchingSelector("name=istio-operator", "openshift-operators")
+		// 	oc.DeletePod(t, podLocator)
+		// 	oc.WaitPodReady(t, podLocator)
+
+		// 	t.LogStep("Deploy SMCP with the profile")
+		// 	oc.ApplyTemplate(t, meshNamespace, clusterWideSMCPWithProfile, ossm.DefaultSMCP())
+		// 	oc.WaitSMCPReady(t, meshNamespace, smcpName)
+
+		// 	t.LogStep("Check whether SMMR is created automatically")
+		// 	retry.UntilSuccess(t, func(t test.TestHelper) {
+		// 		oc.Get(t, meshNamespace, "servicemeshmemberroll", "default",
+		// 			assert.OutputContains("default",
+		// 				"The SMMR was created immediately after the SMCP was created",
+		// 				"The SMMR resource was not created"))
+		// 	})
+		// })
 	})
 }
 
@@ -200,6 +280,16 @@ spec:
       type: ThirdParty
   {{ end }}`
 
+	// 	clusterWideSMCPWithProfile = `
+	// apiVersion: maistra.io/v2
+	// kind: ServiceMeshControlPlane
+	// metadata:
+	//   name: {{ .Name }}
+	// spec:
+	//   version: {{ .Version }}
+	//   profiles:
+	//   - clusterWide`
+
 	customSMMR = `
 apiVersion: maistra.io/v1
 kind: ServiceMeshMemberRoll
@@ -220,4 +310,30 @@ spec:
   memberSelectors:
   - matchLabels:
       istio-injection: enabled`
+
+	smmrInOperator = `
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  memberSelectors:
+  - matchExpressions:
+    - key: kubernetes.io/metadata.name
+      operator: In
+      values:
+      - member-0`
+
+	smmrNotInOperator = `
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  memberSelectors:
+  - matchExpressions:
+    - key: kubernetes.io/metadata.name
+      operator: NotIn
+      values:
+      - member-0`
 )
