@@ -25,7 +25,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
@@ -91,7 +90,7 @@ spec:
 			oc.WaitPodReady(t, locator)
 			operatorPod := locator(t, oc.DefaultOC)
 
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				shell.Execute(t,
 					fmt.Sprintf(`oc get pod -n openshift-operators %s -o jsonpath='{.spec.nodeName}'`, operatorPod.Name),
 					assert.OutputContains(
@@ -112,7 +111,7 @@ spec:
 			DeployControlPlane(t)
 
 			t.LogStep("Patch SMCP to run all control plane components on infra nodes and wait for the SMCP to be ready")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
 spec:
   runtime:
@@ -142,7 +141,7 @@ spec:
 }
 
 func assertPodScheduledToNode(t TestHelper, pLabel string) {
-	retry.UntilSuccess(t, func(t test.TestHelper) {
+	retry.UntilSuccess(t, func(t TestHelper) {
 		podLocator := pod.MatchingSelector(pLabel, meshNamespace)
 		po := podLocator(t, oc.DefaultOC)
 		shell.Execute(t,
@@ -154,7 +153,7 @@ func assertPodScheduledToNode(t TestHelper, pLabel string) {
 	})
 }
 
-func pickWorkerNode(t test.TestHelper) string {
+func pickWorkerNode(t TestHelper) string {
 	workerNodes := shell.Execute(t, "oc get nodes -l node-role.kubernetes.io/worker= -o jsonpath='{.items[*].metadata.name}'")
 	operatorNode := shell.Execute(t, "oc get pods -n openshift-operators -l name=istio-operator -o jsonpath='{.items[0].spec.nodeName}'")
 	for _, node := range strings.Split(workerNodes, "\n") {
