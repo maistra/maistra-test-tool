@@ -87,7 +87,7 @@ func TestClusterWideMode(t *testing.T) {
 			})
 
 			t.LogStep("Check the use of IN operator in member selector matchExpressions")
-			oc.ApplyString(t, meshNamespace, customSMMR2)
+			oc.ApplyString(t, meshNamespace, smmrInOperator)
 			oc.WaitSMMRReady(t, meshNamespace)
 
 			t.LogStep("Check whether the SMMR shows only one namespace as members: member-0")
@@ -105,7 +105,7 @@ func TestClusterWideMode(t *testing.T) {
 			})
 
 			t.LogStep("Check the use of NotIn operator in member selector matchExpressions")
-			oc.ApplyString(t, meshNamespace, customSMMR3)
+			oc.ApplyString(t, meshNamespace, smmrNotInOperator)
 			oc.WaitSMMRReady(t, meshNamespace)
 
 			t.LogStep("Check whether the SMMR shows only one namespace as members: member-1")
