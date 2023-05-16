@@ -94,7 +94,7 @@ func (t *setupTestHelper) LogStepf(format string, args ...any) {
 }
 
 func (t *setupTestHelper) CurrentStep() int {
-	panic("not applicable")
+	return 0
 }
 
 func (t *setupTestHelper) LogSuccess(str string) {

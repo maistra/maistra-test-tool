@@ -10,6 +10,7 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/template"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -71,20 +72,51 @@ func (o OC) ApplyTemplateFile(t test.TestHelper, ns string, tmplFile string, inp
 	})
 }
 
-func (o OC) ApplyString(t test.TestHelper, ns string, yamls ...string) {
+// This function can be called by both ApplyString and ApplyFile. Accept as argument: multiple yaml string or yaml file to apply
+func (o OC) applyWithRetry(t test.TestHelper, ns string, inputKind string, arg string) {
 	t.T().Helper()
-	o.withKubeconfig(t, func() {
-		t.T().Helper()
-		shell.ExecuteWithInput(t, fmt.Sprintf("oc %s apply -f -", nsFlag(ns)), concatenateYamls(yamls...))
-	})
+	maxAttempts := 5
+	var attemptT *test.RetryTestHelper
+	warning := false
+	for i := 0; i < maxAttempts; i++ {
+		attemptT = retry.Attempt(t, func(t test.TestHelper) {
+			t.T().Helper()
+			o.withKubeconfig(t, func() {
+				t.T().Helper()
+				if inputKind == "string" {
+					shell.ExecuteWithInput(t, fmt.Sprintf("oc %s apply -f -", nsFlag(ns)), arg)
+				} else if inputKind == "file" {
+					o.Invokef(t, "oc %s apply -f %s", nsFlag(ns), arg)
+				} else {
+					t.Fatalf("Invalid inputKind: %s", inputKind)
+				}
+			})
+		})
+		if !attemptT.Failed() {
+			if warning {
+				t.Logf("WARNING: Apply attempt %d of %d succeeded after previous failures.", i+1, maxAttempts)
+			}
+			attemptT.FlushLogBuffer()
+			return
+		}
+		// Wait for 1 second before retrying
+		warning = true
+		time.Sleep(1 * time.Second)
+	}
+
+	// the last attempt has failed, so we print the buffered log statements
+	attemptT.FlushLogBuffer()
+	t.Fatalf("Running apply command failed after %d attempts.", maxAttempts)
 }
 
+// By default we made retries inside this function if it fails, so we do not need to wrap apply into a retry.Until...
+func (o OC) ApplyString(t test.TestHelper, ns string, yamls ...string) {
+	o.applyWithRetry(t, ns, "string", concatenateYamls(yamls...))
+}
+
+// By default we made retries inside this function if it fails, so we do not need to wrap apply into a retry.Until...
 func (o OC) ApplyFile(t test.TestHelper, ns string, file string) {
-	t.T().Helper()
-	o.withKubeconfig(t, func() {
-		t.T().Helper()
-		o.Invokef(t, "oc %s apply -f %s", nsFlag(ns), file)
-	})
+	o.applyWithRetry(t, ns, "file", file)
 }
 
 func (o OC) DeleteFromString(t test.TestHelper, ns string, yamls ...string) {
