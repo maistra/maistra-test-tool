@@ -316,7 +316,7 @@ spec:
   - matchLabels:
       istio-injection: enabled`
 
-	customSMMR2 = `
+	smmrInOperator = `
 apiVersion: maistra.io/v1
 kind: ServiceMeshMemberRoll
 metadata:
