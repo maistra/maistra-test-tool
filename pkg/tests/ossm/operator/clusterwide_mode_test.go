@@ -329,7 +329,7 @@ spec:
       values:
       - member-0`
 
-	customSMMR3 = `
+	smmrNotInOperator = `
 apiVersion: maistra.io/v1
 kind: ServiceMeshMemberRoll
 metadata:
