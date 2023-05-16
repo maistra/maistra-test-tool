@@ -48,7 +48,7 @@ var (
 	smcpName      = env.GetDefaultSMCPName()
 	meshNamespace = env.GetDefaultMeshNamespace()
 	rootDir       = env.GetRootDir()
-	profileFile   = rootDir + "/pkg/test/ossm/yaml/profile.yaml"
+	profileFile   = rootDir + "/pkg/tests/ossm/yaml/profiles/"
 )
 
 func DefaultSMCP() SMCP {
