@@ -86,7 +86,8 @@ func (t *setupTestHelper) Cleanup(f func()) {
 }
 
 func (t *setupTestHelper) LogStep(str string) {
-	panic("not applicable")
+	t.t.Helper()
+	t.t.Logf("SETUP: %s", str)
 }
 
 func (t *setupTestHelper) LogStepf(format string, args ...any) {
