@@ -1,4 +1,4 @@
-package certificate
+package certmanager
 
 import (
 	"fmt"
@@ -20,15 +20,13 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
-func TestCertManager(t *testing.T) {
+func TestIstioCsr(t *testing.T) {
 	test.NewTest(t).Id("T38").Groups(test.Full, test.ARM, test.InterOp).Run(func(t test.TestHelper) {
 		smcpVer := env.GetSMCPVersion()
 		if smcpVer.LessThan(version.SMCP_2_4) {
-			t.Skip("cert-manager-istio-csr is not supported in SMCP older than v2.4.0")
+			t.Skip("istio-csr is not supported in SMCP older than v2.4")
 		}
 
-		certManagerOperatorNs := "cert-manager-operator"
-		certManagerNs := "cert-manager"
 		t.Cleanup(func() {
 			helm.Namespace(meshNamespace).Release("istio-csr").Uninstall(t)
 			oc.DeleteFromString(t, meshNamespace, istioCA)
