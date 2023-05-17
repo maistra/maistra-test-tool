@@ -5,9 +5,11 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -21,10 +23,22 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			oc.ApplyString(t, meshNamespace, smmr)
 		})
 
+		checkPermissionErorr := func(t test.TestHelper) {
+			t.LogStep("Check the Prometheus log to see if there is any permission error")
+			oc.Logs(t,
+				pod.MatchingSelector("app=prometheus,maistra-control-plane=istio-system", meshNamespace),
+				"prometheus",
+				assert.OutputDoesNotContain(
+					fmt.Sprintf("User \"system:serviceaccount:%s:prometheus\" cannot list resource", meshNamespace),
+					"no permission error found",
+					"expected to find no permission error, but got some error",
+				),
+			)
+		}
+
 		DeployControlPlane(t)
 
-		t.LogStepf("Delete current SMMR %s", smmr)
-		oc.DeleteFromString(t, meshNamespace, smmr)
+		checkPermissionErorr(t)
 
 		getPrometheusConfigCmd := fmt.Sprintf("oc -n %s get configmap prometheus -o jsonpath='{.data.prometheus\\.yml}'", meshNamespace)
 
@@ -33,6 +47,7 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 
 			t.Cleanup(func() {
 				oc.DeleteNamespace(t, ns)
+				restoreDefaultSMMR(t)
 			})
 
 			t.LogStepf("Create namespace %s and add it into SMMR", ns)
@@ -51,12 +66,14 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 
 			t.Cleanup(func() {
 				oc.DeleteNamespace(t, ns, anotherNs)
+				restoreDefaultSMMR(t)
 			})
 
 			t.LogStepf("Create namespace %s and add it into SMMR", ns)
 			oc.CreateNamespace(t, ns)
 			updateDefaultSMMRWithNamespace(t, ns)
 
+			t.LogStepf("Create namespace %s and add it into SMMR along with %s", anotherNs, ns)
 			oc.CreateNamespace(t, anotherNs)
 			updateDefaultSMMRWithNamespace(t, ns, anotherNs)
 
@@ -72,6 +89,7 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 
 			t.Cleanup(func() {
 				oc.DeleteNamespace(t, ns, anotherNs)
+				restoreDefaultSMMR(t)
 			})
 
 			t.LogStepf("Create namespace (%s,%s) and add it into SMMR", ns, anotherNs)
@@ -93,14 +111,56 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			})
 		})
 
+		t.NewSubTest("when there is no SMMR").Run(func(t test.TestHelper) {
+			t.Cleanup(func() {
+				restoreDefaultSMMR(t)
+			})
+
+			t.LogStepf("Delete default SMMR %s", smmr)
+			oc.DeleteFromString(t, meshNamespace, smmr)
+
+			checkPermissionErorr(t)
+		})
+
+		t.NewSubTest("when the default SMMR with no member").Run(func(t test.TestHelper) {
+			t.Cleanup(func() {
+				restoreDefaultSMMR(t)
+			})
+
+			t.LogStepf("Update default SMMR with no member")
+			updateDefaultSMMRWithNamespace(t)
+
+			checkPermissionErorr(t)
+		})
+
+		t.NewSubTest("[TODO] when the default SMMR with nonexistent namespace").Run(func(t test.TestHelper) {
+			t.Skip()
+			t.Cleanup(func() {
+				restoreDefaultSMMR(t)
+			})
+
+			t.LogStepf("Update default SMMR with nonexistent member")
+			updateDefaultSMMRWithNamespace(t, generateNamespace())
+
+			checkPermissionErorr(t)
+		})
+
 		t.NewSubTest("[TODO] test under cluster scoped").Run(func(t test.TestHelper) {
 			t.Skip()
 		})
 	})
 }
 
+func restoreDefaultSMMR(t test.TestHelper) {
+	oc.ApplyString(t, meshNamespace, smmr)
+	oc.WaitSMMRReady(t, meshNamespace)
+}
+
 func updateDefaultSMMRWithNamespace(t test.TestHelper, names ...string) {
-	oc.ApplyString(t, meshNamespace, buildSMMR(names...))
+	s := buildSMMR(names...)
+
+	t.LogStepf("Update SMMR %s", s)
+	oc.ApplyString(t, meshNamespace, s)
 	oc.WaitSMMRReady(t, meshNamespace)
 }
 
