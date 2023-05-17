@@ -5,9 +5,11 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
+	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -23,15 +25,17 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			oc.ApplyString(t, meshNamespace, smmr)
 		})
 
+		prometheusPodSelector := pod.MatchingSelector("app=prometheus,maistra-control-plane=istio-system", meshNamespace)
+
 		checkPermissionErorr := func(t test.TestHelper) {
 			t.LogStep("Check the Prometheus log to see if there is any permission error")
 			oc.Logs(t,
-				pod.MatchingSelector("app=prometheus,maistra-control-plane=istio-system", meshNamespace),
+				prometheusPodSelector,
 				"prometheus",
 				assert.OutputDoesNotContain(
 					fmt.Sprintf("User \"system:serviceaccount:%s:prometheus\" cannot list resource", meshNamespace),
-					"no permission error found",
-					"expected to find no permission error, but got some error",
+					"Found no permission error",
+					"Expected to find no permission error, but got some error",
 				),
 			)
 		}
@@ -133,16 +137,52 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			checkPermissionErorr(t)
 		})
 
-		t.NewSubTest("[TODO] when the default SMMR with nonexistent namespace").Run(func(t test.TestHelper) {
-			t.Skip()
+		t.NewSubTest("when the default SMMR with nonexistent namespace").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
 				restoreDefaultSMMR(t)
 			})
 
 			t.LogStepf("Update default SMMR with nonexistent member")
-			updateDefaultSMMRWithNamespace(t, generateNamespace())
+
+			ns := generateNamespace()
+
+			s := buildSMMR(ns)
+
+			t.LogStepf("Update SMMR %s", s)
+			oc.ApplyString(t, meshNamespace, s)
 
 			checkPermissionErorr(t)
+		})
+
+		t.NewSubTest("query istio_request_total").Run(func(t test.TestHelper) {
+			ns := "bookinfo"
+			t.Cleanup(func() {
+				oc.RecreateNamespace(t, ns)
+			})
+
+			t.LogStep("Install bookinfo")
+			app.InstallAndWaitReady(t, app.Bookinfo(ns))
+
+			count := 10
+			t.LogStepf("Generate %d requests to product page", count)
+			productPageURL := app.BookinfoProductPageURL(t, meshNamespace)
+			for i := 0; i < count; i++ {
+				curl.Request(t, productPageURL, nil)
+			}
+
+			t.LogStep(`Check if the "istio_request_total metric is in Prometheus"`)
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				oc.Exec(t,
+					prometheusPodSelector,
+					"prometheus-proxy",
+					"curl localhost:9090/api/v1/query --data-urlencode 'query=istio_requests_total'",
+					assert.OutputContains(
+						`"__name__":"istio_requests_total"`,
+						`Found the "istio_request_total" metric`,
+						`Expected to find the "istio_request_total" metric, but found none`,
+					),
+				)
+			})
 		})
 
 		t.NewSubTest("[TODO] test under cluster scoped").Run(func(t test.TestHelper) {
