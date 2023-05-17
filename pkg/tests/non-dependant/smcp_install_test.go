@@ -36,7 +36,7 @@ func TestSMCPInstall(t *testing.T) {
 			oc.RecreateNamespace(t, meshNamespace)
 		})
 
-		t.NewSubTest("install").Run(func(t TestHelper) {
+		t.NewSubTest("install and verify default features").Run(func(t TestHelper) {
 			t.Logf("This test checks whether SMCP %s becomes ready", env.GetSMCPVersion())
 
 			t.LogStepf("Delete and re-create Namespace")
@@ -45,13 +45,7 @@ func TestSMCPInstall(t *testing.T) {
 			t.LogStepf("Create SMCP %s and verify it becomes ready", env.GetSMCPVersion())
 			assertSMCPDeploysAndIsReady(t, env.GetSMCPVersion())
 
-			t.LogStep("Delete SMCP and verify if this deletes all resources")
-			assertUninstallDeletesAllResources(t, env.GetSMCPVersion())
-		})
-
-		t.NewSubTest("verify default features").Run(func(t TestHelper) {
-			t.Logf("This test checks the default features enabled in SMCP %s", env.GetSMCPVersion())
-
+			t.LogStep("verify the default features for the smcp version")
 			if env.GetSMCPVersion().Equals(version.SMCP_2_4) {
 				t.Log("verification for default enable or disable features in SMCP 2.4: ClusterWide")
 
@@ -64,6 +58,9 @@ func TestSMCPInstall(t *testing.T) {
 						"Clusterwide feature is disabled by default",
 						"Cluster wide feature is enabled by default"))
 			}
+
+			t.LogStep("Delete SMCP and verify if this deletes all resources")
+			assertUninstallDeletesAllResources(t, env.GetSMCPVersion())
 		})
 
 		toVersion := env.GetSMCPVersion()
