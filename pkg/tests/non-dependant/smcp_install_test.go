@@ -30,7 +30,7 @@ import (
 )
 
 func TestSMCPInstall(t *testing.T) {
-	NewTest(t).Id("A1").Groups(Smoke, Full, InterOp, ARM).Run(func(t TestHelper) {
+	NewTest(t).Id("A1").Groups(Smoke, Full, InterOp, ARM, Disconnected).Run(func(t TestHelper) {
 		t.Cleanup(func() {
 			// Delete meshNamespace and recreate it in case that we have any issue with the test to avoid have a non-wanted smcp version installed
 			oc.RecreateNamespace(t, meshNamespace)
@@ -61,6 +61,23 @@ func TestSMCPInstall(t *testing.T) {
 
 			t.LogStep("Delete SMCP and verify if this deletes all resources")
 			assertUninstallDeletesAllResources(t, env.GetSMCPVersion())
+		})
+
+		t.NewSubTest("verify default features").Run(func(t TestHelper) {
+			t.Logf("This test checks the default features enabled in SMCP %s", env.GetSMCPVersion())
+
+			if env.GetSMCPVersion().Equals(version.SMCP_2_4) {
+				t.Log("verification for default enable or disable features in SMCP 2.4: ClusterWide")
+
+				t.LogStep("Verify ClusterWide feature is not enabled")
+				oc.GetYaml(t,
+					meshNamespace,
+					"smcp", "basic",
+					assert.OutputDoesNotContain(
+						"mode: ClusterWide",
+						"Clusterwide feature is disabled by default",
+						"Cluster wide feature is enabled by default"))
+			}
 		})
 
 		toVersion := env.GetSMCPVersion()

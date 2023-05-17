@@ -38,7 +38,7 @@ Test%:
 	@:
 
 test-cleanup:
-	kubectl delete ns istio-system bookinfo foo bar mesh-external legacy
+	kubectl delete ns istio-system bookinfo foo bar mesh-external legacy --ignore-not-found
 
 image:
 	podman build -t ${CONTAINER_IMAGE} .
