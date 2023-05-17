@@ -17,6 +17,8 @@ func NewSetupTestHelper() TestHelper {
 type setupTestHelper struct {
 	log *logrus.Logger
 	t   *testing.T
+
+	cleanup func()
 }
 
 var _ TestHelper = &setupTestHelper{}
@@ -82,12 +84,11 @@ func (t *setupTestHelper) Fatalf(format string, args ...any) {
 }
 
 func (t *setupTestHelper) Cleanup(f func()) {
-	panic("not applicable")
+	t.cleanup = f
 }
 
 func (t *setupTestHelper) LogStep(str string) {
-	t.t.Helper()
-	t.t.Logf("SETUP: %s", str)
+	t.Logf("SETUP: %s", str)
 }
 
 func (t *setupTestHelper) LogStepf(format string, args ...any) {

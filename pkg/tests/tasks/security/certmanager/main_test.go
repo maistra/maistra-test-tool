@@ -41,12 +41,12 @@ func TestMain(m *testing.M) {
 }
 
 func setupCertManagerOperator(t test.TestHelper) {
-	//t.Cleanup(func() {
-	//	oc.DeleteFromString(t, certManagerNs, rootCA)
-	//	oc.DeleteFromString(t, certManagerOperatorNs, certManagerOperator)
-	//	oc.DeleteNamespace(t, certManagerOperatorNs)
-	//	oc.DeleteNamespace(t, certManagerNs)
-	//})
+	t.Cleanup(func() {
+		oc.DeleteFromString(t, certManagerNs, rootCA)
+		oc.DeleteFromString(t, certManagerOperatorNs, certManagerOperator)
+		oc.DeleteNamespace(t, certManagerOperatorNs)
+		oc.DeleteNamespace(t, certManagerNs)
+	})
 	ossm.BasicSetup(t)
 
 	t.LogStep("Create namespace for cert-manager-operator")

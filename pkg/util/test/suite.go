@@ -24,6 +24,7 @@ func (s *testSuite) Run() {
 	}
 
 	exitCode := s.m.Run()
+	t.(*setupTestHelper).cleanup()
 	os.Exit(exitCode)
 }
 
