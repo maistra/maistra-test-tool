@@ -1,0 +1,139 @@
+package certmanager
+
+import (
+	"fmt"
+	"net/http"
+	"strconv"
+	"testing"
+
+	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/istio"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
+	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
+	"github.com/maistra/maistra-test-tool/pkg/util/shell"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
+)
+
+func TestPluginCaCert(t *testing.T) {
+	test.NewTest(t).Id("T41").Groups(test.Full, test.ARM, test.InterOp).Run(func(t test.TestHelper) {
+		smcpVer := env.GetSMCPVersion()
+		if smcpVer.LessThan(version.SMCP_2_4) {
+			t.Skip("istio-csr is not supported in SMCP older than v2.4")
+		}
+
+		meshValues := map[string]string{
+			"Name":    smcpName,
+			"MeshNs":  meshNamespace,
+			"Member":  ns.Foo,
+			"Version": smcpVer.String(),
+		}
+
+		t.Cleanup(func() {
+			oc.DeleteFromTemplate(t, meshNamespace, serviceMeshCacertsTmpl, meshValues)
+			oc.DeleteFromString(t, meshNamespace, cacerts)
+			oc.DeleteSecret(t, meshNamespace, "cacerts")
+			oc.RecreateNamespace(t, ns.Foo)
+		})
+
+		t.LogStep("Uninstall existing SMCP")
+		oc.RecreateNamespace(t, meshNamespace)
+
+		t.LogStep("Create intermediate CA certificate for Istio")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			oc.ApplyString(t, meshNamespace, cacerts)
+		})
+
+		t.LogStep("Deploy SMCP " + smcpVer.String() + " and SMMR")
+		oc.ApplyTemplate(t, meshNamespace, serviceMeshCacertsTmpl, meshValues)
+		oc.WaitSMCPReady(t, meshNamespace, smcpName)
+
+		t.LogStep("Verify that cacerts secret was detected")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			oc.Logs(t, pod.MatchingSelector("app=istiod", meshNamespace), "discovery", assert.OutputContains(
+				"Use plugged-in cert at etc/cacerts/tls.key",
+				"Istiod detected cacerts secret correctly",
+				"Istiod did not detect cacerts secret"))
+		})
+
+		t.LogStep("Deploy httpbin and sleep")
+		app.InstallAndWaitReady(t, app.Httpbin(ns.Foo), app.Sleep(ns.Foo))
+
+		t.LogStep("Check if httpbin returns 200 OK ")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			oc.Exec(t,
+				pod.MatchingSelector("app=sleep", ns.Foo),
+				"sleep",
+				`curl http://httpbin:8000/ip -s -o /dev/null -w "%{http_code}"`,
+				assert.OutputContains(
+					"200",
+					"Got expected 200 OK from httpbin",
+					"Expected 200 OK from httpbin, but got a different HTTP code"))
+		})
+
+		t.LogStep("Check mTLS traffic from ingress gateway to httpbin")
+		oc.ApplyFile(t, ns.Foo, "https://raw.githubusercontent.com/maistra/istio/maistra-2.4/samples/httpbin/httpbin-gateway.yaml")
+		httpbinURL := fmt.Sprintf("http://%s/headers", istio.GetIngressGatewayHost(t, meshNamespace))
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			curl.Request(t, httpbinURL, nil, assert.ResponseStatus(http.StatusOK))
+		})
+
+		t.LogStep("Check current istiod generation")
+		firstGeneration := getIstiodGeneration(t)
+
+		t.LogStep("Trigger CA cert rotation")
+		oc.Patch(t, meshNamespace, "certificates", "cacerts", "merge", `{"spec":{"duration":"720h"}}`)
+
+		t.LogStep("Wait until certificates reloaded")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			oc.Logs(t, pod.MatchingSelector("app=istiod", meshNamespace), "discovery", assert.CountExpectedString(
+				// expectedOccurrenceNum is 2, because the expected log should appear at startup, so after rotation
+				// it should be logged twice.
+				"Istiod certificates are reloaded", 2,
+				"Istiod detected cacerts secret correctly",
+				"Istiod did not detect cacerts secret"))
+		})
+
+		// Certificate rotation and logs verification must be repeated to make sure that istiod does not fail after rotation.
+		// Checking only the generation is not enough, because istiod might fail a short time after logging that certs are reloaded.
+		// This short delay would be caused, because cert watcher triggers reprocessing namespaces and in case of failure,
+		// it would not happen immediately.
+
+		t.LogStep("Trigger CA cert rotation")
+		oc.Patch(t, meshNamespace, "certificates", "cacerts", "merge", `{"spec":{"duration":"700h"}}`)
+
+		t.LogStep("Wait until certificates reloaded")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			oc.Logs(t, pod.MatchingSelector("app=istiod", meshNamespace), "discovery", assert.CountExpectedString(
+				// expectedOccurrenceNum is 2, because the expected log should appear at startup, so after rotation
+				// it should be logged twice.
+				"Istiod certificates are reloaded", 3,
+				"Istiod detected cacerts secret correctly",
+				"Istiod did not detect cacerts secret"))
+		})
+
+		t.LogStep("Make sure that istiod was not restarted")
+		secondGeneration := getIstiodGeneration(t)
+		if secondGeneration > firstGeneration {
+			t.Errorf("istiod was restarted: old generation: %d, new generation: %d", firstGeneration, secondGeneration)
+		}
+	})
+}
+
+func getIstiodGeneration(t test.TestHelper) int {
+	var result int
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		generation := shell.Executef(t, "oc get deployments istiod-%s -n %s -o jsonpath='{.metadata.generation}'", smcpName, meshNamespace)
+		i, err := strconv.Atoi(generation)
+		if err != nil {
+			t.Errorf("failed to convert raw generation '%s' to int: %s", generation, err)
+		}
+		result = i
+	})
+	return result
+}

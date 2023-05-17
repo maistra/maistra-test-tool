@@ -41,7 +41,7 @@ func TestIstioCsr(t *testing.T) {
 
 		t.Cleanup(func() {
 			helm.Namespace(meshNamespace).Release("istio-csr").Uninstall(t)
-			oc.DeleteFromTemplate(t, meshNamespace, meshTmpl, meshValues)
+			oc.DeleteFromTemplate(t, meshNamespace, serviceMeshIstioCsrTmpl, meshValues)
 			oc.DeleteFromString(t, meshNamespace, istioCA)
 			oc.DeleteSecret(t, meshNamespace, "istiod-tls")
 			oc.DeleteSecret(t, meshNamespace, "istio-ca")
@@ -69,7 +69,7 @@ func TestIstioCsr(t *testing.T) {
 		oc.WaitDeploymentRolloutComplete(t, meshNamespace, "cert-manager-istio-csr")
 
 		t.LogStep("Deploy SMCP " + smcpVer.String() + " and SMMR")
-		oc.ApplyTemplate(t, meshNamespace, meshTmpl, meshValues)
+		oc.ApplyTemplate(t, meshNamespace, serviceMeshIstioCsrTmpl, meshValues)
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Verify that istio-ca-root-cert created in Istio and member namespaces")

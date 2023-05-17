@@ -21,17 +21,23 @@ var (
 	//go:embed yaml/cert-manager-operator.yaml
 	certManagerOperator string
 
-	//go:embed yaml/istio-csr.yaml
-	istioCsrTmpl string
-
-	//go:embed yaml/mesh.yaml
-	meshTmpl string
-
 	//go:embed yaml/root-ca.yaml
 	rootCA string
 
-	//go:embed yaml/istio-ca.yaml
+	//go:embed yaml/istio-csr/istio-csr.yaml
+	istioCsrTmpl string
+
+	//go:embed yaml/istio-csr/mesh.yaml
+	serviceMeshIstioCsrTmpl string
+
+	//go:embed yaml/istio-csr/istio-ca.yaml
 	istioCA string
+
+	//go:embed yaml/cacerts/mesh.yaml
+	serviceMeshCacertsTmpl string
+
+	//go:embed yaml/cacerts/cacerts.yaml
+	cacerts string
 )
 
 func TestMain(m *testing.M) {
