@@ -127,6 +127,19 @@ func TestClusterWideMode(t *testing.T) {
 						"expected SMMR to show member-0 as member namespace, but that wasn't the case"))
 			})
 
+			t.LogStep("Check the use of multiple selector at the same time")
+			oc.ApplyString(t, meshNamespace, smmrMultipleSelectors)
+			oc.WaitSMMRReady(t, meshNamespace)
+
+			t.LogStep("Check whether the SMMR shows only namespaces as members: member-0")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				shell.Execute(t,
+					fmt.Sprintf("oc -n %s get smmr default", meshNamespace),
+					require.OutputContains("1/1",
+						"one namespace are in members",
+						"expected SMMR to show 1 member namespace, but that wasn't the case"))
+			})
+
 			t.LogStep("Check the use of NotIn operator in member selector matchExpressions")
 			oc.ApplyString(t, meshNamespace, smmrNotInOperator)
 			oc.WaitSMMRReady(t, meshNamespace)
@@ -323,6 +336,23 @@ spec:
   - member-0
   - member-1
   memberSelectors: []`
+
+	smmrMultipleSelectors = `
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  memberSelectors:
+  - matchExpressions:
+    - key: kubernetes.io/metadata.name
+      operator: In
+      values:
+      - member-0
+    - key: kubernetes.io/metadata.name
+      operator: NotIn
+      values:
+      - member-1`
 
 	defaultSMMR = `
 apiVersion: maistra.io/v1
