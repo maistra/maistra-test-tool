@@ -79,6 +79,7 @@ func TestBasics(t *testing.T) {
 			})
 
 			t.LogStep("verify proxy startup time. Expected to be less than 5 seconds")
+			t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
 			t.Log("get proxy yaml and verify the time between status.containerStatuses.state.running.startedAt and status.conditions[type=Ready].lastTransitionTime")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				pod := pod.MatchingSelector("app=ratings", ns)(t, oc.DefaultOC)
