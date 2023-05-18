@@ -18,13 +18,15 @@ type testSuite struct {
 }
 
 func (s *testSuite) Run() {
-	t := NewSetupTestHelper()
+	t := NewSetupTestHelper().(*setupTestHelper)
 	for _, setupFn := range s.setupFns {
 		setupFn(t)
 	}
 
 	exitCode := s.m.Run()
-	t.(*setupTestHelper).cleanup()
+	if t.cleanup != nil {
+		t.cleanup()
+	}
 	os.Exit(exitCode)
 }
 
