@@ -14,7 +14,7 @@ jobs:
       uses: redhat-actions/buildah-build@v2
       with:
         image: maistra-test-tool
-        tags: 2.4 ${{ github.sha }}
+        tags: latest
         containerfiles: |
           ./Dockerfile
 
