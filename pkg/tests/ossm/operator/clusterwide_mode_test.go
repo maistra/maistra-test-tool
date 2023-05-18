@@ -70,6 +70,31 @@ func TestClusterWideMode(t *testing.T) {
 					"expected SMMR to show 50 member namespaces, but that wasn't the case"))
 		})
 
+		t.NewSubTest("RoleBindings verification").Run(func(t test.TestHelper) {
+			t.LogStep("Check that Rolebindings are not created in the member namespaces")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				oc.Get(t, "member-0", "rolebindings", "",
+					assert.OutputContains("admin",
+						"The Rolebings contains admin role",
+						"The Rolebings does not contains admin role"),
+					assert.OutputContains("system:deployers",
+						"The Rolebings contains system:deployers role",
+						"The Rolebings does not contains system:deployers role"),
+					assert.OutputContains("system:image-builders",
+						"The Rolebings contains system:image-builders role",
+						"The Rolebings does not contains system:image-builders role"),
+					assert.OutputContains("system:image-pullers",
+						"The Rolebings contains system:image-pullers role",
+						"The Rolebings does not contains system:image-pullers role"),
+					assert.OutputDoesNotContain("istiod-clusterrole-basic-istio-system",
+						"The Rolebings does not contains istiod-clusterrole-basic-istio-system role",
+						"The Rolebings contains istiod-clusterrole-basic-istio-system role"),
+					assert.OutputDoesNotContain("istiod-gateway-controller-basic-istio-system",
+						"The Rolebings does not contains istiod-gateway-controller-basic-istio-system role",
+						"The Rolebings contains istiod-gateway-controller-basic-istio-system role"))
+			})
+		})
+
 		t.NewSubTest("customize SMMR").Run(func(t test.TestHelper) {
 			t.Log("Check whether the SMMR can be modified")
 
