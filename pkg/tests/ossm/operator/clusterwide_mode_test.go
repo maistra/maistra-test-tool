@@ -71,6 +71,7 @@ func TestClusterWideMode(t *testing.T) {
 		})
 
 		t.NewSubTest("RoleBindings verification").Run(func(t test.TestHelper) {
+			t.Log("Related to OSSM-3468")
 			t.LogStep("Check that Rolebindings are not created in the member namespaces")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				oc.Get(t, "member-0", "rolebindings", "",
