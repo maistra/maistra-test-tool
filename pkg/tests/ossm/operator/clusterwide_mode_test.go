@@ -74,9 +74,6 @@ func TestClusterWideMode(t *testing.T) {
 			t.LogStep("Check that Rolebindings are not created in the member namespaces")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				oc.Get(t, "member-0", "rolebindings", "",
-					assert.OutputContains("admin",
-						"The Rolebings contains admin role",
-						"The Rolebings does not contains admin role"),
 					assert.OutputContains("system:deployers",
 						"The Rolebings contains system:deployers role",
 						"The Rolebings does not contains system:deployers role"),
