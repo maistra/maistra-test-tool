@@ -52,9 +52,7 @@ func TestIstioCsr(t *testing.T) {
 		oc.RecreateNamespace(t, meshNamespace)
 
 		t.LogStep("Create intermediate certificate for Istio")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			oc.ApplyString(t, meshNamespace, istioCA)
-		})
+		oc.ApplyString(t, meshNamespace, istioCA)
 
 		t.LogStep("Add jetstack repo to helm")
 		helm.Repo("https://charts.jetstack.io").Add(t, "jetstack")

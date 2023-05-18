@@ -45,9 +45,7 @@ func TestPluginCaCert(t *testing.T) {
 		oc.RecreateNamespace(t, meshNamespace)
 
 		t.LogStep("Create intermediate CA certificate for Istio")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			oc.ApplyString(t, meshNamespace, cacerts)
-		})
+		oc.ApplyString(t, meshNamespace, cacerts)
 
 		t.LogStep("Deploy SMCP " + smcpVer.String() + " and SMMR")
 		oc.ApplyTemplate(t, meshNamespace, serviceMeshCacertsTmpl, meshValues)
