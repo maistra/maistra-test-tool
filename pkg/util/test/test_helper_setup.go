@@ -40,6 +40,7 @@ func (t *setupTestHelper) Failed() bool {
 }
 
 func (t *setupTestHelper) Skip(args ...any) {
+	t.t.Helper()
 	t.t.Skip(args...)
 }
 
