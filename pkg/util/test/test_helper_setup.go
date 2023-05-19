@@ -40,7 +40,8 @@ func (t *setupTestHelper) Failed() bool {
 }
 
 func (t *setupTestHelper) Skip(args ...any) {
-	panic("not applicable")
+	t.t.Helper()
+	t.t.Skip(args...)
 }
 
 func (t *setupTestHelper) Skipf(format string, args ...any) {
