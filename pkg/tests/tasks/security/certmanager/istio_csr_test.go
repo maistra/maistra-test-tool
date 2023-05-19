@@ -27,6 +27,10 @@ func TestIstioCsr(t *testing.T) {
 		if smcpVer.LessThan(version.SMCP_2_4) {
 			t.Skip("istio-csr is not supported in SMCP older than v2.4")
 		}
+		ocpVersion := version.ParseOCPVersion(oc.GetOCPVersion(t))
+		if ocpVersion.LessThan(version.OCP_4_12) {
+			t.Skip("istio-csr is not supported in OCP older than v4.12")
+		}
 
 		meshValues := map[string]string{
 			"Name":    smcpName,
