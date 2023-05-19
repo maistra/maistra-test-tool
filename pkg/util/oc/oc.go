@@ -16,6 +16,11 @@ func ApplyString(t test.TestHelper, ns string, yamls ...string) {
 	DefaultOC.ApplyString(t, ns, yamls...)
 }
 
+func GetOCPVersion(t test.TestHelper) string {
+	t.T().Helper()
+	return DefaultOC.GetOCPVersion(t)
+}
+
 func ReplaceOrApplyString(t test.TestHelper, ns string, yaml string) {
 	t.T().Helper()
 	DefaultOC.ReplaceOrApplyString(t, ns, yaml)
