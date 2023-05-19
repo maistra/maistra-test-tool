@@ -13,12 +13,25 @@ var (
 	SMCP_2_3 = ParseVersion("v2.3")
 	SMCP_2_4 = ParseVersion("v2.4")
 
+	OCP_4_9  = ParseOCPVersion("4.9.0")
+	OCP_4_10 = ParseOCPVersion("4.10.0")
+	OCP_4_11 = ParseOCPVersion("4.11.0")
+	OCP_4_12 = ParseOCPVersion("4.12.0")
+	OCP_4_13 = ParseOCPVersion("4.13.0")
+	OCP_4_14 = ParseOCPVersion("4.14.0")
+
 	VERSIONS = []*Version{
 		&SMCP_2_0,
 		&SMCP_2_1,
 		&SMCP_2_2,
 		&SMCP_2_3,
 		&SMCP_2_4,
+		&OCP_4_9,
+		&OCP_4_10,
+		&OCP_4_11,
+		&OCP_4_12,
+		&OCP_4_13,
+		&OCP_4_14,
 	}
 )
 
@@ -44,6 +57,23 @@ func ParseVersion(version string) Version {
 		panic(fmt.Sprintf("invalid SMCP version: %s", version))
 	}
 
+	return Version{Major: major, Minor: minor}
+}
+
+func ParseOCPVersion(version string) Version {
+	// OCP version is in the form of "major.minor.patch", example: 4.10.59
+	majorMinorPatch := strings.Split(version, ".")
+	if len(majorMinorPatch) != 3 {
+		panic(fmt.Sprintf("invalid OCP version: %s", version))
+	}
+	major, err := strconv.Atoi(majorMinorPatch[0])
+	if err != nil {
+		panic(fmt.Sprintf("invalid OCP version: %s", version))
+	}
+	minor, err := strconv.Atoi(majorMinorPatch[1])
+	if err != nil {
+		panic(fmt.Sprintf("invalid OCP version: %s", version))
+	}
 	return Version{Major: major, Minor: minor}
 }
 

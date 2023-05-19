@@ -9,6 +9,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 var (
@@ -52,6 +53,14 @@ func setupCertManagerOperator(t test.TestHelper) {
 		oc.DeleteNamespace(t, certManagerOperatorNs)
 		oc.DeleteNamespace(t, certManagerNs)
 	})
+	//Validate OCP version, this test setup can't be executed in OCP versions less than 4.12
+	//More information in: https://57747--docspreview.netlify.app/openshift-enterprise/latest/service_mesh/v2x/ossm-security.html#ossm-cert-manager-integration-istio_ossm-security
+	ocpVersion := version.ParseOCPVersion(oc.GetOCPVersion(t))
+	//Verify if the OCP version is less than 4.12
+	if ocpVersion.LessThan(version.OCP_4_12) {
+		t.Skip("This test setup can't be executed in OCP versions less than 4.12")
+	}
+
 	ossm.BasicSetup(t)
 
 	t.LogStep("Create namespace for cert-manager-operator")
