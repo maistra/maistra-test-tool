@@ -228,7 +228,7 @@ func TestClusterWideMode(t *testing.T) {
 				meshNamespace,
 				clusterWideSMCPWithProfile,
 				map[string]string{"Name": "cluster-wide", "Version": env.GetSMCPVersion().String()})
-			oc.WaitSMCPReady(t, meshNamespace, smcpName)
+			oc.WaitSMCPReady(t, meshNamespace, "cluster-wide")
 
 			t.LogStep("Check whether SMMR is created automatically")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
@@ -237,6 +237,15 @@ func TestClusterWideMode(t *testing.T) {
 						"The SMMR was created immediately after the SMCP was created",
 						"The SMMR resource was not created"))
 			})
+
+			t.LogStep("verify that smcp has ClusterWide enable")
+			oc.GetYaml(t,
+				meshNamespace,
+				"smcp",
+				"cluster-wide",
+				assert.OutputContains("mode: ClusterWide",
+					"The smcp has ClusterWide enable",
+					"The smcp does nos have ClusterWide enable"))
 		})
 	})
 }
@@ -320,14 +329,14 @@ spec:
   {{ end }}`
 
 	clusterWideSMCPWithProfile = `
-	apiVersion: maistra.io/v2
-	kind: ServiceMeshControlPlane
-	metadata:
-	  name: {{ .Name }}
-	spec:
-	  version: {{ .Version }}
-	  profiles:
-	  - clusterScoped`
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: {{ .Name }}
+spec:
+  version: {{ .Version }}
+  profiles:
+  - clusterScoped`
 
 	customSMMR = `
 apiVersion: maistra.io/v1
