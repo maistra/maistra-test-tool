@@ -208,33 +208,36 @@ func TestClusterWideMode(t *testing.T) {
 			})
 		})
 
-		// t.NewSubTest("cluster wide works with profiles").Run(func(t test.TestHelper) {
-		// 	t.Log("Check whether the cluster wide feature works with profiles")
+		t.NewSubTest("cluster wide works with profiles").Run(func(t test.TestHelper) {
+			t.Log("Check whether the cluster wide feature works with profiles")
 
-		// 	t.LogStep("Delete SMCP and SMMR")
-		// 	oc.RecreateNamespace(t, meshNamespace)
+			t.LogStep("Delete SMCP and SMMR")
+			oc.RecreateNamespace(t, meshNamespace)
 
-		// 	t.LogStep("Create a profile with a cluster wide feature and restart OSSM operator")
-		// 	oc.CreateConfigMapFromFiles(t,
-		// 		"openshift-operators",
-		// 		"smcp-templates",
-		// 		ossm.GetProfileFile())
-		// 	podLocator := pod.MatchingSelector("name=istio-operator", "openshift-operators")
-		// 	oc.DeletePod(t, podLocator)
-		// 	oc.WaitPodReady(t, podLocator)
+			t.LogStep("Create a profile with a cluster wide feature and restart OSSM operator")
+			oc.CreateConfigMapFromFiles(t,
+				"openshift-operators",
+				"smcp-templates",
+				ossm.GetProfileFile())
+			podLocator := pod.MatchingSelector("name=istio-operator", "openshift-operators")
+			oc.DeletePod(t, podLocator)
+			oc.WaitPodReady(t, podLocator)
 
-		// 	t.LogStep("Deploy SMCP with the profile")
-		// 	oc.ApplyTemplate(t, meshNamespace, clusterWideSMCPWithProfile, ossm.DefaultSMCP())
-		// 	oc.WaitSMCPReady(t, meshNamespace, smcpName)
+			t.LogStep("Deploy SMCP with the profile")
+			oc.ApplyTemplate(t,
+				meshNamespace,
+				clusterWideSMCPWithProfile,
+				map[string]string{"Name": "cluster-wide", "Version": env.GetSMCPVersion().String()})
+			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
-		// 	t.LogStep("Check whether SMMR is created automatically")
-		// 	retry.UntilSuccess(t, func(t test.TestHelper) {
-		// 		oc.Get(t, meshNamespace, "servicemeshmemberroll", "default",
-		// 			assert.OutputContains("default",
-		// 				"The SMMR was created immediately after the SMCP was created",
-		// 				"The SMMR resource was not created"))
-		// 	})
-		// })
+			t.LogStep("Check whether SMMR is created automatically")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				oc.Get(t, meshNamespace, "servicemeshmemberroll", "default",
+					assert.OutputContains("default",
+						"The SMMR was created immediately after the SMCP was created",
+						"The SMMR resource was not created"))
+			})
+		})
 	})
 }
 
@@ -316,15 +319,15 @@ spec:
       type: ThirdParty
   {{ end }}`
 
-	// 	clusterWideSMCPWithProfile = `
-	// apiVersion: maistra.io/v2
-	// kind: ServiceMeshControlPlane
-	// metadata:
-	//   name: {{ .Name }}
-	// spec:
-	//   version: {{ .Version }}
-	//   profiles:
-	//   - clusterWide`
+	clusterWideSMCPWithProfile = `
+	apiVersion: maistra.io/v2
+	kind: ServiceMeshControlPlane
+	metadata:
+	  name: {{ .Name }}
+	spec:
+	  version: {{ .Version }}
+	  profiles:
+	  - clusterScoped`
 
 	customSMMR = `
 apiVersion: maistra.io/v1
