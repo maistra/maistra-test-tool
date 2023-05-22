@@ -91,7 +91,8 @@ func TestOpenShiftMonitoring(t *testing.T) {
 				t.Errorf("unexpected error: %s", secret)
 			}
 			// secret name contains '\n', because it's parsed from a single output column
-			secret = strings.TrimSuffix(secret, "\n")
+			secretList := strings.Split(secret, "\n")
+			secret = secretList[0]
 		})
 
 		t.LogStep("Fetch Thanos token")

@@ -1,0 +1,37 @@
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: {{ .Name }}
+spec:
+  addons:
+    grafana:
+      enabled: false
+    kiali:
+      enabled: false
+    prometheus:
+      enabled: false
+  gateways:
+    egress:
+      enabled: false
+    openshiftRoute:
+      enabled: false
+  security:
+    certificateAuthority:
+      cert-manager:
+        address: cert-manager-istio-csr.{{ .MeshNs }}.svc:443
+      type: cert-manager
+    dataPlane:
+      mtls: true
+    identity:
+      type: ThirdParty
+  tracing:
+    type: None
+  version: {{ .Version }}
+---
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  members:
+  - {{ .Member }}
