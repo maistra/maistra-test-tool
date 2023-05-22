@@ -63,18 +63,19 @@ func ParseVersion(version string) Version {
 func ParseOCPVersion(version string) Version {
 	// OCP version is in the form of "major.minor.patch", example: 4.10.59
 	majorMinorPatch := strings.Split(version, ".")
-	if len(majorMinorPatch) != 3 {
-		panic(fmt.Sprintf("invalid OCP version: %s", version))
+	if len(majorMinorPatch) >= 3 {
+		major, err := strconv.Atoi(majorMinorPatch[0])
+		if err != nil {
+			panic(fmt.Sprintf("invalid OCP version: %s", version))
+		}
+		minor, err := strconv.Atoi(majorMinorPatch[1])
+		if err != nil {
+			panic(fmt.Sprintf("invalid OCP version: %s", version))
+		}
+		return Version{Major: major, Minor: minor}
 	}
-	major, err := strconv.Atoi(majorMinorPatch[0])
-	if err != nil {
-		panic(fmt.Sprintf("invalid OCP version: %s", version))
-	}
-	minor, err := strconv.Atoi(majorMinorPatch[1])
-	if err != nil {
-		panic(fmt.Sprintf("invalid OCP version: %s", version))
-	}
-	return Version{Major: major, Minor: minor}
+	// this code is only reached if it's not possible to parse the version or length is minor than 3
+	panic(fmt.Sprintf("invalid OCP version: %s", version))
 }
 
 func (this Version) Equals(that Version) bool {
