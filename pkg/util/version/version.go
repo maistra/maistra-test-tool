@@ -12,13 +12,12 @@ var (
 	SMCP_2_2 = ParseVersion("v2.2")
 	SMCP_2_3 = ParseVersion("v2.3")
 	SMCP_2_4 = ParseVersion("v2.4")
-
-	OCP_4_9  = ParseOCPVersion("4.9.0")
-	OCP_4_10 = ParseOCPVersion("4.10.0")
-	OCP_4_11 = ParseOCPVersion("4.11.0")
-	OCP_4_12 = ParseOCPVersion("4.12.0")
-	OCP_4_13 = ParseOCPVersion("4.13.0")
-	OCP_4_14 = ParseOCPVersion("4.14.0")
+	OCP_4_9  = ParseVersion("4.9.0")
+	OCP_4_10 = ParseVersion("4.10.0")
+	OCP_4_11 = ParseVersion("4.11.0")
+	OCP_4_12 = ParseVersion("4.12.0")
+	OCP_4_13 = ParseVersion("4.13.0")
+	OCP_4_14 = ParseVersion("4.14.0")
 
 	VERSIONS = []*Version{
 		&SMCP_2_0,
@@ -41,41 +40,28 @@ type Version struct {
 }
 
 func ParseVersion(version string) Version {
+	// This func can handle smcp versions and ocp versions. Example: smcp version v2.1.0 and ocp version 4.10.0
 	if len(version) > 0 && version[0] == 'v' {
 		version = version[1:]
 	}
+
 	majorMinor := strings.Split(version, ".")
-	if len(majorMinor) != 2 {
-		panic(fmt.Sprintf("invalid SMCP version: %s", version))
+
+	if len(majorMinor) < 2 {
+		panic(fmt.Sprintf("invalid version: %s", version))
 	}
+
 	major, err := strconv.Atoi(majorMinor[0])
 	if err != nil {
-		panic(fmt.Sprintf("invalid SMCP version: %s", version))
+		panic(fmt.Sprintf("invalid version: %s", version))
 	}
+
 	minor, err := strconv.Atoi(majorMinor[1])
 	if err != nil {
-		panic(fmt.Sprintf("invalid SMCP version: %s", version))
+		panic(fmt.Sprintf("invalid version: %s", version))
 	}
 
 	return Version{Major: major, Minor: minor}
-}
-
-func ParseOCPVersion(version string) Version {
-	// OCP version is in the form of "major.minor.patch", example: 4.10.59
-	majorMinorPatch := strings.Split(version, ".")
-	if len(majorMinorPatch) >= 3 {
-		major, err := strconv.Atoi(majorMinorPatch[0])
-		if err != nil {
-			panic(fmt.Sprintf("invalid OCP version: %s", version))
-		}
-		minor, err := strconv.Atoi(majorMinorPatch[1])
-		if err != nil {
-			panic(fmt.Sprintf("invalid OCP version: %s", version))
-		}
-		return Version{Major: major, Minor: minor}
-	}
-	// this code is only reached if it's not possible to parse the version or length is minor than 3
-	panic(fmt.Sprintf("invalid OCP version: %s", version))
 }
 
 func (this Version) Equals(that Version) bool {

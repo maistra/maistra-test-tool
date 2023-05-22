@@ -49,10 +49,15 @@ func TestMain(m *testing.M) {
 func setupCertManagerOperator(t test.TestHelper) {
 	//Validate OCP version, this test setup can't be executed in OCP versions less than 4.12
 	//More information in: https://57747--docspreview.netlify.app/openshift-enterprise/latest/service_mesh/v2x/ossm-security.html#ossm-cert-manager-integration-istio_ossm-security
-	ocpVersion := version.ParseOCPVersion(oc.GetOCPVersion(t))
+	ocpVersion := version.ParseVersion(oc.GetOCPVersion(t))
 	//Verify if the OCP version is less than 4.12
 	if ocpVersion.LessThan(version.OCP_4_12) {
 		t.Log("WARNING: This test setup can't be executed in OCP versions less than 4.12")
+		return
+	}
+	smcpVer := env.GetSMCPVersion()
+	if smcpVer.LessThan(version.SMCP_2_4) {
+		t.Log("WARNING: This test setup can't be executed in SMCP versions less than 2.4")
 		return
 	}
 
