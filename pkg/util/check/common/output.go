@@ -31,7 +31,6 @@ func CheckOutputContainsAny(t test.TestHelper, output string, expected []string,
 		detailMsg += "; full output:\n" + output
 	}
 	failure(t, failureMsg, detailMsg)
-
 }
 
 func CheckOutputDoesNotContain(t test.TestHelper, output, str, successMsg, failureMsg string, failure FailureFunc) {
@@ -48,4 +47,20 @@ func CheckOutputDoesNotContain(t test.TestHelper, output, str, successMsg, failu
 		}
 		logSuccess(t, successMsg)
 	}
+}
+
+func CountExpectedString(t test.TestHelper, output string, expected string, expectedOccurrenceNum int, successMsg, failureMsg string, failure FailureFunc) {
+	t.T().Helper()
+	if strings.Count(output, expected) != expectedOccurrenceNum {
+		if successMsg == "" {
+			successMsg = fmt.Sprintf("string '%s' found in output", expected)
+		}
+		logSuccess(t, successMsg)
+		return
+	}
+	detailMsg := fmt.Sprintf("expected to find the string '%s' in the output, but it wasn't found", expected)
+	if !t.WillRetry() {
+		detailMsg += "; full output:\n" + output
+	}
+	failure(t, failureMsg, detailMsg)
 }

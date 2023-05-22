@@ -36,6 +36,34 @@ func (o OC) ApplyTemplateString(t test.TestHelper, ns string, tmpl string, input
 	})
 }
 
+func (o OC) GetOCPVersion(t test.TestHelper) string {
+	t.T().Helper()
+	output := ""
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		output = shell.Execute(t, "oc version")
+		//The output have this format:
+		// 	Client Version: 4.12.0-rc.5
+		// Kustomize Version: v4.5.7
+		// Server Version: 4.10.59
+		// Kubernetes Version: v1.23.17+16bcd69
+	})
+
+	//We want to split only the line with "Server Version"
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "Server Version") {
+			//Get the version number
+			version := strings.Split(line, ":")[1]
+			version = strings.TrimSpace(version)
+			return version
+		}
+	}
+	//We never reach this point so if this happens we will return an error
+	t.Fatal("Unable to get OCP version")
+	return ""
+}
+
 func (o OC) ReplaceOrApplyString(t test.TestHelper, ns string, yaml string) {
 	t.T().Helper()
 	o.withKubeconfig(t, func() {

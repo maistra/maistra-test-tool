@@ -25,3 +25,10 @@ func OutputDoesNotContain(str string, successMsg, failureMsg string) common.Chec
 		common.CheckOutputDoesNotContain(t, input, str, successMsg, failureMsg, assertFailure)
 	}
 }
+
+func CountExpectedString(str string, expectedOccurrenceNum int, successMsg, failureMsg string) common.CheckFunc {
+	return func(t test.TestHelper, input string) {
+		t.T().Helper()
+		common.CountExpectedString(t, input, str, expectedOccurrenceNum, successMsg, failureMsg, assertFailure)
+	}
+}
