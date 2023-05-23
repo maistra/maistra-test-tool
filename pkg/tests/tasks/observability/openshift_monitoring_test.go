@@ -21,9 +21,11 @@ import (
 )
 
 const (
+	kialiName                = "kiali-user-workload-monitoring"
 	monitoringNs             = "openshift-monitoring"
 	userWorkloadMonitoringNs = "openshift-user-workload-monitoring"
 	thanosTokenPrefix        = "prometheus-user-workload-token-"
+	thanosTokenSecret        = "thanos-querier-web-token"
 )
 
 // TestOpenShiftMonitoring requires OpenShift Monitoring stack to be enabled.
@@ -57,6 +59,7 @@ func TestOpenShiftMonitoring(t *testing.T) {
 			app.Uninstall(t, app.Httpbin(ns.Foo))
 			oc.DeleteFromTemplate(t, meshNamespace, meshTmpl, meshValues)
 			oc.DeleteFromTemplate(t, meshNamespace, kialiUserWorkloadMonitoringTmpl, kialiValues)
+			oc.DeleteSecret(t, meshNamespace, thanosTokenSecret)
 		})
 
 		t.LogStep("Waiting until user workload monitoring stack is up and running")
@@ -86,7 +89,7 @@ func TestOpenShiftMonitoring(t *testing.T) {
 		})
 
 		t.LogStep("Create secret with Thanos token for Kiali")
-		shell.Executef(t, "oc create secret generic thanos-querier-web-token -n %s --from-literal=token=%s", meshNamespace, thanosToken)
+		shell.Executef(t, "oc create secret generic %s -n %s --from-literal=token=%s", thanosTokenSecret, meshNamespace, thanosToken)
 
 		t.LogStep("Deploying Kiali")
 		oc.ApplyTemplate(t, meshNamespace, kialiUserWorkloadMonitoringTmpl, kialiValues)

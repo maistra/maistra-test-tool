@@ -12,7 +12,6 @@ import (
 var (
 	smcpName      = env.GetDefaultSMCPName()
 	meshNamespace = env.GetDefaultMeshNamespace()
-	kialiName     = "kiali-user-workload-monitoring"
 
 	//go:embed yaml/cluster-monitoring-config.tmpl.yaml
 	clusterMonitoringConfigTmpl string
