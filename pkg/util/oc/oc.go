@@ -96,6 +96,11 @@ func WaitSMCPReady(t test.TestHelper, ns string, name string) {
 	DefaultOC.WaitSMCPReady(t, ns, name)
 }
 
+func WaitKialiSuccessful(t test.TestHelper, ns string, name string) {
+	t.T().Helper()
+	DefaultOC.WaitKialiSuccessful(t, ns, name)
+}
+
 func Patch(t test.TestHelper, ns, kind, name string, mergeType string, patch string) {
 	t.T().Helper()
 	DefaultOC.Patch(t, ns, kind, name, mergeType, patch)

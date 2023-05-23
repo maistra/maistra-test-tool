@@ -43,6 +43,10 @@ func TestOpenShiftMonitoring(t *testing.T) {
 			"Version": smcpVer.String(),
 			"Member":  ns.Foo,
 		}
+		kialiValues := map[string]string{
+			"SmcpName":      smcpName,
+			"SmcpNamespace": meshNamespace,
+		}
 
 		t.Cleanup(func() {
 			oc.DeleteFromString(t, meshNamespace, istiodMonitor)
@@ -52,35 +56,13 @@ func TestOpenShiftMonitoring(t *testing.T) {
 			oc.DeleteFromString(t, meshNamespace, enableTrafficMetrics)
 			app.Uninstall(t, app.Httpbin(ns.Foo))
 			oc.DeleteFromTemplate(t, meshNamespace, meshTmpl, meshValues)
+			oc.DeleteFromTemplate(t, meshNamespace, kialiUserWorkloadMonitoringTmpl, kialiValues)
 		})
 
 		t.LogStep("Waiting until user workload monitoring stack is up and running")
 		oc.ApplyTemplate(t, monitoringNs, clusterMonitoringConfigTmpl, map[string]bool{"Enabled": true})
 		oc.WaitPodsExist(t, userWorkloadMonitoringNs)
 		oc.WaitAllPodsReady(t, userWorkloadMonitoringNs)
-
-		t.LogStep("Deploying SMCP")
-		oc.ApplyTemplate(t, meshNamespace, meshTmpl, meshValues)
-		oc.WaitSMCPReady(t, meshNamespace, smcpName)
-
-		t.LogStep("Enable Prometheus telemetry")
-		oc.ApplyString(t, meshNamespace, enableTrafficMetrics)
-
-		t.LogStep("Deploy httpbin")
-		app.InstallAndWaitReady(t, app.Httpbin(ns.Foo))
-		oc.WaitPodsExist(t, ns.Foo)
-		oc.WaitAllPodsReady(t, ns.Foo)
-
-		t.LogStep("Apply Prometheus monitors")
-		oc.ApplyString(t, meshNamespace, istiodMonitor)
-		oc.ApplyString(t, ns.Foo, istioProxyMonitor)
-
-		t.LogStep("Generate some ingress traffic")
-		oc.ApplyFile(t, ns.Foo, "https://raw.githubusercontent.com/maistra/istio/maistra-2.4/samples/httpbin/httpbin-gateway.yaml")
-		httpbinURL := fmt.Sprintf("http://%s/headers", istio.GetIngressGatewayHost(t, meshNamespace))
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			curl.Request(t, httpbinURL, nil, assert.ResponseStatus(http.StatusOK))
-		})
 
 		t.LogStep("Fetch Thanos secret")
 		var secret string
@@ -101,6 +83,46 @@ func TestOpenShiftMonitoring(t *testing.T) {
 			if strings.Contains(thanosToken, "Error") {
 				t.Errorf("unexpected error: %s", thanosToken)
 			}
+		})
+
+		t.LogStep("Create secret with Thanos token for Kiali")
+		shell.Executef(t, "oc create secret generic thanos-querier-web-token -n %s --from-literal=token=%s", meshNamespace, thanosToken)
+
+		t.LogStep("Deploying Kiali")
+		oc.ApplyTemplate(t, meshNamespace, kialiUserWorkloadMonitoringTmpl, kialiValues)
+
+		t.LogStep("Deploying SMCP")
+		oc.ApplyTemplate(t, meshNamespace, meshTmpl, meshValues)
+		oc.WaitSMCPReady(t, meshNamespace, smcpName)
+
+		t.LogStep("Wait until Kiali is ready")
+		oc.WaitKialiSuccessful(t, meshNamespace, kialiName)
+
+		t.LogStep("Verify that Kiali was reconciled by Istio Operator")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			output := shell.Executef(t, "oc get kiali %s -n %s -o jsonpath='{.spec.deployment.accessible_namespaces}'", kialiName, meshNamespace)
+			if output != fmt.Sprintf(`["%s"]`, ns.Foo) {
+				t.Errorf(`unexpected accessible namespaces: got '%s', expected: '["%s"]'`, output, ns.Foo)
+			}
+		})
+
+		t.LogStep("Enable Prometheus telemetry")
+		oc.ApplyString(t, meshNamespace, enableTrafficMetrics)
+
+		t.LogStep("Deploy httpbin")
+		app.InstallAndWaitReady(t, app.Httpbin(ns.Foo))
+		oc.WaitPodsExist(t, ns.Foo)
+		oc.WaitAllPodsReady(t, ns.Foo)
+
+		t.LogStep("Apply Prometheus monitors")
+		oc.ApplyString(t, meshNamespace, istiodMonitor)
+		oc.ApplyString(t, ns.Foo, istioProxyMonitor)
+
+		t.LogStep("Generate some ingress traffic")
+		oc.ApplyFile(t, ns.Foo, "https://raw.githubusercontent.com/maistra/istio/maistra-2.4/samples/httpbin/httpbin-gateway.yaml")
+		httpbinURL := fmt.Sprintf("http://%s/headers", istio.GetIngressGatewayHost(t, meshNamespace))
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			curl.Request(t, httpbinURL, nil, assert.ResponseStatus(http.StatusOK))
 		})
 
 		t.LogStep("Check istiod metrics")

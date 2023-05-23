@@ -214,6 +214,14 @@ func (o OC) WaitSMCPReady(t test.TestHelper, ns string, name string) {
 	})
 }
 
+func (o OC) WaitKialiSuccessful(t test.TestHelper, ns string, name string) {
+	t.T().Helper()
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		o.WaitCondition(t, ns, "kiali", name, "Successful")
+	})
+}
+
 func (o OC) Patch(t test.TestHelper, ns, kind, name string, mergeType string, patch string) {
 	t.T().Helper()
 	o.withKubeconfig(t, func() {

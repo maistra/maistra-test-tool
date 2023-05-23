@@ -12,6 +12,7 @@ import (
 var (
 	smcpName      = env.GetDefaultSMCPName()
 	meshNamespace = env.GetDefaultMeshNamespace()
+	kialiName     = "kiali-user-workload-monitoring"
 
 	//go:embed yaml/cluster-monitoring-config.tmpl.yaml
 	clusterMonitoringConfigTmpl string
@@ -27,6 +28,9 @@ var (
 
 	//go:embed yaml/mesh.tmpl.yaml
 	meshTmpl string
+
+	//go:embed yaml/kiali-user-workload-monitoring.tmpl.yaml
+	kialiUserWorkloadMonitoringTmpl string
 )
 
 func TestMain(m *testing.M) {
