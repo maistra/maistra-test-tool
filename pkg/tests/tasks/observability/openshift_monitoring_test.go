@@ -99,7 +99,7 @@ func TestOpenShiftMonitoring(t *testing.T) {
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Wait until Kiali is ready")
-		oc.WaitKialiSuccessful(t, meshNamespace, kialiName)
+		oc.WaitCondition(t, meshNamespace, "Kiali", kialiName, "Successful")
 
 		t.LogStep("Verify that Kiali was reconciled by Istio Operator")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
