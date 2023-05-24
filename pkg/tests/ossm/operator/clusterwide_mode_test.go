@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util"
@@ -19,7 +21,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	test "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
-	"gopkg.in/yaml.v2"
 )
 
 type ServiceMeshMemberRoll struct {
