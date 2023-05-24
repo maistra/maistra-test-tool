@@ -214,15 +214,6 @@ func TestClusterWideMode(t *testing.T) {
 			t.LogStep("Delete SMCP and SMMR")
 			oc.RecreateNamespace(t, meshNamespace)
 
-			t.LogStep("Create a profile with a cluster wide feature and restart OSSM operator")
-			oc.CreateConfigMapFromFiles(t,
-				"openshift-operators",
-				"smcp-templates",
-				ossm.GetProfileFile())
-			podLocator := pod.MatchingSelector("name=istio-operator", "openshift-operators")
-			oc.DeletePod(t, podLocator)
-			oc.WaitPodReady(t, podLocator)
-
 			t.LogStep("Deploy SMCP with the profile")
 			oc.ApplyTemplate(t,
 				meshNamespace,
@@ -336,7 +327,7 @@ metadata:
 spec:
   version: {{ .Version }}
   profiles:
-  - clusterScoped`
+  - gateway-controller`
 
 	customSMMR = `
 apiVersion: maistra.io/v1
