@@ -17,7 +17,6 @@ package certificate
 import (
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
 	"os"
 	"testing"
 
@@ -40,6 +39,12 @@ func TestExternalCertificate(t *testing.T) {
 			oc.RecreateNamespace(t, ns, meshNamespace)
 		})
 
+		meshValues := map[string]interface{}{
+			"Name":    smcpName,
+			"Version": env.GetSMCPVersion().String(),
+			"ROSA":    ROSA,
+		}
+
 		t.LogStep("Uninstall existing SMCP")
 		oc.RecreateNamespace(t, meshNamespace)
 
@@ -53,7 +58,7 @@ func TestExternalCertificate(t *testing.T) {
 		chainCerts := readPemCertificatesFromFile(t, sampleCAChain)
 
 		t.LogStep("Apply SMCP to configure certificate authority to use cacerts secret")
-		oc.ApplyString(t, meshNamespace, createSMCPWithCustomCert(smcpName, ns))
+		oc.ApplyTemplate(t, meshNamespace, SMCPWithCustomCA, meshValues)
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Install bookinfo")
@@ -183,12 +188,14 @@ func readPemCertificates(t test.TestHelper, pemData []byte) []*x509.Certificate 
 	return certificates
 }
 
-func createSMCPWithCustomCert(smcpName, memberNs string) string {
-	return fmt.Sprintf(`apiVersion: maistra.io/v2
+const (
+	SMCPWithCustomCA = `
+apiVersion: maistra.io/v2
 kind: ServiceMeshControlPlane
 metadata:
-  name: %s
+  name: {{ .Name }}
 spec:
+  version: {{ .Version }}
   addons:
     grafana:
       enabled: false
@@ -212,7 +219,11 @@ spec:
           rootCADir: /etc/cacerts
   tracing:
     type: None
-  version: %v
+  {{ if .ROSA }} 
+  security:
+    identity:
+      type: ThirdParty
+  {{ end }}
 ---
 apiVersion: maistra.io/v1
 kind: ServiceMeshMemberRoll
@@ -220,6 +231,5 @@ metadata:
   name: default
 spec:
   members:
-  - %s
-`, smcpName, env.GetSMCPVersion(), memberNs)
-}
+  - bookinfo`
+)
