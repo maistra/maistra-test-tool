@@ -28,4 +28,5 @@ var (
 var (
 	smcpName      = env.GetDefaultSMCPName()
 	meshNamespace = env.GetDefaultMeshNamespace()
+	ROSA          = env.IsRosa()
 )
