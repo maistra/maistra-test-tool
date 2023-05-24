@@ -31,11 +31,12 @@ func TestPluginCaCert(t *testing.T) {
 			t.Skip("istio-csr is not supported in OCP older than v4.12")
 		}
 
-		meshValues := map[string]string{
+		meshValues := map[string]interface{}{
 			"Name":    smcpName,
 			"MeshNs":  meshNamespace,
 			"Member":  ns.Foo,
 			"Version": smcpVer.String(),
+			"Rosa":    env.IsRosa(),
 		}
 
 		t.Cleanup(func() {
