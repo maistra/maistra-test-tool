@@ -125,7 +125,7 @@ func TestClusterWideMode(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("verify multiple memselector").Run(func(t test.TestHelper) {
+		t.NewSubTest("verify multiple memberselector").Run(func(t test.TestHelper) {
 			t.Log("Check if is possible to use multiple memberselector at the same time")
 
 			t.LogStep("Check the use of multiple selector at the same time")
@@ -212,7 +212,8 @@ func TestClusterWideMode(t *testing.T) {
 			t.Log("Check whether the cluster wide feature works with profiles")
 
 			t.LogStep("Delete SMCP and SMMR")
-			oc.RecreateNamespace(t, meshNamespace)
+			oc.DeleteFromTemplate(t, meshNamespace, clusterWideSMCP, ossm.DefaultSMCP())
+			oc.DeleteFromString(t, meshNamespace, defaultSMMR)
 
 			t.LogStep("Deploy SMCP with the profile")
 			oc.ApplyTemplate(t,
