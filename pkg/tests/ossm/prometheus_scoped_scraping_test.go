@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
@@ -131,8 +132,20 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 				restoreDefaultSMMR(t)
 			})
 
+			start := time.Now()
 			t.LogStepf("Update default SMMR with no member")
 			updateDefaultSMMRWithNamespace(t)
+
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				oc.LogsSince(t,
+					start,
+					prometheusPodSelector, "config-reloader",
+					assert.OutputContains("Reload triggered",
+						"Triggered configuration reloading",
+						"Expected to trigger configuration reloading, but did not",
+					),
+				)
+			})
 
 			checkPermissionErorr(t)
 		})
@@ -223,8 +236,8 @@ spec:
 
 func checkForNamespace(ns string) common.CheckFunc {
 	return require.OutputContains(ns,
-		fmt.Sprintf("found %s in Prometheus config", ns),
-		fmt.Sprintf("expected to find %s in Prometheus config, but not found", ns),
+		fmt.Sprintf("Found %s in Prometheus config", ns),
+		fmt.Sprintf("Expected to find %s in Prometheus config, but not found", ns),
 	)
 }
 

@@ -1,6 +1,8 @@
 package oc
 
 import (
+	"time"
+
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
@@ -124,6 +126,11 @@ func GetPodIP(t test.TestHelper, podLocator PodLocatorFunc) string {
 func Logs(t test.TestHelper, podLocator PodLocatorFunc, container string, checks ...common.CheckFunc) {
 	t.T().Helper()
 	DefaultOC.Logs(t, podLocator, container, checks...)
+}
+
+func LogsSince(t test.TestHelper, start time.Time, podLocator PodLocatorFunc, container string, checks ...common.CheckFunc) {
+	t.T().Helper()
+	DefaultOC.LogsSince(t, start, podLocator, container, checks...)
 }
 
 func LogsFromPods(t test.TestHelper, ns, selector string, checks ...common.CheckFunc) {
