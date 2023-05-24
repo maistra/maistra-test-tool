@@ -85,3 +85,4 @@ helloworld:
 ext-authz:
   x86: gcr.io/istio-testing/ext-authz:latest
   p: quay.io/maistra/ext-authz:0.0-ibm-p
+  z: quay.io/maistra/ext-authz:0.0-ibm-z
