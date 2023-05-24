@@ -85,8 +85,8 @@ func TestClusterWideMode(t *testing.T) {
 						"The Rolebings contains system:image-pullers role",
 						"The Rolebings does not contains system:image-pullers role"),
 					assert.OutputDoesNotContain("istiod-clusterrole-basic-istio-system",
-						"The Rolebings does not contains istiod-clusterrole-basic-istio-system role",
-						"The Rolebings contains istiod-clusterrole-basic-istio-system role"),
+						"The istiod-clusterrole-basic-istio-system RoleBinding does not exist",
+						"The istiod-clusterrole-basic-istio-system RoleBinding exists"),
 					assert.OutputDoesNotContain("istiod-gateway-controller-basic-istio-system",
 						"The Rolebings does not contains istiod-gateway-controller-basic-istio-system role",
 						"The Rolebings contains istiod-gateway-controller-basic-istio-system role"))
