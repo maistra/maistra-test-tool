@@ -3,6 +3,7 @@ package operator
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"strings"
 	"testing"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
-	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -19,7 +19,14 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	test "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
+	"gopkg.in/yaml.v2"
 )
+
+type ServiceMeshMemberRoll struct {
+	Status struct {
+		Members []string `yaml:"members"`
+	} `yaml:"status"`
+}
 
 func TestClusterWideMode(t *testing.T) {
 	test.NewTest(t).Groups(test.Full, test.Disconnected).MinVersion(version.SMCP_2_4).Run(func(t test.TestHelper) {
@@ -31,7 +38,7 @@ func TestClusterWideMode(t *testing.T) {
 
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, meshNamespace)
-			deleteMemberNamespaces(t, 50)
+			deleteMemberNamespaces(t, 5)
 		})
 
 		t.LogStepf("Delete and recreate namespace %s", meshNamespace)
@@ -56,18 +63,17 @@ func TestClusterWideMode(t *testing.T) {
 		t.NewSubTest("default namespace selector").Run(func(t test.TestHelper) {
 			t.Log("Check whether namespaces with the label istio-injection=enabled become members automatically")
 
-			t.LogStep("Create 50 member namespaces")
-			createMemberNamespaces(t, 50)
+			t.LogStep("Create 5 member namespaces")
+			createMemberNamespaces(t, 5)
 
 			t.LogStep("Wait for SMMR to be Ready")
 			oc.WaitSMMRReady(t, meshNamespace)
 
-			t.LogStep("Check whether the SMMR shows all 50 namespaces as members")
-			shell.Execute(t,
-				fmt.Sprintf("oc -n %s get smmr default", meshNamespace),
-				require.OutputContains("50/50",
-					"all 50 namespaces are members",
-					"expected SMMR to show 50 member namespaces, but that wasn't the case"))
+			t.LogStep("Check whether the SMMR shows the 5 namespaces created as members")
+			membersList := []string{"member-0", "member-1", "member-2", "member-3", "member-4"}
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				verifyMembersInSMMR(t, meshNamespace, membersList, true)
+			})
 		})
 
 		t.NewSubTest("RoleBindings verification").Run(func(t test.TestHelper) {
@@ -75,21 +81,15 @@ func TestClusterWideMode(t *testing.T) {
 			t.LogStep("Check that Rolebindings are not created in the member namespaces")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				oc.Get(t, "member-0", "rolebindings", "",
-					assert.OutputContains("system:deployers",
-						"The Rolebings contains system:deployers role",
-						"The Rolebings does not contains system:deployers role"),
-					assert.OutputContains("system:image-builders",
-						"The Rolebings contains system:image-builders role",
-						"The Rolebings does not contains system:image-builders role"),
-					assert.OutputContains("system:image-pullers",
-						"The Rolebings contains system:image-pullers role",
-						"The Rolebings does not contains system:image-pullers role"),
+					assert.OutputContains("prometheus-istio-system",
+						"The Rolebings contains prometheus-istio-system",
+						"The Rolebings does not contains prometheus-istio-system"),
 					assert.OutputDoesNotContain("istiod-clusterrole-basic-istio-system",
-						"The istiod-clusterrole-basic-istio-system RoleBinding does not exist",
-						"The istiod-clusterrole-basic-istio-system RoleBinding exists"),
+						"The Rolebings does not contains istiod-clusterrole-basic-istio-system RoleBinding",
+						"The Rolebings contains istiod-clusterrole-basic-istio-system RoleBinding"),
 					assert.OutputDoesNotContain("istiod-gateway-controller-basic-istio-system",
-						"The Rolebings does not contains istiod-gateway-controller-basic-istio-system role",
-						"The Rolebings contains istiod-gateway-controller-basic-istio-system role"))
+						"The Rolebings does not contains istiod-gateway-controller-basic-istio-system",
+						"The Rolebings contains istiod-gateway-controller-basic-istio-system"))
 			})
 		})
 
@@ -100,70 +100,70 @@ func TestClusterWideMode(t *testing.T) {
 			oc.ApplyString(t, meshNamespace, customSMMR)
 			oc.WaitSMMRReady(t, meshNamespace)
 
-			t.LogStep("Check whether the SMMR shows only two namespaces as members")
+			t.LogStep("Check whether the SMMR shows only two namespaces as members: member-0 and member-1")
+			membersList := []string{"member-0", "member-1"}
+			notInMembersList := []string{"member-2", "member-3", "member-4"}
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				shell.Execute(t,
-					fmt.Sprintf("oc -n %s get smmr default", meshNamespace),
-					require.OutputContains("2/2",
-						"two namespaces are members",
-						"expected SMMR to show 2 member namespaces, but that wasn't the case"))
+				verifyMembersInSMMR(t, meshNamespace, membersList, true)
+				verifyMembersInSMMR(t, meshNamespace, notInMembersList, false)
 			})
+		})
+
+		t.NewSubTest("verify memberselector operator IN").Run(func(t test.TestHelper) {
+			t.Log("Check the use of IN in memberselector")
 
 			t.LogStep("Check the use of IN operator in member selector matchExpressions")
 			oc.ApplyString(t, meshNamespace, smmrInOperator)
 			oc.WaitSMMRReady(t, meshNamespace)
 
 			t.LogStep("Check whether the SMMR shows only one namespace as members: member-0")
+			membersList := []string{"member-0"}
+			notInMembersList := []string{"member-1", "member-2", "member-3", "member-4"}
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				shell.Execute(t,
-					fmt.Sprintf("oc -n %s get smmr default", meshNamespace),
-					require.OutputContains("1/1",
-						"one namespace are in members",
-						"expected SMMR to show 1 member namespace, but that wasn't the case"))
-				shell.Execute(t,
-					fmt.Sprintf("oc -n %s describe smmr default", meshNamespace),
-					require.OutputContains("member-0",
-						"member-0 is in members",
-						"expected SMMR to show member-0 as member namespace, but that wasn't the case"))
+				verifyMembersInSMMR(t, meshNamespace, membersList, true)
+				verifyMembersInSMMR(t, meshNamespace, notInMembersList, false)
 			})
+		})
+
+		t.NewSubTest("verify multiple memselector").Run(func(t test.TestHelper) {
+			t.Log("Check if is possible to use multiple memberselector at the same time")
 
 			t.LogStep("Check the use of multiple selector at the same time")
 			oc.ApplyString(t, meshNamespace, smmrMultipleSelectors)
 			oc.WaitSMMRReady(t, meshNamespace)
 
 			t.LogStep("Check whether the SMMR shows only namespaces as members: member-0")
+			membersList := []string{"member-0"}
+			notInMembersList := []string{"member-1", "member-2", "member-3", "member-4"}
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				shell.Execute(t,
-					fmt.Sprintf("oc -n %s get smmr default", meshNamespace),
-					require.OutputContains("1/1",
-						"one namespace are in members",
-						"expected SMMR to show 1 member namespace, but that wasn't the case"))
+				verifyMembersInSMMR(t, meshNamespace, membersList, true)
+				verifyMembersInSMMR(t, meshNamespace, notInMembersList, false)
 			})
+		})
+
+		t.NewSubTest("verify memberselector operator NOTIN").Run(func(t test.TestHelper) {
+			t.Log("Check the use of NOTIN in memberselector")
 
 			t.LogStep("Check the use of NotIn operator in member selector matchExpressions")
 			oc.ApplyString(t, meshNamespace, smmrNotInOperator)
 			oc.WaitSMMRReady(t, meshNamespace)
 
 			t.LogStep("Check whether the SMMR shows all the namespaces except: member-0")
+			membersList := []string{"member-1", "member-2", "member-3", "member-4"}
+			notInMembersList := []string{"member-0"}
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				shell.Execute(t,
-					fmt.Sprintf("oc -n %s get smmr default", meshNamespace),
-					require.OutputContains("55/55",
-						"All the namespaces are in members except member-0",
-						"expected SMMR to show 55 member namespace, but that wasn't the case"))
+				verifyMembersInSMMR(t, meshNamespace, membersList, true)
+				verifyMembersInSMMR(t, meshNamespace, notInMembersList, false)
 			})
 
 			t.LogStep("Reset member selector back to default")
 			oc.ApplyString(t, meshNamespace, defaultSMMR)
 			oc.WaitSMMRReady(t, meshNamespace)
 
-			t.LogStep("Check whether the SMMR shows all 50 namespaces as members")
+			t.LogStep("Check whether the SMMR shows all 5 namespaces as members")
+			membersList = []string{"member-0", "member-1", "member-2", "member-3", "member-4"}
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				shell.Execute(t,
-					fmt.Sprintf("oc -n %s get smmr default", meshNamespace),
-					require.OutputContains("50/50",
-						"all 50 namespaces are members",
-						"expected SMMR to show 50 member namespaces, but that wasn't the case"))
+				verifyMembersInSMMR(t, meshNamespace, membersList, true)
 			})
 		})
 
@@ -239,6 +239,34 @@ func TestClusterWideMode(t *testing.T) {
 					"The smcp does nos have ClusterWide enable"))
 		})
 	})
+}
+
+// verifyMembersInSMMR verifies whether the SMMR has or not have the members provided in the members list
+func verifyMembersInSMMR(t test.TestHelper, meshNamespace string, membersList []string, shouldExist bool) {
+	smcpYaml := oc.GetYaml(t, meshNamespace, "smmr", "default")
+	var smmr ServiceMeshMemberRoll
+	err := yaml.Unmarshal([]byte(smcpYaml), &smmr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	members := smmr.Status.Members
+	for _, member := range membersList {
+		found := false
+		for _, m := range members {
+			if member == m {
+				found = true
+				break
+			}
+		}
+		if found != shouldExist {
+			if shouldExist {
+				t.Fatalf("The member '%s' is missing from the members list.\n", member)
+			} else {
+				t.Fatalf("The member '%s' exists in the members list.\n", member)
+			}
+		}
+	}
 }
 
 func deleteMemberNamespaces(t test.TestHelper, count int) {
