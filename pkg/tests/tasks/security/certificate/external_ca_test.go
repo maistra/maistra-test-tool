@@ -42,7 +42,7 @@ func TestExternalCertificate(t *testing.T) {
 		meshValues := map[string]interface{}{
 			"Name":    smcpName,
 			"Version": env.GetSMCPVersion().String(),
-			"ROSA":    ROSA,
+			"Rosa":    ROSA,
 		}
 
 		t.LogStep("Uninstall existing SMCP")
@@ -217,13 +217,12 @@ spec:
         type: PrivateKey
         privateKey:
           rootCADir: /etc/cacerts
-  tracing:
-    type: None
-  {{ if .ROSA }} 
-  security:
+    {{ if .Rosa }}
     identity:
       type: ThirdParty
-  {{ end }}
+    {{ end }}
+  tracing:
+    type: None
 ---
 apiVersion: maistra.io/v1
 kind: ServiceMeshMemberRoll
