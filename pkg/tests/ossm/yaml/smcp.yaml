@@ -20,6 +20,10 @@ spec:
       enabled: true
     prometheus:
       enabled: true
+  proxy:
+    accessLogging:
+      file:
+        name: /dev/stdout
   telemetry:
     type: Istiod
   {{ if .Rosa }} 

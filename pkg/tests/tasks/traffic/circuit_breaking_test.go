@@ -51,10 +51,11 @@ func TestCircuitBreaking(t *testing.T) {
 
 		t.LogStep("Verify connection with curl: expect 200 OK")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
+			httpbinIP := oc.GetServiceClusterIP(t, ns, "httpbin")
 			oc.Exec(t,
 				pod.MatchingSelector("app=fortio", ns),
 				"fortio",
-				"/usr/bin/fortio curl -quiet http://httpbin:8000/get",
+				fmt.Sprintf(`/usr/bin/fortio curl -quiet -resolve %s http://httpbin:8000/get`, httpbinIP),
 				assert.OutputContains("200",
 					"Got expected 200 OK response from httpbin",
 					"Expected 200 OK from httpbin, but got an unexpected response"))
@@ -65,10 +66,11 @@ func TestCircuitBreaking(t *testing.T) {
 		t.LogStep("Trip the circuit breaker by sending 50 requests to httpbin with 2 connections")
 		t.Log("We expect request with response code 503")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
+			httpbinIP := oc.GetServiceClusterIP(t, ns, "httpbin")
 			msg := oc.Exec(t,
 				pod.MatchingSelector("app=fortio", ns),
 				"fortio",
-				fmt.Sprintf("/usr/bin/fortio load -c %d -qps 0 -n %d -loglevel Warning http://httpbin:8000/get", connection, reqCount))
+				fmt.Sprintf("/usr/bin/fortio load -c %d -qps 0 -n %d -loglevel Warning -resolve %s http://httpbin:8000/get", connection, reqCount, httpbinIP))
 
 			c200 := getNumberOfResponses(t, msg, `Code 200.*`)
 			c503 := getNumberOfResponses(t, msg, `Code 503.*`)
