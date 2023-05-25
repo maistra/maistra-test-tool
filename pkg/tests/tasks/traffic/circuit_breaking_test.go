@@ -51,7 +51,7 @@ func TestCircuitBreaking(t *testing.T) {
 
 		t.LogStep("Verify connection with curl: expect 200 OK")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
-			httpbinIP := oc.GetPodIP(t, pod.MatchingSelector("app=httpbin", ns))
+			httpbinIP := oc.GetServiceClusterIP(t, ns, "httpbin")
 			oc.Exec(t,
 				pod.MatchingSelector("app=fortio", ns),
 				"fortio",
@@ -66,7 +66,7 @@ func TestCircuitBreaking(t *testing.T) {
 		t.LogStep("Trip the circuit breaker by sending 50 requests to httpbin with 2 connections")
 		t.Log("We expect request with response code 503")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
-			httpbinIP := oc.GetPodIP(t, pod.MatchingSelector("app=httpbin", ns))
+			httpbinIP := oc.GetServiceClusterIP(t, ns, "httpbin")
 			msg := oc.Exec(t,
 				pod.MatchingSelector("app=fortio", ns),
 				"fortio",

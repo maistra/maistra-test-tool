@@ -126,6 +126,11 @@ func GetPodIP(t test.TestHelper, podLocator PodLocatorFunc) string {
 	return DefaultOC.GetPodIP(t, podLocator)
 }
 
+func GetServiceClusterIP(t test.TestHelper, ns, serviceName string) string {
+	t.T().Helper()
+	return DefaultOC.GetServiceClusterIP(t, ns, serviceName)
+}
+
 func Logs(t test.TestHelper, podLocator PodLocatorFunc, container string, checks ...common.CheckFunc) {
 	t.T().Helper()
 	DefaultOC.Logs(t, podLocator, container, checks...)
