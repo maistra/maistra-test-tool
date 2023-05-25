@@ -24,6 +24,16 @@ spec:
     accessLogging:
       file:
         name: /dev/stdout
+  {{ if .ClusterWideProxy }}
+  runtime:
+    components:
+      pilot:
+        container:
+          env:
+            HTTP_PROXY: {{ .HttpProxy }}
+            HTTPS_PROXY: {{ .HttpsProxy }}
+            NO_PROXY: {{ .NoProxy }}
+  {{ end }}
   telemetry:
     type: Istiod
   {{ if .Rosa }} 
