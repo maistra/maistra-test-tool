@@ -11,6 +11,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	namespaces "github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -39,6 +40,19 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 					"Expected to find no permission error, but got some error",
 				),
 			)
+		}
+
+		checkConfigurationReloadingTriggered := func(t test.TestHelper, start time.Time) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				oc.LogsSince(t,
+					start,
+					prometheusPodSelector, "config-reloader",
+					assert.OutputContains("Reload triggered",
+						"Triggered configuration reloading",
+						"Expected to trigger configuration reloading, but did not",
+					),
+				)
+			})
 		}
 
 		DeployControlPlane(t)
@@ -116,17 +130,6 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("when there is no SMMR").Run(func(t test.TestHelper) {
-			t.Cleanup(func() {
-				restoreDefaultSMMR(t)
-			})
-
-			t.LogStepf("Delete default SMMR %s", smmr)
-			oc.DeleteFromString(t, meshNamespace, smmr)
-
-			checkPermissionErorr(t)
-		})
-
 		t.NewSubTest("when the default SMMR with no member").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
 				restoreDefaultSMMR(t)
@@ -136,17 +139,7 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			t.LogStepf("Update default SMMR with no member")
 			updateDefaultSMMRWithNamespace(t)
 
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				oc.LogsSince(t,
-					start,
-					prometheusPodSelector, "config-reloader",
-					assert.OutputContains("Reload triggered",
-						"Triggered configuration reloading",
-						"Expected to trigger configuration reloading, but did not",
-					),
-				)
-			})
-
+			checkConfigurationReloadingTriggered(t, start)
 			checkPermissionErorr(t)
 		})
 
@@ -164,6 +157,14 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			t.LogStepf("Update SMMR %s", s)
 			oc.ApplyString(t, meshNamespace, s)
 
+			shell.Execute(t,
+				getPrometheusConfigCmd,
+				require.OutputDoesNotContain(
+					ns,
+					fmt.Sprintf("Expected to not find %s in the Prometheus config", ns),
+					fmt.Sprintf("Found unexpected %s in the Prometheus config", ns),
+				),
+			)
 			checkPermissionErorr(t)
 		})
 
@@ -196,6 +197,34 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 					),
 				)
 			})
+		})
+
+		t.NewSubTest("when removing SMMR").Run(func(t test.TestHelper) {
+			t.Cleanup(func() {
+				restoreDefaultSMMR(t)
+			})
+
+			checks := []common.CheckFunc{checkForNamespace(meshNamespace)}
+			for _, ns := range []string{namespaces.Bar, namespaces.Bookinfo, namespaces.Foo, namespaces.Legacy} {
+				checks = append(checks,
+					require.OutputDoesNotContain(
+						ns,
+						fmt.Sprintf("Expected to not find %s in the Prometheus config", ns),
+						fmt.Sprintf("Found unexpected %s in the Prometheus config", ns),
+					),
+				)
+			}
+
+			start := time.Now()
+			t.LogStepf("Delete default SMMR \n%s", smmr)
+			oc.DeleteFromString(t, meshNamespace, smmr)
+
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				shell.Execute(t, getPrometheusConfigCmd, checks...)
+			})
+
+			checkConfigurationReloadingTriggered(t, start)
+			checkPermissionErorr(t)
 		})
 
 		t.NewSubTest("[TODO] test under cluster scoped").Run(func(t test.TestHelper) {
