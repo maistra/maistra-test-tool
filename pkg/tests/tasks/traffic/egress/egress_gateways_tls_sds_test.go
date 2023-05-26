@@ -78,7 +78,7 @@ func TestTLSOriginationSDS(t *testing.T) {
 
 			t.LogStep("Deploy nginx mTLS server and create secrets in the mesh namespace")
 
-			app.InstallAndWaitReady(t, app.NginxWithMTLS(nsNginx))
+			app.InstallAndWaitReady(t, app.NginxExternalMTLS(nsNginx))
 
 			oc.CreateGenericSecretFromFiles(t, meshNamespace, "client-credential",
 				"tls.key="+nginxClientCertKey,
