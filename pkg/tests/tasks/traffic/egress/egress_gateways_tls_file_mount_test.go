@@ -284,4 +284,18 @@ spec:
       caCertificates: /etc/istio/nginx-ca-certs/example.com.crt
       sni: my-nginx.mesh-external.svc.cluster.local
 `
+
+	originateSdsMtlsToExternalNginx = `
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: originate-mtls-for-nginx
+spec:
+  host: my-nginx.mesh-external.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: MUTUAL
+      credentialName: client-credential # this must match the secret created earlier without the "-cacert" suffix
+      sni: my-nginx.mesh-external.svc.cluster.local
+`
 )
