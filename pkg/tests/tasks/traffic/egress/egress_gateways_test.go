@@ -21,124 +21,85 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestEgressGateways(t *testing.T) {
 	NewTest(t).Id("T13").Groups(Full, InterOp).Run(func(t TestHelper) {
-		ns := "bookinfo"
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns)
+			oc.RecreateNamespace(t, ns.Bookinfo)
 		})
 
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install sleep pod")
-		app.InstallAndWaitReady(t, app.Sleep(ns))
+		sleep := app.Sleep(ns.Bookinfo)
+		app.InstallAndWaitReady(t, sleep)
 
 		t.NewSubTest("HTTP").Run(func(t TestHelper) {
-			t.LogStep("Create a ServiceEntry to external istio.io")
-			oc.ApplyString(t, ns, ExServiceEntry)
+			t.LogStepf("Install external httpbin")
+			httpbin := app.HttpbinNoSidecar(ns.MeshExternal)
+			app.InstallAndWaitReady(t, httpbin)
+
+			t.LogStep("Apply a ServiceEntry for external httpbin")
+			httpbinValues := map[string]string{
+				"Name":      httpbin.Name(),
+				"Namespace": httpbin.Namespace(),
+			}
+			oc.ApplyTemplate(t, ns.Bookinfo, httpbinExt, httpbinValues)
 			t.Cleanup(func() {
-				oc.DeleteFromString(t, ns, ExServiceEntry)
+				oc.DeleteFromTemplate(t, ns.Bookinfo, httpbinExt, httpbinValues)
 			})
 
-			assertRequestSuccess := func(url string) {
-				t.LogStepf("Confirm that request to %s is successful", url)
-				execInSleepPod(t, ns,
-					fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(t), url),
-					assert.OutputContains("200",
-						fmt.Sprintf("Got %s response", url),
-						fmt.Sprintf("Unexpected response from %s", url)))
-			}
-			assertRequestFailure := func(url string) {
-				t.LogStepf("Confirm that request to %s fails", url)
-				execInSleepPod(t, ns,
-					fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(t), url),
-					assert.OutputContains("503",
-						fmt.Sprintf("Got %s failure", url),
-						fmt.Sprintf("Unexpected response from %s", url)))
-			}
-
-			assertRequestSuccess("http://istio.io")
-
-			t.LogStep("Create a Gateway to external istio.io")
-			oc.ApplyTemplate(t, ns, ExGatewayTemplate, smcp)
+			t.LogStep("Apply a gateway and virtual service for external httpbin")
+			oc.ApplyTemplate(t, ns.Bookinfo, externalHttpbinHttpGateway, smcp)
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns, ExGatewayTemplate, smcp)
+				oc.DeleteFromTemplate(t, ns.Bookinfo, externalHttpbinHttpGateway, smcp)
 			})
 
-			t.LogStep("Scale istio-egressgateway to zero to confirm that requests to istio.io are routed through it")
-			oc.ScaleDeploymentAndWait(t, meshNamespace, "istio-egressgateway", 0)
-			assertRequestFailure("http://istio.io")
-
-			t.LogStep("Scale istio-egressgateway back to one to confirm that requests to istio.io are successful")
-			oc.ScaleDeploymentAndWait(t, meshNamespace, "istio-egressgateway", 1)
-			assertRequestSuccess("http://istio.io")
+			assertRequestSuccess(t, sleep, "http://httpbin.mesh-external:8000/headers")
 		})
 
 		t.NewSubTest("HTTPS").Run(func(t TestHelper) {
-			t.LogStep("Create a TLS ServiceEntry to external istio.io")
-			oc.ApplyString(t, ns, ExServiceEntryTLS)
+			t.LogStep("Install external nginx")
+			app.InstallAndWaitReady(t, app.NginxExternalTLS(ns.MeshExternal))
+
+			t.LogStep("Create ServiceEntry for external nginx, port 80 and 443")
+			oc.ApplyString(t, meshNamespace, meshExternalNginx)
 			t.Cleanup(func() {
-				oc.DeleteFromString(t, ns, ExServiceEntryTLS)
+				oc.DeleteFromString(t, meshNamespace, meshExternalNginx)
 			})
 
-			assertRequestSuccess := func(url string) {
-				t.LogStepf("Confirm that request to %s is successful", url)
-				execInSleepPod(t, ns,
-					`curl -sSL -o /dev/null -w "%{http_code}" `+url,
-					assert.OutputContains("200",
-						fmt.Sprintf("Got %s response", url),
-						fmt.Sprintf("Unexpected response from %s", url)))
-			}
-
-			assertRequestFailure := func(url string) {
-				t.LogStepf("Confirm that request to %s fails", url)
-				execInSleepPod(t, ns,
-					fmt.Sprintf(`curl -sSL -o /dev/null -w "%%{http_code}" %s || echo "connection failed"`, url),
-					assert.OutputContains("connection failed",
-						fmt.Sprintf("Got %s failure", url),
-						fmt.Sprintf("Unexpected response from %s", url)))
-			}
-
-			assertRequestSuccess("https://istio.io")
-
-			t.LogStep("Create a https Gateway to external istio.io")
-			oc.ApplyTemplate(t, ns, ExGatewayHTTPSTemplate, smcp)
+			t.LogStep("Create a TLS ServiceEntry to external nginx")
+			oc.ApplyString(t, ns.Bookinfo, meshExternalNginx)
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns, ExGatewayHTTPSTemplate, smcp)
+				oc.DeleteFromString(t, ns.Bookinfo, meshExternalNginx)
 			})
 
-			t.LogStep("Scale istio-egressgateway to zero to confirm that requests to istio.io are routed through it")
-			oc.ScaleDeploymentAndWait(t, meshNamespace, "istio-egressgateway", 0)
-			assertRequestFailure("https://istio.io")
+			t.LogStep("Create a https Gateway to external nginx")
+			oc.ApplyTemplate(t, ns.Bookinfo, externalNginxTLSPassthroughGateway, smcp)
+			t.Cleanup(func() {
+				oc.DeleteFromTemplate(t, ns.Bookinfo, externalNginxTLSPassthroughGateway, smcp)
+			})
 
-			t.LogStep("Scale istio-egressgateway back to one to confirm that requests to istio.io are successful")
-			oc.ScaleDeploymentAndWait(t, meshNamespace, "istio-egressgateway", 1)
-			assertRequestSuccess("https://istio.io")
+			t.Log("Send HTTPS request to external nginx")
+			assertInsecureRequestSuccess(t, sleep, "https://my-nginx.mesh-external.svc.cluster.local")
 		})
 	})
 }
 
-const (
-	ExServiceEntryTLS = `
-apiVersion: networking.istio.io/v1alpha3
-kind: ServiceEntry
-metadata:
-  name: istio-io
-spec:
-  hosts:
-  - istio.io
-  ports:
-  - number: 443
-    name: tls
-    protocol: TLS
-  resolution: DNS
-`
+func assertInsecureRequestSuccess(t TestHelper, client app.App, url string) {
+	url = fmt.Sprintf(`curl -sSL --insecure -o /dev/null -w "%%{http_code}" %s 2>/dev/null || echo %s`, url, curlFailedMessage)
+	execInSleepPod(t, client.Namespace(), url,
+		assert.OutputContains("200",
+			fmt.Sprintf("Got expected 200 OK from %s", url),
+			fmt.Sprintf("Expect 200 OK from %s, but got a different HTTP code", url)))
+}
 
-	ExGatewayTemplate = `
+const (
+	externalHttpbinHttpGateway = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -152,52 +113,46 @@ spec:
       name: http
       protocol: HTTP
     hosts:
-    - istio.io
----
-apiVersion: networking.istio.io/v1alpha3
-kind: DestinationRule
-metadata:
-  name: egressgateway-for-istio-io
-spec:
-  host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
-  subsets:
-  - name: istio-io
+    - httpbin.mesh-external.svc.cluster.local
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: direct-istio-io-through-egress-gateway
+  name: egress-gateway-route-egress-traffic-to-external-httpbin
 spec:
   hosts:
-  - istio.io
+  - httpbin.mesh-external.svc.cluster.local
   gateways:
   - istio-egressgateway
+  http:
+  - match:
+    - port: 80
+    route:
+    - destination:
+        host: httpbin.mesh-external.svc.cluster.local
+        port:
+          number: 80
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: mesh-route-egress-requests-to-external-httpbin-through-egress-gateway
+spec:
+  hosts:
+  - httpbin.mesh-external.svc.cluster.local
+  gateways:
   - mesh
   http:
   - match:
-    - gateways:
-      - mesh
-      port: 80
+    - port: 80
     route:
     - destination:
         host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
-        subset: istio-io
         port:
           number: 80
-      weight: 100
-  - match:
-    - gateways:
-      - istio-egressgateway
-      port: 80
-    route:
-    - destination:
-        host: istio.io
-        port:
-          number: 80
-      weight: 100
 `
 
-	ExGatewayHTTPSTemplate = `
+	externalNginxTLSPassthroughGateway = `
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -211,53 +166,49 @@ spec:
       name: tls
       protocol: TLS
     hosts:
-    - istio.io
+    - my-nginx.mesh-external.svc.cluster.local
     tls:
       mode: PASSTHROUGH
 ---
 apiVersion: networking.istio.io/v1alpha3
-kind: DestinationRule
+kind: VirtualService
 metadata:
-  name: egressgateway-for-istio-io
+  name: egress-gateway-route-egress-traffic-to-external-nginx
 spec:
-  host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
-  subsets:
-  - name: istio-io
+  hosts:
+  - my-nginx.mesh-external.svc.cluster.local
+  gateways:
+  - istio-egressgateway
+  tls:
+  - match:
+    - port: 443
+      sniHosts:
+      - my-nginx.mesh-external.svc.cluster.local
+    route:
+    - destination:
+        host: my-nginx.mesh-external.svc.cluster.local
+        port:
+          number: 443
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: direct-istio-io-through-egress-gateway
+  name: mesh-route-egress-traffic-to-external-nginx-through-egress-gateway
 spec:
   hosts:
-  - istio.io
+  - my-nginx.mesh-external.svc.cluster.local
   gateways:
   - mesh
-  - istio-egressgateway
   tls:
   - match:
-    - gateways:
-      - mesh
-      port: 443
+    - port: 443
       sniHosts:
-      - istio.io
+      - my-nginx.mesh-external.svc.cluster.local
     route:
     - destination:
         host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
-        subset: istio-io
         port:
           number: 443
-  - match:
-    - gateways:
-      - istio-egressgateway
-      port: 443
-      sniHosts:
-      - istio.io
-    route:
-    - destination:
-        host: istio.io
-        port:
-          number: 443
-      weight: 100
+
 `
 )
