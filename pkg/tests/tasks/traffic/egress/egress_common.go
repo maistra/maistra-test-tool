@@ -15,12 +15,3 @@ func execInSleepPod(t test.TestHelper, ns string, command string, checks ...comm
 		oc.Exec(t, pod.MatchingSelector("app=sleep", ns), "sleep", command, checks...)
 	})
 }
-
-func getCurlProxyParams(t test.TestHelper) string {
-	proxy := oc.GetProxy(t)
-	curlParams := ""
-	if proxy.HTTPProxy != "" {
-		curlParams = "-x " + proxy.HTTPProxy
-	}
-	return curlParams
-}
