@@ -74,7 +74,7 @@ func TestSMCPInstall(t *testing.T) {
 		})
 
 		toVersion := env.GetSMCPVersion()
-		fromVersion := getPreviousVersion(t, toVersion)
+		fromVersion := getPreviousVersion(toVersion)
 
 		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
 			t.Logf("This test checks whether SMCP becomes ready after it's upgraded from %s to %s", fromVersion, toVersion)
@@ -113,12 +113,12 @@ func assertUninstallDeletesAllResources(t test.TestHelper, ver version.Version) 
 	})
 }
 
-func getPreviousVersion(t test.TestHelper, ver version.Version) version.Version {
+func getPreviousVersion(ver version.Version) version.Version {
 	var prevVersion *version.Version
 	for _, v := range VERSIONS {
 		if *v == ver {
 			if prevVersion == nil {
-				t.Logf("version %s is the first supported version", ver)
+				panic(fmt.Sprintf("version %s is the first supported version", ver))
 			}
 			return *prevVersion
 		}
