@@ -148,7 +148,7 @@ func TestSmoke(t *testing.T) {
 }
 
 func validateStartUpProxyTime(t TestHelper, ratingYaml string) {
-	proxyStartTime, proxyLastTransitionTime := ExtractProxyTimes(t, ratingYaml)
+	proxyStartTime, proxyReadyTime := ExtractProxyTimes(t, ratingYaml)
 	startupTime := proxyLastTransitionTime.Sub(proxyStartTime)
 	t.Logf("Proxy startup time: %s", startupTime.String())
 	if startupTime > 10*time.Second {
