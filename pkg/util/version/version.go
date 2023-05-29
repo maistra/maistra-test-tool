@@ -6,34 +6,6 @@ import (
 	"strings"
 )
 
-var (
-	SMCP_2_0 = ParseVersion("v2.0")
-	SMCP_2_1 = ParseVersion("v2.1")
-	SMCP_2_2 = ParseVersion("v2.2")
-	SMCP_2_3 = ParseVersion("v2.3")
-	SMCP_2_4 = ParseVersion("v2.4")
-	OCP_4_9  = ParseVersion("4.9.0")
-	OCP_4_10 = ParseVersion("4.10.0")
-	OCP_4_11 = ParseVersion("4.11.0")
-	OCP_4_12 = ParseVersion("4.12.0")
-	OCP_4_13 = ParseVersion("4.13.0")
-	OCP_4_14 = ParseVersion("4.14.0")
-
-	VERSIONS = []*Version{
-		&SMCP_2_0,
-		&SMCP_2_1,
-		&SMCP_2_2,
-		&SMCP_2_3,
-		&SMCP_2_4,
-		&OCP_4_9,
-		&OCP_4_10,
-		&OCP_4_11,
-		&OCP_4_12,
-		&OCP_4_13,
-		&OCP_4_14,
-	}
-)
-
 type Version struct {
 	Major int
 	Minor int
@@ -92,27 +64,4 @@ func (this Version) LessThanOrEqual(that Version) bool {
 
 func (this Version) String() string {
 	return fmt.Sprintf("v%d.%d", this.Major, this.Minor)
-}
-
-func (this Version) GetPreviousVersion() Version {
-	var prevVersion *Version
-	for _, v := range VERSIONS {
-		if *v == this {
-			if prevVersion == nil {
-				panic(fmt.Sprintf("version %s is the first supported version", this))
-			}
-			return *prevVersion
-		}
-		prevVersion = v
-	}
-	panic(fmt.Sprintf("version %s not found in VERSIONS", this))
-}
-
-func (this Version) IsSupported() bool {
-	for _, v := range VERSIONS {
-		if *v == this {
-			return true
-		}
-	}
-	return false
 }
