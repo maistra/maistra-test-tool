@@ -95,7 +95,7 @@ func TestIOR(t *testing.T) {
 			checkSimpleGateway(t)
 		})
 
-		t.NewSubTest("check routes that are not deleted during v2.3 to v2.4 upgrade").Run(func(t test.TestHelper) {
+		t.NewSubTest("check routes aren't deleted during v2.4 to v2.5 upgrade").Run(func(t test.TestHelper) {
 			if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
 				t.Skip("This test only applies for v2.3 to v2.4 upgrade")
 			}
