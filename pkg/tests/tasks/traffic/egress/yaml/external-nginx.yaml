@@ -1,0 +1,16 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: nginx-ext
+spec:
+  hosts:
+  - my-nginx.mesh-external.svc.cluster.local
+  location: MESH_EXTERNAL
+  ports:
+  - number: 80
+    name: http-port
+    protocol: HTTP
+  - number: 443
+    name: https-port
+    protocol: HTTPS
+  resolution: DNS

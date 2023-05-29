@@ -7,31 +7,22 @@ spec:
     grafana:
       enabled: false
     kiali:
-      enabled: false
+      enabled: true
+      name: kiali-user-workload-monitoring
     prometheus:
       enabled: false
+  extensionProviders:
+  - name: prometheus
+    prometheus: {}
   gateways:
     egress:
       enabled: false
     openshiftRoute:
       enabled: false
-  general:
-    logging:
-      componentLevels:
-        default: info
-  runtime:
-    components:
-      pilot:
-        container:
-          env:
-            AUTO_RELOAD_PLUGIN_CERTS: "true"
   security:
     dataPlane:
       mtls: true
-  {{ if .Rosa }} 
-    identity:
-      type: ThirdParty
-  {{ end }}
+    manageNetworkPolicy: false
   tracing:
     type: None
   version: {{ .Version }}

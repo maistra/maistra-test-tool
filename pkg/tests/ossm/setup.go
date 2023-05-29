@@ -16,6 +16,11 @@ type SMCP struct {
 	Namespace string
 	Version   version.Version
 	Rosa      bool
+
+	ClusterWideProxy bool
+	HttpProxy        string
+	HttpsProxy       string
+	NoProxy          string
 }
 
 // WithName returns a copy of this SMCP with the name changed to the specified name
@@ -81,7 +86,15 @@ func BasicSetup(t test.TestHelper) {
 func DeployControlPlane(t test.TestHelper) {
 	t.T().Helper()
 	t.LogStep("Apply default SMCP and SMMR manifests")
-	InstallSMCP(t, meshNamespace)
+	smcpValues := DefaultSMCP()
+	clusterWideProxy := oc.GetProxy(t)
+	if clusterWideProxy != nil {
+		smcpValues.ClusterWideProxy = true
+		smcpValues.HttpProxy = clusterWideProxy.HTTPProxy
+		smcpValues.HttpsProxy = clusterWideProxy.HTTPSProxy
+		smcpValues.NoProxy = clusterWideProxy.NoProxy
+	}
+	InstallSMCPCustom(t, meshNamespace, smcpValues)
 	oc.ApplyString(t, meshNamespace, smmr)
 	oc.WaitSMCPReady(t, meshNamespace, DefaultSMCP().Name)
 	oc.WaitSMMRReady(t, meshNamespace)

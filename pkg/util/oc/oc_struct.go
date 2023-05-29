@@ -437,9 +437,9 @@ func (o OC) GetJson(t test.TestHelper, ns, kind, name string, checks ...common.C
 }
 
 // GetProxy returns the Proxy object from the cluster
-func (o OC) GetProxy(t test.TestHelper) Proxy {
+func (o OC) GetProxy(t test.TestHelper) *Proxy {
 	type ProxyResource struct {
-		Status Proxy `json:"status"`
+		Status *Proxy `json:"status"`
 	}
 
 	proxyResource := ProxyResource{}
