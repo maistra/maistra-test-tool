@@ -61,17 +61,17 @@ func TestTLSOrigination(t *testing.T) {
 			})
 
 			t.LogStep("Create ServiceEntry for external nginx, port 80 and 443")
-			oc.ApplyString(t, meshNamespace, meshExternalNginx)
+			oc.ApplyString(t, meshNamespace, nginxServiceEntry)
 			t.Cleanup(func() {
-				oc.DeleteFromString(t, meshNamespace, meshExternalNginx)
+				oc.DeleteFromString(t, meshNamespace, nginxServiceEntry)
 			})
 
 			t.LogStep("Create a Gateway, DestinationRule, and VirtualService to route requests to external nginx through the egress gateway")
-			oc.ApplyTemplate(t, ns.Bookinfo, nginxGatewayTLSTemplate, smcp)
-			oc.ApplyString(t, meshNamespace, originateTLSToExternalNginx)
+			oc.ApplyTemplate(t, ns.Bookinfo, nginxTLSIstioMutualGateway, smcp)
+			oc.ApplyString(t, meshNamespace, originateTLSToNginx)
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns.Bookinfo, nginxGatewayTLSTemplate, smcp)
-				oc.DeleteFromString(t, meshNamespace, originateTLSToExternalNginx)
+				oc.DeleteFromTemplate(t, ns.Bookinfo, nginxTLSIstioMutualGateway, smcp)
+				oc.DeleteFromString(t, meshNamespace, originateTLSToNginx)
 			})
 
 			t.LogStep("Verify that request to external nginx is routed through the egress gateway (response 200 indicates that the TLS origination is done by the egress gateway)")
@@ -88,8 +88,8 @@ func TestTLSOrigination(t *testing.T) {
 			t.Cleanup(func() {
 				app.Uninstall(t, app.NginxExternalMTLS(ns.MeshExternal))
 				oc.DeleteSecret(t, meshNamespace, "nginx-client-certs", "nginx-ca-certs")
-				oc.DeleteFromTemplate(t, ns.Bookinfo, nginxGatewayTLSTemplate, smcp)
-				oc.DeleteFromString(t, meshNamespace, meshExternalNginx, originateMTLSToExternalNginx)
+				oc.DeleteFromTemplate(t, ns.Bookinfo, nginxTLSIstioMutualGateway, smcp)
+				oc.DeleteFromString(t, meshNamespace, nginxServiceEntry, originateMTLSToNginx)
 				// revert patch to istio-egressgateway
 				oc.TouchSMCP(t, meshNamespace, smcp.Name)
 				// TODO: this is a potential bug; investigate why the following is necessary
@@ -109,8 +109,8 @@ func TestTLSOrigination(t *testing.T) {
 			oc.Patch(t, meshNamespace, "deploy", "istio-egressgateway", "json", gatewayPatchAdd)
 
 			t.LogStep("Configure mTLS origination for egress traffic")
-			oc.ApplyTemplate(t, ns.Bookinfo, nginxGatewayTLSTemplate, smcp)
-			oc.ApplyString(t, meshNamespace, meshExternalNginx, originateMTLSToExternalNginx)
+			oc.ApplyTemplate(t, ns.Bookinfo, nginxTLSIstioMutualGateway, smcp)
+			oc.ApplyString(t, meshNamespace, nginxServiceEntry, originateMTLSToNginx)
 
 			t.LogStep("Wait for egress gateway and nginx to be ready")
 			oc.WaitDeploymentRolloutComplete(t, meshNamespace, "istio-egressgateway")
@@ -170,132 +170,4 @@ var (
         }
     }
 ]`
-
-	meshExternalNginx = `
-apiVersion: networking.istio.io/v1alpha3
-kind: ServiceEntry
-metadata:
-  name: nginx-ext
-spec:
-  hosts:
-  - my-nginx.mesh-external.svc.cluster.local
-  location: MESH_EXTERNAL
-  ports:
-  - number: 80
-    name: http-port
-    protocol: HTTP
-  - number: 443
-    name: https-port
-    protocol: HTTPS
-  resolution: DNS
-`
-
-	nginxGatewayTLSTemplate = `
-apiVersion: networking.istio.io/v1alpha3
-kind: Gateway
-metadata:
-  name: istio-egressgateway
-spec:
-  selector:
-    istio: egressgateway
-  servers:
-  - port:
-      number: 80
-      name: https-port-for-tls-origination
-      protocol: HTTPS
-    hosts:
-    - my-nginx.mesh-external.svc.cluster.local
-    tls:
-      mode: ISTIO_MUTUAL
----
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: egress-gateway-route-egress-traffic-to-external-nginx
-spec:
-  hosts:
-  - my-nginx.mesh-external.svc.cluster.local
-  gateways:
-  - istio-egressgateway
-  http:
-  - match:
-    - port: 80
-    route:
-    - destination:
-        host: my-nginx.mesh-external.svc.cluster.local
-        port:
-          number: 443
----
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: mesh-route-egress-traffic-to-external-nginx-through-egress-gateway
-spec:
-  hosts:
-  - my-nginx.mesh-external.svc.cluster.local
-  gateways:
-  - mesh
-  http:
-  - match:
-    - port: 80
-    route:
-    - destination:
-        host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
-        port:
-          number: 80
----
-apiVersion: networking.istio.io/v1alpha3
-kind: DestinationRule
-metadata:
-  name: originate-mtls-to-egress-gateway
-spec:
-  host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
-  trafficPolicy:
-    tls:
-      mode: ISTIO_MUTUAL
-      sni: my-nginx.mesh-external.svc.cluster.local
-`
-
-	originateTLSToExternalNginx = `
-apiVersion: networking.istio.io/v1alpha3
-kind: DestinationRule
-metadata:
-  name: originate-mtls-for-nginx
-spec:
-  host: my-nginx.mesh-external.svc.cluster.local
-  trafficPolicy:
-    tls:
-      mode: SIMPLE
-      sni: my-nginx.mesh-external.svc.cluster.local
-`
-
-	originateMTLSToExternalNginx = `
-apiVersion: networking.istio.io/v1alpha3
-kind: DestinationRule
-metadata:
-  name: originate-mtls-for-nginx
-spec:
-  host: my-nginx.mesh-external.svc.cluster.local
-  trafficPolicy:
-    tls:
-      mode: MUTUAL
-      clientCertificate: /etc/istio/nginx-client-certs/tls.crt
-      privateKey: /etc/istio/nginx-client-certs/tls.key
-      caCertificates: /etc/istio/nginx-ca-certs/example.com.crt
-      sni: my-nginx.mesh-external.svc.cluster.local
-`
-
-	originateSdsMtlsToExternalNginx = `
-apiVersion: networking.istio.io/v1alpha3
-kind: DestinationRule
-metadata:
-  name: originate-mtls-for-nginx
-spec:
-  host: my-nginx.mesh-external.svc.cluster.local
-  trafficPolicy:
-    tls:
-      mode: MUTUAL
-      credentialName: client-credential # this must match the secret created earlier without the "-cacert" suffix
-      sni: my-nginx.mesh-external.svc.cluster.local
-`
 )

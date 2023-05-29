@@ -15,12 +15,10 @@
 package egress
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
-	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -48,15 +46,15 @@ func TestEgressGateways(t *testing.T) {
 				"Name":      httpbin.Name(),
 				"Namespace": httpbin.Namespace(),
 			}
-			oc.ApplyTemplate(t, ns.Bookinfo, httpbinExt, httpbinValues)
+			oc.ApplyTemplate(t, ns.Bookinfo, httpbinServiceEntry, httpbinValues)
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns.Bookinfo, httpbinExt, httpbinValues)
+				oc.DeleteFromTemplate(t, ns.Bookinfo, httpbinServiceEntry, httpbinValues)
 			})
 
 			t.LogStep("Apply a gateway and virtual service for external httpbin")
-			oc.ApplyTemplate(t, ns.Bookinfo, externalHttpbinHttpGateway, smcp)
+			oc.ApplyTemplate(t, ns.Bookinfo, httpbinHttpGateway, smcp)
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns.Bookinfo, externalHttpbinHttpGateway, smcp)
+				oc.DeleteFromTemplate(t, ns.Bookinfo, httpbinHttpGateway, smcp)
 			})
 
 			assertRequestSuccess(t, sleep, "http://httpbin.mesh-external:8000/headers")
@@ -67,21 +65,21 @@ func TestEgressGateways(t *testing.T) {
 			app.InstallAndWaitReady(t, app.NginxExternalTLS(ns.MeshExternal))
 
 			t.LogStep("Create ServiceEntry for external nginx, port 80 and 443")
-			oc.ApplyString(t, meshNamespace, meshExternalNginx)
+			oc.ApplyString(t, meshNamespace, nginxServiceEntry)
 			t.Cleanup(func() {
-				oc.DeleteFromString(t, meshNamespace, meshExternalNginx)
+				oc.DeleteFromString(t, meshNamespace, nginxServiceEntry)
 			})
 
 			t.LogStep("Create a TLS ServiceEntry to external nginx")
-			oc.ApplyString(t, ns.Bookinfo, meshExternalNginx)
+			oc.ApplyString(t, ns.Bookinfo, nginxServiceEntry)
 			t.Cleanup(func() {
-				oc.DeleteFromString(t, ns.Bookinfo, meshExternalNginx)
+				oc.DeleteFromString(t, ns.Bookinfo, nginxServiceEntry)
 			})
 
 			t.LogStep("Create a https Gateway to external nginx")
-			oc.ApplyTemplate(t, ns.Bookinfo, externalNginxTLSPassthroughGateway, smcp)
+			oc.ApplyTemplate(t, ns.Bookinfo, nginxTLSPassthroughGateway, smcp)
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns.Bookinfo, externalNginxTLSPassthroughGateway, smcp)
+				oc.DeleteFromTemplate(t, ns.Bookinfo, nginxTLSPassthroughGateway, smcp)
 			})
 
 			t.Log("Send HTTPS request to external nginx")
@@ -89,126 +87,3 @@ func TestEgressGateways(t *testing.T) {
 		})
 	})
 }
-
-func assertInsecureRequestSuccess(t TestHelper, client app.App, url string) {
-	url = fmt.Sprintf(`curl -sSL --insecure -o /dev/null -w "%%{http_code}" %s 2>/dev/null || echo %s`, url, curlFailedMessage)
-	execInSleepPod(t, client.Namespace(), url,
-		assert.OutputContains("200",
-			fmt.Sprintf("Got expected 200 OK from %s", url),
-			fmt.Sprintf("Expect 200 OK from %s, but got a different HTTP code", url)))
-}
-
-const (
-	externalHttpbinHttpGateway = `
-apiVersion: networking.istio.io/v1alpha3
-kind: Gateway
-metadata:
-  name: istio-egressgateway
-spec:
-  selector:
-    istio: egressgateway
-  servers:
-  - port:
-      number: 80
-      name: http
-      protocol: HTTP
-    hosts:
-    - httpbin.mesh-external.svc.cluster.local
----
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: egress-gateway-route-egress-traffic-to-external-httpbin
-spec:
-  hosts:
-  - httpbin.mesh-external.svc.cluster.local
-  gateways:
-  - istio-egressgateway
-  http:
-  - match:
-    - port: 80
-    route:
-    - destination:
-        host: httpbin.mesh-external.svc.cluster.local
-        port:
-          number: 80
----
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: mesh-route-egress-requests-to-external-httpbin-through-egress-gateway
-spec:
-  hosts:
-  - httpbin.mesh-external.svc.cluster.local
-  gateways:
-  - mesh
-  http:
-  - match:
-    - port: 80
-    route:
-    - destination:
-        host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
-        port:
-          number: 80
-`
-
-	externalNginxTLSPassthroughGateway = `
-apiVersion: networking.istio.io/v1alpha3
-kind: Gateway
-metadata:
-  name: istio-egressgateway
-spec:
-  selector:
-    istio: egressgateway
-  servers:
-  - port:
-      number: 443
-      name: tls
-      protocol: TLS
-    hosts:
-    - my-nginx.mesh-external.svc.cluster.local
-    tls:
-      mode: PASSTHROUGH
----
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: egress-gateway-route-egress-traffic-to-external-nginx
-spec:
-  hosts:
-  - my-nginx.mesh-external.svc.cluster.local
-  gateways:
-  - istio-egressgateway
-  tls:
-  - match:
-    - port: 443
-      sniHosts:
-      - my-nginx.mesh-external.svc.cluster.local
-    route:
-    - destination:
-        host: my-nginx.mesh-external.svc.cluster.local
-        port:
-          number: 443
----
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: mesh-route-egress-traffic-to-external-nginx-through-egress-gateway
-spec:
-  hosts:
-  - my-nginx.mesh-external.svc.cluster.local
-  gateways:
-  - mesh
-  tls:
-  - match:
-    - port: 443
-      sniHosts:
-      - my-nginx.mesh-external.svc.cluster.local
-    route:
-    - destination:
-        host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
-        port:
-          number: 443
-
-`
-)

@@ -30,8 +30,8 @@ func TestTLSOriginationSDS(t *testing.T) {
 			oc.RecreateNamespace(t, ns.Bookinfo)
 			oc.DeleteNamespace(t, ns.MeshExternal)
 			oc.DeleteSecret(t, meshNamespace, "client-credential")
-			oc.DeleteFromTemplate(t, ns.Bookinfo, nginxGatewayTLSTemplate, smcp)
-			oc.DeleteFromString(t, meshNamespace, meshExternalNginx, originateSdsMtlsToExternalNginx)
+			oc.DeleteFromTemplate(t, ns.Bookinfo, nginxTLSIstioMutualGateway, smcp)
+			oc.DeleteFromString(t, meshNamespace, nginxServiceEntry, originateMtlsSdsSToNginx)
 		})
 
 		t.Log("Perform mTLS origination with an egress gateway")
@@ -47,8 +47,8 @@ func TestTLSOriginationSDS(t *testing.T) {
 			"tls.key="+nginxClientCertKey,
 			"tls.crt="+nginxClientCert,
 			"ca.crt="+nginxServerCACert)
-		oc.ApplyTemplate(t, ns.Bookinfo, nginxGatewayTLSTemplate, smcp)
-		oc.ApplyString(t, meshNamespace, meshExternalNginx, originateSdsMtlsToExternalNginx)
+		oc.ApplyTemplate(t, ns.Bookinfo, nginxTLSIstioMutualGateway, smcp)
+		oc.ApplyString(t, meshNamespace, nginxServiceEntry, originateMtlsSdsSToNginx)
 
 		t.Log("Send HTTP request to external nginx to verify mTLS origination")
 		assertRequestSuccess(t, sleep, "http://my-nginx.mesh-external.svc.cluster.local")

@@ -40,37 +40,17 @@ func TestEgressTLSOrigination(t *testing.T) {
 			t.Log("TLS origination for egress traffic")
 			t.Cleanup(func() {
 				app.Uninstall(t, app.NginxExternalTLS(ns.MeshExternal))
-				oc.DeleteFromString(t, ns.Bookinfo, meshExternalNginx)
-				oc.DeleteFromString(t, ns.Bookinfo, routeHTTPRequestsToHTTPSPort)
-				oc.DeleteFromString(t, ns.Bookinfo, originateTLSToExternalNginx)
+				oc.DeleteFromString(t, ns.Bookinfo, nginxServiceEntry)
+				oc.DeleteFromString(t, ns.Bookinfo, meshRouteHTTPRequestsToHTTPSPort)
+				oc.DeleteFromString(t, ns.Bookinfo, originateTLSToNginx)
 			})
 
 			app.InstallAndWaitReady(t, app.NginxExternalTLS(ns.MeshExternal))
-			oc.ApplyString(t, ns.Bookinfo, meshExternalNginx)
-			oc.ApplyString(t, ns.Bookinfo, routeHTTPRequestsToHTTPSPort)
-			oc.ApplyString(t, ns.Bookinfo, originateTLSToExternalNginx)
+			oc.ApplyString(t, ns.Bookinfo, nginxServiceEntry)
+			oc.ApplyString(t, ns.Bookinfo, meshRouteHTTPRequestsToHTTPSPort)
+			oc.ApplyString(t, ns.Bookinfo, originateTLSToNginx)
 
 			assertRequestSuccess(t, sleep, "http://my-nginx.mesh-external.svc.cluster.local")
 		})
 	})
 }
-
-const routeHTTPRequestsToHTTPSPort = `
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: mesh-route-http-requests-to-https-port
-spec:
-  hosts:
-  - my-nginx.mesh-external.svc.cluster.local
-  gateways:
-  - mesh
-  http:
-  - match:
-    - port: 80
-    route:
-    - destination:
-        host: my-nginx.mesh-external.svc.cluster.local
-        port:
-          number: 443
-`

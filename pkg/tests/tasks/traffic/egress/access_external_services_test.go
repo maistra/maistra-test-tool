@@ -90,52 +90,14 @@ func TestAccessExternalServices(t *testing.T) {
 
 		t.NewSubTest("allow request to external httpbin after applying ServiceEntry").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns.Bookinfo, httpbinExt, httpbinValues)
+				oc.DeleteFromTemplate(t, ns.Bookinfo, httpbinServiceEntry, httpbinValues)
 			})
 
 			t.LogStep("Apply a ServiceEntry for external httpbin")
-			oc.ApplyTemplate(t, ns.Bookinfo, httpbinExt, httpbinValues)
+			oc.ApplyTemplate(t, ns.Bookinfo, httpbinServiceEntry, httpbinValues)
 
 			t.LogStep("Send a request to external httpbin")
 			assertRequestSuccess(t, sleep, httpbinHeadersUrl)
 		})
 	})
 }
-
-func assertRequestSuccess(t test.TestHelper, client app.App, url string) {
-	execInSleepPod(t, client.Namespace(), buildGetRequestCmd(url),
-		assert.OutputContains("200",
-			fmt.Sprintf("Got expected 200 OK from %s", url),
-			fmt.Sprintf("Expect 200 OK from %s, but got a different HTTP code", url)))
-}
-
-func assertRequestFailure(t test.TestHelper, client app.App, url string) {
-	execInSleepPod(t, client.Namespace(), buildGetRequestCmd(url),
-		assert.OutputContains(curlFailedMessage,
-			"Got a failure message as expected",
-			"Expect request to failed, but got a response"))
-}
-
-func buildGetRequestCmd(location string) string {
-	return fmt.Sprintf(`curl -sSL -o /dev/null -w "%%{http_code}" %s 2>/dev/null || echo %s`, location, curlFailedMessage)
-}
-
-const (
-	curlFailedMessage = "CURL_FAILED"
-
-	httpbinExt = `
-apiVersion: networking.istio.io/v1alpha3
-kind: ServiceEntry
-metadata:
-  name: httpbin-ext
-spec:
-  hosts:
-  - {{ .Name }}.{{ .Namespace }}
-  ports:
-  - number: 8000
-    name: http
-    protocol: HTTP
-  resolution: DNS
-  location: MESH_EXTERNAL
-`
-)

@@ -15,6 +15,7 @@
 package egress
 
 import (
+	_ "embed"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 )
@@ -28,4 +29,31 @@ var (
 var (
 	meshNamespace = env.GetDefaultMeshNamespace()
 	smcp          = ossm.DefaultSMCP()
+
+	//go:embed yaml/external-httpbin.yaml
+	httpbinServiceEntry string
+
+	//go:embed yaml/external-nginx.yaml
+	nginxServiceEntry string
+
+	//go:embed yaml/external-httpbin-http-gateway.yaml
+	httpbinHttpGateway string
+
+	//go:embed yaml/external-nginx-tls-passthrough-gateway.yaml
+	nginxTLSPassthroughGateway string
+
+	//go:embed yaml/external-nginx-tls-istio-mutual-gateway.yaml
+	nginxTLSIstioMutualGateway string
+
+	//go:embed yaml/mesh-route-http-requests-to-https-port.yaml
+	meshRouteHTTPRequestsToHTTPSPort string
+
+	//go:embed yaml/originate-tls-to-nginx.yaml
+	originateTLSToNginx string
+
+	//go:embed yaml/originate-mtls-to-nginx.yaml
+	originateMTLSToNginx string
+
+	//go:embed yaml/originate-mtls-sds-to-nginx.yaml
+	originateMtlsSdsSToNginx string
 )
