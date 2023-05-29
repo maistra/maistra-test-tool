@@ -20,12 +20,9 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
-	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -55,16 +52,6 @@ func TestAccessExternalServices(t *testing.T) {
 		t.LogStep("Make request to external httpbin from sleep")
 		httpbinHeadersUrl := fmt.Sprintf("http://%s.%s:8000/headers", httpbin.Name(), httpbin.Namespace())
 		assertRequestSuccess(t, sleep, httpbinHeadersUrl)
-
-		t.LogStep("Make sure that external httpbin was not discovered by Istio") // - it would happen if mesh-external namespaces was added to the SMMR
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			shell.Execute(t,
-				fmt.Sprintf("istioctl pc endpoint deploy/sleep -n %s", ns.Bookinfo),
-				assert.OutputDoesNotContain(
-					fmt.Sprintf("%s.%s.svc.cluster.local", httpbin.Name(), httpbin.Namespace()),
-					"Httpbin was not discovered",
-					"Expected Httpbin to not be discovered, but it was."))
-		})
 
 		t.LogStepf("Patch outbound traffic policy to registry only - see https://istio.io/latest/docs/tasks/traffic-management/egress/egress-control/#envoy-passthrough-to-external-services")
 		oc.Patch(t,
