@@ -15,63 +15,42 @@
 package egress
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
-	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestEgressTLSOrigination(t *testing.T) {
 	test.NewTest(t).Id("T12").Groups(test.Full, test.InterOp).Run(func(t test.TestHelper) {
-		ns := "bookinfo"
+		sleep := app.Sleep(ns.Bookinfo)
 		t.Cleanup(func() {
-			app.Uninstall(t, app.Sleep(ns))
+			app.Uninstall(t, sleep)
 		})
 
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install sleep pod")
-		app.InstallAndWaitReady(t, app.Sleep(ns))
-
-		t.NewSubTest("TrafficManagement_egress_configure_access_to_external_service").Run(func(t test.TestHelper) {
-			t.Log("Create a ServiceEntry to external istio.io")
-			oc.ApplyString(t, ns, ExServiceEntry)
-			t.Cleanup(func() {
-				oc.DeleteFromString(t, ns, ExServiceEntry)
-			})
-
-			assertRequestSuccess := func(url string) {
-				execInSleepPod(t, ns,
-					`curl -sSL -o /dev/null -w "%{http_code}" `+url,
-					assert.OutputContains("200",
-						fmt.Sprintf("Got expected 200 OK from %s", url),
-						fmt.Sprintf("Expect 200 OK from %s, but got a different HTTP code", url)))
-			}
-
-			assertRequestSuccess("http://istio.io")
-		})
+		app.InstallAndWaitReady(t, sleep)
 
 		t.NewSubTest("TrafficManagement_egress_tls_origination").Run(func(t test.TestHelper) {
 			t.Log("TLS origination for egress traffic")
-			oc.ApplyString(t, ns, ExServiceEntryOriginate)
 			t.Cleanup(func() {
-				oc.DeleteFromString(t, ns, ExServiceEntryOriginate)
+				app.Uninstall(t, app.NginxExternalTLS(ns.MeshExternal))
+				oc.DeleteFromString(t, ns.Bookinfo, nginxServiceEntry)
+				oc.DeleteFromString(t, ns.Bookinfo, meshRouteHttpRequestsToHttpsPort)
+				oc.DeleteFromString(t, ns.Bookinfo, originateTlsToNginx)
 			})
 
-			assertRequestSuccess := func(url string) {
-				execInSleepPod(t, ns,
-					fmt.Sprintf(`curl -sSL -o /dev/null %s -w "%%{http_code}" %s`, getCurlProxyParams(t), url),
-					assert.OutputContains("200",
-						fmt.Sprintf("Got expected 200 OK from %s", url),
-						fmt.Sprintf("Expect 200 OK from %s, but got a different HTTP code", url)))
-			}
+			app.InstallAndWaitReady(t, app.NginxExternalTLS(ns.MeshExternal))
+			oc.ApplyString(t, ns.Bookinfo, nginxServiceEntry)
+			oc.ApplyString(t, ns.Bookinfo, meshRouteHttpRequestsToHttpsPort)
+			oc.ApplyString(t, ns.Bookinfo, originateTlsToNginx)
 
-			assertRequestSuccess("http://istio.io")
-			assertRequestSuccess("https://istio.io")
+			assertRequestSuccess(t, sleep, "http://my-nginx.mesh-external.svc.cluster.local")
 		})
 	})
 }
