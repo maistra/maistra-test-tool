@@ -1,0 +1,10 @@
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: worker-internal-ips
+  namespace: metallb-system
+spec:
+  addresses:
+  {{range $idx, $ip := .IPs}}
+  - $ip-$ip
+  {{end}}`
