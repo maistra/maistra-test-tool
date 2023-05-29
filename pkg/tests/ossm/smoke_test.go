@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
@@ -31,7 +33,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
-	"gopkg.in/yaml.v2"
 )
 
 func TestSmoke(t *testing.T) {
