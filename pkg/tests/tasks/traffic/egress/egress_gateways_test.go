@@ -73,9 +73,9 @@ func TestEgressGateways(t *testing.T) {
 			})
 
 			t.LogStep("Create a https Gateway to external nginx")
-			oc.ApplyTemplate(t, ns.Bookinfo, nginxTLSPassthroughGateway, smcp)
+			oc.ApplyTemplate(t, ns.Bookinfo, nginxTlsPassthroughGateway, smcp)
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns.Bookinfo, nginxTLSPassthroughGateway, smcp)
+				oc.DeleteFromTemplate(t, ns.Bookinfo, nginxTlsPassthroughGateway, smcp)
 			})
 
 			t.Log("Send HTTPS request to external nginx")

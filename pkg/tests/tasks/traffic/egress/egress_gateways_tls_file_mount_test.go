@@ -67,11 +67,11 @@ func TestTLSOrigination(t *testing.T) {
 			})
 
 			t.LogStep("Create a Gateway, DestinationRule, and VirtualService to route requests to external nginx through the egress gateway")
-			oc.ApplyTemplate(t, ns.Bookinfo, nginxTLSIstioMutualGateway, smcp)
-			oc.ApplyString(t, meshNamespace, originateTLSToNginx)
+			oc.ApplyTemplate(t, ns.Bookinfo, nginxTlsIstioMutualGateway, smcp)
+			oc.ApplyString(t, meshNamespace, originateTlsToNginx)
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns.Bookinfo, nginxTLSIstioMutualGateway, smcp)
-				oc.DeleteFromString(t, meshNamespace, originateTLSToNginx)
+				oc.DeleteFromTemplate(t, ns.Bookinfo, nginxTlsIstioMutualGateway, smcp)
+				oc.DeleteFromString(t, meshNamespace, originateTlsToNginx)
 			})
 
 			t.LogStep("Verify that request to external nginx is routed through the egress gateway (response 200 indicates that the TLS origination is done by the egress gateway)")
@@ -88,8 +88,8 @@ func TestTLSOrigination(t *testing.T) {
 			t.Cleanup(func() {
 				app.Uninstall(t, app.NginxExternalMTLS(ns.MeshExternal))
 				oc.DeleteSecret(t, meshNamespace, "nginx-client-certs", "nginx-ca-certs")
-				oc.DeleteFromTemplate(t, ns.Bookinfo, nginxTLSIstioMutualGateway, smcp)
-				oc.DeleteFromString(t, meshNamespace, nginxServiceEntry, originateMTLSToNginx)
+				oc.DeleteFromTemplate(t, ns.Bookinfo, nginxTlsIstioMutualGateway, smcp)
+				oc.DeleteFromString(t, meshNamespace, nginxServiceEntry, originateMtlsToNginx)
 				// revert patch to istio-egressgateway
 				oc.TouchSMCP(t, meshNamespace, smcp.Name)
 				// TODO: this is a potential bug; investigate why the following is necessary
@@ -109,8 +109,8 @@ func TestTLSOrigination(t *testing.T) {
 			oc.Patch(t, meshNamespace, "deploy", "istio-egressgateway", "json", gatewayPatchAdd)
 
 			t.LogStep("Configure mTLS origination for egress traffic")
-			oc.ApplyTemplate(t, ns.Bookinfo, nginxTLSIstioMutualGateway, smcp)
-			oc.ApplyString(t, meshNamespace, nginxServiceEntry, originateMTLSToNginx)
+			oc.ApplyTemplate(t, ns.Bookinfo, nginxTlsIstioMutualGateway, smcp)
+			oc.ApplyString(t, meshNamespace, nginxServiceEntry, originateMtlsToNginx)
 
 			t.LogStep("Wait for egress gateway and nginx to be ready")
 			oc.WaitDeploymentRolloutComplete(t, meshNamespace, "istio-egressgateway")

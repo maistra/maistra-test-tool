@@ -41,14 +41,14 @@ func TestEgressTLSOrigination(t *testing.T) {
 			t.Cleanup(func() {
 				app.Uninstall(t, app.NginxExternalTLS(ns.MeshExternal))
 				oc.DeleteFromString(t, ns.Bookinfo, nginxServiceEntry)
-				oc.DeleteFromString(t, ns.Bookinfo, meshRouteHTTPRequestsToHTTPSPort)
-				oc.DeleteFromString(t, ns.Bookinfo, originateTLSToNginx)
+				oc.DeleteFromString(t, ns.Bookinfo, meshRouteHttpRequestsToHttpsPort)
+				oc.DeleteFromString(t, ns.Bookinfo, originateTlsToNginx)
 			})
 
 			app.InstallAndWaitReady(t, app.NginxExternalTLS(ns.MeshExternal))
 			oc.ApplyString(t, ns.Bookinfo, nginxServiceEntry)
-			oc.ApplyString(t, ns.Bookinfo, meshRouteHTTPRequestsToHTTPSPort)
-			oc.ApplyString(t, ns.Bookinfo, originateTLSToNginx)
+			oc.ApplyString(t, ns.Bookinfo, meshRouteHttpRequestsToHttpsPort)
+			oc.ApplyString(t, ns.Bookinfo, originateTlsToNginx)
 
 			assertRequestSuccess(t, sleep, "http://my-nginx.mesh-external.svc.cluster.local")
 		})

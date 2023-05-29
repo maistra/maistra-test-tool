@@ -40,19 +40,19 @@ var (
 	httpbinHttpGateway string
 
 	//go:embed yaml/external-nginx-tls-passthrough-gateway.yaml
-	nginxTLSPassthroughGateway string
+	nginxTlsPassthroughGateway string
 
 	//go:embed yaml/external-nginx-tls-istio-mutual-gateway.yaml
-	nginxTLSIstioMutualGateway string
+	nginxTlsIstioMutualGateway string
 
 	//go:embed yaml/mesh-route-http-requests-to-https-port.yaml
-	meshRouteHTTPRequestsToHTTPSPort string
+	meshRouteHttpRequestsToHttpsPort string
 
 	//go:embed yaml/originate-tls-to-nginx.yaml
-	originateTLSToNginx string
+	originateTlsToNginx string
 
 	//go:embed yaml/originate-mtls-to-nginx.yaml
-	originateMTLSToNginx string
+	originateMtlsToNginx string
 
 	//go:embed yaml/originate-mtls-sds-to-nginx.yaml
 	originateMtlsSdsSToNginx string
