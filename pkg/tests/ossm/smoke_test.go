@@ -35,6 +35,16 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
+var (
+	VERSIONS = []*version.Version{
+		&version.SMCP_2_0,
+		&version.SMCP_2_1,
+		&version.SMCP_2_2,
+		&version.SMCP_2_3,
+		&version.SMCP_2_4,
+	}
+)
+
 func TestSmoke(t *testing.T) {
 	NewTest(t).Groups(ARM, Full, Smoke, InterOp, Disconnected).Run(func(t TestHelper) {
 		t.Log("Smoke Test for SMCP: deploy, upgrade, bookinfo and uninstall")
@@ -46,7 +56,7 @@ func TestSmoke(t *testing.T) {
 		})
 
 		toVersion := env.GetSMCPVersion()
-		fromVersion := toVersion.GetPreviousVersion()
+		fromVersion := getPreviousVersion(toVersion)
 
 		oc.RecreateNamespace(t, meshNamespace)
 
@@ -222,4 +232,18 @@ func assertUninstallDeletesAllResources(t test.TestHelper, ver version.Version) 
 				"All resources deleted from namespace",
 				"Still waiting for resources to be deleted from namespace"))
 	})
+}
+
+func getPreviousVersion(ver version.Version) version.Version {
+	var prevVersion *version.Version
+	for _, v := range VERSIONS {
+		if *v == ver {
+			if prevVersion == nil {
+				panic(fmt.Sprintf("version %s is the first supported version", ver))
+			}
+			return *prevVersion
+		}
+		prevVersion = v
+	}
+	panic(fmt.Sprintf("version %s not found in VERSIONS", ver))
 }
