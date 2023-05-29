@@ -4,10 +4,10 @@ metadata:
   name: httpbin-ext
 spec:
   hosts:
-    - {{ .Name }}.{{ .Namespace }}
+  - httpbin.mesh-external.svc.cluster.local
   ports:
-    - number: 8000
-      name: http
-      protocol: HTTP
+  - number: 8000
+    name: http
+    protocol: HTTP
   resolution: DNS
   location: MESH_EXTERNAL

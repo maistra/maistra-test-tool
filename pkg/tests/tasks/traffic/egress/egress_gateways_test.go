@@ -42,13 +42,9 @@ func TestEgressGateways(t *testing.T) {
 			app.InstallAndWaitReady(t, httpbin)
 
 			t.LogStep("Apply a ServiceEntry for external httpbin")
-			httpbinValues := map[string]string{
-				"Name":      httpbin.Name(),
-				"Namespace": httpbin.Namespace(),
-			}
-			oc.ApplyTemplate(t, ns.Bookinfo, httpbinServiceEntry, httpbinValues)
+			oc.ApplyString(t, ns.Bookinfo, httpbinServiceEntry)
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns.Bookinfo, httpbinServiceEntry, httpbinValues)
+				oc.DeleteFromString(t, ns.Bookinfo, httpbinServiceEntry)
 			})
 
 			t.LogStep("Apply a gateway and virtual service for external httpbin")

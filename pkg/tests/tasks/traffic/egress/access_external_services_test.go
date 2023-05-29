@@ -83,18 +83,13 @@ func TestAccessExternalServices(t *testing.T) {
 		t.LogStep("Make request to external httpbin from sleep again, and expect it denied")
 		assertRequestFailure(t, sleep, httpbinHeadersUrl)
 
-		httpbinValues := map[string]string{
-			"Name":      httpbin.Name(),
-			"Namespace": httpbin.Namespace(),
-		}
-
 		t.NewSubTest("allow request to external httpbin after applying ServiceEntry").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns.Bookinfo, httpbinServiceEntry, httpbinValues)
+				oc.DeleteFromString(t, ns.Bookinfo, httpbinServiceEntry)
 			})
 
 			t.LogStep("Apply a ServiceEntry for external httpbin")
-			oc.ApplyTemplate(t, ns.Bookinfo, httpbinServiceEntry, httpbinValues)
+			oc.ApplyString(t, ns.Bookinfo, httpbinServiceEntry)
 
 			t.LogStep("Send a request to external httpbin")
 			assertRequestSuccess(t, sleep, httpbinHeadersUrl)
