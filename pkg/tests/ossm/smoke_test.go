@@ -61,9 +61,7 @@ func TestSmoke(t *testing.T) {
 			assertSidecarInjectedInAllBookinfoPods(t, ns)
 
 			t.LogStep("Check if bookinfo productpage is running through the Proxy")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				assertTrafficFlowsThroughProxy(t, ns)
-			})
+			assertTrafficFlowsThroughProxy(t, ns)
 
 			t.LogStep("verify proxy startup time. Expected to be less than 10 seconds")
 			t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
@@ -85,29 +83,11 @@ func TestSmoke(t *testing.T) {
 			assertSMCPDeploysAndIsReady(t, toVersion)
 
 			t.LogStep("Check if bookinfo productpage is running through the Proxy after the upgrade")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				assertTrafficFlowsThroughProxy(t, ns)
-			})
+			assertTrafficFlowsThroughProxy(t, ns)
 
 			t.LogStep("Delete Bookinfo pods to validate proxy is still working after recreation and upgrade")
 			oc.RestartAllPodsAndWaitReady(t, ns)
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				oc.Exec(t,
-					pod.MatchingSelector("app=sleep", ns), "sleep",
-					"curl -sI http://productpage:9080",
-					assert.OutputContains(
-						"HTTP/1.1 200 OK",
-						"ProductPage returns 200 OK",
-						"ProductPage didn't return 200 OK"),
-					assert.OutputContains(
-						"server: istio-envoy",
-						"HTTP header 'server: istio-envoy' is present in the response",
-						"HTTP header 'server: istio-envoy' is missing from the response"),
-					assert.OutputContains(
-						"x-envoy-decorator-operation",
-						"HTTP header 'x-envoy-decorator-operation' is present in the response",
-						"HTTP header 'x-envoy-decorator-operation' is missing from the response"))
-			})
+			assertTrafficFlowsThroughProxy(t, ns)
 		})
 
 		t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t TestHelper) {
@@ -119,30 +99,29 @@ func TestSmoke(t *testing.T) {
 
 		t.NewSubTest("verify continue working after smcp deletion").Run(func(t TestHelper) {
 			t.Log("This test checks whether the dataplane still works after smcp deletion")
-
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				assertTrafficFlowsThroughProxy(t, ns)
-			})
+			assertTrafficFlowsThroughProxy(t, ns)
 		})
 	})
 }
 
 func assertTrafficFlowsThroughProxy(t TestHelper, ns string) {
-	oc.Exec(t,
-		pod.MatchingSelector("app=sleep", ns), "sleep",
-		"curl -sI http://productpage:9080",
-		assert.OutputContains(
-			"HTTP/1.1 200 OK",
-			"ProductPage returns 200 OK",
-			"ProductPage didn't return 200 OK"),
-		assert.OutputContains(
-			"server: istio-envoy",
-			"HTTP header 'server: istio-envoy' is present in the response",
-			"HTTP header 'server: istio-envoy' is missing from the response"),
-		assert.OutputContains(
-			"x-envoy-decorator-operation",
-			"HTTP header 'x-envoy-decorator-operation' is present in the response",
-			"HTTP header 'x-envoy-decorator-operation' is missing from the response"))
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		oc.Exec(t,
+			pod.MatchingSelector("app=sleep", ns), "sleep",
+			"curl -sI http://productpage:9080",
+			assert.OutputContains(
+				"HTTP/1.1 200 OK",
+				"ProductPage returns 200 OK",
+				"ProductPage didn't return 200 OK"),
+			assert.OutputContains(
+				"server: istio-envoy",
+				"HTTP header 'server: istio-envoy' is present in the response",
+				"HTTP header 'server: istio-envoy' is missing from the response"),
+			assert.OutputContains(
+				"x-envoy-decorator-operation",
+				"HTTP header 'x-envoy-decorator-operation' is present in the response",
+				"HTTP header 'x-envoy-decorator-operation' is missing from the response"))
+	})
 }
 
 func validateStartUpProxyTime(t TestHelper, ratingYaml string) {
