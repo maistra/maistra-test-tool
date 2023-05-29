@@ -16,6 +16,7 @@ package egress
 
 import (
 	_ "embed"
+
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 )
