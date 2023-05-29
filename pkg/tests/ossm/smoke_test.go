@@ -146,7 +146,7 @@ func assertTrafficFlowsThroughProxy(t TestHelper, ns string) {
 }
 
 func validateStartUpProxyTime(t TestHelper, ratingYaml string) {
-	proxyStartTime, proxyReadyTime := ExtractProxyTimes(t, ratingYaml)
+	proxyStartTime, proxyLastTransitionTime := ExtractProxyTimes(t, ratingYaml)
 	startupTime := proxyLastTransitionTime.Sub(proxyStartTime)
 	t.Logf("Proxy startup time: %s", startupTime.String())
 	if startupTime > 10*time.Second {
