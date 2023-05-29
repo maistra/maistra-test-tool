@@ -41,6 +41,7 @@ func TestSmoke(t *testing.T) {
 		ns := "bookinfo"
 
 		t.Cleanup(func() {
+			app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
 			oc.RecreateNamespace(t, meshNamespace)
 		})
 
@@ -49,16 +50,19 @@ func TestSmoke(t *testing.T) {
 
 		oc.RecreateNamespace(t, meshNamespace)
 
+		t.LogStep("Install bookinfo pods and sleep pod")
+		app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+
 		t.NewSubTest(fmt.Sprintf("install bookinfo with smcp %s", fromVersion)).Run(func(t TestHelper) {
 
 			t.LogStepf("Create SMCP %s and verify it becomes ready", fromVersion)
 			assertSMCPDeploysAndIsReady(t, fromVersion)
 
-			t.LogStep("Install bookinfo pods with sidecar and sleep pod without sidecar")
-			app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
-
-			t.LogStep("Check whether sidecar is injected in all bookinfo pods")
-			assertSidecarInjectedInAllBookinfoPods(t, ns)
+			t.LogStep("Restart all pods to verify proxy is injected in all pods of Bookinfo")
+			oc.RestartAllPods(t, ns)
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				assertSidecarInjectedInAllBookinfoPods(t, ns)
+			})
 
 			t.LogStep("Check if bookinfo productpage is running through the Proxy")
 			assertTrafficFlowsThroughProxy(t, ns)
@@ -74,10 +78,6 @@ func TestSmoke(t *testing.T) {
 
 		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
 			t.Logf("This test checks whether SMCP becomes ready after it's upgraded from %s to %s and bookinfo is still working after the upgrade", fromVersion, toVersion)
-
-			t.Cleanup(func() {
-				app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
-			})
 
 			t.LogStepf("Upgrade SMCP from %s to %s", fromVersion, toVersion)
 			assertSMCPDeploysAndIsReady(t, toVersion)
