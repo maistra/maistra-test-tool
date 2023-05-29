@@ -79,25 +79,26 @@ func TestSMCPAnnotations(t *testing.T) {
 }
 
 func VerifyAndGetPodAnnotation(t test.TestHelper, podLocator oc.PodLocatorFunc) map[string]string {
-	var data map[string]interface{}
+	var data struct {
+		Metadata struct {
+			Annotations map[string]string `yaml:"annotations"`
+		} `yaml:"metadata"`
+	}
+
 	po := podLocator(t, oc.DefaultOC)
 	yamlString := oc.GetYaml(t, po.Namespace, "pod", po.Name)
 	err := yaml.Unmarshal([]byte(yamlString), &data)
 	if err != nil {
-		t.Fatalf("Failed to unmarshal yaml: %s", err)
+		t.Fatalf("Failed to unmarshal YAML: %s", err)
 	}
 
-	annotationsMap := data["metadata"].(map[interface{}]interface{})["annotations"].(map[interface{}]interface{})
-	annotations := make(map[string]string, len(annotationsMap))
-
-	for k, v := range annotationsMap {
-		annotations[k.(string)] = v.(string)
-	}
+	annotations := data.Metadata.Annotations
 	if len(annotations) == 0 {
 		oc.DeletePod(t, podLocator)
 		oc.WaitPodReady(t, podLocator)
 		t.Fatalf("Failed to get annotations from pod %s", po.Name)
 	}
+
 	return annotations
 }
 
