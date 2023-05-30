@@ -76,7 +76,7 @@ func TestSecureGateways(t *testing.T) {
 			t.LogStep("Configure a TLS ingress gateway for a single host")
 			oc.ApplyString(t, ns, httpbinTLSGatewayHTTPS)
 
-			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
+			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 				createRouteWithTLS(t, meshNamespace, "httpbin.example.com", "https", "istio-ingressgateway", "passthrough")
 			}
 
@@ -93,7 +93,7 @@ func TestSecureGateways(t *testing.T) {
 			t.LogStep("configure Gateway with multiple TLS hosts")
 			oc.ApplyString(t, ns, gatewayMultipleHosts)
 
-			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
+			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 				createRouteWithTLS(t, meshNamespace, "helloworld-v1.example.com", "https", "istio-ingressgateway", "passthrough")
 				createRouteWithTLS(t, meshNamespace, "httpbin.example.com", "https", "istio-ingressgateway", "passthrough")
 			}
@@ -123,7 +123,7 @@ func TestSecureGateways(t *testing.T) {
 				"ca.crt="+httpbinSampleCACert)
 			oc.ApplyString(t, ns, gatewayHttpbinMTLSYaml)
 
-			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
+			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 				createRouteWithTLS(t, meshNamespace, "httpbin.example.com", "https", "istio-ingressgateway", "passthrough")
 			}
 
