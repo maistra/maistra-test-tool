@@ -34,7 +34,7 @@ func GetRootDir() string {
 }
 
 func IsRosa() bool {
-	return getenv("ROSA", "false") == "true"
+	return getenv("ROSA", "true") == "true"
 }
 
 func IsNightly() bool {

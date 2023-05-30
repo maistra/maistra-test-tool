@@ -421,42 +421,69 @@ func (o OC) GetYaml(t test.TestHelper, ns, kind, name string, checks ...common.C
 	return val
 }
 
-func (o OC) GetJson(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) string {
+func (o OC) GetJson(t test.TestHelper, ns, kind, name, jsonPath string, checks ...common.CheckFunc) []map[string]interface{} {
 	t.T().Helper()
-	var val string
+	var data map[string]interface{}
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		val = shell.Execute(t, fmt.Sprintf("oc %s get %s/%s -ojson", nsFlag(ns), kind, name), checks...)
+		jsonString := shell.Execute(t, fmt.Sprintf("oc %s get %s/%s -ojson", nsFlag(ns), kind, name), checks...)
+		err := json.Unmarshal([]byte(jsonString), &data)
+		if err != nil {
+			t.Fatalf("Failed to unmarshal JSON: %s", err)
+		}
 	})
-	return val
+
+	if jsonPath != "" {
+		segments := strings.Split(jsonPath, ".")[1:]
+		for _, segment := range segments {
+			if segmentMap, ok := data[segment].(map[string]interface{}); ok {
+				data = segmentMap
+			} else if segmentArray, ok := data[segment].([]interface{}); ok {
+				var segmentData []map[string]interface{}
+				for _, item := range segmentArray {
+					if itemMap, ok := item.(map[string]interface{}); ok {
+						segmentData = append(segmentData, itemMap)
+					}
+				}
+				if len(segmentData) > 0 {
+					return segmentData
+				} else {
+					t.Fatalf("JSONPath segment not found: %s", segment)
+				}
+			} else {
+				t.Fatalf("JSONPath segment not found: %s", segment)
+				return nil
+			}
+		}
+	}
+	// Return data as an array of maps
+	return []map[string]interface{}{data}
 }
 
 // GetProxy returns the Proxy object from the cluster
 func (o OC) GetProxy(t test.TestHelper) *Proxy {
-	type ProxyResource struct {
-		Status *Proxy `json:"status"`
+	proxy := o.GetJson(t, "", "proxy", "cluster", ".status")
+	if proxy == nil {
+		t.Fatal("There is no proxy resource in the cluster")
 	}
 
-	proxyResource := ProxyResource{}
-
-	proxyYaml := o.GetJson(t, "", "proxy", "cluster")
-	err := json.Unmarshal([]byte(proxyYaml), &proxyResource)
-	if err != nil {
-		t.Fatalf("Could not parse Proxy resource: %v", err)
+	proxyStruct := &Proxy{}
+	if proxy[0]["httpProxy"] == nil {
+		proxyStruct.HTTPProxy = ""
+	} else {
+		proxyStruct.HTTPProxy = proxy[0]["httpProxy"].(string)
 	}
-
-	proxy := proxyResource.Status
-	if proxy.HTTPProxy != "" {
-		t.Logf("HTTP_PROXY: %q", proxy.HTTPProxy)
+	if proxy[0]["httpsProxy"] == nil {
+		proxyStruct.HTTPSProxy = ""
+	} else {
+		proxyStruct.HTTPSProxy = proxy[0]["httpsProxy"].(string)
 	}
-	if proxy.HTTPSProxy != "" {
-		t.Logf("HTTPS_PROXY: %q", proxy.HTTPSProxy)
+	if proxy[0]["noProxy"] == nil {
+		proxyStruct.NoProxy = ""
+	} else {
+		proxyStruct.NoProxy = proxy[0]["noProxy"].(string)
 	}
-	if proxy.NoProxy != "" {
-		t.Logf("NO_PROXY: %q", proxy.NoProxy)
-	}
-
-	return proxy
+	return proxyStruct
 }
 
 func setEnv(t test.TestHelper, key string, value string) {

@@ -21,8 +21,6 @@ import (
 	"testing"
 	"time"
 
-	"gopkg.in/yaml.v2"
-
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
@@ -79,11 +77,9 @@ func TestSmoke(t *testing.T) {
 
 			t.LogStep("verify proxy startup time. Expected to be less than 10 seconds")
 			t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
-			t.Log("From proxy yaml, verify the time between status.containerStatuses.state.running.startedAt and status.conditions[type=Ready].lastTransitionTime")
-			ratingPod := pod.MatchingSelector("app=ratings", ns)(t, oc.DefaultOC)
-			ratingYaml := oc.GetYaml(t, ns, "pod", ratingPod.Name)
-			t.Log("Validate from YAML, the proxy startup time is less than 10 seconds for ratings pod")
-			validateStartUpProxyTime(t, ratingYaml)
+			t.Log("From proxy json , verify the time between status.containerStatuses.state.running.startedAt and status.conditions[type=Ready].lastTransitionTime")
+			t.Log("The proxy startup time should be less than 10 seconds for ratings pod")
+			validateStartUpProxyTime(t)
 		})
 
 		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
@@ -134,8 +130,8 @@ func assertTrafficFlowsThroughProxy(t TestHelper, ns string) {
 	})
 }
 
-func validateStartUpProxyTime(t TestHelper, ratingYaml string) {
-	proxyStartTime, proxyLastTransitionTime := ExtractProxyTimes(t, ratingYaml)
+func validateStartUpProxyTime(t TestHelper) {
+	proxyStartTime, proxyLastTransitionTime := ExtractProxyTimes(t)
 	startupTime := proxyLastTransitionTime.Sub(proxyStartTime)
 	t.Logf("Proxy startup time: %s", startupTime.String())
 	if startupTime > 10*time.Second {
@@ -143,52 +139,46 @@ func validateStartUpProxyTime(t TestHelper, ratingYaml string) {
 	}
 }
 
-func ExtractProxyTimes(t TestHelper, yamlString string) (time.Time, time.Time) {
-	var data struct {
-		Status struct {
-			ContainerStatuses []struct {
-				Name  string
-				State struct {
-					Running struct {
-						StartedAt string `yaml:"startedAt"`
-					} `yaml:"running"`
-				} `yaml:"state"`
-			} `yaml:"containerStatuses"`
-			Conditions []struct {
-				Type               string
-				LastTransitionTime string `yaml:"lastTransitionTime"`
-			} `yaml:"conditions"`
-		} `yaml:"status"`
+func ExtractProxyTimes(t TestHelper) (time.Time, time.Time) {
+	// lastTransitionTimeMap := oc.GetJson(t, meshNamespace, "smcp", "basic", ".status.conditions[?(@.type=='Ready')].lastTransitionTime")
+	conditionsMap := oc.GetJson(t, meshNamespace, "smcp", "basic", ".status.conditions")
+
+	var readyCondition map[string]interface{}
+	for _, condition := range conditionsMap {
+		if condition["type"] == "Ready" {
+			readyCondition = condition
+			break
+		}
+	}
+	if readyCondition == nil {
+		t.Fatal("Failed to extract proxy times from Json")
 	}
 
-	err := yaml.Unmarshal([]byte(yamlString), &data)
+	lastTransitionTime, err := time.Parse(time.RFC3339, readyCondition["lastTransitionTime"].(string))
 	if err != nil {
-		t.Fatalf("Failed to unmarshal YAML: %s", err)
+		t.Fatalf("Failed to parse lastTransitionTime time: %s", err)
+	}
+	if lastTransitionTime.IsZero() {
+		t.Fatal("Failed to extract proxy times from YAML")
 	}
 
-	var startedAt, lastTransitionTime time.Time
-
-	for _, status := range data.Status.ContainerStatuses {
-		if status.Name == "istio-proxy" {
-			startedAt, err = time.Parse(time.RFC3339, status.State.Running.StartedAt)
-			if err != nil {
-				t.Fatalf("Failed to parse startedAt time: %s", err)
-			}
+	containerStatusesMap := oc.GetJson(t, meshNamespace, "smcp", "basic", ".status.containerStatuses")
+	// startedAtMap := oc.GetJson(t, meshNamespace, "smcp", "basic", ".status.containerStatuses[?(@.name=='istio-proxy')].state.running.startedAt")
+	var istioProxy map[string]interface{}
+	for _, container := range containerStatusesMap {
+		if container["name"] == "istio-proxy" {
+			istioProxy = container
 			break
 		}
 	}
-
-	for _, condition := range data.Status.Conditions {
-		if condition.Type == "Ready" {
-			lastTransitionTime, err = time.Parse(time.RFC3339, condition.LastTransitionTime)
-			if err != nil {
-				t.Fatalf("Failed to parse lastTransitionTime time: %s", err)
-			}
-			break
-		}
+	if readyCondition == nil {
+		t.Fatal("Failed to extract proxy times from Json")
 	}
-
-	if startedAt.IsZero() || lastTransitionTime.IsZero() {
+	startedAt, err := time.Parse(time.RFC3339, istioProxy["startedAt"].(string))
+	if err != nil {
+		t.Fatalf("Failed to parse lastTransitionTime time: %s", err)
+	}
+	if startedAt.IsZero() {
 		t.Fatal("Failed to extract proxy times from YAML")
 	}
 
