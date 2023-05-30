@@ -50,7 +50,7 @@ func TestIngressGateways(t *testing.T) {
 			t.LogStep("Create httpbin Gateway and VirtualService with host set to httpbin.example.com")
 			oc.ApplyString(t, ns, httpbinGateway1)
 
-			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
+			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 				createRoute(t, meshNamespace, "httpbin.example.com", "http2", "istio-ingressgateway")
 			}
 

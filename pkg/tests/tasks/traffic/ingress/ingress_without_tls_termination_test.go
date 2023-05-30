@@ -63,7 +63,7 @@ func TestIngressWithoutTlsTermination(t *testing.T) {
 		t.LogStep("Configure Gateway resource with TLS passthrough for host nginx.example.com")
 		oc.ApplyString(t, ns, nginxIngressGateway)
 
-		if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
+		if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 			createRouteWithTLS(t, meshNamespace, "nginx.example.com", "https", "istio-ingressgateway", "passthrough")
 		}
 
