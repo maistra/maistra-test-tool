@@ -34,7 +34,7 @@ func ExecuteWithEnvAndInput(t test.TestHelper, env []string, cmd string, input s
 	t.T().Helper()
 	output, err := execShellCommand(cmd, env, input)
 	if err != nil {
-		t.Logf("Command failed: %s\n%serror: %s", cmd, appendNewLine(output), err)
+		t.Fatalf("Command failed: %s\n%serror: %s", cmd, appendNewLine(output), err)
 	}
 	for _, check := range checks {
 		check(t, output)

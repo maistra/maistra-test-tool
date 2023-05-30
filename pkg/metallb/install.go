@@ -38,25 +38,33 @@ func InstallIfNotExist(t test.TestHelper, kubeConfigs ...string) {
 }
 
 func installWithOC(t test.TestHelper, oc oc.OC) {
-	t.Log("Check if MetalLB operator already exists")
-	output := oc.Get(t, ns.MetalLB, "deployments", "metallb-operator-controller-manager")
-	if !strings.Contains(output, "Error from server (NotFound)") {
-		t.Log("MetalLB operator already exists - skipping installation")
+	if checkIfMetalLbOperatorExists(t) {
+		t.Log("MetalLB operator already exists - skip installation of the operator")
 	} else {
 		installOperator(t, oc)
 	}
-	deployMetalLB(t, oc)
-	createAddressPool(t, oc)
+	if checkIfMetalLbControllerExists(t) {
+		t.Log("MetalLB controller already exists - skip deploying MetalLB")
+	} else {
+		deployMetalLB(t, oc)
+	}
+	if checkIfIPAddressPoolExists(t) {
+		t.Log("IPAddressPool already exists - skip applying IPAddressPool")
+	} else {
+		createAddressPool(t, oc)
+	}
 }
 
 func installOperator(t test.TestHelper, oc oc.OC) {
 	t.Log("Install MetalLB operator")
 	oc.ApplyString(t, ns.MetalLB, metallbOperator)
 	retry.UntilSuccess(t, func(t test.TestHelper) {
-		oc.Get(t, ns.MetalLB, "deployments", "metallb-operator-controller-manager", assert.OutputDoesNotContain(
-			"Error from server",
-			"metallb-operator-controller-manager was found as expected",
-			"failed to get metallb-operator-controller-manager"))
+		// pattern "cmd || true" is used to avoid getting fatal error
+		shell.Execute(t, fmt.Sprintf("oc get deployments -n %s metallb-operator-controller-manager || true", ns.MetalLB),
+			assert.OutputDoesNotContain(
+				"Error from server",
+				"metallb-operator-controller-manager was found as expected",
+				"failed to get metallb-operator-controller-manager"))
 	})
 	oc.WaitCondition(t, ns.MetalLB, "deployments", "metallb-operator-controller-manager", "Available")
 }
@@ -86,9 +94,8 @@ spec:
 `
 	var ips []string
 	retry.UntilSuccess(t, func(t test.TestHelper) {
-		// This command fails in zsh, so it may not work on some local environments, therefore it's wrapped in bash -c
 		out := shell.Execute(t,
-			`bash -c 'kubectl get nodes -l node-role.kubernetes.io/worker -o jsonpath={.items[*].status.addresses[?\(@.type==\"InternalIP\"\)].address}'`,
+			`kubectl get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[*].status.addresses[?(@.type=="InternalIP")].address}'`,
 			assert.OutputDoesNotContain("Error from server", "Found internal IPs", "failed to get internal node IPs"))
 		ips = strings.Fields(out)
 		for _, rawIP := range ips {
@@ -98,6 +105,27 @@ spec:
 			ipAddrPool += fmt.Sprintf("  - %[1]s-%[1]s\n", rawIP)
 		}
 	})
-	t.LogStepf("Create IPAddressPool for MetalLB: %s", ipAddrPool)
+	t.LogStep("Create IPAddressPool for MetalLB:\n" + ipAddrPool)
 	oc.ApplyString(t, ns.MetalLB, ipAddrPool)
+}
+
+func checkIfMetalLbOperatorExists(t test.TestHelper) bool {
+	t.Log("Check if MetalLB operator already exists")
+	// pattern "cmd || true" is used to avoid getting fatal error
+	output := shell.Execute(t, fmt.Sprintf("oc get deployments -n %s metallb-operator-controller-manager || true", ns.MetalLB))
+	return !(strings.Contains(output, "Error from server (NotFound)") || strings.Contains(output, "No resources found"))
+}
+
+func checkIfMetalLbControllerExists(t test.TestHelper) bool {
+	t.Log("Check if MetalLB controller already exists")
+	// pattern "cmd || true" is used to avoid getting fatal error
+	output := shell.Execute(t, fmt.Sprintf("oc get deployments -n %s controller || true", ns.MetalLB))
+	return !(strings.Contains(output, "Error from server (NotFound)") || strings.Contains(output, "No resources found"))
+}
+
+func checkIfIPAddressPoolExists(t test.TestHelper) bool {
+	t.Log("Check if MetalLB controller already exists")
+	// pattern "cmd || true" is used to avoid getting fatal error
+	output := shell.Execute(t, fmt.Sprintf("oc get ipaddresspools -n %s worker-internal-ips || true", ns.MetalLB))
+	return !(strings.Contains(output, "Error from server (NotFound)") || strings.Contains(output, "No resources found"))
 }
