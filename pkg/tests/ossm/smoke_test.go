@@ -46,7 +46,7 @@ var (
 type PodTime struct {
 	PodName            string
 	StartedAt          time.Time
-	LastTransitionTime time.Time
+	ReadyAt time.Time
 }
 
 func TestSmoke(t *testing.T) {
