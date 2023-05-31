@@ -85,7 +85,7 @@ func TestSmoke(t *testing.T) {
 			t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
 			t.Log("From proxy json , verify the time between status.containerStatuses.state.running.startedAt and status.conditions[type=Ready].lastTransitionTime")
 			t.Log("The proxy startup time should be less than 10 seconds for ratings pod")
-			validateStartUpProxyTime(t, ns)
+			assertProxiesReadyInLessThan10Seconds(t, ns)
 		})
 
 		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
