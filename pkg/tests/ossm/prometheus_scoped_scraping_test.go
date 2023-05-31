@@ -29,7 +29,7 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 
 		prometheusPodSelector := pod.MatchingSelector("app=prometheus,maistra-control-plane=istio-system", meshNamespace)
 
-		checkPermissionErorr := func(t test.TestHelper) {
+		checkPermissionError := func(t test.TestHelper) {
 			t.LogStep("Check the Prometheus log to see if there is any permission error")
 			oc.Logs(t,
 				prometheusPodSelector,
@@ -55,11 +55,17 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			})
 		}
 
+		testPrometheusConfigWithAsserts := func(t test.TestHelper, asserts ...common.CheckFunc) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				shell.Execute(t,
+					fmt.Sprintf("oc -n %s get configmap prometheus -o jsonpath='{.data.prometheus\\.yml}'", meshNamespace),
+					asserts...)
+			})
+		}
+
 		DeployControlPlane(t)
 
-		checkPermissionErorr(t)
-
-		getPrometheusConfigCmd := fmt.Sprintf("oc -n %s get configmap prometheus -o jsonpath='{.data.prometheus\\.yml}'", meshNamespace)
+		checkPermissionError(t)
 
 		t.NewSubTest("when creating a SMMR").Run(func(t test.TestHelper) {
 			ns := generateNamespace()
@@ -74,9 +80,7 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			updateDefaultSMMRWithNamespace(t, ns)
 
 			t.LogStepf("Look for %s in prometheus ConfigMap", ns)
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				shell.Execute(t, getPrometheusConfigCmd, checkForNamespace(ns))
-			})
+			testPrometheusConfigWithAsserts(t, assertConfigMapContainsNamespace(ns))
 		})
 
 		t.NewSubTest("when adding a new namespace into existing SMMR").Run(func(t test.TestHelper) {
@@ -97,9 +101,7 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			updateDefaultSMMRWithNamespace(t, ns, anotherNs)
 
 			t.LogStepf("Look for %s in prometheus ConfigMap", []string{ns, anotherNs})
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				shell.Execute(t, getPrometheusConfigCmd, checkForNamespace(ns), checkForNamespace(anotherNs))
-			})
+			testPrometheusConfigWithAsserts(t, assertConfigMapContainsNamespace(ns), assertConfigMapContainsNamespace(anotherNs))
 		})
 
 		t.NewSubTest("when removing a namespace from existing SMMR").Run(func(t test.TestHelper) {
@@ -119,15 +121,7 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			updateDefaultSMMRWithNamespace(t, ns)
 
 			t.LogStepf("Look for %s in prometheus ConfigMap", ns)
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				shell.Execute(t, getPrometheusConfigCmd,
-					checkForNamespace(ns),
-					require.OutputDoesNotContain(anotherNs,
-						fmt.Sprintf("Expected to not find %s in the Prometheus config", anotherNs),
-						fmt.Sprintf("Found unexpected %s in the Prometheus config", anotherNs),
-					),
-				)
-			})
+			testPrometheusConfigWithAsserts(t, assertConfigMapContainsNamespace(ns), assertConfigMapDoesNotContainNamespace(anotherNs))
 		})
 
 		t.NewSubTest("when the default SMMR with no member").Run(func(t test.TestHelper) {
@@ -140,7 +134,7 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			updateDefaultSMMRWithNamespace(t)
 
 			checkConfigurationReloadingTriggered(t, start)
-			checkPermissionErorr(t)
+			checkPermissionError(t)
 		})
 
 		t.NewSubTest("when the default SMMR with nonexistent namespace").Run(func(t test.TestHelper) {
@@ -157,15 +151,8 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			t.LogStepf("Update SMMR %s", s)
 			oc.ApplyString(t, meshNamespace, s)
 
-			shell.Execute(t,
-				getPrometheusConfigCmd,
-				require.OutputDoesNotContain(
-					ns,
-					fmt.Sprintf("Expected to not find %s in the Prometheus config", ns),
-					fmt.Sprintf("Found unexpected %s in the Prometheus config", ns),
-				),
-			)
-			checkPermissionErorr(t)
+			testPrometheusConfigWithAsserts(t, assertConfigMapDoesNotContainNamespace(ns))
+			checkPermissionError(t)
 		})
 
 		t.NewSubTest("query istio_request_total").Run(func(t test.TestHelper) {
@@ -204,27 +191,18 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 				restoreDefaultSMMR(t)
 			})
 
-			checks := []common.CheckFunc{checkForNamespace(meshNamespace)}
+			checks := []common.CheckFunc{assertConfigMapContainsNamespace(meshNamespace)}
 			for _, ns := range []string{namespaces.Bar, namespaces.Bookinfo, namespaces.Foo, namespaces.Legacy} {
-				checks = append(checks,
-					require.OutputDoesNotContain(
-						ns,
-						fmt.Sprintf("Expected to not find %s in the Prometheus config", ns),
-						fmt.Sprintf("Found unexpected %s in the Prometheus config", ns),
-					),
-				)
+				checks = append(checks, assertConfigMapDoesNotContainNamespace(ns))
 			}
 
 			start := time.Now()
 			t.LogStepf("Delete default SMMR \n%s", smmr)
 			oc.DeleteFromString(t, meshNamespace, smmr)
 
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				shell.Execute(t, getPrometheusConfigCmd, checks...)
-			})
-
+			testPrometheusConfigWithAsserts(t, checks...)
 			checkConfigurationReloadingTriggered(t, start)
-			checkPermissionErorr(t)
+			checkPermissionError(t)
 		})
 
 		t.NewSubTest("[TODO] test under cluster scoped").Run(func(t test.TestHelper) {
@@ -263,10 +241,17 @@ spec:
 	return yaml
 }
 
-func checkForNamespace(ns string) common.CheckFunc {
+func assertConfigMapContainsNamespace(ns string) common.CheckFunc {
 	return require.OutputContains(ns,
 		fmt.Sprintf("Found %s in Prometheus config", ns),
 		fmt.Sprintf("Expected to find %s in Prometheus config, but not found", ns),
+	)
+}
+
+func assertConfigMapDoesNotContainNamespace(ns string) common.CheckFunc {
+	return require.OutputDoesNotContain(ns,
+		fmt.Sprintf("Expected to not find %s in the Prometheus config", ns),
+		fmt.Sprintf("Found unexpected %s in the Prometheus config", ns),
 	)
 }
 
