@@ -38,17 +38,17 @@ func InstallIfNotExist(t test.TestHelper, kubeConfigs ...string) {
 }
 
 func installWithOC(t test.TestHelper, oc oc.OC) {
-	if checkIfMetalLbOperatorExists(t) {
+	if checkIfMetalLbOperatorExists(t, oc) {
 		t.Log("MetalLB operator already exists - skip installation of the operator")
 	} else {
 		installOperator(t, oc)
 	}
-	if checkIfMetalLbControllerExists(t) {
+	if checkIfMetalLbControllerExists(t, oc) {
 		t.Log("MetalLB controller already exists - skip deploying MetalLB")
 	} else {
 		deployMetalLB(t, oc)
 	}
-	if checkIfIPAddressPoolExists(t) {
+	if checkIfIPAddressPoolExists(t, oc) {
 		t.Log("IPAddressPool already exists - skip applying IPAddressPool")
 	} else {
 		createAddressPool(t, oc)
@@ -109,23 +109,17 @@ spec:
 	oc.ApplyString(t, ns.MetalLB, ipAddrPool)
 }
 
-func checkIfMetalLbOperatorExists(t test.TestHelper) bool {
+func checkIfMetalLbOperatorExists(t test.TestHelper, oc oc.OC) bool {
 	t.Log("Check if MetalLB operator already exists")
-	// pattern "cmd || true" is used to avoid getting fatal error
-	output := shell.Execute(t, fmt.Sprintf("oc get deployments -n %s metallb-operator-controller-manager || true", ns.MetalLB))
-	return !(strings.Contains(output, "Error from server (NotFound)") || strings.Contains(output, "No resources found"))
+	return oc.ResourceExists(t, ns.MetalLB, "deployments", "metallb-operator-controller-manager")
 }
 
-func checkIfMetalLbControllerExists(t test.TestHelper) bool {
+func checkIfMetalLbControllerExists(t test.TestHelper, oc oc.OC) bool {
 	t.Log("Check if MetalLB controller already exists")
-	// pattern "cmd || true" is used to avoid getting fatal error
-	output := shell.Execute(t, fmt.Sprintf("oc get deployments -n %s controller || true", ns.MetalLB))
-	return !(strings.Contains(output, "Error from server (NotFound)") || strings.Contains(output, "No resources found"))
+	return oc.ResourceExists(t, ns.MetalLB, "deployments", "controller")
 }
 
-func checkIfIPAddressPoolExists(t test.TestHelper) bool {
+func checkIfIPAddressPoolExists(t test.TestHelper, oc oc.OC) bool {
 	t.Log("Check if MetalLB controller already exists")
-	// pattern "cmd || true" is used to avoid getting fatal error
-	output := shell.Execute(t, fmt.Sprintf("oc get ipaddresspools -n %s worker-internal-ips || true", ns.MetalLB))
-	return !(strings.Contains(output, "Error from server (NotFound)") || strings.Contains(output, "No resources found"))
+	return oc.ResourceExists(t, ns.MetalLB, "ipaddresspools", "worker-internal-ips")
 }
