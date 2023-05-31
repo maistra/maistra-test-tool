@@ -421,67 +421,41 @@ func (o OC) GetYaml(t test.TestHelper, ns, kind, name string, checks ...common.C
 	return val
 }
 
-func (o OC) GetJson(t test.TestHelper, ns, kind, name, jsonPath string, checks ...common.CheckFunc) []map[string]interface{} {
+func (o OC) GetJson(t test.TestHelper, ns, kind, name, jsonPath string) string {
 	t.T().Helper()
-	var data map[string]interface{}
+	var jsonString string
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		jsonString := shell.Execute(t, fmt.Sprintf("oc %s get %s/%s -ojson", nsFlag(ns), kind, name), checks...)
-		err := json.Unmarshal([]byte(jsonString), &data)
-		if err != nil {
-			t.Fatalf("Failed to unmarshal JSON: %s", err)
-		}
+		jsonString = shell.Execute(t, fmt.Sprintf("oc %s get %s %s -o jsonpath='%s'", nsFlag(ns), kind, name, jsonPath))
 	})
 
-	if jsonPath != "" {
-		segments := strings.Split(jsonPath, ".")[1:]
-		for _, segment := range segments {
-			if segmentMap, ok := data[segment].(map[string]interface{}); ok {
-				data = segmentMap
-			} else if segmentArray, ok := data[segment].([]interface{}); ok {
-				var segmentData []map[string]interface{}
-				for _, item := range segmentArray {
-					if itemMap, ok := item.(map[string]interface{}); ok {
-						segmentData = append(segmentData, itemMap)
-					}
-				}
-				if len(segmentData) > 0 {
-					return segmentData
-				} else {
-					t.Fatalf("JSONPath segment not found: %s", segment)
-				}
-			} else {
-				t.Fatalf("JSONPath segment not found: %s", segment)
-				return nil
-			}
-		}
-	}
-	// Return data as an array of maps
-	return []map[string]interface{}{data}
+	return jsonString
 }
 
 // GetProxy returns the Proxy object from the cluster
 func (o OC) GetProxy(t test.TestHelper) *Proxy {
-	proxy := o.GetJson(t, "", "proxy", "cluster", ".status")
-	if proxy == nil {
-		t.Fatal("There is no proxy resource in the cluster")
-	}
+	proxy := o.GetJson(t, "", "proxy", "cluster", "{.status}")
 
 	proxyStruct := &Proxy{}
-	if proxy[0]["httpProxy"] == nil {
+	var data map[string]interface{}
+	err := json.Unmarshal([]byte(proxy), &data)
+	if err != nil {
+		fmt.Printf("Failed to parse JSON: %s\n", err)
+	}
+	if data["httpProxy"] == nil {
 		proxyStruct.HTTPProxy = ""
 	} else {
-		proxyStruct.HTTPProxy = proxy[0]["httpProxy"].(string)
+		proxyStruct.HTTPProxy = data["httpProxy"].(string)
 	}
-	if proxy[0]["httpsProxy"] == nil {
+	if data["httpsProxy"] == nil {
 		proxyStruct.HTTPSProxy = ""
 	} else {
-		proxyStruct.HTTPSProxy = proxy[0]["httpsProxy"].(string)
+		proxyStruct.HTTPSProxy = data["httpsProxy"].(string)
 	}
-	if proxy[0]["noProxy"] == nil {
+	if data["noProxy"] == nil {
 		proxyStruct.NoProxy = ""
 	} else {
-		proxyStruct.NoProxy = proxy[0]["noProxy"].(string)
+		proxyStruct.NoProxy = data["noProxy"].(string)
 	}
 	return proxyStruct
 }

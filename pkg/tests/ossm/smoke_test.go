@@ -43,6 +43,12 @@ var (
 	}
 )
 
+type PodTime struct {
+	PodName            string
+	StartedAt          time.Time
+	LastTransitionTime time.Time
+}
+
 func TestSmoke(t *testing.T) {
 	NewTest(t).Groups(ARM, Full, Smoke, InterOp, Disconnected).Run(func(t TestHelper) {
 		t.Log("Smoke Test for SMCP: deploy, upgrade, bookinfo and uninstall")
@@ -79,7 +85,7 @@ func TestSmoke(t *testing.T) {
 			t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
 			t.Log("From proxy json , verify the time between status.containerStatuses.state.running.startedAt and status.conditions[type=Ready].lastTransitionTime")
 			t.Log("The proxy startup time should be less than 10 seconds for ratings pod")
-			validateStartUpProxyTime(t)
+			validateStartUpProxyTime(t, ns)
 		})
 
 		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
@@ -130,59 +136,54 @@ func assertTrafficFlowsThroughProxy(t TestHelper, ns string) {
 	})
 }
 
-func validateStartUpProxyTime(t TestHelper) {
-	proxyStartTime, proxyLastTransitionTime := ExtractProxyTimes(t)
-	startupTime := proxyLastTransitionTime.Sub(proxyStartTime)
-	t.Logf("Proxy startup time: %s", startupTime.String())
-	if startupTime > 10*time.Second {
-		t.Fatalf("Proxy startup time is too long: %s", startupTime.String())
+func validateStartUpProxyTime(t TestHelper, ns string) {
+	podTimes := ExtractProxyTimes(t, ns)
+	for _, podTime := range podTimes {
+		startupTime := podTime.LastTransitionTime.Sub(podTime.StartedAt)
+		t.Logf("Proxy startup time: %s", startupTime.String())
+		if startupTime > 10*time.Second {
+			t.Fatalf("Proxy startup time is too long: %s", startupTime.String())
+		}
 	}
 }
 
-func ExtractProxyTimes(t TestHelper) (time.Time, time.Time) {
-	// lastTransitionTimeMap := oc.GetJson(t, meshNamespace, "smcp", "basic", ".status.conditions[?(@.type=='Ready')].lastTransitionTime")
-	conditionsMap := oc.GetJson(t, meshNamespace, "smcp", "basic", ".status.conditions")
+func ExtractProxyTimes(t TestHelper, ns string) []PodTime {
+	t.Log("Extracting proxy startup time and last transition time for all the pods in the namespace")
+	proxyTimeList := oc.GetJson(t, ns, "pods", "", `{range .items[*]}{.metadata.name}{"\t"}{.status.containerStatuses[?(@.name=="istio-proxy")].state.running.startedAt}{"\t"}{.status.conditions[?(@.type=="Ready")].lastTransitionTime}{"\n"}{end}`)
 
-	var readyCondition map[string]interface{}
-	for _, condition := range conditionsMap {
-		if condition["type"] == "Ready" {
-			readyCondition = condition
-			break
+	var podTimes []PodTime
+
+	scanner := bufio.NewScanner(strings.NewReader(proxyTimeList))
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Fields(line)
+		podName := fields[0]
+
+		// Skip if we have less than 3 fields, because we expect 3 fields per line
+		if len(fields) < 3 {
+			continue
 		}
-	}
-	if readyCondition == nil {
-		t.Fatal("Failed to extract proxy times from Json")
-	}
-
-	lastTransitionTime, err := time.Parse(time.RFC3339, readyCondition["lastTransitionTime"].(string))
-	if err != nil {
-		t.Fatalf("Failed to parse lastTransitionTime time: %s", err)
-	}
-	if lastTransitionTime.IsZero() {
-		t.Fatal("Failed to extract proxy times from YAML")
-	}
-
-	containerStatusesMap := oc.GetJson(t, meshNamespace, "smcp", "basic", ".status.containerStatuses")
-	// startedAtMap := oc.GetJson(t, meshNamespace, "smcp", "basic", ".status.containerStatuses[?(@.name=='istio-proxy')].state.running.startedAt")
-	var istioProxy map[string]interface{}
-	for _, container := range containerStatusesMap {
-		if container["name"] == "istio-proxy" {
-			istioProxy = container
-			break
+		startedAt, err := time.Parse(time.RFC3339, fields[1])
+		if err != nil || startedAt.IsZero() {
+			continue // Skip pods that are not running or have invalid start time
 		}
-	}
-	if readyCondition == nil {
-		t.Fatal("Failed to extract proxy times from Json")
-	}
-	startedAt, err := time.Parse(time.RFC3339, istioProxy["startedAt"].(string))
-	if err != nil {
-		t.Fatalf("Failed to parse lastTransitionTime time: %s", err)
-	}
-	if startedAt.IsZero() {
-		t.Fatal("Failed to extract proxy times from YAML")
+
+		lastTransitionTime, err := time.Parse(time.RFC3339, fields[2])
+		if err != nil || lastTransitionTime.IsZero() {
+			continue // Skip pods that are not running or have invalid last transition time
+		}
+
+		podTime := PodTime{
+			PodName:            podName,
+			StartedAt:          startedAt,
+			LastTransitionTime: lastTransitionTime,
+		}
+		podTimes = append(podTimes, podTime)
+
+		t.Logf("Pod %s startedAt: %s, lastTransitionTime: %s", podName, startedAt.String(), lastTransitionTime.String())
 	}
 
-	return startedAt, lastTransitionTime
+	return podTimes
 }
 
 func assertSidecarInjectedInAllBookinfoPods(t TestHelper, ns string) {
