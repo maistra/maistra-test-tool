@@ -72,9 +72,8 @@ func TestClusterWideMode(t *testing.T) {
 
 			t.LogStep("Check whether the SMMR shows the 5 namespaces created as members")
 			membersList := []string{"member-0", "member-1", "member-2", "member-3", "member-4"}
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				verifyMembersInSMMR(t, meshNamespace, membersList, true)
-			})
+			assertMembers(t, meshNamespace, membersList)
+
 		})
 
 		t.NewSubTest("RoleBindings verification").Run(func(t test.TestHelper) {
@@ -104,10 +103,8 @@ func TestClusterWideMode(t *testing.T) {
 			t.LogStep("Check whether the SMMR shows only two namespaces as members: member-0 and member-1")
 			membersList := []string{"member-0", "member-1"}
 			notInMembersList := []string{"member-2", "member-3", "member-4"}
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				verifyMembersInSMMR(t, meshNamespace, membersList, true)
-				verifyMembersInSMMR(t, meshNamespace, notInMembersList, false)
-			})
+			assertMembers(t, meshNamespace, membersList)
+			assertNonMembers(t, meshNamespace, notInMembersList)
 		})
 
 		t.NewSubTest("verify memberselector operator IN").Run(func(t test.TestHelper) {
@@ -120,10 +117,8 @@ func TestClusterWideMode(t *testing.T) {
 			t.LogStep("Check whether the SMMR shows only one namespace as members: member-0")
 			membersList := []string{"member-0"}
 			notInMembersList := []string{"member-1", "member-2", "member-3", "member-4"}
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				verifyMembersInSMMR(t, meshNamespace, membersList, true)
-				verifyMembersInSMMR(t, meshNamespace, notInMembersList, false)
-			})
+			assertMembers(t, meshNamespace, membersList)
+			assertNonMembers(t, meshNamespace, notInMembersList)
 		})
 
 		t.NewSubTest("verify multiple memberselector").Run(func(t test.TestHelper) {
@@ -136,10 +131,8 @@ func TestClusterWideMode(t *testing.T) {
 			t.LogStep("Check whether the SMMR shows only namespaces as members: member-0")
 			membersList := []string{"member-0"}
 			notInMembersList := []string{"member-1", "member-2", "member-3", "member-4"}
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				verifyMembersInSMMR(t, meshNamespace, membersList, true)
-				verifyMembersInSMMR(t, meshNamespace, notInMembersList, false)
-			})
+			assertMembers(t, meshNamespace, membersList)
+			assertNonMembers(t, meshNamespace, notInMembersList)
 		})
 
 		t.NewSubTest("verify memberselector operator NOTIN").Run(func(t test.TestHelper) {
@@ -152,10 +145,8 @@ func TestClusterWideMode(t *testing.T) {
 			t.LogStep("Check whether the SMMR shows all the namespaces except: member-0")
 			membersList := []string{"member-1", "member-2", "member-3", "member-4"}
 			notInMembersList := []string{"member-0"}
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				verifyMembersInSMMR(t, meshNamespace, membersList, true)
-				verifyMembersInSMMR(t, meshNamespace, notInMembersList, false)
-			})
+			assertMembers(t, meshNamespace, membersList)
+			assertNonMembers(t, meshNamespace, notInMembersList)
 
 			t.LogStep("Reset member selector back to default")
 			oc.ApplyString(t, meshNamespace, defaultSMMR)
@@ -163,9 +154,7 @@ func TestClusterWideMode(t *testing.T) {
 
 			t.LogStep("Check whether the SMMR shows all 5 namespaces as members")
 			membersList = []string{"member-0", "member-1", "member-2", "member-3", "member-4"}
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				verifyMembersInSMMR(t, meshNamespace, membersList, true)
-			})
+			assertMembers(t, meshNamespace, membersList)
 		})
 
 		t.NewSubTest("verify sidecar injection").Run(func(t test.TestHelper) {
@@ -240,6 +229,18 @@ func TestClusterWideMode(t *testing.T) {
 					"The smcp has ClusterWide enable",
 					"The smcp does nos have ClusterWide enable"))
 		})
+	})
+}
+
+func assertMembers(t test.TestHelper, meshNamespace string, membersList []string) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		verifyMembersInSMMR(t, meshNamespace, membersList, true)
+	})
+}
+
+func assertNonMembers(t test.TestHelper, meshNamespace string, membersList []string) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		verifyMembersInSMMR(t, meshNamespace, membersList, false)
 	})
 }
 
