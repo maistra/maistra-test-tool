@@ -38,50 +38,52 @@ func InstallIfNotExist(t test.TestHelper, kubeConfigs ...string) {
 }
 
 func installWithOC(t test.TestHelper, oc oc.OC) {
-	if checkIfMetalLbOperatorExists(t, oc) {
-		t.Log("MetalLB operator already exists - skip installation of the operator")
-	} else {
-		installOperator(t, oc)
-	}
-	if checkIfMetalLbControllerExists(t, oc) {
-		t.Log("MetalLB controller already exists - skip deploying MetalLB")
-	} else {
-		deployMetalLB(t, oc)
-	}
-	if checkIfIPAddressPoolExists(t, oc) {
-		t.Log("IPAddressPool already exists - skip applying IPAddressPool")
-	} else {
-		createAddressPool(t, oc)
-	}
+	installOperator(t, oc)
+	deployMetalLB(t, oc)
+	createAddressPool(t, oc)
 }
 
 func installOperator(t test.TestHelper, oc oc.OC) {
+	t.Log("Check if MetalLB controller already exists")
+	if oc.ResourceExists(t, ns.MetalLB, "deployments", "metallb-operator-controller-manager") {
+		t.Log("MetalLB operator already exists - skip installation of the operator")
+		return
+	}
+
 	t.Log("Install MetalLB operator")
 	oc.ApplyString(t, ns.MetalLB, metallbOperator)
 	retry.UntilSuccess(t, func(t test.TestHelper) {
-		// pattern "cmd || true" is used to avoid getting fatal error
-		shell.Execute(t, fmt.Sprintf("oc get deployments -n %s metallb-operator-controller-manager || true", ns.MetalLB),
-			assert.OutputDoesNotContain(
-				"Error from server",
-				"metallb-operator-controller-manager was found as expected",
-				"failed to get metallb-operator-controller-manager"))
+		if !oc.ResourceExists(t, ns.MetalLB, "deployments", "metallb-operator-controller-manager") {
+			t.Log("metallb-operator-controller-manager not found - waiting until exists")
+		}
 	})
 	oc.WaitCondition(t, ns.MetalLB, "deployments", "metallb-operator-controller-manager", "Available")
 }
 
 func deployMetalLB(t test.TestHelper, oc oc.OC) {
+	t.Log("Check if MetalLB controller already exists")
+	if oc.ResourceExists(t, ns.MetalLB, "deployments", "controller") {
+		t.Log("MetalLB controller already exists - skip deploying MetalLB")
+		return
+	}
+
 	t.LogStep("Deploy MetalLB")
 	oc.ApplyString(t, ns.MetalLB, metallb)
 	retry.UntilSuccess(t, func(t test.TestHelper) {
-		oc.Get(t, ns.MetalLB, "deployments", "controller", assert.OutputDoesNotContain(
-			"Error from server",
-			"MetalLB controller was found",
-			"failed to get MetalLB controller"))
+		if !oc.ResourceExists(t, ns.MetalLB, "deployments", "controller") {
+			t.Log("MetalLB controller not found - waiting until exists")
+		}
 	})
 	oc.WaitCondition(t, ns.MetalLB, "deployments", "controller", "Available")
 }
 
 func createAddressPool(t test.TestHelper, oc oc.OC) {
+	t.Log("Check if MetalLB controller already exists")
+	if oc.ResourceExists(t, ns.MetalLB, "ipaddresspools", "worker-internal-ips") {
+		t.Log("IPAddressPool already exists - skip applying IPAddressPool")
+		return
+	}
+
 	t.LogStep("Fetch worker internal IPs")
 	ipAddrPool := `
 apiVersion: metallb.io/v1beta1
@@ -107,19 +109,4 @@ spec:
 	})
 	t.LogStep("Create IPAddressPool for MetalLB:\n" + ipAddrPool)
 	oc.ApplyString(t, ns.MetalLB, ipAddrPool)
-}
-
-func checkIfMetalLbOperatorExists(t test.TestHelper, oc oc.OC) bool {
-	t.Log("Check if MetalLB operator already exists")
-	return oc.ResourceExists(t, ns.MetalLB, "deployments", "metallb-operator-controller-manager")
-}
-
-func checkIfMetalLbControllerExists(t test.TestHelper, oc oc.OC) bool {
-	t.Log("Check if MetalLB controller already exists")
-	return oc.ResourceExists(t, ns.MetalLB, "deployments", "controller")
-}
-
-func checkIfIPAddressPoolExists(t test.TestHelper, oc oc.OC) bool {
-	t.Log("Check if MetalLB controller already exists")
-	return oc.ResourceExists(t, ns.MetalLB, "ipaddresspools", "worker-internal-ips")
 }
