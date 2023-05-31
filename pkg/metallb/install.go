@@ -12,6 +12,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 var (
@@ -20,6 +21,14 @@ var (
 
 	//go:embed yaml/metallb.yaml
 	metallb string
+
+	metallbVersions = map[string]string{
+		"v4.9":  "metallb-operator.4.9.0-2023032815534",
+		"v4.10": "metallb-operator.4.10.0-202305032028",
+		"v4.11": "metallb-operator.4.11.0-202302271715",
+		"v4.12": "metallb-operator.4.12.0-202305102015",
+		"v4.13": "metallb-operator.v4.13.0-202304190216",
+	}
 )
 
 func InstallIfNotExist(t test.TestHelper, kubeConfigs ...string) {
@@ -51,7 +60,9 @@ func installOperator(t test.TestHelper, oc oc.OC) {
 	}
 
 	t.Log("Install MetalLB operator")
-	oc.ApplyString(t, ns.MetalLB, metallbOperator)
+	ocpVersion := version.ParseOCPVersion(oc.GetOCPVersion(t))
+	metallbVersion := metallbVersions[ocpVersion.String()]
+	oc.ApplyTemplateString(t, ns.MetalLB, metallbOperator, map[string]string{"Version": metallbVersion})
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		if !oc.ResourceExists(t, ns.MetalLB, "deployments", "metallb-operator-controller-manager") {
 			t.Log("metallb-operator-controller-manager not found - waiting until exists")
