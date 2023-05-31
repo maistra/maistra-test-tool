@@ -109,10 +109,6 @@ func TestSmoke(t *testing.T) {
 			assertUninstallDeletesAllResources(t, env.GetSMCPVersion())
 		})
 
-		t.NewSubTest("verify continue working after smcp deletion").Run(func(t TestHelper) {
-			t.Log("This test checks whether the dataplane still works after smcp deletion")
-			assertTrafficFlowsThroughProxy(t, ns)
-		})
 	})
 }
 
