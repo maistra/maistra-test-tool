@@ -140,6 +140,9 @@ func assertProxiesReadyInLessThan10Seconds(t TestHelper, ns string) {
 		}
 
 		startedAt, err := time.Parse(time.RFC3339, fields[1])
+		if err != nil {
+			t.Fatalf("Error parsing time for pod %s: %s", fields[0], err)
+		}
 		lastTransitionTime, err := time.Parse(time.RFC3339, fields[2])
 
 		if err != nil || startedAt.IsZero() || lastTransitionTime.IsZero() {
