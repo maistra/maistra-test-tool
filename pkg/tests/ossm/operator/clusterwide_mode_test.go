@@ -266,7 +266,7 @@ func verifyMembersInSMMR(t test.TestHelper, meshNamespace string, membersList []
 			if shouldExist {
 				t.Fatalf("The member '%s' is missing from the members list.", member)
 			} else {
-				t.Fatalf("The member '%s' exists in the members list.", member)
+				t.Fatalf("Expected namespace %s to not be a member, but it was", member)
 			}
 		}
 	}
