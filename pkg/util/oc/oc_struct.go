@@ -426,7 +426,11 @@ func (o OC) GetJson(t test.TestHelper, ns, kind, name, jsonPath string) string {
 	var jsonString string
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		jsonString = shell.Execute(t, fmt.Sprintf("oc %s get %s %s -o jsonpath='%s'", nsFlag(ns), kind, name, jsonPath))
+		if jsonPath == "" {
+			jsonString = shell.Execute(t, fmt.Sprintf("oc %s get %s %s -o json", nsFlag(ns), kind, name))
+		} else {
+			jsonString = shell.Execute(t, fmt.Sprintf("oc %s get %s %s -o jsonpath='%s'", nsFlag(ns), kind, name, jsonPath))
+		}
 	})
 	return jsonString
 }
