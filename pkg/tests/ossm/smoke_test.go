@@ -43,12 +43,6 @@ var (
 	}
 )
 
-type PodTime struct {
-	PodName            string
-	StartedAt          time.Time
-	ReadyAt time.Time
-}
-
 func TestSmoke(t *testing.T) {
 	NewTest(t).Groups(ARM, Full, Smoke, InterOp, Disconnected).Run(func(t TestHelper) {
 		t.Log("Smoke Test for SMCP: deploy, upgrade, bookinfo and uninstall")
@@ -132,54 +126,33 @@ func assertTrafficFlowsThroughProxy(t TestHelper, ns string) {
 	})
 }
 
-func validateStartUpProxyTime(t TestHelper, ns string) {
-	podTimes := ExtractProxyTimes(t, ns)
-	for _, podTime := range podTimes {
-		startupTime := podTime.LastTransitionTime.Sub(podTime.StartedAt)
-		t.Logf("Proxy startup time: %s", startupTime.String())
-		if startupTime > 10*time.Second {
-			t.Fatalf("Proxy startup time is too long: %s", startupTime.String())
-		}
-	}
-}
-
-func ExtractProxyTimes(t TestHelper, ns string) []PodTime {
+func assertProxiesReadyInLessThan10Seconds(t TestHelper, ns string) {
 	t.Log("Extracting proxy startup time and last transition time for all the pods in the namespace")
 	proxyTimeList := oc.GetJson(t, ns, "pods", "", `{range .items[*]}{.metadata.name}{"\t"}{.status.containerStatuses[?(@.name=="istio-proxy")].state.running.startedAt}{"\t"}{.status.conditions[?(@.type=="Ready")].lastTransitionTime}{"\n"}{end}`)
-
-	var podTimes []PodTime
 
 	scanner := bufio.NewScanner(strings.NewReader(proxyTimeList))
 	for scanner.Scan() {
 		line := scanner.Text()
 		fields := strings.Fields(line)
-		podName := fields[0]
 
-		// Skip if we have less than 3 fields, because we expect 3 fields per line
 		if len(fields) < 3 {
-			continue
+			continue // Skip lines that don't have 3 fields
 		}
+
 		startedAt, err := time.Parse(time.RFC3339, fields[1])
-		if err != nil || startedAt.IsZero() {
-			continue // Skip pods that are not running or have invalid start time
-		}
-
 		lastTransitionTime, err := time.Parse(time.RFC3339, fields[2])
-		if err != nil || lastTransitionTime.IsZero() {
-			continue // Skip pods that are not running or have invalid last transition time
+
+		if err != nil || startedAt.IsZero() || lastTransitionTime.IsZero() {
+			continue // Skip invalid lines or pods that are not running
 		}
 
-		podTime := PodTime{
-			PodName:            podName,
-			StartedAt:          startedAt,
-			LastTransitionTime: lastTransitionTime,
-		}
-		podTimes = append(podTimes, podTime)
+		startupTime := lastTransitionTime.Sub(startedAt)
+		t.Logf("Proxy startup time for pod %s: %s", fields[0], startupTime.String())
 
-		t.Logf("Pod %s startedAt: %s, lastTransitionTime: %s", podName, startedAt.String(), lastTransitionTime.String())
+		if startupTime > 10*time.Second {
+			t.Fatalf("Proxy startup time is too long: %s", startupTime.String())
+		}
 	}
-
-	return podTimes
 }
 
 func assertSidecarInjectedInAllBookinfoPods(t TestHelper, ns string) {
