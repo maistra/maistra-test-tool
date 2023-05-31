@@ -246,9 +246,9 @@ func assertNonMembers(t test.TestHelper, meshNamespace string, membersList []str
 
 // verifyMembersInSMMR verifies whether the SMMR has or not have the members provided in the members list
 func verifyMembersInSMMR(t test.TestHelper, meshNamespace string, membersList []string, shouldExist bool) {
-	smcpYaml := oc.GetYaml(t, meshNamespace, "smmr", "default")
+	smmrYaml := oc.GetYaml(t, meshNamespace, "smmr", "default")
 	var smmr ServiceMeshMemberRoll
-	err := yaml.Unmarshal([]byte(smcpYaml), &smmr)
+	err := yaml.Unmarshal([]byte(smmrYaml), &smmr)
 	if err != nil {
 		log.Fatal(err)
 	}
