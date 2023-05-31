@@ -428,36 +428,35 @@ func (o OC) GetJson(t test.TestHelper, ns, kind, name, jsonPath string) string {
 		t.T().Helper()
 		jsonString = shell.Execute(t, fmt.Sprintf("oc %s get %s %s -o jsonpath='%s'", nsFlag(ns), kind, name, jsonPath))
 	})
-
 	return jsonString
 }
 
 // GetProxy returns the Proxy object from the cluster
 func (o OC) GetProxy(t test.TestHelper) *Proxy {
-	proxy := o.GetJson(t, "", "proxy", "cluster", "{.status}")
+	proxyJson := o.GetJson(t, "", "proxy", "cluster", "{.status}")
 
-	proxyStruct := &Proxy{}
+	proxy := &Proxy{}
 	var data map[string]interface{}
-	err := json.Unmarshal([]byte(proxy), &data)
+	err := json.Unmarshal([]byte(proxyJson), &data)
 	if err != nil {
-		fmt.Printf("Failed to parse JSON: %s\n", err)
+		t.Fatalf("Failed to parse JSON: %s\n", err)
 	}
 	if data["httpProxy"] == nil {
-		proxyStruct.HTTPProxy = ""
+		proxy.HTTPProxy = ""
 	} else {
-		proxyStruct.HTTPProxy = data["httpProxy"].(string)
+		proxy.HTTPProxy = data["httpProxy"].(string)
 	}
 	if data["httpsProxy"] == nil {
-		proxyStruct.HTTPSProxy = ""
+		proxy.HTTPSProxy = ""
 	} else {
-		proxyStruct.HTTPSProxy = data["httpsProxy"].(string)
+		proxy.HTTPSProxy = data["httpsProxy"].(string)
 	}
 	if data["noProxy"] == nil {
-		proxyStruct.NoProxy = ""
+		proxy.NoProxy = ""
 	} else {
-		proxyStruct.NoProxy = data["noProxy"].(string)
+		proxy.NoProxy = data["noProxy"].(string)
 	}
-	return proxyStruct
+	return proxy
 }
 
 func setEnv(t test.TestHelper, key string, value string) {
