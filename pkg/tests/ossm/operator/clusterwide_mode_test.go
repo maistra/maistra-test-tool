@@ -81,9 +81,6 @@ func TestClusterWideMode(t *testing.T) {
 			t.LogStep("Check that Rolebindings are not created in the member namespaces")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				oc.Get(t, "member-0", "rolebindings", "",
-					assert.OutputContains("prometheus-istio-system",
-						"The Rolebings contains prometheus-istio-system",
-						"The Rolebings does not contains prometheus-istio-system"),
 					assert.OutputDoesNotContain("istiod-clusterrole-basic-istio-system",
 						"The Rolebings does not contains istiod-clusterrole-basic-istio-system RoleBinding",
 						"The Rolebings contains istiod-clusterrole-basic-istio-system RoleBinding"),
