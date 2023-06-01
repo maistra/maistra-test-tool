@@ -44,7 +44,7 @@ func TestSMCPAnnotations(t *testing.T) {
 
 			t.LogStep("Get annotations and verify that the pod has the expected: sidecar.maistra.io/proxyEnv : { \"maistra_test_env\": \"env_value\", \"maistra_test_env_2\": \"env_value_2\" }")
 			annotations := VerifyAndGetPodAnnotation(t, pod.MatchingSelector("app=env", ns))
-			assertAnnotationIsPresent(t, pod.MatchingSelector("app=env", ns), annotations, "sidecar.maistra.io/proxyEnv", `{ "maistra_test_env": "env_value", "maistra_test_env_2": "env_value_2" }`)
+			assertAnnotationIsPresent(t, annotations, "sidecar.maistra.io/proxyEnv", `{ "maistra_test_env": "env_value", "maistra_test_env_2": "env_value_2" }`)
 		})
 
 		// Test that the SMCP automatic injection with quotes works
@@ -70,9 +70,9 @@ func TestSMCPAnnotations(t *testing.T) {
 			t.LogStep("Get annotations and verify that the pod has the expected: test1.annotation-from-smcp : test1, test2.annotation-from-smcp : [\"test2\"], test3.annotation-from-smcp : {test3}")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				annotations := VerifyAndGetPodAnnotation(t, pod.MatchingSelector("app=env", ns))
-				assertAnnotationIsPresent(t, pod.MatchingSelector("app=env", ns), annotations, "test1.annotation-from-smcp", "test1")
-				assertAnnotationIsPresent(t, pod.MatchingSelector("app=env", ns), annotations, "test2.annotation-from-smcp", `["test2"]`)
-				assertAnnotationIsPresent(t, pod.MatchingSelector("app=env", ns), annotations, "test3.annotation-from-smcp", "{test3}")
+				assertAnnotationIsPresent(t, annotations, "test1.annotation-from-smcp", "test1")
+				assertAnnotationIsPresent(t, annotations, "test2.annotation-from-smcp", `["test2"]`)
+				assertAnnotationIsPresent(t, annotations, "test3.annotation-from-smcp", "{test3}")
 			})
 		})
 	})
@@ -102,10 +102,11 @@ func VerifyAndGetPodAnnotation(t test.TestHelper, podLocator oc.PodLocatorFunc) 
 	return annotations
 }
 
-func assertAnnotationIsPresent(t test.TestHelper, podLocator oc.PodLocatorFunc, annotations map[string]string, key string, expectedValue string) {
+func assertAnnotationIsPresent(t test.TestHelper, annotations map[string]string, key string, expectedValue string) {
+	locator := pod.MatchingSelector("app=env", "foo")
 	if annotations[key] != expectedValue {
-		oc.DeletePod(t, podLocator)
-		oc.WaitPodReady(t, podLocator)
+		oc.DeletePod(t, locator)
+		oc.WaitPodReady(t, locator)
 		t.Fatalf("Expected annotation %s=%s, but got %s", key, expectedValue, annotations[key])
 	}
 }
