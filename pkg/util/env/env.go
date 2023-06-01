@@ -84,3 +84,7 @@ func IsLogFailedRetryAttempts() bool {
 func GetOutputDir() string {
 	return getenv("OUTPUT_DIR", fmt.Sprintf("%s/tests/result-%s/%s", GetRootDir(), initTime.Format("20060102150405"), GetSMCPVersion()))
 }
+
+func IsMetalLBInternalIPEnabled() bool {
+	return getenv("METALLB_INTERNAL_IP_ENABLED", "false") == "true"
+}

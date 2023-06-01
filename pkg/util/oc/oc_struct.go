@@ -463,6 +463,17 @@ func (o OC) GetProxy(t test.TestHelper) *Proxy {
 	return proxy
 }
 
+func (o OC) ResourceExists(t test.TestHelper, ns, kind, name string) bool {
+	t.T().Helper()
+	var exists bool
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		output := shell.Execute(t, fmt.Sprintf("oc %s get %s/%s || true", nsFlag(ns), kind, name))
+		exists = !(strings.Contains(output, "Error from server (NotFound)") || strings.Contains(output, "No resources found"))
+	})
+	return exists
+}
+
 func setEnv(t test.TestHelper, key string, value string) {
 	if err := os.Setenv(key, value); err != nil {
 		t.Fatalf("could not set %s: %v", key, err)
