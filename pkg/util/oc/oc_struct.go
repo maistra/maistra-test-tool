@@ -404,9 +404,13 @@ func (o OC) Label(t test.TestHelper, ns string, kind string, name string, labels
 func (o OC) Get(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) string {
 	t.T().Helper()
 	var val string
+	element := fmt.Sprintf("%s/%s", kind, name)
+	if name == "" {
+		element = kind
+	}
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		val = shell.Execute(t, fmt.Sprintf("oc %s get %s/%s", nsFlag(ns), kind, name), checks...)
+		val = shell.Execute(t, fmt.Sprintf("oc %s get %s", nsFlag(ns), element), checks...)
 	})
 	return val
 }

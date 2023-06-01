@@ -3,15 +3,17 @@ package operator
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
-	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -20,6 +22,12 @@ import (
 	test "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
+
+type ServiceMeshMemberRoll struct {
+	Status struct {
+		Members []string `yaml:"members"`
+	} `yaml:"status"`
+}
 
 func TestClusterWideMode(t *testing.T) {
 	test.NewTest(t).Groups(test.Full, test.Disconnected).MinVersion(version.SMCP_2_4).Run(func(t test.TestHelper) {
@@ -31,7 +39,7 @@ func TestClusterWideMode(t *testing.T) {
 
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, meshNamespace)
-			deleteMemberNamespaces(t, 50)
+			deleteMemberNamespaces(t, 5)
 		})
 
 		t.LogStepf("Delete and recreate namespace %s", meshNamespace)
@@ -56,18 +64,30 @@ func TestClusterWideMode(t *testing.T) {
 		t.NewSubTest("default namespace selector").Run(func(t test.TestHelper) {
 			t.Log("Check whether namespaces with the label istio-injection=enabled become members automatically")
 
-			t.LogStep("Create 50 member namespaces")
-			createMemberNamespaces(t, 50)
+			t.LogStep("Create 5 member namespaces")
+			createMemberNamespaces(t, 5)
 
 			t.LogStep("Wait for SMMR to be Ready")
 			oc.WaitSMMRReady(t, meshNamespace)
 
-			t.LogStep("Check whether the SMMR shows all 50 namespaces as members")
-			shell.Execute(t,
-				fmt.Sprintf("oc -n %s get smmr default", meshNamespace),
-				require.OutputContains("50/50",
-					"all 50 namespaces are members",
-					"expected SMMR to show 50 member namespaces, but that wasn't the case"))
+			t.LogStep("Check whether the SMMR shows the 5 namespaces created as members")
+			membersList := []string{"member-0", "member-1", "member-2", "member-3", "member-4"}
+			assertMembers(t, meshNamespace, membersList)
+
+		})
+
+		t.NewSubTest("RoleBindings verification").Run(func(t test.TestHelper) {
+			t.Log("Related to OSSM-3468")
+			t.LogStep("Check that Rolebindings are not created in the member namespaces")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				oc.Get(t, "member-0", "rolebindings", "",
+					assert.OutputDoesNotContain("istiod-clusterrole-basic-istio-system",
+						"The Rolebings does not contains istiod-clusterrole-basic-istio-system RoleBinding",
+						"The Rolebings contains istiod-clusterrole-basic-istio-system RoleBinding"),
+					assert.OutputDoesNotContain("istiod-gateway-controller-basic-istio-system",
+						"The Rolebings does not contains istiod-gateway-controller-basic-istio-system",
+						"The Rolebings contains istiod-gateway-controller-basic-istio-system"))
+			})
 		})
 
 		t.NewSubTest("customize SMMR").Run(func(t test.TestHelper) {
@@ -77,58 +97,61 @@ func TestClusterWideMode(t *testing.T) {
 			oc.ApplyString(t, meshNamespace, customSMMR)
 			oc.WaitSMMRReady(t, meshNamespace)
 
-			t.LogStep("Check whether the SMMR shows only two namespaces as members")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				shell.Execute(t,
-					fmt.Sprintf("oc -n %s get smmr default", meshNamespace),
-					require.OutputContains("2/2",
-						"two namespaces are members",
-						"expected SMMR to show 2 member namespaces, but that wasn't the case"))
-			})
+			t.LogStep("Check whether the SMMR shows only two namespaces as members: member-0 and member-1")
+			membersList := []string{"member-0", "member-1"}
+			notInMembersList := []string{"member-2", "member-3", "member-4"}
+			assertMembers(t, meshNamespace, membersList)
+			assertNonMembers(t, meshNamespace, notInMembersList)
+		})
+
+		t.NewSubTest("verify memberselector operator IN").Run(func(t test.TestHelper) {
+			t.Log("Check the use of IN in memberselector")
 
 			t.LogStep("Check the use of IN operator in member selector matchExpressions")
 			oc.ApplyString(t, meshNamespace, smmrInOperator)
 			oc.WaitSMMRReady(t, meshNamespace)
 
 			t.LogStep("Check whether the SMMR shows only one namespace as members: member-0")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				shell.Execute(t,
-					fmt.Sprintf("oc -n %s get smmr default", meshNamespace),
-					require.OutputContains("1/1",
-						"one namespace are in members",
-						"expected SMMR to show 1 member namespace, but that wasn't the case"))
-				shell.Execute(t,
-					fmt.Sprintf("oc -n %s describe smmr default", meshNamespace),
-					require.OutputContains("member-0",
-						"member-0 is in members",
-						"expected SMMR to show member-0 as member namespace, but that wasn't the case"))
-			})
+			membersList := []string{"member-0"}
+			notInMembersList := []string{"member-1", "member-2", "member-3", "member-4"}
+			assertMembers(t, meshNamespace, membersList)
+			assertNonMembers(t, meshNamespace, notInMembersList)
+		})
+
+		t.NewSubTest("verify multiple memberselector").Run(func(t test.TestHelper) {
+			t.Log("Check if is possible to use multiple memberselector at the same time")
+
+			t.LogStep("Check the use of multiple selector at the same time")
+			oc.ApplyString(t, meshNamespace, smmrMultipleSelectors)
+			oc.WaitSMMRReady(t, meshNamespace)
+
+			t.LogStep("Check whether the SMMR shows only namespaces as members: member-0")
+			membersList := []string{"member-0"}
+			notInMembersList := []string{"member-1", "member-2", "member-3", "member-4"}
+			assertMembers(t, meshNamespace, membersList)
+			assertNonMembers(t, meshNamespace, notInMembersList)
+		})
+
+		t.NewSubTest("verify memberselector operator NOTIN").Run(func(t test.TestHelper) {
+			t.Log("Check the use of NOTIN in memberselector")
 
 			t.LogStep("Check the use of NotIn operator in member selector matchExpressions")
 			oc.ApplyString(t, meshNamespace, smmrNotInOperator)
 			oc.WaitSMMRReady(t, meshNamespace)
 
 			t.LogStep("Check whether the SMMR shows all the namespaces except: member-0")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				shell.Execute(t,
-					fmt.Sprintf("oc -n %s get smmr default", meshNamespace),
-					require.OutputContains("55/55",
-						"All the namespaces are in members except member-0",
-						"expected SMMR to show 55 member namespace, but that wasn't the case"))
-			})
+			membersList := []string{"member-1", "member-2", "member-3", "member-4"}
+			notInMembersList := []string{"member-0"}
+			assertMembers(t, meshNamespace, membersList)
+			assertNonMembers(t, meshNamespace, notInMembersList)
 
 			t.LogStep("Reset member selector back to default")
 			oc.ApplyString(t, meshNamespace, defaultSMMR)
 			oc.WaitSMMRReady(t, meshNamespace)
 
-			t.LogStep("Check whether the SMMR shows all 50 namespaces as members")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				shell.Execute(t,
-					fmt.Sprintf("oc -n %s get smmr default", meshNamespace),
-					require.OutputContains("50/50",
-						"all 50 namespaces are members",
-						"expected SMMR to show 50 member namespaces, but that wasn't the case"))
-			})
+			t.LogStep("Check whether the SMMR shows all 5 namespaces as members")
+			membersList = []string{"member-0", "member-1", "member-2", "member-3", "member-4"}
+			assertMembers(t, meshNamespace, membersList)
 		})
 
 		t.NewSubTest("verify sidecar injection").Run(func(t test.TestHelper) {
@@ -172,34 +195,78 @@ func TestClusterWideMode(t *testing.T) {
 			})
 		})
 
-		// t.NewSubTest("cluster wide works with profiles").Run(func(t test.TestHelper) {
-		// 	t.Log("Check whether the cluster wide feature works with profiles")
+		t.NewSubTest("cluster wide works with profiles").Run(func(t test.TestHelper) {
+			t.Log("Check whether the cluster wide feature works with profiles")
 
-		// 	t.LogStep("Delete SMCP and SMMR")
-		// 	oc.RecreateNamespace(t, meshNamespace)
+			t.LogStep("Delete SMCP and SMMR")
+			oc.DeleteFromTemplate(t, meshNamespace, clusterWideSMCP, ossm.DefaultSMCP())
+			oc.DeleteFromString(t, meshNamespace, defaultSMMR)
 
-		// 	t.LogStep("Create a profile with a cluster wide feature and restart OSSM operator")
-		// 	oc.CreateConfigMapFromFiles(t,
-		// 		"openshift-operators",
-		// 		"smcp-templates",
-		// 		ossm.GetProfileFile())
-		// 	podLocator := pod.MatchingSelector("name=istio-operator", "openshift-operators")
-		// 	oc.DeletePod(t, podLocator)
-		// 	oc.WaitPodReady(t, podLocator)
+			t.LogStep("Deploy SMCP with the profile")
+			oc.ApplyTemplate(t,
+				meshNamespace,
+				clusterWideSMCPWithProfile,
+				map[string]string{"Name": "cluster-wide", "Version": env.GetSMCPVersion().String()})
+			oc.WaitSMCPReady(t, meshNamespace, "cluster-wide")
 
-		// 	t.LogStep("Deploy SMCP with the profile")
-		// 	oc.ApplyTemplate(t, meshNamespace, clusterWideSMCPWithProfile, ossm.DefaultSMCP())
-		// 	oc.WaitSMCPReady(t, meshNamespace, smcpName)
+			t.LogStep("Check whether SMMR is created automatically")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				oc.Get(t, meshNamespace, "servicemeshmemberroll", "default",
+					assert.OutputContains("default",
+						"The SMMR was created immediately after the SMCP was created",
+						"The SMMR resource was not created"))
+			})
 
-		// 	t.LogStep("Check whether SMMR is created automatically")
-		// 	retry.UntilSuccess(t, func(t test.TestHelper) {
-		// 		oc.Get(t, meshNamespace, "servicemeshmemberroll", "default",
-		// 			assert.OutputContains("default",
-		// 				"The SMMR was created immediately after the SMCP was created",
-		// 				"The SMMR resource was not created"))
-		// 	})
-		// })
+			t.LogStep("verify that smcp has ClusterWide enable")
+			oc.GetYaml(t,
+				meshNamespace,
+				"smcp",
+				"cluster-wide",
+				assert.OutputContains("mode: ClusterWide",
+					"The smcp has ClusterWide enable",
+					"The smcp does nos have ClusterWide enable"))
+		})
 	})
+}
+
+func assertMembers(t test.TestHelper, meshNamespace string, membersList []string) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		verifyMembersInSMMR(t, meshNamespace, membersList, true)
+	})
+}
+
+func assertNonMembers(t test.TestHelper, meshNamespace string, membersList []string) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		verifyMembersInSMMR(t, meshNamespace, membersList, false)
+	})
+}
+
+// verifyMembersInSMMR verifies whether the SMMR has or not have the members provided in the members list
+func verifyMembersInSMMR(t test.TestHelper, meshNamespace string, membersList []string, shouldExist bool) {
+	smmrYaml := oc.GetYaml(t, meshNamespace, "smmr", "default")
+	var smmr ServiceMeshMemberRoll
+	err := yaml.Unmarshal([]byte(smmrYaml), &smmr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	members := smmr.Status.Members
+	for _, member := range membersList {
+		found := false
+		for _, m := range members {
+			if member == m {
+				found = true
+				break
+			}
+		}
+		if found != shouldExist {
+			if shouldExist {
+				t.Fatalf("The member '%s' is missing from the members list.", member)
+			} else {
+				t.Fatalf("Expected namespace %s to not be a member, but it was", member)
+			}
+		}
+	}
 }
 
 func deleteMemberNamespaces(t test.TestHelper, count int) {
@@ -280,15 +347,15 @@ spec:
       type: ThirdParty
   {{ end }}`
 
-	// 	clusterWideSMCPWithProfile = `
-	// apiVersion: maistra.io/v2
-	// kind: ServiceMeshControlPlane
-	// metadata:
-	//   name: {{ .Name }}
-	// spec:
-	//   version: {{ .Version }}
-	//   profiles:
-	//   - clusterWide`
+	clusterWideSMCPWithProfile = `
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: {{ .Name }}
+spec:
+  version: {{ .Version }}
+  profiles:
+  - gateway-controller`
 
 	customSMMR = `
 apiVersion: maistra.io/v1
@@ -300,6 +367,23 @@ spec:
   - member-0
   - member-1
   memberSelectors: []`
+
+	smmrMultipleSelectors = `
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  memberSelectors:
+  - matchExpressions:
+    - key: kubernetes.io/metadata.name
+      operator: In
+      values:
+      - member-0
+    - key: kubernetes.io/metadata.name
+      operator: NotIn
+      values:
+      - member-1`
 
 	defaultSMMR = `
 apiVersion: maistra.io/v1
