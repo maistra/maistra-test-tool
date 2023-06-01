@@ -66,7 +66,7 @@ func installOperator(t test.TestHelper, oc oc.OC) {
 	oc.ApplyTemplateString(t, ns.MetalLB, metallbOperator, map[string]string{"Version": metallbVersion})
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		if !oc.ResourceExists(t, ns.MetalLB, "deployments", "metallb-operator-controller-manager") {
-			t.Log("metallb-operator-controller-manager not found - waiting until exists")
+			t.Error("metallb-operator-controller-manager not found - waiting until exists")
 		}
 	})
 	oc.WaitCondition(t, ns.MetalLB, "deployments", "metallb-operator-controller-manager", "Available")
@@ -83,7 +83,7 @@ func deployMetalLB(t test.TestHelper, oc oc.OC) {
 	oc.ApplyString(t, ns.MetalLB, metallb)
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		if !oc.ResourceExists(t, ns.MetalLB, "deployments", "controller") {
-			t.Log("MetalLB controller not found - waiting until exists")
+			t.Error("MetalLB controller not found - waiting until exists")
 		}
 	})
 	oc.WaitCondition(t, ns.MetalLB, "deployments", "controller", "Available")
