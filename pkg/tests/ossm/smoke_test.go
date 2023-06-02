@@ -128,7 +128,14 @@ func assertTrafficFlowsThroughProxy(t TestHelper, ns string) {
 
 func assertProxiesReadyInLessThan10Seconds(t TestHelper, ns string) {
 	t.Log("Extracting proxy startup time and last transition time for all the pods in the namespace")
-	proxyTimeList := oc.GetJson(t, ns, "pods", "", `{range .items[*]}{.metadata.name}{"\t"}{.status.containerStatuses[?(@.name=="istio-proxy")].state.running.startedAt}{"\t"}{.status.conditions[?(@.type=="Ready")].lastTransitionTime}{"\n"}{end}`)
+	startedAt := oc.GetJson(t, ns, "pods", "", `{range .items[*]}{.status.containerStatuses[?(@.name=="istio-proxy")].state.running.startedAt}{end}`)
+	readyAt := oc.GetJson(t, ns, "pods", "", `{range .items[*]}{.status.conditions[?(@.type=="Ready")].lastTransitionTime}{end}`)
+	startedAt = time.Parse(...)
+	readyAt = time.Parse(...)
+	startupTime := readyAt.Sub(startedAt)
+	if startupTime > 10*time.Second {
+        	t.Fatalf("Proxy startup time is too long: %s", startupTime.String())
+	}
 
 	scanner := bufio.NewScanner(strings.NewReader(proxyTimeList))
 	for scanner.Scan() {
