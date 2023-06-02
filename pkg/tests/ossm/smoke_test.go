@@ -79,7 +79,7 @@ func TestSmoke(t *testing.T) {
 			t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
 			t.Log("From proxy json , verify the time between status.containerStatuses.state.running.startedAt and status.conditions[type=Ready].lastTransitionTime")
 			t.Log("The proxy startup time should be less than 10 seconds for ratings pod")
-			assertProxiesReadyInLessThan10Seconds(t, ns)
+			assertProxiesReadyInLessThan3Seconds(t, ns)
 		})
 
 		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
@@ -126,32 +126,32 @@ func assertTrafficFlowsThroughProxy(t TestHelper, ns string) {
 	})
 }
 
-func assertProxiesReadyInLessThan10Seconds(t TestHelper, ns string) {
+func assertProxiesReadyInLessThan3Seconds(t TestHelper, ns string) {
 	t.Log("Extracting proxy startup time and last transition time for all the pods in the namespace")
-	startedAt := oc.GetJson(t, ns, "pods", "", `{range .items[*]}{.status.containerStatuses[?(@.name=="istio-proxy")].state.running.startedAt}{"\n"}{end}`)
-	readyAt := oc.GetJson(t, ns, "pods", "", `{range .items[*]}{.status.conditions[?(@.type=="Ready")].lastTransitionTime}{"\n"}{end}`)
+	podsList := oc.GetJson(t, ns, "pods", "", `{range .items[*]}{.metadata.name}{"\n"}{end}`)
 
-	startedAtList := strings.Split(startedAt, "\n")
-	readyAtList := strings.Split(readyAt, "\n")
-
-	for i := 0; i < len(startedAtList) && i < len(readyAtList); i++ {
-		startedAtLine := startedAtList[i]
-		readyAtLine := readyAtList[i]
-		if startedAtLine == "" || readyAtLine == "" {
+	for _, podName := range strings.Split(podsList, "\n") {
+		// skip sleep pod because it doesn't have a proxy
+		if strings.Contains(podName, "sleep") {
 			continue
 		}
-
-		podStartedAt, err := time.Parse(time.RFC3339, startedAtLine)
-		if err != nil {
-			t.Fatalf("Error parsing time for pod %d: %s", i, err)
-		}
-		podReadyAt, err := time.Parse(time.RFC3339, readyAtLine)
-		if err != nil {
-			t.Fatalf("Error parsing time for pod %d: %s", i, err)
-		}
-		startupTime := podReadyAt.Sub(podStartedAt)
-		if startupTime > 10*time.Second {
-			t.Fatalf("Proxy startup time is too long: %s", startupTime.String())
+		startedAt := oc.GetJson(t, ns, "pod", podName, `{.status.containerStatuses[?(@.name=="istio-proxy")].state.running.startedAt}{end}`)
+		readyAt := oc.GetJson(t, ns, "pod", podName, `{.status.conditions[?(@.type=="Ready")].lastTransitionTime}{end}`)
+		if startedAt != "" && readyAt != "" {
+			podStartedAt, err := time.Parse(time.RFC3339, startedAt)
+			if err != nil {
+				t.Fatalf("Error parsing time for pod %d", podName)
+			}
+			podReadyAt, err := time.Parse(time.RFC3339, readyAt)
+			if err != nil {
+				t.Fatalf("Error parsing time for pod %d", podName)
+			}
+			startupTime := podReadyAt.Sub(podStartedAt)
+			if startupTime > 3*time.Second {
+				t.Fatalf("Proxy startup time is too long: %s", startupTime.String())
+			}
+		} else {
+			t.Fatalf("Error getting proxy startup time for pod %s", podName)
 		}
 	}
 }
