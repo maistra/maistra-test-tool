@@ -128,37 +128,28 @@ func assertTrafficFlowsThroughProxy(t TestHelper, ns string) {
 
 func assertProxiesReadyInLessThan10Seconds(t TestHelper, ns string) {
 	t.Log("Extracting proxy startup time and last transition time for all the pods in the namespace")
-	startedAt := oc.GetJson(t, ns, "pods", "", `{range .items[*]}{.status.containerStatuses[?(@.name=="istio-proxy")].state.running.startedAt}{end}`)
-	readyAt := oc.GetJson(t, ns, "pods", "", `{range .items[*]}{.status.conditions[?(@.type=="Ready")].lastTransitionTime}{end}`)
-	startedAt = time.Parse(...)
-	readyAt = time.Parse(...)
-	startupTime := readyAt.Sub(startedAt)
-	if startupTime > 10*time.Second {
-        	t.Fatalf("Proxy startup time is too long: %s", startupTime.String())
-	}
+	startedAt := oc.GetJson(t, ns, "pods", "", `{range .items[*]}{.status.containerStatuses[?(@.name=="istio-proxy")].state.running.startedAt}{"\n"}{end}`)
+	readyAt := oc.GetJson(t, ns, "pods", "", `{range .items[*]}{.status.conditions[?(@.type=="Ready")].lastTransitionTime}{"\n"}{end}`)
 
-	scanner := bufio.NewScanner(strings.NewReader(proxyTimeList))
-	for scanner.Scan() {
-		line := scanner.Text()
-		fields := strings.Fields(line)
+	startedAtList := strings.Split(startedAt, "\n")
+	readyAtList := strings.Split(readyAt, "\n")
 
-		if len(fields) < 3 {
-			continue // Skip lines that don't have 3 fields
+	for i := 0; i < len(startedAtList) && i < len(readyAtList); i++ {
+		startedAtLine := startedAtList[i]
+		readyAtLine := readyAtList[i]
+		if startedAtLine == "" || readyAtLine == "" {
+			continue
 		}
 
-		startedAt, err := time.Parse(time.RFC3339, fields[1])
+		podStartedAt, err := time.Parse(time.RFC3339, startedAtLine)
 		if err != nil {
-			t.Fatalf("Error parsing time for pod %s: %s", fields[0], err)
+			t.Fatalf("Error parsing time for pod %d: %s", i, err)
 		}
-		lastTransitionTime, err := time.Parse(time.RFC3339, fields[2])
-
-		if err != nil || startedAt.IsZero() || lastTransitionTime.IsZero() {
-			continue // Skip invalid lines or pods that are not running
+		podReadyAt, err := time.Parse(time.RFC3339, readyAtLine)
+		if err != nil {
+			t.Fatalf("Error parsing time for pod %d: %s", i, err)
 		}
-
-		startupTime := lastTransitionTime.Sub(startedAt)
-		t.Logf("Proxy startup time for pod %s: %s", fields[0], startupTime.String())
-
+		startupTime := podReadyAt.Sub(podStartedAt)
 		if startupTime > 10*time.Second {
 			t.Fatalf("Proxy startup time is too long: %s", startupTime.String())
 		}
