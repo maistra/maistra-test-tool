@@ -136,7 +136,7 @@ func assertProxiesReadyInLessThan3Seconds(t TestHelper, ns string) {
 			continue
 		}
 		startedAt := oc.GetJson(t, ns, "pod", podName, `{.status.containerStatuses[?(@.name=="istio-proxy")].state.running.startedAt}`)
-		readyAt := oc.GetJson(t, ns, "pod", podName, `{.status.conditions[?(@.type=="Ready")].lastTransitionTime}{end}`)
+		readyAt := oc.GetJson(t, ns, "pod", podName, `{.status.conditions[?(@.type=="Ready")].lastTransitionTime}`)
 		if startedAt != "" && readyAt != "" {
 			podStartedAt, err := time.Parse(time.RFC3339, startedAt)
 			if err != nil {
