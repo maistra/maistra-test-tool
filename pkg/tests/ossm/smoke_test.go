@@ -183,18 +183,18 @@ func assertSMCPDeploysAndIsReady(t test.TestHelper, ver version.Version) {
 	oc.WaitSMCPReady(t, meshNamespace, smcpName)
 }
 
-func assertUninstallDeletesAllResources(t test.TestHelper, ver version.Version) {
-	t.LogStep("Delete SMCP in namespace " + meshNamespace)
-	oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
-	DeleteSMCPVersion(t, meshNamespace, ver)
-	retry.UntilSuccess(t, func(t TestHelper) {
-		oc.GetAllResources(t,
-			meshNamespace,
-			assert.OutputContains("No resources found in",
-				"All resources deleted from namespace",
-				"Still waiting for resources to be deleted from namespace"))
-	})
-}
+// func assertUninstallDeletesAllResources(t test.TestHelper, ver version.Version) {
+// 	t.LogStep("Delete SMCP in namespace " + meshNamespace)
+// 	oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
+// 	DeleteSMCPVersion(t, meshNamespace, ver)
+// 	retry.UntilSuccess(t, func(t TestHelper) {
+// 		oc.GetAllResources(t,
+// 			meshNamespace,
+// 			assert.OutputContains("No resources found in",
+// 				"All resources deleted from namespace",
+// 				"Still waiting for resources to be deleted from namespace"))
+// 	})
+// }
 
 func getPreviousVersion(ver version.Version) version.Version {
 	var prevVersion *version.Version
