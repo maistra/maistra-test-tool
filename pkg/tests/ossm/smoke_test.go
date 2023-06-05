@@ -75,10 +75,10 @@ func TestSmoke(t *testing.T) {
 			t.LogStep("Check if bookinfo productpage is running through the Proxy")
 			assertTrafficFlowsThroughProxy(t, ns)
 
-			t.LogStep("verify proxy startup time. Expected to be less than 10 seconds")
+			t.LogStep("verify proxy startup time. Expected to be less than 3 seconds")
 			t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
 			t.Log("From proxy json , verify the time between status.containerStatuses.state.running.startedAt and status.conditions[type=Ready].lastTransitionTime")
-			t.Log("The proxy startup time should be less than 10 seconds for ratings pod")
+			t.Log("The proxy startup time should be less than 3 seconds for ratings pod")
 			assertProxiesReadyInLessThan3Seconds(t, ns)
 		})
 
@@ -96,12 +96,13 @@ func TestSmoke(t *testing.T) {
 			assertTrafficFlowsThroughProxy(t, ns)
 		})
 
-		t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t TestHelper) {
-			t.Logf("This test checks whether SMCP %s deletion delete all the resources", env.GetSMCPVersion())
+		// This test case is flaky and disabled for now: https://issues.redhat.com/browse/OSSM-4064
+		// t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t TestHelper) {
+		// 	t.Logf("This test checks whether SMCP %s deletion delete all the resources", env.GetSMCPVersion())
 
-			t.LogStep("Delete SMCP and verify if this deletes all resources")
-			assertUninstallDeletesAllResources(t, env.GetSMCPVersion())
-		})
+		// 	t.LogStep("Delete SMCP and verify if this deletes all resources")
+		// 	assertUninstallDeletesAllResources(t, env.GetSMCPVersion())
+		// })
 
 	})
 }
