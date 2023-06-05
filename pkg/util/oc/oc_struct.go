@@ -427,9 +427,9 @@ func (o OC) GetJson(t test.TestHelper, ns, kind, name, jsonPath string) string {
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
 		if jsonPath == "" {
-			jsonString = shell.Execute(t, fmt.Sprintf("oc %s get %s %s -o json", nsFlag(ns), kind, name))
+			jsonString = shell.Execute(t, fmt.Sprintf(`oc %s get %s %s -o json`, nsFlag(ns), kind, name))
 		} else {
-			jsonString = shell.Execute(t, fmt.Sprintf("oc %s get %s %s -o jsonpath='%s'", nsFlag(ns), kind, name, jsonPath))
+			jsonString = shell.Execute(t, fmt.Sprintf(`oc %s get %s %s -o jsonpath='%s'`, nsFlag(ns), kind, name, jsonPath))
 		}
 	})
 	return jsonString
@@ -445,19 +445,13 @@ func (o OC) GetProxy(t test.TestHelper) *Proxy {
 	if err != nil {
 		t.Fatalf("Failed to parse JSON: %s\n", err)
 	}
-	if data["httpProxy"] == nil {
-		proxy.HTTPProxy = ""
-	} else {
+	if data["httpProxy"] != nil {
 		proxy.HTTPProxy = data["httpProxy"].(string)
 	}
-	if data["httpsProxy"] == nil {
-		proxy.HTTPSProxy = ""
-	} else {
+	if data["httpsProxy"] != nil {
 		proxy.HTTPSProxy = data["httpsProxy"].(string)
 	}
-	if data["noProxy"] == nil {
-		proxy.NoProxy = ""
-	} else {
+	if data["noProxy"] != nil {
 		proxy.NoProxy = data["noProxy"].(string)
 	}
 	return proxy
