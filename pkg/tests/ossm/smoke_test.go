@@ -128,7 +128,7 @@ func assertTrafficFlowsThroughProxy(t TestHelper, ns string) {
 
 func assertProxiesReadyInLessThan3Seconds(t TestHelper, ns string) {
 	t.Log("Extracting proxy startup time and last transition time for all the pods in the namespace")
-	podsList := oc.GetJson(t, ns, "pods", "", `{range .items[*]}{.metadata.name}{"\n"}{end}`)
+	podsList := oc.GetJson(t, ns, "pods", "", `{.items[*].metadata.name}`)
 
 	for _, podName := range strings.Split(podsList, "\n") {
 		// skip sleep pod because it doesn't have a proxy
