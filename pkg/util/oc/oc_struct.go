@@ -429,6 +429,7 @@ func (o OC) GetJson(t test.TestHelper, ns, kind, name, jsonPath string) string {
 		if jsonPath == "" {
 			jsonString = shell.Execute(t, fmt.Sprintf(`oc %s get %s %s -o json`, nsFlag(ns), kind, name))
 		} else {
+			jsonPath = strings.ReplaceAll(jsonPath, "'", `'"'"'`)
 			jsonString = shell.Execute(t, fmt.Sprintf(`oc %s get %s %s -o jsonpath='%s'`, nsFlag(ns), kind, name, jsonPath))
 		}
 	})
