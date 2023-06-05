@@ -19,6 +19,8 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
+var prometheusPodSelector oc.PodLocatorFunc = pod.MatchingSelector("app=prometheus,maistra-control-plane=istio-system", meshNamespace)
+
 func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
 		t.Log("This test checks if the operator can update Prometheus ConfigMap when the SMMR is updated")
@@ -27,45 +29,22 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			oc.ApplyString(t, meshNamespace, smmr)
 		})
 
-		prometheusPodSelector := pod.MatchingSelector("app=prometheus,maistra-control-plane=istio-system", meshNamespace)
-
-		checkPermissionError := func(t test.TestHelper) {
-			t.LogStep("Check the Prometheus log to see if there is any permission error")
-			oc.Logs(t,
-				prometheusPodSelector,
-				"prometheus",
-				assert.OutputDoesNotContain(
-					fmt.Sprintf("User \"system:serviceaccount:%s:prometheus\" cannot list resource", meshNamespace),
-					"Found no permission error",
-					"Expected to find no permission error, but got some error",
-				),
-			)
-		}
-
-		checkConfigurationReloadingTriggered := func(t test.TestHelper, start time.Time) {
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				oc.LogsSince(t,
-					start,
-					prometheusPodSelector, "config-reloader",
-					assert.OutputContains("Reload triggered",
-						"Triggered configuration reloading",
-						"Expected to trigger configuration reloading, but did not",
-					),
-				)
-			})
-		}
-
-		testPrometheusConfigWithAsserts := func(t test.TestHelper, asserts ...common.CheckFunc) {
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				shell.Execute(t,
-					fmt.Sprintf("oc -n %s get configmap prometheus -o jsonpath='{.data.prometheus\\.yml}'", meshNamespace),
-					asserts...)
-			})
-		}
-
 		DeployControlPlane(t)
 
 		checkPermissionError(t)
+
+		t.NewSubTest("when the default SMMR with no member").Run(func(t test.TestHelper) {
+			t.Cleanup(func() {
+				restoreDefaultSMMR(t)
+			})
+
+			start := time.Now()
+			t.LogStepf("Update default SMMR with no member")
+			updateDefaultSMMRWithNamespace(t)
+
+			checkConfigurationReloadingTriggered(t, start)
+			checkPermissionError(t)
+		})
 
 		t.NewSubTest("when creating a SMMR").Run(func(t test.TestHelper) {
 			ns := generateNamespace()
@@ -124,19 +103,6 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			testPrometheusConfigWithAsserts(t, assertConfigMapContainsNamespace(ns), assertConfigMapDoesNotContainNamespace(anotherNs))
 		})
 
-		t.NewSubTest("when the default SMMR with no member").Run(func(t test.TestHelper) {
-			t.Cleanup(func() {
-				restoreDefaultSMMR(t)
-			})
-
-			start := time.Now()
-			t.LogStepf("Update default SMMR with no member")
-			updateDefaultSMMRWithNamespace(t)
-
-			checkConfigurationReloadingTriggered(t, start)
-			checkPermissionError(t)
-		})
-
 		t.NewSubTest("when the default SMMR with nonexistent namespace").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
 				restoreDefaultSMMR(t)
@@ -191,16 +157,16 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 				restoreDefaultSMMR(t)
 			})
 
-			checks := []common.CheckFunc{assertConfigMapContainsNamespace(meshNamespace)}
-			for _, ns := range []string{namespaces.Bar, namespaces.Bookinfo, namespaces.Foo, namespaces.Legacy} {
-				checks = append(checks, assertConfigMapDoesNotContainNamespace(ns))
-			}
-
 			start := time.Now()
 			t.LogStepf("Delete default SMMR \n%s", smmr)
 			oc.DeleteFromString(t, meshNamespace, smmr)
 
-			testPrometheusConfigWithAsserts(t, checks...)
+			testPrometheusConfigWithAsserts(t,
+				assertConfigMapDoesNotContainNamespace(namespaces.Bar),
+				assertConfigMapDoesNotContainNamespace(namespaces.Bookinfo),
+				assertConfigMapDoesNotContainNamespace(namespaces.Foo),
+				assertConfigMapDoesNotContainNamespace(namespaces.Legacy),
+			)
 			checkConfigurationReloadingTriggered(t, start)
 			checkPermissionError(t)
 		})
@@ -208,6 +174,40 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 		t.NewSubTest("[TODO] test under cluster scoped").Run(func(t test.TestHelper) {
 			t.Skip()
 		})
+	})
+}
+
+func checkPermissionError(t test.TestHelper) {
+	t.LogStep("Check the Prometheus log to see if there is any permission error")
+	oc.Logs(t,
+		prometheusPodSelector,
+		"prometheus",
+		assert.OutputDoesNotContain(
+			fmt.Sprintf("User \"system:serviceaccount:%s:prometheus\" cannot list resource", meshNamespace),
+			"Found no permission error",
+			"Expected to find no permission error, but got some error",
+		),
+	)
+}
+
+func checkConfigurationReloadingTriggered(t test.TestHelper, start time.Time) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		oc.LogsSince(t,
+			start,
+			prometheusPodSelector, "config-reloader",
+			assert.OutputContains("Reload triggered",
+				"Triggered configuration reloading",
+				"Expected to trigger configuration reloading, but did not",
+			),
+		)
+	})
+}
+
+func testPrometheusConfigWithAsserts(t test.TestHelper, asserts ...common.CheckFunc) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		shell.Execute(t,
+			fmt.Sprintf("oc -n %s get configmap prometheus -o jsonpath='{.data.prometheus\\.yml}'", meshNamespace),
+			asserts...)
 	})
 }
 
