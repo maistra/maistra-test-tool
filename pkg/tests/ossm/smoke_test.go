@@ -96,13 +96,12 @@ func TestSmoke(t *testing.T) {
 			assertTrafficFlowsThroughProxy(t, ns)
 		})
 
-		// This test case is flaky and disabled for now: https://issues.redhat.com/browse/OSSM-4064
-		// t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t TestHelper) {
-		// 	t.Logf("This test checks whether SMCP %s deletion delete all the resources", env.GetSMCPVersion())
+		t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t TestHelper) {
+			t.Logf("This test checks whether SMCP %s deletion delete all the resources", env.GetSMCPVersion())
 
-		// 	t.LogStep("Delete SMCP and verify if this deletes all resources")
-		// 	assertUninstallDeletesAllResources(t, env.GetSMCPVersion())
-		// })
+			t.LogStep("Delete SMCP and verify if this deletes all resources")
+			assertUninstallDeletesAllResources(t, env.GetSMCPVersion())
+		})
 
 	})
 }
@@ -183,18 +182,28 @@ func assertSMCPDeploysAndIsReady(t test.TestHelper, ver version.Version) {
 	oc.WaitSMCPReady(t, meshNamespace, smcpName)
 }
 
-// func assertUninstallDeletesAllResources(t test.TestHelper, ver version.Version) {
-// 	t.LogStep("Delete SMCP in namespace " + meshNamespace)
-// 	oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
-// 	DeleteSMCPVersion(t, meshNamespace, ver)
-// 	retry.UntilSuccess(t, func(t TestHelper) {
-// 		oc.GetAllResources(t,
-// 			meshNamespace,
-// 			assert.OutputContains("No resources found in",
-// 				"All resources deleted from namespace",
-// 				"Still waiting for resources to be deleted from namespace"))
-// 	})
-// }
+func assertUninstallDeletesAllResources(t test.TestHelper, ver version.Version) {
+	t.LogStep("Delete SMCP in namespace " + meshNamespace)
+	oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
+	DeleteSMCPVersion(t, meshNamespace, ver)
+	retry.UntilSuccess(t, func(t TestHelper) {
+		shell.Execute(t,
+			fmt.Sprintf("oc get smcp -n %s", meshNamespace),
+			assert.OutputContains("No resources found in",
+				"SMCP is deleted from namespace",
+				"Still waiting for smcp to be deleted from namespace"))
+		shell.Execute(t,
+			fmt.Sprintf("oc get pods -n %s", meshNamespace),
+			assert.OutputContains("No resources found in",
+				"Pods are deleted from namespace",
+				"Still waiting for pods to be deleted from namespace"))
+		shell.Execute(t,
+			fmt.Sprintf("oc get services -n %s", meshNamespace),
+			assert.OutputContains("No resources found in",
+				"Services are deleted from namespace",
+				"Still waiting for services to be deleted from namespace"))
+	})
+}
 
 func getPreviousVersion(ver version.Version) version.Version {
 	var prevVersion *version.Version
