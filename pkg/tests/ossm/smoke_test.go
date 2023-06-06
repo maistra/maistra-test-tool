@@ -96,13 +96,22 @@ func TestSmoke(t *testing.T) {
 			assertTrafficFlowsThroughProxy(t, ns)
 		})
 
-		// This test case is flaky and disabled for now: https://issues.redhat.com/browse/OSSM-4064
-		// t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t TestHelper) {
-		// 	t.Logf("This test checks whether SMCP %s deletion delete all the resources", env.GetSMCPVersion())
+		t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t TestHelper) {
+			t.Logf("This test checks whether SMCP %s deletion deletes all the resources", env.GetSMCPVersion())
 
-		// 	t.LogStep("Delete SMCP and verify if this deletes all resources")
-		// 	assertUninstallDeletesAllResources(t, env.GetSMCPVersion())
-		// })
+			t.LogStepf("Delete SMCP and SMMR in namespace %s", meshNamespace)
+			oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
+			DeleteSMCPVersion(t, meshNamespace, env.GetSMCPVersion())
+			t.LogStep("verify SMCP resources are deleted")
+			retry.UntilSuccess(t, func(t TestHelper) {
+				oc.Get(t,
+					meshNamespace,
+					"smcp,pods,services", "",
+					assert.OutputContains("No resources found in",
+						"SMCP resources are deleted",
+						"Still waiting for resources to be deleted from namespace"))
+			})
+		})
 
 	})
 }
@@ -182,19 +191,6 @@ func assertSMCPDeploysAndIsReady(t test.TestHelper, ver version.Version) {
 	t.LogStep("Check SMCP is Ready")
 	oc.WaitSMCPReady(t, meshNamespace, smcpName)
 }
-
-// func assertUninstallDeletesAllResources(t test.TestHelper, ver version.Version) {
-// 	t.LogStep("Delete SMCP in namespace " + meshNamespace)
-// 	oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
-// 	DeleteSMCPVersion(t, meshNamespace, ver)
-// 	retry.UntilSuccess(t, func(t TestHelper) {
-// 		oc.GetAllResources(t,
-// 			meshNamespace,
-// 			assert.OutputContains("No resources found in",
-// 				"All resources deleted from namespace",
-// 				"Still waiting for resources to be deleted from namespace"))
-// 	})
-// }
 
 func getPreviousVersion(ver version.Version) version.Version {
 	var prevVersion *version.Version
