@@ -65,6 +65,7 @@ func TestSmoke(t *testing.T) {
 
 			t.LogStepf("Create SMCP %s and verify it becomes ready", fromVersion)
 			assertSMCPDeploysAndIsReady(t, fromVersion)
+			assertRoutesExist(t)
 
 			t.LogStep("Restart all pods to verify proxy is injected in all pods of Bookinfo")
 			oc.RestartAllPods(t, ns)
@@ -87,6 +88,7 @@ func TestSmoke(t *testing.T) {
 
 			t.LogStepf("Upgrade SMCP from %s to %s", fromVersion, toVersion)
 			assertSMCPDeploysAndIsReady(t, toVersion)
+			assertRoutesExist(t)
 
 			t.LogStep("Check if bookinfo productpage is running through the Proxy after the upgrade")
 			assertTrafficFlowsThroughProxy(t, ns)
@@ -190,6 +192,31 @@ func assertSMCPDeploysAndIsReady(t test.TestHelper, ver version.Version) {
 	oc.ApplyString(t, meshNamespace, GetSMMRTemplate())
 	t.LogStep("Check SMCP is Ready")
 	oc.WaitSMCPReady(t, meshNamespace, smcpName)
+}
+
+func assertRoutesExist(t test.TestHelper) {
+	t.LogStep("Verify if all the routes are created")
+	t.Log("Related issue: https://issues.redhat.com/browse/OSSM-4069")
+	retry.UntilSuccess(t, func(t TestHelper) {
+		oc.Get(t,
+			meshNamespace,
+			"routes", "",
+			assert.OutputContains("grafana",
+				"Route grafana is created",
+				"Still waiting for route grafana to be created in namespace"),
+			assert.OutputContains("istio-ingressgateway",
+				"Route istio-ingressgateway is created",
+				"Still waiting for route istio-ingressgateway to be created in namespace"),
+			assert.OutputContains("jaeger",
+				"Route jaeger is created",
+				"Still waiting for route jaeger to be created in namespace"),
+			assert.OutputContains("kiali",
+				"Route kiali is created",
+				"Still waiting for route kiali to be created in namespace"),
+			assert.OutputContains("prometheus",
+				"Route prometheus is created",
+				"Still waiting for route prometheus to be created in namespace"))
+	})
 }
 
 func getPreviousVersion(ver version.Version) version.Version {
