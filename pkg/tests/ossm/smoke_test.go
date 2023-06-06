@@ -19,32 +19,96 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
-func TestBookinfoInjection(t *testing.T) {
-	NewTest(t).Id("A2").Groups(ARM, Full, Smoke, InterOp, Disconnected).Run(func(t TestHelper) {
+var (
+	VERSIONS = []*version.Version{
+		&version.SMCP_2_0,
+		&version.SMCP_2_1,
+		&version.SMCP_2_2,
+		&version.SMCP_2_3,
+		&version.SMCP_2_4,
+	}
+)
+
+func TestSmoke(t *testing.T) {
+	NewTest(t).Groups(ARM, Full, Smoke, InterOp, Disconnected).Run(func(t TestHelper) {
+		t.Log("Smoke Test for SMCP: deploy, upgrade, bookinfo and uninstall")
 		ns := "bookinfo"
 
 		t.Cleanup(func() {
 			app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+			oc.RecreateNamespace(t, meshNamespace)
 		})
 
-		DeployControlPlane(t)
+		toVersion := env.GetSMCPVersion()
+		fromVersion := getPreviousVersion(toVersion)
 
-		t.LogStep("Install bookinfo pods with sidecar and sleep pod without sidecar")
+		oc.RecreateNamespace(t, meshNamespace)
+
+		t.LogStep("Install bookinfo pods and sleep pod")
 		app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
 
-		t.LogStep("Check whether sidecar is injected in all bookinfo pods")
-		assertSidecarInjectedInAllBookinfoPods(t, ns)
+		t.NewSubTest(fmt.Sprintf("install bookinfo with smcp %s", fromVersion)).Run(func(t TestHelper) {
 
-		t.LogStep("Check if bookinfo productpage is running through the Proxy")
+			t.LogStepf("Create SMCP %s and verify it becomes ready", fromVersion)
+			assertSMCPDeploysAndIsReady(t, fromVersion)
+
+			t.LogStep("Restart all pods to verify proxy is injected in all pods of Bookinfo")
+			oc.RestartAllPods(t, ns)
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				assertSidecarInjectedInAllBookinfoPods(t, ns)
+			})
+
+			t.LogStep("Check if bookinfo productpage is running through the Proxy")
+			assertTrafficFlowsThroughProxy(t, ns)
+
+			t.LogStep("verify proxy startup time. Expected to be less than 3 seconds")
+			t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
+			t.Log("From proxy json , verify the time between status.containerStatuses.state.running.startedAt and status.conditions[type=Ready].lastTransitionTime")
+			t.Log("The proxy startup time should be less than 3 seconds for ratings pod")
+			assertProxiesReadyInLessThan3Seconds(t, ns)
+		})
+
+		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
+			t.Logf("This test checks whether SMCP becomes ready after it's upgraded from %s to %s and bookinfo is still working after the upgrade", fromVersion, toVersion)
+
+			t.LogStepf("Upgrade SMCP from %s to %s", fromVersion, toVersion)
+			assertSMCPDeploysAndIsReady(t, toVersion)
+
+			t.LogStep("Check if bookinfo productpage is running through the Proxy after the upgrade")
+			assertTrafficFlowsThroughProxy(t, ns)
+
+			t.LogStep("Delete Bookinfo pods to validate proxy is still working after recreation and upgrade")
+			oc.RestartAllPodsAndWaitReady(t, ns)
+			assertTrafficFlowsThroughProxy(t, ns)
+		})
+
+		// This test case is flaky and disabled for now: https://issues.redhat.com/browse/OSSM-4064
+		// t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t TestHelper) {
+		// 	t.Logf("This test checks whether SMCP %s deletion delete all the resources", env.GetSMCPVersion())
+
+		// 	t.LogStep("Delete SMCP and verify if this deletes all resources")
+		// 	assertUninstallDeletesAllResources(t, env.GetSMCPVersion())
+		// })
+
+	})
+}
+
+func assertTrafficFlowsThroughProxy(t TestHelper, ns string) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
 		oc.Exec(t,
 			pod.MatchingSelector("app=sleep", ns), "sleep",
 			"curl -sI http://productpage:9080",
@@ -63,6 +127,36 @@ func TestBookinfoInjection(t *testing.T) {
 	})
 }
 
+func assertProxiesReadyInLessThan3Seconds(t TestHelper, ns string) {
+	t.Log("Extracting proxy startup time and last transition time for all the pods in the namespace")
+	podsList := oc.GetJson(t, ns, "pods", "", `{.items[*].metadata.name}`)
+
+	for _, podName := range strings.Split(podsList, " ") {
+		// skip sleep pod because it doesn't have a proxy
+		if strings.Contains(podName, "sleep") {
+			continue
+		}
+		startedAt := oc.GetJson(t, ns, "pod", podName, `{.status.containerStatuses[?(@.name=="istio-proxy")].state.running.startedAt}`)
+		readyAt := oc.GetJson(t, ns, "pod", podName, `{.status.conditions[?(@.type=="Ready")].lastTransitionTime}`)
+		if startedAt != "" && readyAt != "" {
+			podStartedAt, err := time.Parse(time.RFC3339, startedAt)
+			if err != nil {
+				t.Fatalf("Error parsing time for pod %d", podName)
+			}
+			podReadyAt, err := time.Parse(time.RFC3339, readyAt)
+			if err != nil {
+				t.Fatalf("Error parsing time for pod %d", podName)
+			}
+			startupTime := podReadyAt.Sub(podStartedAt)
+			if startupTime > 3*time.Second {
+				t.Fatalf("Proxy startup time is too long: %s", startupTime.String())
+			}
+		} else {
+			t.Fatalf("Error getting proxy startup time for pod %s", podName)
+		}
+	}
+}
+
 func assertSidecarInjectedInAllBookinfoPods(t TestHelper, ns string) {
 	shell.Execute(t,
 		fmt.Sprintf(`oc -n %s get pods -l 'app in (productpage,details,reviews,ratings)' --no-headers`, ns),
@@ -78,4 +172,40 @@ func assertSidecarInjectedInAllBookinfoPods(t TestHelper, ns string) {
 				}
 			}
 		})
+}
+
+func assertSMCPDeploysAndIsReady(t test.TestHelper, ver version.Version) {
+	t.LogStep("Install SMCP")
+	InstallSMCPVersion(t, meshNamespace, ver)
+	oc.WaitSMCPReady(t, meshNamespace, smcpName)
+	oc.ApplyString(t, meshNamespace, GetSMMRTemplate())
+	t.LogStep("Check SMCP is Ready")
+	oc.WaitSMCPReady(t, meshNamespace, smcpName)
+}
+
+// func assertUninstallDeletesAllResources(t test.TestHelper, ver version.Version) {
+// 	t.LogStep("Delete SMCP in namespace " + meshNamespace)
+// 	oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
+// 	DeleteSMCPVersion(t, meshNamespace, ver)
+// 	retry.UntilSuccess(t, func(t TestHelper) {
+// 		oc.GetAllResources(t,
+// 			meshNamespace,
+// 			assert.OutputContains("No resources found in",
+// 				"All resources deleted from namespace",
+// 				"Still waiting for resources to be deleted from namespace"))
+// 	})
+// }
+
+func getPreviousVersion(ver version.Version) version.Version {
+	var prevVersion *version.Version
+	for _, v := range VERSIONS {
+		if *v == ver {
+			if prevVersion == nil {
+				panic(fmt.Sprintf("version %s is the first supported version", ver))
+			}
+			return *prevVersion
+		}
+		prevVersion = v
+	}
+	panic(fmt.Sprintf("version %s not found in VERSIONS", ver))
 }

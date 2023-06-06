@@ -237,9 +237,10 @@ func GetYaml(t test.TestHelper, ns, kind, name string, checks ...common.CheckFun
 	return DefaultOC.GetYaml(t, ns, kind, name, checks...)
 }
 
-func GetJson(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) string {
+// GetJson returns the JSON representation of the resource, you can set a jsonPath to extract a specific value or send "" to get the full JSON
+func GetJson(t test.TestHelper, ns, kind, name string, jsonPath string) string {
 	t.T().Helper()
-	return DefaultOC.GetJson(t, ns, kind, name, checks...)
+	return DefaultOC.GetJson(t, ns, kind, name, jsonPath)
 }
 
 func GetProxy(t test.TestHelper) *Proxy {

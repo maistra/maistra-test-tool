@@ -425,41 +425,40 @@ func (o OC) GetYaml(t test.TestHelper, ns, kind, name string, checks ...common.C
 	return val
 }
 
-func (o OC) GetJson(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) string {
+func (o OC) GetJson(t test.TestHelper, ns, kind, name, jsonPath string) string {
 	t.T().Helper()
-	var val string
+	var jsonString string
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		val = shell.Execute(t, fmt.Sprintf("oc %s get %s/%s -ojson", nsFlag(ns), kind, name), checks...)
+		if jsonPath == "" {
+			jsonString = shell.Execute(t, fmt.Sprintf(`oc %s get %s %s -o json`, nsFlag(ns), kind, name))
+		} else {
+			jsonPath = strings.ReplaceAll(jsonPath, "'", `'"'"'`)
+			jsonString = shell.Execute(t, fmt.Sprintf(`oc %s get %s %s -o jsonpath='%s'`, nsFlag(ns), kind, name, jsonPath))
+		}
 	})
-	return val
+	return jsonString
 }
 
 // GetProxy returns the Proxy object from the cluster
 func (o OC) GetProxy(t test.TestHelper) *Proxy {
-	type ProxyResource struct {
-		Status *Proxy `json:"status"`
-	}
+	proxyJson := o.GetJson(t, "", "proxy", "cluster", "{.status}")
 
-	proxyResource := ProxyResource{}
-
-	proxyYaml := o.GetJson(t, "", "proxy", "cluster")
-	err := json.Unmarshal([]byte(proxyYaml), &proxyResource)
+	proxy := &Proxy{}
+	var data map[string]interface{}
+	err := json.Unmarshal([]byte(proxyJson), &data)
 	if err != nil {
-		t.Fatalf("Could not parse Proxy resource: %v", err)
+		t.Fatalf("Failed to parse JSON: %s\n", err)
 	}
-
-	proxy := proxyResource.Status
-	if proxy.HTTPProxy != "" {
-		t.Logf("HTTP_PROXY: %q", proxy.HTTPProxy)
+	if data["httpProxy"] != nil {
+		proxy.HTTPProxy = data["httpProxy"].(string)
 	}
-	if proxy.HTTPSProxy != "" {
-		t.Logf("HTTPS_PROXY: %q", proxy.HTTPSProxy)
+	if data["httpsProxy"] != nil {
+		proxy.HTTPSProxy = data["httpsProxy"].(string)
 	}
-	if proxy.NoProxy != "" {
-		t.Logf("NO_PROXY: %q", proxy.NoProxy)
+	if data["noProxy"] != nil {
+		proxy.NoProxy = data["noProxy"].(string)
 	}
-
 	return proxy
 }
 
