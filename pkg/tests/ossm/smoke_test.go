@@ -100,7 +100,18 @@ func TestSmoke(t *testing.T) {
 			t.Logf("This test checks whether SMCP %s deletion delete all the resources", env.GetSMCPVersion())
 
 			t.LogStep("Delete SMCP and verify if this deletes all resources")
-			assertUninstallDeletesAllResources(t, env.GetSMCPVersion())
+			t.LogStep("Delete SMCP in namespace " + meshNamespace)
+			oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
+			DeleteSMCPVersion(t, meshNamespace, env.GetSMCPVersion())
+			t.Log("verify SMCP resources are deleted")
+			retry.UntilSuccess(t, func(t TestHelper) {
+				oc.Get(t,
+					meshNamespace,
+					"smcp,pods,services", "",
+					assert.OutputContains("No resources found in",
+						"SMCP resources are deleted",
+						"Still waiting for resources to be deleted from namespace"))
+			})
 		})
 
 	})
@@ -180,20 +191,6 @@ func assertSMCPDeploysAndIsReady(t test.TestHelper, ver version.Version) {
 	oc.ApplyString(t, meshNamespace, GetSMMRTemplate())
 	t.LogStep("Check SMCP is Ready")
 	oc.WaitSMCPReady(t, meshNamespace, smcpName)
-}
-
-func assertUninstallDeletesAllResources(t test.TestHelper, ver version.Version) {
-	t.LogStep("Delete SMCP in namespace " + meshNamespace)
-	oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
-	DeleteSMCPVersion(t, meshNamespace, ver)
-	retry.UntilSuccess(t, func(t TestHelper) {
-		oc.Get(t,
-			meshNamespace,
-			"smcp,pods,services", "",
-			assert.OutputContains("No resources found in",
-				"SMCP resources are deleted",
-				"Still waiting for resources to be deleted from namespace"))
-	})
 }
 
 func getPreviousVersion(ver version.Version) version.Version {
