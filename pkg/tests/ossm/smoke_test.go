@@ -187,21 +187,12 @@ func assertUninstallDeletesAllResources(t test.TestHelper, ver version.Version) 
 	oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
 	DeleteSMCPVersion(t, meshNamespace, ver)
 	retry.UntilSuccess(t, func(t TestHelper) {
-		shell.Execute(t,
-			fmt.Sprintf("oc get smcp -n %s", meshNamespace),
+		oc.Get(t,
+			meshNamespace,
+			"smcp,pods,services", "",
 			assert.OutputContains("No resources found in",
-				"SMCP is deleted from namespace",
-				"Still waiting for smcp to be deleted from namespace"))
-		shell.Execute(t,
-			fmt.Sprintf("oc get pods -n %s", meshNamespace),
-			assert.OutputContains("No resources found in",
-				"Pods are deleted from namespace",
-				"Still waiting for pods to be deleted from namespace"))
-		shell.Execute(t,
-			fmt.Sprintf("oc get services -n %s", meshNamespace),
-			assert.OutputContains("No resources found in",
-				"Services are deleted from namespace",
-				"Still waiting for services to be deleted from namespace"))
+				"SMCP resources are deleted",
+				"Still waiting for resources to be deleted from namespace"))
 	})
 }
 
