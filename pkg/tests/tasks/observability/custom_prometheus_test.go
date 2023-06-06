@@ -1,7 +1,6 @@
 package observability
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -15,6 +14,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
+	"github.com/maistra/maistra-test-tool/pkg/util/prometheus"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
@@ -80,19 +80,10 @@ func TestCustomPrometheus(t *testing.T) {
 
 		t.LogStep("Testing if 'istio_requests_total' metric is available through Prometheus API")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
-			var apiResp struct {
-				Data struct {
-					Result []interface{} `json:"result"`
-				} `json:"data"`
-			}
-			resp := oc.Exec(t, pod.MatchingSelector("prometheus=prometheus", customPrometheusNs), "istio-proxy",
-				fmt.Sprintf(`curl -s -S -G --data-urlencode %s 'http://127.0.0.1:9090/api/v1/query'`,
-					shellArgf(`query=istio_requests_total{namespace="%s",container="istio-proxy",source_app="istio-ingressgateway",destination_app="productpage"}`, ns.Bookinfo)))
-			err := json.Unmarshal([]byte(resp), &apiResp)
-			if err != nil {
-				t.Fatalf("Error while parsing response from Prometheus API: %v", err)
-			}
-			if len(apiResp.Data.Result) == 0 {
+			resp := prometheus.CustomPrometheus.Query(t, customPrometheusNs,
+				fmt.Sprintf(`istio_requests_total{namespace="%s",container="istio-proxy",source_app="istio-ingressgateway",destination_app="productpage"}`, ns.Bookinfo))
+
+			if len(resp.Data.Result) == 0 {
 				t.Errorf("No data points received from Prometheus API")
 			}
 		})
