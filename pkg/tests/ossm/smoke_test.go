@@ -99,11 +99,10 @@ func TestSmoke(t *testing.T) {
 		t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t TestHelper) {
 			t.Logf("This test checks whether SMCP %s deletion delete all the resources", env.GetSMCPVersion())
 
-			t.LogStep("Delete SMCP and verify if this deletes all resources")
-			t.LogStep("Delete SMCP in namespace " + meshNamespace)
+			t.LogStepf("Delete SMCP and SMMR in namespace %s", meshNamespace)
 			oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
 			DeleteSMCPVersion(t, meshNamespace, env.GetSMCPVersion())
-			t.Log("verify SMCP resources are deleted")
+			t.LogStep("verify SMCP resources are deleted")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				oc.Get(t,
 					meshNamespace,
