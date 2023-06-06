@@ -61,7 +61,7 @@ func installOperator(t test.TestHelper, oc oc.OC) {
 
 	t.Log("Install MetalLB operator")
 	//nolint:typecheck
-	ocpVersion := version.ParseOCPVersion(oc.GetOCPVersion(t))
+	ocpVersion := version.ParseVersion(oc.GetOCPVersion(t))
 	metallbVersion := metallbVersions[ocpVersion.String()]
 	oc.ApplyTemplateString(t, ns.MetalLB, metallbOperator, map[string]string{"Version": metallbVersion})
 	retry.UntilSuccess(t, func(t test.TestHelper) {
