@@ -15,16 +15,15 @@
 package ossm
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/istioctl"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/template"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
@@ -53,16 +52,14 @@ func TestDiscoverySelectors(t *testing.T) {
 		})
 
 		t.LogStep("Confirm that the httpbin and sleep services have been discovered")
-		retry.UntilSuccess(t, func(t TestHelper) {
-			shell.Execute(t,
-				fmt.Sprintf("istioctl pc endpoint deploy/sleep -n %s", ns.Foo),
-				assert.OutputContains("sleep",
-					"Sleep was discovered",
-					"Expected sleep to be discovered, but it was not found"),
-				assert.OutputContains("httpbin",
-					"Httpbin was discovered",
-					"Expected Httpbin to be discovered, but it was not found."))
-		})
+		istioctl.CheckClusters(t,
+			pod.MatchingSelector("app=sleep", ns.Foo),
+			assert.OutputContains("sleep",
+				"Sleep was discovered",
+				"Expected sleep to be discovered, but it was not found"),
+			assert.OutputContains("httpbin",
+				"Httpbin was discovered",
+				"Expected Httpbin to be discovered, but it was not found."))
 
 		t.LogStep("Configure discoverySelectors so that only namespace foo is discovered")
 		oc.Label(t, "", "namespace", ns.Foo, "istio-discovery=enabled")
@@ -83,16 +80,14 @@ spec:
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Verify that sleep service has been discovered, whereas httpbin hasn't")
-		retry.UntilSuccess(t, func(t TestHelper) {
-			shell.Execute(t,
-				fmt.Sprintf("istioctl pc endpoint deploy/sleep -n %s", ns.Foo),
-				assert.OutputContains("sleep",
-					"Sleep was discovered",
-					"Expected sleep to be discovered, but it was not found"),
-				assert.OutputDoesNotContain("httpbin",
-					"Httpbin was not discovered",
-					"Expected Httpbin to not be discovered, but it was."))
-		})
+		istioctl.CheckClusters(t,
+			pod.MatchingSelector("app=sleep", ns.Foo),
+			assert.OutputContains("sleep",
+				"Sleep was discovered",
+				"Expected sleep to be discovered, but it was not found"),
+			assert.OutputDoesNotContain("httpbin",
+				"Httpbin was not discovered",
+				"Expected Httpbin to not be discovered, but it was."))
 	})
 }
 
