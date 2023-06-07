@@ -21,11 +21,10 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/istioctl"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
-	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -51,14 +50,12 @@ func TestTLSOrigination(t *testing.T) {
 			app.InstallAndWaitReady(t, app.NginxExternalTLS(ns.MeshExternal))
 
 			t.LogStep("Make sure that mesh external namespace is not discovered by Istio - it would happen if mesh-external namespaces was added to the SMMR")
-			retry.UntilSuccess(t, func(t TestHelper) {
-				shell.Execute(t,
-					fmt.Sprintf("istioctl pc endpoint deploy/sleep -n %s", ns.Bookinfo),
-					assert.OutputDoesNotContain(
-						fmt.Sprintf("%s.svc.cluster.local", ns.MeshExternal),
-						"mesh-external namespace was not discovered",
-						"Expected mesh-external to not be discovered, but it was."))
-			})
+			istioctl.CheckClusters(t,
+				pod.MatchingSelector("app=sleep", ns.Bookinfo),
+				assert.OutputDoesNotContain(
+					fmt.Sprintf("%s.svc.cluster.local", ns.MeshExternal),
+					"mesh-external namespace was not discovered",
+					"Expected mesh-external to not be discovered, but it was."))
 
 			t.LogStep("Create ServiceEntry for external nginx, port 80 and 443")
 			oc.ApplyString(t, meshNamespace, nginxServiceEntry)
