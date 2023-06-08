@@ -15,12 +15,14 @@
 package ossm
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
@@ -44,7 +46,8 @@ func TestMustGather(t *testing.T) {
 		image := env.GetMustGatherImage()
 		dir := shell.CreateTempDir(t, "must-gather-")
 
-		t.NewSubTest("run must gather and verify files exists").Run(func(t TestHelper) {
+		t.NewSubTest("run without namespace flag").Run(func(t TestHelper) {
+			t.Log("This test case verify that must-gather can be run without namespace flag and the expected files and path are created")
 			t.LogStepf("Capture must-gather using image %s", image)
 			output := shell.Executef(t, `mkdir -p %s; oc adm must-gather --dest-dir=%s --image=%s`, dir, dir, "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-istio-must-gather-rhel8:2.4.0-11")
 			if strings.Contains(output, "ERROR:") {
@@ -54,6 +57,21 @@ func TestMustGather(t *testing.T) {
 			t.LogStep("Check files exist under the directory of mustgather: openshift-operators.servicemesh-resources.maistra.io.yaml, debug-syncz.json, config_dump_istiod.json, config_dump_proxy.json, proxy_stats")
 			fileList := []string{"openshift-operators.servicemesh-resources.maistra.io.yaml", "debug-syncz.json", "config_dump_istiod.json", "config_dump_proxy.json", "proxy_stats"}
 			verifyFilesExist(t, dir, fileList)
+
+			t.LogStep("verify content of proxy_stats")
+			t.Log("verify that proxy stats file is not empty and contains parameters like: server.stats_recent_lookups, server.total_connections, server.uptime, server.version")
+			proxyStatsFilePath := getPathToFile(t, dir, "proxy_stats")
+			shell.Execute(t,
+				fmt.Sprintf("cat %s", proxyStatsFilePath),
+				assert.OutputContains("server.stats_recent_lookups",
+					"server.stats_recent_lookups is on the proxy_stats file",
+					"server.stats_recent_lookups is not on the proxy_stats file"),
+				assert.OutputContains("server.total_connections",
+					"server.total_connections is on the proxy_stats file",
+					"server.total_connections is not on the proxy_stats file"),
+				assert.OutputContains("server.uptime",
+					"server.uptime is on the proxy_stats file",
+					"server.uptime is not on the proxy_stats file"))
 		})
 	})
 }
@@ -77,4 +95,20 @@ func verifyFilesExist(t TestHelper, dir string, fileList []string) {
 	if err != nil {
 		t.Fatalf("Error: %s\n", err.Error())
 	}
+}
+
+func getPathToFile(t TestHelper, dir string, fileName string) string {
+	var pathToFile string
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if info.Name() == fileName {
+			pathToFile = path
+		}
+		return nil
+	})
+
+	if err != nil {
+		t.Fatalf("Error: %s\n", err.Error())
+	}
+
+	return pathToFile
 }
