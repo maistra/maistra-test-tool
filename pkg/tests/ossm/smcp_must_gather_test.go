@@ -15,7 +15,9 @@
 package ossm
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
@@ -40,18 +42,39 @@ func TestMustGather(t *testing.T) {
 		app.InstallAndWaitReady(t, app.Bookinfo(ns))
 
 		image := env.GetMustGatherImage()
-
-		t.LogStepf("Capture must-gather using image %s", image)
 		dir := shell.CreateTempDir(t, "must-gather-")
-		shell.Executef(t, `mkdir -p %s; oc adm must-gather --dest-dir=%s --image=%s`, dir, dir, image)
 
-		t.LogStep("Check cluster-scoped openshift-operators.servicemesh-resources.maistra.io.yaml")
-		pattern := dir + "/*must-gather*/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/openshift-operators.servicemesh-resources.maistra.io.yaml"
-		matches, err := filepath.Glob(pattern)
-		if err == nil && len(matches) != 0 {
-			t.LogSuccessf("file exists: %s", matches)
-		} else {
-			t.Fatalf("openshift-operators.servicemesh-resources.maistra.io.yaml file not found: %s", matches)
-		}
+		t.NewSubTest("run must gather and verify files exists").Run(func(t TestHelper) {
+			t.LogStepf("Capture must-gather using image %s", image)
+			output := shell.Executef(t, `mkdir -p %s; oc adm must-gather --dest-dir=%s --image=%s`, dir, dir, "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-istio-must-gather-rhel8:2.4.0-11")
+			if strings.Contains(output, "ERROR:") {
+				t.Fatalf("Error was found during the execution of must-gather: %s\n", output)
+			}
+
+			t.LogStep("Check files exist under the directory of mustgather: openshift-operators.servicemesh-resources.maistra.io.yaml, debug-syncz.json, config_dump_istiod.json, config_dump_proxy.json, proxy_stats")
+			fileList := []string{"openshift-operators.servicemesh-resources.maistra.io.yaml", "debug-syncz.json", "config_dump_istiod.json", "config_dump_proxy.json", "proxy_stats"}
+			verifyFilesExist(t, dir, fileList)
+		})
 	})
+}
+
+func verifyFilesExist(t TestHelper, dir string, fileList []string) {
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		for _, file := range fileList {
+			match, _ := filepath.Match(file, info.Name())
+			if match {
+				t.Logf("File found: %s\n", path)
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		t.Fatalf("Error: %s\n", err.Error())
+	}
 }
