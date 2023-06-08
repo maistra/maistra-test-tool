@@ -26,6 +26,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -46,16 +47,19 @@ func TestMustGather(t *testing.T) {
 		image := env.GetMustGatherImage()
 		dir := shell.CreateTempDir(t, "must-gather-")
 
-		t.NewSubTest("run without namespace flag").Run(func(t TestHelper) {
-			t.Log("This test case verify that must-gather can be run without namespace flag and the expected files and path are created")
-			t.LogStepf("Capture must-gather using image %s", image)
-			output := shell.Executef(t, `mkdir -p %s; oc adm must-gather --dest-dir=%s --image=%s`, dir, dir, "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-istio-must-gather-rhel8:2.4.0-11")
-			if strings.Contains(output, "ERROR:") {
-				t.Fatalf("Error was found during the execution of must-gather: %s\n", output)
-			}
+		t.LogStepf("Capture must-gather using image %s without namespace flag", image)
+		output := shell.Executef(t, `mkdir -p %s; oc adm must-gather --dest-dir=%s --image=%s`, dir, dir, "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-istio-must-gather-rhel8:2.4.0-11")
+		if strings.Contains(output, "ERROR:") {
+			t.Fatalf("Error was found during the execution of must-gather: %s\n", output)
+		}
 
+		t.NewSubTest("dump files and proxy stats files exist").Run(func(t test.TestHelper) {
 			t.LogStep("Check files exist under the directory of mustgather: openshift-operators.servicemesh-resources.maistra.io.yaml, debug-syncz.json, config_dump_istiod.json, config_dump_proxy.json, proxy_stats")
-			fileList := []string{"openshift-operators.servicemesh-resources.maistra.io.yaml", "debug-syncz.json", "config_dump_istiod.json", "config_dump_proxy.json", "proxy_stats"}
+			fileList := []string{"version",
+				"openshift-operators.servicemesh-resources.maistra.io.yaml",
+				"debug-syncz.json", "config_dump_istiod.json",
+				"config_dump_proxy.json",
+				"proxy_stats"}
 			verifyFilesExist(t, dir, fileList)
 
 			t.LogStep("verify content of proxy_stats")
@@ -73,10 +77,66 @@ func TestMustGather(t *testing.T) {
 					"server.uptime is on the proxy_stats file",
 					"server.uptime is not on the proxy_stats file"))
 		})
+
+		t.NewSubTest("version file exist").Run(func(t TestHelper) {
+			t.LogStep("verify version exist")
+			fileList := []string{"version"}
+			verifyFilesExist(t, dir, fileList)
+
+			t.LogStep("verify file version contains the version of the must-gather image")
+			versionFilePath := getPathToFile(t, dir, "version")
+			shell.Execute(t,
+				fmt.Sprintf("cat %s", versionFilePath),
+				assert.OutputContains(env.GetMustGatherTag(),
+					"Expected must gather version was found",
+					"Expected must gather version was not found"))
+		})
+
+		t.NewSubTest("resource cluster scoped exist").Run(func(t TestHelper) {
+			t.LogStep("Verify resources for cluster scoped files are created")
+			t.Log("verify that resources for cluster scoped are created: nodes, clusterrolebindings, clusterroles")
+			clusterScopedResourcesPathList := []string{
+				"cluster-scoped-resources/core/nodes/*.yaml",
+				"cluster-scoped-resources/rbac.authorization.k8s.io/clusterrolebindings/*.yaml",
+				"cluster-scoped-resources/rbac.authorization.k8s.io/clusterroles/*.yaml"}
+			for _, path := range clusterScopedResourcesPathList {
+				pathAndFilesExist(t, dir, path)
+			}
+		})
+
+		t.NewSubTest("resource for namespaces exist").Run(func(t TestHelper) {
+			t.LogStep("verify that resources for namespaces are created including bookinfo and istio-system folders")
+			namespacedResourcesPathList := []string{
+				"namespaces/istio-system/*.yaml",
+				"namespaces/bookinfo/*.yaml",
+				"namespaces/openshift-operators/openshift-operators.yaml",
+				"namespaces/*/k8s.cni.cncf.io/network-attachment-definitions/*.yaml",
+				"namespaces/*/rbac.authorization.k8s.io/rolebindings/*.yaml"}
+			for _, path := range namespacedResourcesPathList {
+				pathAndFilesExist(t, dir, path)
+			}
+		})
+
+		t.NewSubTest("cluster service version files validation").Run(func(t TestHelper) {
+			t.LogStep("Get service current service version from the cluster")
+			csvList := shell.Execute(t, "oc get csv -n openshift-operators | awk 'NR>1 { print $1 }'")
+
+			t.LogStep("verify if the csv files exist for the current service version")
+			csvListSlice := strings.Split(csvList, "\n")
+			for _, csv := range csvListSlice {
+				if csv != "" {
+					pathAndFilesExist(t,
+						dir,
+						fmt.Sprintf("namespaces/openshift-operators/operators.coreos.com/clusterserviceversions/%s.yaml", csv))
+				}
+			}
+		})
 	})
 }
 
 func verifyFilesExist(t TestHelper, dir string, fileList []string) {
+	fileMatches := make(map[string]bool)
+
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -85,7 +145,7 @@ func verifyFilesExist(t TestHelper, dir string, fileList []string) {
 		for _, file := range fileList {
 			match, _ := filepath.Match(file, info.Name())
 			if match {
-				t.Logf("File found: %s\n", path)
+				fileMatches[file] = true
 			}
 		}
 
@@ -94,6 +154,47 @@ func verifyFilesExist(t TestHelper, dir string, fileList []string) {
 
 	if err != nil {
 		t.Fatalf("Error: %s\n", err.Error())
+	}
+
+	for _, file := range fileList {
+		if !fileMatches[file] {
+			t.Fatalf("File not found: %s", file)
+		}
+	}
+}
+
+func pathAndFilesExist(t TestHelper, dir string, path string) {
+	fullPath := filepath.Join(dir, path)
+	pattern := filepath.Base(fullPath)
+	pathExists := false
+	filesFound := false
+
+	err := filepath.Walk(dir, func(filePath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		match, _ := filepath.Match(pattern, info.Name())
+		if match {
+			pathExists = true
+			if !info.IsDir() {
+				filesFound = true
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		t.Fatalf("Error: %s\n", err.Error())
+	}
+
+	if !pathExists {
+		t.Fatalf("Path not found: %s\n", path)
+	}
+
+	if !filesFound {
+		t.Fatalf("No files found under path: %s\n", path)
 	}
 }
 
