@@ -62,7 +62,7 @@ func GetTestGroup() string {
 }
 
 func GetMustGatherImage() string {
-	return "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel8:" + getenv("MUST_GATHER_TAG", "2.3")
+	return "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel8:" + GetMustGatherTag()
 }
 
 func GetMustGatherTag() string {
