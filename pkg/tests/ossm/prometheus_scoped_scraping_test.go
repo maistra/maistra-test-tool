@@ -191,7 +191,7 @@ func checkPermissionError(t test.TestHelper) {
 }
 
 func checkConfigurationReloadingTriggered(t test.TestHelper, start time.Time) {
-	retry.UntilSuccess(t, func(t test.TestHelper) {
+	retry.UntilSuccessWithOptions(t, retry.Options().DelayBetweenAttempts(1*time.Minute), func(t test.TestHelper) {
 		oc.LogsSince(t,
 			start,
 			prometheusPodSelector, "config-reloader",
