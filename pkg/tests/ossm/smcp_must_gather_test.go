@@ -72,7 +72,6 @@ func TestMustGather(t *testing.T) {
 				checkFileContents(t,
 					dir,
 					"**/namespaces/bookinfo/pods/details*/proxy_stats",
-					content,
 					assert.OutputContains(
 						content,
 						fmt.Sprintf("%s is on the proxy_stats file", content),
@@ -89,7 +88,6 @@ func TestMustGather(t *testing.T) {
 			checkFileContents(t,
 				dir,
 				"**/version",
-				env.GetMustGatherTag(),
 				assert.OutputContains(
 					env.GetMustGatherTag(),
 					"Expected must gather version was found",
@@ -161,7 +159,7 @@ func assertFilesExist(t TestHelper, dir string, files ...string) {
 	}
 }
 
-func checkFileContents(t test.TestHelper, dir string, file string, content string, checks ...common.CheckFunc) {
+func checkFileContents(t test.TestHelper, dir string, file string, checks ...common.CheckFunc) {
 	path := filepath.Join(dir, file)
 	filePath := shell.Execute(t, fmt.Sprintf("find %s", path))
 	data, err := os.ReadFile(filePath[:len(filePath)-1])
