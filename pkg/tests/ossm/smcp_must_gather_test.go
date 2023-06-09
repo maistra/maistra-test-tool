@@ -135,31 +135,11 @@ func TestMustGather(t *testing.T) {
 	})
 }
 
-func verifyFilesExist(t TestHelper, dir string, fileList []string) {
-	fileMatches := make(map[string]bool)
-
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		for _, file := range fileList {
-			match, _ := filepath.Match(file, info.Name())
-			if match {
-				fileMatches[file] = true
-			}
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		t.Fatalf("Error: %s\n", err.Error())
-	}
-
-	for _, file := range fileList {
-		if !fileMatches[file] {
-			t.Fatalf("File not found: %s", file)
+func assertFilesExist(t TestHelper, dir string, files ...string) {
+	for _, file := range files {
+		filePath := filepath.Join(dir, file)
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			t.Fatalf("File does not exist: %s", filePath)
 		}
 	}
 }
