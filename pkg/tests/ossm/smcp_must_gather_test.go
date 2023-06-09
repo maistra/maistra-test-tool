@@ -50,7 +50,7 @@ func TestMustGather(t *testing.T) {
 
 		t.LogStepf("Capture must-gather using image %s without namespace flag", image)
 		shell.Execute(t,
-			fmt.Sprintf(`oc adm must-gather --dest-dir=%s --image=%s`, dir, "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-istio-must-gather-rhel8:2.4.0-11"),
+			fmt.Sprintf(`oc adm must-gather --dest-dir=%s --image=%s`, dir, image),
 			assert.OutputDoesNotContain(
 				"ERROR:",
 				"Must gather completed successfully",
