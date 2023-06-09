@@ -23,6 +23,7 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
@@ -48,74 +49,84 @@ func TestMustGather(t *testing.T) {
 		dir := shell.CreateTempDir(t, "must-gather-")
 
 		t.LogStepf("Capture must-gather using image %s without namespace flag", image)
-		output := shell.Executef(t, `mkdir -p %s; oc adm must-gather --dest-dir=%s --image=%s`, dir, dir, "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-istio-must-gather-rhel8:2.4.0-11")
-		if strings.Contains(output, "ERROR:") {
-			t.Fatalf("Error was found during the execution of must-gather: %s\n", output)
-		}
+		shell.Execute(t,
+			fmt.Sprintf(`oc adm must-gather --dest-dir=%s --image=%s`, dir, "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-istio-must-gather-rhel8:2.4.0-11"),
+			assert.OutputDoesNotContain(
+				"ERROR:",
+				"Must gather completed successfully",
+				"Must gather failed"))
 
-		t.NewSubTest("dump files and proxy stats files exist").Run(func(t test.TestHelper) {
-			t.LogStep("Check files exist under the directory of mustgather: openshift-operators.servicemesh-resources.maistra.io.yaml, debug-syncz.json, config_dump_istiod.json, config_dump_proxy.json, proxy_stats")
+		t.NewSubTest("dump files and proxy stats files exist for pods").Run(func(t test.TestHelper) {
+			t.LogStep("Check dump files exist under the directory of namespace directory")
+			t.Log("Verify these files:")
+			t.Log("config_dump_istiod.json, config_dump_proxy.json, proxy_stats")
 			assertFilesExist(t, dir,
-				"version",
-				"openshift-operators.servicemesh-resources.maistra.io.yaml",
-				"debug-syncz.json", 
-				"config_dump_istiod.json",
-				"config_dump_proxy.json",
-				"proxy_stats")
+				"**/namespaces/bookinfo/pods/details*/config_dump_istiod.json",
+				"**/namespaces/bookinfo/pods/details*/config_dump_proxy.json",
+				"**/namespaces/bookinfo/pods/details*/proxy_stats")
 
 			t.LogStep("verify content of proxy_stats")
 			t.Log("verify that proxy stats file is not empty and contains parameters like: server.stats_recent_lookups, server.total_connections, server.uptime, server.version")
-			proxyStatsFilePath := getPathToFile(t, dir, "proxy_stats")
-			shell.Execute(t,
-				fmt.Sprintf("cat %s", proxyStatsFilePath),
-				assert.OutputContains("server.stats_recent_lookups",
-					"server.stats_recent_lookups is on the proxy_stats file",
-					"server.stats_recent_lookups is not on the proxy_stats file"),
-				assert.OutputContains("server.total_connections",
-					"server.total_connections is on the proxy_stats file",
-					"server.total_connections is not on the proxy_stats file"),
-				assert.OutputContains("server.uptime",
-					"server.uptime is on the proxy_stats file",
-					"server.uptime is not on the proxy_stats file"))
+			proxyStatsContent := []string{"server.stats_recent_lookups", "server.total_connections", "server.uptime", "server.version"}
+			for _, content := range proxyStatsContent {
+				checkFileContents(t,
+					dir,
+					"**/namespaces/bookinfo/pods/details*/proxy_stats",
+					content,
+					assert.OutputContains(
+						content,
+						fmt.Sprintf("%s is on the proxy_stats file", content),
+						fmt.Sprintf("%s is not on the proxy_stats file", content)))
+			}
 		})
 
-		t.NewSubTest("version file exist").Run(func(t TestHelper) {
-			t.LogStep("verify version exist")
-			fileList := []string{"version"}
-			verifyFilesExist(t, dir, fileList)
+		t.NewSubTest("version file").Run(func(t TestHelper) {
+			t.LogStep("verify file version exists")
+			assertFilesExist(t, dir,
+				"**/version")
 
 			t.LogStep("verify file version contains the version of the must-gather image")
-			versionFilePath := getPathToFile(t, dir, "version")
-			shell.Execute(t,
-				fmt.Sprintf("cat %s", versionFilePath),
-				assert.OutputContains(env.GetMustGatherTag(),
+			checkFileContents(t,
+				dir,
+				"**/version",
+				env.GetMustGatherTag(),
+				assert.OutputContains(
+					env.GetMustGatherTag(),
 					"Expected must gather version was found",
 					"Expected must gather version was not found"))
 		})
 
-		t.NewSubTest("resource cluster scoped exist").Run(func(t TestHelper) {
-			t.LogStep("Verify resources for cluster scoped files are created")
-			t.Log("verify that resources for cluster scoped are created: nodes, clusterrolebindings, clusterroles")
-			clusterScopedResourcesPathList := []string{
-				"cluster-scoped-resources/core/nodes/*.yaml",
-				"cluster-scoped-resources/rbac.authorization.k8s.io/clusterrolebindings/*.yaml",
-				"cluster-scoped-resources/rbac.authorization.k8s.io/clusterroles/*.yaml"}
-			for _, path := range clusterScopedResourcesPathList {
-				pathAndFilesExist(t, dir, path)
+		t.NewSubTest("resources cluster scoped").Run(func(t TestHelper) {
+			t.LogStep("Get nodes of the cluster")
+			nodeOutput := shell.Execute(t, "oc get nodes | awk 'NR>1 { print $1 }'")
+			nodeSlice := strings.Split(nodeOutput, "\n")
+
+			t.LogStep("verify nodes files exist in cluster-scoped-resources")
+			for _, node := range nodeSlice {
+				if node != "" {
+					assertFilesExist(t,
+						dir,
+						fmt.Sprintf("**/cluster-scoped-resources/core/nodes/%s.yaml", node))
+				}
 			}
+
+			t.LogStep("Verify cluster-scoped-resources files exist in cluster-scoped-resources folder")
+			assertFilesExist(t,
+				dir,
+				"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterrolebindings/istiod-internal-basic-istio-system.yaml",
+				"**/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/openshift-operators.servicemesh-resources.maistra.io.yaml",
+				"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterroles/istiod-clusterrole-basic-istio-system.yaml")
 		})
 
 		t.NewSubTest("resource for namespaces exist").Run(func(t TestHelper) {
 			t.LogStep("verify that resources for namespaces are created including bookinfo and istio-system folders")
-			namespacedResourcesPathList := []string{
-				"namespaces/istio-system/*.yaml",
-				"namespaces/bookinfo/*.yaml",
-				"namespaces/openshift-operators/openshift-operators.yaml",
-				"namespaces/*/k8s.cni.cncf.io/network-attachment-definitions/*.yaml",
-				"namespaces/*/rbac.authorization.k8s.io/rolebindings/*.yaml"}
-			for _, path := range namespacedResourcesPathList {
-				pathAndFilesExist(t, dir, path)
-			}
+			assertFilesExist(t,
+				dir,
+				"**/namespaces/istio-system/debug-syncz.json",
+				"**/namespaces/istio-system/istio-system.yaml",
+				"**/namespaces/bookinfo/bookinfo.yaml",
+				"**/namespaces/openshift-operators/openshift-operators.yaml",
+				"**/namespaces/*/rbac.authorization.k8s.io/rolebindings/istiod-clusterrole-basic-istio-system.yaml")
 		})
 
 		t.NewSubTest("cluster service version files validation").Run(func(t TestHelper) {
@@ -126,9 +137,9 @@ func TestMustGather(t *testing.T) {
 			csvListSlice := strings.Split(csvList, "\n")
 			for _, csv := range csvListSlice {
 				if csv != "" {
-					pathAndFilesExist(t,
+					assertFilesExist(t,
 						dir,
-						fmt.Sprintf("namespaces/openshift-operators/operators.coreos.com/clusterserviceversions/%s.yaml", csv))
+						fmt.Sprintf("**/namespaces/openshift-operators/operators.coreos.com/clusterserviceversions/%s.yaml", csv))
 				}
 			}
 		})
@@ -138,59 +149,32 @@ func TestMustGather(t *testing.T) {
 func assertFilesExist(t TestHelper, dir string, files ...string) {
 	for _, file := range files {
 		filePath := filepath.Join(dir, file)
-		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			t.Fatalf("File does not exist: %s", filePath)
-		}
+		pathSplit := strings.Split(filePath, "/")
+		fileName := pathSplit[len(pathSplit)-1]
+
+		shell.Execute(t,
+			fmt.Sprintf("find %s", filePath),
+			assert.OutputContains(
+				fileName,
+				fmt.Sprintf("%s exists", filePath),
+				fmt.Sprintf("%s does not exist", filePath)))
 	}
 }
 
-func pathAndFilesExist(t TestHelper, dir string, path string) {
-	fullPath := filepath.Join(dir, path)
-	pattern := filepath.Base(fullPath)
-	pathExists := false
-	filesFound := false
-
-	err := filepath.Walk(dir, func(filePath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		match, _ := filepath.Match(pattern, info.Name())
-		if match {
-			pathExists = true
-			if !info.IsDir() {
-				filesFound = true
-			}
-		}
-
-		return nil
-	})
-
+func checkFileContents(t test.TestHelper, dir string, file string, content string, checks ...common.CheckFunc) {
+	path := filepath.Join(dir, file)
+	filePath := shell.Execute(t, fmt.Sprintf("find %s", path))
+	data, err := os.ReadFile(filePath[:len(filePath)-1])
 	if err != nil {
-		t.Fatalf("Error: %s\n", err.Error())
+		t.Fatalf("failed to read file: %s", err)
 	}
 
-	if !pathExists {
-		t.Fatalf("Path not found: %s\n", path)
+	proxyStatsFileContent := string(data)
+	if proxyStatsFileContent == "" {
+		t.Fatalf("proxy_stats file is empty")
 	}
 
-	if !filesFound {
-		t.Fatalf("No files found under path: %s\n", path)
+	for _, check := range checks {
+		check(t, proxyStatsFileContent)
 	}
-}
-
-func getPathToFile(t TestHelper, dir string, fileName string) string {
-	var pathToFile string
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if info.Name() == fileName {
-			pathToFile = path
-		}
-		return nil
-	})
-
-	if err != nil {
-		t.Fatalf("Error: %s\n", err.Error())
-	}
-
-	return pathToFile
 }
