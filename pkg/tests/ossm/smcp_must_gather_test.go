@@ -55,12 +55,13 @@ func TestMustGather(t *testing.T) {
 
 		t.NewSubTest("dump files and proxy stats files exist").Run(func(t test.TestHelper) {
 			t.LogStep("Check files exist under the directory of mustgather: openshift-operators.servicemesh-resources.maistra.io.yaml, debug-syncz.json, config_dump_istiod.json, config_dump_proxy.json, proxy_stats")
-			fileList := []string{"version",
+			assertFilesExist(t, dir,
+				"version",
 				"openshift-operators.servicemesh-resources.maistra.io.yaml",
-				"debug-syncz.json", "config_dump_istiod.json",
+				"debug-syncz.json", 
+				"config_dump_istiod.json",
 				"config_dump_proxy.json",
-				"proxy_stats"}
-			verifyFilesExist(t, dir, fileList)
+				"proxy_stats")
 
 			t.LogStep("verify content of proxy_stats")
 			t.Log("verify that proxy stats file is not empty and contains parameters like: server.stats_recent_lookups, server.total_connections, server.uptime, server.version")
