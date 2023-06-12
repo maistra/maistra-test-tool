@@ -73,7 +73,7 @@ func TestSmoke(t *testing.T) {
 		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
 			t.Logf("This test checks whether SMCP becomes ready after it's upgraded from %s to %s and bookinfo is still working after the upgrade", fromVersion, toVersion)
 
-			t.LogStep("Check if bookinfo productpage is running through the Proxy from the previos SMCP version")
+			t.LogStep("Check if bookinfo productpage is running through the Proxy from the previous SMCP version")
 			assertTrafficFlowsThroughProxy(t, ns)
 
 			t.LogStepf("Upgrade SMCP from %s to %s", fromVersion, toVersion)
