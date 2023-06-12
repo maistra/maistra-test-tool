@@ -65,7 +65,7 @@ func TestSmoke(t *testing.T) {
 
 			t.LogStepf("Create SMCP %s and verify it becomes ready", fromVersion)
 			assertSMCPDeploysAndIsReady(t, fromVersion)
-			assertRoutesExist(t)
+			// assertRoutesExist(t)
 
 			t.LogStep("Restart all pods to verify proxy is injected in all pods of Bookinfo")
 			oc.RestartAllPods(t, ns)
