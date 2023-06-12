@@ -61,32 +61,20 @@ func TestSmoke(t *testing.T) {
 		t.LogStep("Install bookinfo pods and sleep pod")
 		app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
 
-		t.NewSubTest(fmt.Sprintf("install bookinfo with smcp %s", fromVersion)).Run(func(t TestHelper) {
+		t.LogStepf("Install SMCP %s and verify it becomes ready", fromVersion)
+		assertSMCPDeploysAndIsReady(t, fromVersion)
 
-			t.LogStepf("Create SMCP %s and verify it becomes ready", fromVersion)
-			assertSMCPDeploysAndIsReady(t, fromVersion)
-			if env.GetSMCPVersion().GreaterThan(version.SMCP_2_2) {
-				assertRoutesExist(t)
-			}
-
-			t.LogStep("Restart all pods to verify proxy is injected in all pods of Bookinfo")
-			oc.RestartAllPods(t, ns)
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				assertSidecarInjectedInAllBookinfoPods(t, ns)
-			})
-
-			t.LogStep("Check if bookinfo productpage is running through the Proxy")
-			assertTrafficFlowsThroughProxy(t, ns)
-
-			t.LogStep("verify proxy startup time. Expected to be less than 10 seconds")
-			t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
-			t.Log("From proxy json , verify the time between status.containerStatuses.state.running.startedAt and status.conditions[type=Ready].lastTransitionTime")
-			t.Log("The proxy startup time should be less than 10 seconds for ratings pod")
-			assertProxiesReadyInLessThan10Seconds(t, ns)
+		t.LogStep("Restart all pods to verify proxy is injected in all pods of Bookinfo")
+		oc.RestartAllPods(t, ns)
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			assertSidecarInjectedInAllBookinfoPods(t, ns)
 		})
 
 		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
 			t.Logf("This test checks whether SMCP becomes ready after it's upgraded from %s to %s and bookinfo is still working after the upgrade", fromVersion, toVersion)
+
+			t.LogStep("Check if bookinfo productpage is running through the Proxy from the previos SMCP version")
+			assertTrafficFlowsThroughProxy(t, ns)
 
 			t.LogStepf("Upgrade SMCP from %s to %s", fromVersion, toVersion)
 			assertSMCPDeploysAndIsReady(t, toVersion)
@@ -98,10 +86,20 @@ func TestSmoke(t *testing.T) {
 			t.LogStep("Delete Bookinfo pods to validate proxy is still working after recreation and upgrade")
 			oc.RestartAllPodsAndWaitReady(t, ns)
 			assertTrafficFlowsThroughProxy(t, ns)
+
+			t.LogStep("verify proxy startup time. Expected to be less than 10 seconds")
+			t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
+			t.Log("From proxy json , verify the time between status.containerStatuses.state.running.startedAt and status.conditions[type=Ready].lastTransitionTime")
+			t.Log("The proxy startup time should be less than 10 seconds for ratings pod")
+			assertProxiesReadyInLessThan10Seconds(t, ns)
 		})
 
 		t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t TestHelper) {
 			t.Logf("This test checks whether SMCP %s deletion deletes all the resources", env.GetSMCPVersion())
+			t.Cleanup(func() {
+				app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+				oc.RecreateNamespace(t, meshNamespace)
+			})
 
 			t.LogStepf("Delete SMCP and SMMR in namespace %s", meshNamespace)
 			oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
@@ -115,6 +113,14 @@ func TestSmoke(t *testing.T) {
 						"SMCP resources are deleted",
 						"Still waiting for resources to be deleted from namespace"))
 			})
+		})
+
+		t.NewSubTest(fmt.Sprintf("install smcp %s", toVersion)).Run(func(t TestHelper) {
+			t.Logf("This test checks whether SMCP %s deletion deletes all the resources", env.GetSMCPVersion())
+
+			t.LogStepf("Install SMCP %s", toVersion)
+			assertSMCPDeploysAndIsReady(t, toVersion)
+			assertRoutesExist(t)
 		})
 
 	})
