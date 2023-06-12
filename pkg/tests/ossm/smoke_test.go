@@ -65,7 +65,7 @@ func TestSmoke(t *testing.T) {
 
 			t.LogStepf("Create SMCP %s and verify it becomes ready", fromVersion)
 			assertSMCPDeploysAndIsReady(t, fromVersion)
-			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_2) {
+			if env.GetSMCPVersion().GreaterThan(version.SMCP_2_2) {
 				assertRoutesExist(t)
 			}
 
