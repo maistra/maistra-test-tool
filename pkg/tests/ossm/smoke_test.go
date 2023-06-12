@@ -15,7 +15,6 @@
 package ossm
 
 import (
-	"bufio"
 	"fmt"
 	"strings"
 	"testing"
@@ -27,7 +26,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
@@ -180,23 +178,6 @@ func assertProxiesReadyInLessThan10Seconds(t TestHelper, ns string) {
 			t.Fatalf("Error getting proxy startup time for pod %s", podName)
 		}
 	}
-}
-
-func assertSidecarInjectedInAllBookinfoPods(t TestHelper, ns string) {
-	shell.Execute(t,
-		fmt.Sprintf(`oc -n %s get pods -l 'app in (productpage,details,reviews,ratings)' --no-headers`, ns),
-		func(t TestHelper, input string) {
-			scanner := bufio.NewScanner(strings.NewReader(input))
-			for scanner.Scan() {
-				line := scanner.Text()
-				podName := strings.Fields(line)[0]
-				if strings.Contains(line, "2/2") {
-					t.LogSuccessf("Sidecar injected and running in pod %s", podName)
-				} else {
-					t.Errorf("Sidecar either not injected or not running in pod %s: %s", podName, line)
-				}
-			}
-		})
 }
 
 func assertSMCPDeploysAndIsReady(t test.TestHelper, ver version.Version) {
