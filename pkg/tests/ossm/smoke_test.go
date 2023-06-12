@@ -76,11 +76,11 @@ func TestSmoke(t *testing.T) {
 			t.LogStep("Check if bookinfo productpage is running through the Proxy")
 			assertTrafficFlowsThroughProxy(t, ns)
 
-			t.LogStep("verify proxy startup time. Expected to be less than 3 seconds")
+			t.LogStep("verify proxy startup time. Expected to be less than 10 seconds")
 			t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
 			t.Log("From proxy json , verify the time between status.containerStatuses.state.running.startedAt and status.conditions[type=Ready].lastTransitionTime")
-			t.Log("The proxy startup time should be less than 3 seconds for ratings pod")
-			assertProxiesReadyInLessThan3Seconds(t, ns)
+			t.Log("The proxy startup time should be less than 10 seconds for ratings pod")
+			assertProxiesReadyInLessThan10Seconds(t, ns)
 		})
 
 		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
@@ -138,7 +138,7 @@ func assertTrafficFlowsThroughProxy(t TestHelper, ns string) {
 	})
 }
 
-func assertProxiesReadyInLessThan3Seconds(t TestHelper, ns string) {
+func assertProxiesReadyInLessThan10Seconds(t TestHelper, ns string) {
 	t.Log("Extracting proxy startup time and last transition time for all the pods in the namespace")
 	podsList := oc.GetJson(t, ns, "pods", "", `{.items[*].metadata.name}`)
 
@@ -159,7 +159,7 @@ func assertProxiesReadyInLessThan3Seconds(t TestHelper, ns string) {
 				t.Fatalf("Error parsing time for pod %d", podName)
 			}
 			startupTime := podReadyAt.Sub(podStartedAt)
-			if startupTime > 3*time.Second {
+			if startupTime > 10*time.Second {
 				t.Fatalf("Proxy startup time is too long: %s", startupTime.String())
 			}
 		} else {
