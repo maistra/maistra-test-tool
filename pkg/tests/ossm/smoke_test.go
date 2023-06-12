@@ -58,22 +58,20 @@ func TestSmoke(t *testing.T) {
 
 		oc.RecreateNamespace(t, meshNamespace)
 
-		t.LogStep("Install bookinfo pods and sleep pod")
-		app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
-
-		t.LogStepf("Install SMCP %s and verify it becomes ready", fromVersion)
-		assertSMCPDeploysAndIsReady(t, fromVersion)
-
-		t.LogStep("Restart all pods to verify proxy is injected in all pods of Bookinfo")
-		oc.RestartAllPods(t, ns)
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			assertSidecarInjectedInAllBookinfoPods(t, ns)
-		})
-
 		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
 			t.Logf("This test checks whether SMCP becomes ready after it's upgraded from %s to %s and bookinfo is still working after the upgrade", fromVersion, toVersion)
+			t.Cleanup(func() {
+				app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+				oc.RecreateNamespace(t, meshNamespace)
+			})
 
-			t.LogStep("Check if bookinfo productpage is running through the Proxy from the previous SMCP version")
+			t.LogStepf("Install SMCP %s and verify it becomes ready", fromVersion)
+			assertSMCPDeploysAndIsReady(t, fromVersion)
+
+			t.LogStep("Install bookinfo pods and sleep pod")
+			app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+
+			t.LogStep("Check if bookinfo traffic flows through the Proxy")
 			assertTrafficFlowsThroughProxy(t, ns)
 
 			t.LogStepf("Upgrade SMCP from %s to %s", fromVersion, toVersion)
@@ -96,10 +94,6 @@ func TestSmoke(t *testing.T) {
 
 		t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t TestHelper) {
 			t.Logf("This test checks whether SMCP %s deletion deletes all the resources", env.GetSMCPVersion())
-			t.Cleanup(func() {
-				app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
-				oc.RecreateNamespace(t, meshNamespace)
-			})
 
 			t.LogStepf("Delete SMCP and SMMR in namespace %s", meshNamespace)
 			oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
@@ -121,6 +115,18 @@ func TestSmoke(t *testing.T) {
 			t.LogStepf("Install SMCP %s", toVersion)
 			assertSMCPDeploysAndIsReady(t, toVersion)
 			assertRoutesExist(t)
+
+			t.LogStep("Install bookinfo pods and sleep pod")
+			app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+
+			t.LogStep("Check if bookinfo traffic flows through the Proxy")
+			assertTrafficFlowsThroughProxy(t, ns)
+
+			t.LogStep("verify proxy startup time. Expected to be less than 10 seconds")
+			t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
+			t.Log("From proxy json , verify the time between status.containerStatuses.state.running.startedAt and status.conditions[type=Ready].lastTransitionTime")
+			t.Log("The proxy startup time should be less than 10 seconds for ratings pod")
+			assertProxiesReadyInLessThan10Seconds(t, ns)
 		})
 
 	})
