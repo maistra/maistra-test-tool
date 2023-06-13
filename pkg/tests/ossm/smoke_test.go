@@ -47,7 +47,6 @@ func TestSmoke(t *testing.T) {
 		ns := "bookinfo"
 
 		t.Cleanup(func() {
-			app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
 			oc.RecreateNamespace(t, meshNamespace)
 		})
 
@@ -57,7 +56,7 @@ func TestSmoke(t *testing.T) {
 		oc.RecreateNamespace(t, meshNamespace)
 
 		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
-			t.Logf("This test checks whether SMCP becomes ready after it's upgraded from %s to %s and bookinfo is still working after the upgrade", fromVersion, toVersion)
+			t.Logf("This test checks whether SMCP becomes ready after it's upgraded from %s to %s and bookinfo is still working after the upgrade and also test a clean installation of the target SMCP", fromVersion, toVersion)
 			t.Cleanup(func() {
 				app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
 				oc.RecreateNamespace(t, meshNamespace)
@@ -79,19 +78,33 @@ func TestSmoke(t *testing.T) {
 			t.LogStep("Check if bookinfo productpage is running through the Proxy after the upgrade")
 			assertTrafficFlowsThroughProxy(t, ns)
 
-			t.LogStep("Delete Bookinfo pods to validate proxy is still working after recreation and upgrade")
+			t.LogStep("Delete Bookinfo pods to force the update of the sidecar")
 			oc.RestartAllPodsAndWaitReady(t, ns)
-			assertTrafficFlowsThroughProxy(t, ns)
 
-			t.LogStep("verify proxy startup time. Expected to be less than 10 seconds")
-			t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
-			t.Log("From proxy json , verify the time between status.containerStatuses.state.running.startedAt and status.conditions[type=Ready].lastTransitionTime")
-			t.Log("The proxy startup time should be less than 10 seconds for ratings pod")
-			assertProxiesReadyInLessThan10Seconds(t, ns)
+			checkSMCP(t, ns)
+		})
+
+		t.NewSubTest(fmt.Sprintf("install smcp %s", toVersion)).Run(func(t TestHelper) {
+			t.Logf("This test checks whether SMCP %s install the SMCP version", env.GetSMCPVersion())
+			t.Cleanup(func() {
+				app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+			})
+
+			t.LogStepf("Install SMCP %s", toVersion)
+			assertSMCPDeploysAndIsReady(t, toVersion)
+			assertRoutesExist(t)
+
+			t.LogStep("Install bookinfo pods and sleep pod")
+			app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+
+			checkSMCP(t, ns)
 		})
 
 		t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t TestHelper) {
 			t.Logf("This test checks whether SMCP %s deletion deletes all the resources", env.GetSMCPVersion())
+			t.Cleanup(func() {
+				oc.RecreateNamespace(t, meshNamespace)
+			})
 
 			t.LogStepf("Delete SMCP and SMMR in namespace %s", meshNamespace)
 			oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
@@ -107,27 +120,16 @@ func TestSmoke(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest(fmt.Sprintf("install smcp %s", toVersion)).Run(func(t TestHelper) {
-			t.Logf("This test checks whether SMCP %s deletion deletes all the resources", env.GetSMCPVersion())
-
-			t.LogStepf("Install SMCP %s", toVersion)
-			assertSMCPDeploysAndIsReady(t, toVersion)
-			assertRoutesExist(t)
-
-			t.LogStep("Install bookinfo pods and sleep pod")
-			app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
-
-			t.LogStep("Check if bookinfo traffic flows through the Proxy")
-			assertTrafficFlowsThroughProxy(t, ns)
-
-			t.LogStep("verify proxy startup time. Expected to be less than 10 seconds")
-			t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
-			t.Log("From proxy json , verify the time between status.containerStatuses.state.running.startedAt and status.conditions[type=Ready].lastTransitionTime")
-			t.Log("The proxy startup time should be less than 10 seconds for ratings pod")
-			assertProxiesReadyInLessThan10Seconds(t, ns)
-		})
-
 	})
+}
+
+func checkSMCP(t TestHelper, ns string) {
+	t.LogStep("Check if bookinfo traffic flows through the Proxy")
+	assertTrafficFlowsThroughProxy(t, ns)
+
+	t.LogStep("verify proxy startup time. Expected to be less than 10 seconds")
+	t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
+	assertProxiesReadyInLessThan10Seconds(t, ns)
 }
 
 func assertTrafficFlowsThroughProxy(t TestHelper, ns string) {
