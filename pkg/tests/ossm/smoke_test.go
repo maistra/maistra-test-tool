@@ -73,7 +73,6 @@ func TestSmoke(t *testing.T) {
 
 			t.LogStepf("Upgrade SMCP from %s to %s", fromVersion, toVersion)
 			assertSMCPDeploysAndIsReady(t, toVersion)
-			assertRoutesExist(t)
 
 			t.LogStep("Check if bookinfo productpage is running through the Proxy after the upgrade")
 			assertTrafficFlowsThroughProxy(t, ns)
@@ -92,7 +91,6 @@ func TestSmoke(t *testing.T) {
 
 			t.LogStepf("Install SMCP %s", toVersion)
 			assertSMCPDeploysAndIsReady(t, toVersion)
-			assertRoutesExist(t)
 
 			t.LogStep("Install bookinfo pods and sleep pod")
 			app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
@@ -124,6 +122,9 @@ func TestSmoke(t *testing.T) {
 }
 
 func checkSMCP(t TestHelper, ns string) {
+	t.LogStep("Verify if all the routes are created")
+	assertRoutesExist(t)
+
 	t.LogStep("Check if bookinfo traffic flows through the Proxy")
 	assertTrafficFlowsThroughProxy(t, ns)
 
@@ -192,7 +193,6 @@ func assertSMCPDeploysAndIsReady(t test.TestHelper, ver version.Version) {
 }
 
 func assertRoutesExist(t test.TestHelper) {
-	t.LogStep("Verify if all the routes are created")
 	t.Log("Related issue: https://issues.redhat.com/browse/OSSM-4069")
 	retry.UntilSuccess(t, func(t TestHelper) {
 		oc.Get(t,
