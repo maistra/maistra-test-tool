@@ -15,7 +15,6 @@
 package ossm
 
 import (
-	"bufio"
 	"fmt"
 	"strings"
 	"testing"
@@ -27,7 +26,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
@@ -49,7 +47,6 @@ func TestSmoke(t *testing.T) {
 		ns := "bookinfo"
 
 		t.Cleanup(func() {
-			app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
 			oc.RecreateNamespace(t, meshNamespace)
 		})
 
@@ -58,50 +55,54 @@ func TestSmoke(t *testing.T) {
 
 		oc.RecreateNamespace(t, meshNamespace)
 
-		t.LogStep("Install bookinfo pods and sleep pod")
-		app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
-
-		t.NewSubTest(fmt.Sprintf("install bookinfo with smcp %s", fromVersion)).Run(func(t TestHelper) {
-
-			t.LogStepf("Create SMCP %s and verify it becomes ready", fromVersion)
-			assertSMCPDeploysAndIsReady(t, fromVersion)
-			if env.GetSMCPVersion().GreaterThan(version.SMCP_2_2) {
-				assertRoutesExist(t)
-			}
-
-			t.LogStep("Restart all pods to verify proxy is injected in all pods of Bookinfo")
-			oc.RestartAllPods(t, ns)
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				assertSidecarInjectedInAllBookinfoPods(t, ns)
+		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
+			t.Logf("This test checks whether SMCP becomes ready after it's upgraded from %s to %s and bookinfo is still working after the upgrade and also test a clean installation of the target SMCP", fromVersion, toVersion)
+			t.Cleanup(func() {
+				app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+				oc.RecreateNamespace(t, meshNamespace)
 			})
 
-			t.LogStep("Check if bookinfo productpage is running through the Proxy")
+			t.LogStepf("Install SMCP %s and verify it becomes ready", fromVersion)
+			assertSMCPDeploysAndIsReady(t, fromVersion)
+
+			t.LogStep("Install bookinfo pods and sleep pod")
+			app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+
+			t.LogStep("Check if bookinfo traffic flows through the Proxy")
 			assertTrafficFlowsThroughProxy(t, ns)
-
-			t.LogStep("verify proxy startup time. Expected to be less than 10 seconds")
-			t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
-			t.Log("From proxy json , verify the time between status.containerStatuses.state.running.startedAt and status.conditions[type=Ready].lastTransitionTime")
-			t.Log("The proxy startup time should be less than 10 seconds for ratings pod")
-			assertProxiesReadyInLessThan10Seconds(t, ns)
-		})
-
-		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
-			t.Logf("This test checks whether SMCP becomes ready after it's upgraded from %s to %s and bookinfo is still working after the upgrade", fromVersion, toVersion)
 
 			t.LogStepf("Upgrade SMCP from %s to %s", fromVersion, toVersion)
 			assertSMCPDeploysAndIsReady(t, toVersion)
-			assertRoutesExist(t)
 
 			t.LogStep("Check if bookinfo productpage is running through the Proxy after the upgrade")
 			assertTrafficFlowsThroughProxy(t, ns)
 
-			t.LogStep("Delete Bookinfo pods to validate proxy is still working after recreation and upgrade")
+			t.LogStep("Delete Bookinfo pods to force the update of the sidecar")
 			oc.RestartAllPodsAndWaitReady(t, ns)
-			assertTrafficFlowsThroughProxy(t, ns)
+
+			checkSMCP(t, ns)
+		})
+
+		t.NewSubTest(fmt.Sprintf("install smcp %s", toVersion)).Run(func(t TestHelper) {
+			t.Logf("This test checks whether SMCP %s install the SMCP version", env.GetSMCPVersion())
+			t.Cleanup(func() {
+				app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+			})
+
+			t.LogStepf("Install SMCP %s", toVersion)
+			assertSMCPDeploysAndIsReady(t, toVersion)
+
+			t.LogStep("Install bookinfo pods and sleep pod")
+			app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+
+			checkSMCP(t, ns)
 		})
 
 		t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t TestHelper) {
 			t.Logf("This test checks whether SMCP %s deletion deletes all the resources", env.GetSMCPVersion())
+			t.Cleanup(func() {
+				oc.RecreateNamespace(t, meshNamespace)
+			})
 
 			t.LogStepf("Delete SMCP and SMMR in namespace %s", meshNamespace)
 			oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
@@ -118,6 +119,18 @@ func TestSmoke(t *testing.T) {
 		})
 
 	})
+}
+
+func checkSMCP(t TestHelper, ns string) {
+	t.LogStep("Verify if all the routes are created")
+	assertRoutesExist(t)
+
+	t.LogStep("Check if bookinfo traffic flows through the Proxy")
+	assertTrafficFlowsThroughProxy(t, ns)
+
+	t.LogStep("verify proxy startup time. Expected to be less than 10 seconds")
+	t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
+	assertProxiesReadyInLessThan10Seconds(t, ns)
 }
 
 func assertTrafficFlowsThroughProxy(t TestHelper, ns string) {
@@ -170,23 +183,6 @@ func assertProxiesReadyInLessThan10Seconds(t TestHelper, ns string) {
 	}
 }
 
-func assertSidecarInjectedInAllBookinfoPods(t TestHelper, ns string) {
-	shell.Execute(t,
-		fmt.Sprintf(`oc -n %s get pods -l 'app in (productpage,details,reviews,ratings)' --no-headers`, ns),
-		func(t TestHelper, input string) {
-			scanner := bufio.NewScanner(strings.NewReader(input))
-			for scanner.Scan() {
-				line := scanner.Text()
-				podName := strings.Fields(line)[0]
-				if strings.Contains(line, "2/2") {
-					t.LogSuccessf("Sidecar injected and running in pod %s", podName)
-				} else {
-					t.Errorf("Sidecar either not injected or not running in pod %s: %s", podName, line)
-				}
-			}
-		})
-}
-
 func assertSMCPDeploysAndIsReady(t test.TestHelper, ver version.Version) {
 	t.LogStep("Install SMCP")
 	InstallSMCPVersion(t, meshNamespace, ver)
@@ -197,7 +193,6 @@ func assertSMCPDeploysAndIsReady(t test.TestHelper, ver version.Version) {
 }
 
 func assertRoutesExist(t test.TestHelper) {
-	t.LogStep("Verify if all the routes are created")
 	t.Log("Related issue: https://issues.redhat.com/browse/OSSM-4069")
 	retry.UntilSuccess(t, func(t TestHelper) {
 		oc.Get(t,
