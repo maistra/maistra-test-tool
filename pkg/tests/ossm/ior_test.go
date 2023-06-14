@@ -3,6 +3,7 @@ package ossm
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
@@ -185,7 +186,9 @@ func TestIOR(t *testing.T) {
 					newGatewayMap[r.Metadata.Labels["maistra.io/gateway-name"]] = r.Metadata.Annotations[originalHostAnnotation]
 				}
 
-				if err := util.Compare([]byte(fmt.Sprint(gatewayMap)), []byte(fmt.Sprint(newGatewayMap))); err != nil {
+				if err := util.Compare(
+					[]byte(sprintMap(gatewayMap)),
+					[]byte(sprintMap(newGatewayMap))); err != nil {
 					t.Fatalf("Expected %d Routes created for each Gateway but got %s.", total, err)
 				}
 
@@ -194,19 +197,19 @@ func TestIOR(t *testing.T) {
 
 			before := getRoutes(t, meshNamespace)
 			detectRouteChanges := func(t test.TestHelper) {
-				retry.UntilSuccess(t, func(t test.TestHelper) {
-					after := getRoutes(t, meshNamespace)
+				after := getRoutes(t, meshNamespace)
 
-					if len(after) != total {
-						t.Fatalf("Expect %d Routes, but got %d instead", total, len(after))
-					}
+				if len(after) != total {
+					t.Fatalf("Expect %d Routes, but got %d instead", total, len(after))
+				}
 
-					if err := util.Compare([]byte(fmt.Sprint(buildRouteMap(before))), []byte(fmt.Sprint(buildRouteMap(after)))); err != nil {
-						t.Fatalf("Expect %d Routes remain unchanged, but they changed\n%s", total, err)
-					}
+				if err := util.Compare(
+					[]byte(sprintMap(buildRouteMap(before))),
+					[]byte(sprintMap(buildRouteMap(after)))); err != nil {
+					t.Fatalf("Expect %d Routes remain unchanged, but they changed\n%s", total, err)
+				}
 
-					t.LogSuccessf("Got %d Routes unchanged", total)
-				})
+				t.LogSuccessf("Got %d Routes unchanged", total)
 			}
 
 			t.LogStepf("Check whether the Routes changes when the istio pod restarts multiple times")
@@ -251,6 +254,22 @@ func buildRouteMap(routes []Route) map[string]string {
 	}
 
 	return routeMap
+}
+
+func sprintMap(m map[string]string) string {
+	keys := make([]string, 0, len(m))
+
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	res := ""
+	for _, k := range keys {
+		res += fmt.Sprintf("%s: %s\n", k, m[k])
+	}
+
+	return res
 }
 
 func getRoutes(t test.TestHelper, ns string) []Route {
