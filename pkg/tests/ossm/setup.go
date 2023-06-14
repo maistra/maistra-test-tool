@@ -16,6 +16,11 @@ type SMCP struct {
 	Namespace string
 	Version   version.Version
 	Rosa      bool
+
+	ClusterWideProxy bool
+	HttpProxy        string
+	HttpsProxy       string
+	NoProxy          string
 }
 
 // WithName returns a copy of this SMCP with the name changed to the specified name
@@ -47,6 +52,8 @@ var (
 
 	smcpName      = env.GetDefaultSMCPName()
 	meshNamespace = env.GetDefaultMeshNamespace()
+	rootDir       = env.GetRootDir()
+	profileFile   = rootDir + "/pkg/tests/ossm/yaml/profiles/"
 )
 
 func DefaultSMCP() SMCP {
@@ -79,7 +86,15 @@ func BasicSetup(t test.TestHelper) {
 func DeployControlPlane(t test.TestHelper) {
 	t.T().Helper()
 	t.LogStep("Apply default SMCP and SMMR manifests")
-	InstallSMCP(t, meshNamespace)
+	smcpValues := DefaultSMCP()
+	clusterWideProxy := oc.GetProxy(t)
+	if clusterWideProxy != nil {
+		smcpValues.ClusterWideProxy = true
+		smcpValues.HttpProxy = clusterWideProxy.HTTPProxy
+		smcpValues.HttpsProxy = clusterWideProxy.HTTPSProxy
+		smcpValues.NoProxy = clusterWideProxy.NoProxy
+	}
+	InstallSMCPCustom(t, meshNamespace, smcpValues)
 	oc.ApplyString(t, meshNamespace, smmr)
 	oc.WaitSMCPReady(t, meshNamespace, DefaultSMCP().Name)
 	oc.WaitSMMRReady(t, meshNamespace)
@@ -94,7 +109,7 @@ func InstallSMCPVersion(t test.TestHelper, ns string, ver version.Version) {
 }
 
 func InstallSMCPCustom(t test.TestHelper, ns string, smcp SMCP) {
-	oc.ApplyString(t, ns, getSMCPManifestCustom(t, smcp))
+	oc.ReplaceOrApplyString(t, ns, getSMCPManifestCustom(t, smcp))
 }
 
 func DeleteSMCPVersion(t test.TestHelper, ns string, ver version.Version) {
@@ -111,4 +126,8 @@ func getSMCPManifestCustom(t test.TestHelper, smcp SMCP) string {
 
 func GetSMMRTemplate() string {
 	return smmr
+}
+
+func GetProfileFile() string {
+	return profileFile
 }

@@ -34,12 +34,22 @@ func ExecuteWithEnvAndInput(t test.TestHelper, env []string, cmd string, input s
 	t.T().Helper()
 	output, err := execShellCommand(cmd, env, input)
 	if err != nil {
-		t.Fatalf("Command failed: %q\n%s\nError: %s", cmd, output, err)
+		t.Fatalf("Command failed: %s\n%serror: %s", cmd, appendNewLine(output), err)
 	}
 	for _, check := range checks {
 		check(t, output)
 	}
 	return output
+}
+
+func appendNewLine(str string) string {
+	if str == "" {
+		return ""
+	}
+	if strings.HasSuffix(str, "\n") {
+		return str
+	}
+	return str + "\n"
 }
 
 func execShellCommand(command string, env []string, input string) (string, error) {

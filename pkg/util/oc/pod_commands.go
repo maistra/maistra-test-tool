@@ -7,6 +7,7 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -84,25 +85,15 @@ func (o OC) WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
 	t.T().Helper()
 	var pod NamespacedName
 	retry.UntilSuccess(t, func(t test.TestHelper) {
+		t.T().Helper()
 		pod = podLocator(t, &o)
 		condition := o.Invokef(t, "kubectl -n %s wait --for condition=Ready pod %s --timeout 1s || true", pod.Namespace, pod.Name) // TODO: Change shell execute to do not fail on error
 		if strings.Contains(condition, "condition met") {
 			t.Logf("Pod %s in namespace %s is ready!", pod.Name, pod.Namespace)
 		} else {
-			t.Fatalf("Error: %s in namespace %s is not ready: %s", pod.Name, pod.Namespace, condition)
+			t.Fatalf("error: %s in namespace %s is not ready: %s", pod.Name, pod.Namespace, condition)
 		}
 	})
-}
-
-func (o OC) WaitPodsReady(t test.TestHelper, ns, selector string) {
-	t.T().Helper()
-	output := o.Invokef(t, "kubectl -n %s wait --for condition=Ready pod -l %s --timeout 30s || true", ns, selector) // TODO: Change shell execute to do not fail on error
-	// check if "condition met" was returned for all pods matching selector
-	if strings.Count(output, "\n") == strings.Count(output, "condition met") {
-		t.Logf("Pods %s in namespace %s are ready!", selector, ns)
-	} else {
-		t.Fatalf("Error: pods %s in namespace %s are not ready: %s", selector, ns, output)
-	}
 }
 
 func (o OC) WaitDeploymentRolloutComplete(t test.TestHelper, ns string, deploymentNames ...string) {
@@ -129,6 +120,19 @@ func (o OC) RestartAllPods(t test.TestHelper, namespaces ...string) {
 	}
 }
 
+func (o OC) WaitPodsExist(t test.TestHelper, namespaces ...string) {
+	t.T().Helper()
+	for _, ns := range namespaces {
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			shell.Execute(t, fmt.Sprintf("oc get pods -n %s", ns), assert.OutputDoesNotContain(
+				fmt.Sprintf("No resources found in %s namespace.", ns),
+				fmt.Sprintf("Found pods in %s", ns),
+				fmt.Sprintf("Did not find any pod in %s", ns),
+			))
+		})
+	}
+}
+
 func (o OC) WaitAllPodsReady(t test.TestHelper, namespaces ...string) {
 	t.T().Helper()
 	for _, ns := range namespaces {
@@ -142,15 +146,33 @@ func (o OC) DeletePodNoWait(t test.TestHelper, podLocator PodLocatorFunc) {
 	shell.Executef(t, `oc -n %s delete pod %s --wait=false`, pod.Namespace, pod.Name)
 }
 
+// WaitCondition runs `oc wait` 30 times every 10 seconds. If the resource doesn't
+// reach the specified condition in the last attempt, the function logs the failure
+// and
 func (o OC) WaitCondition(t test.TestHelper, ns string, kind string, name string, condition string) {
 	t.T().Helper()
-	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(30), func(t test.TestHelper) {
-		shell.Execute(t,
-			fmt.Sprintf(`oc wait -n %s %s/%s --for condition=%s  --timeout %s`, ns, kind, name, condition, "10s"),
-			assert.OutputContains(condition,
-				fmt.Sprintf("Condition %s met by %s %s/%s", condition, kind, ns, name),
-				fmt.Sprintf("Condition %s not met by %s %s/%s, retrying", condition, kind, ns, name)))
-	})
+	maxAttempts := 30
+	var attemptT *test.RetryTestHelper
+	for i := 0; i < maxAttempts; i++ {
+		t.Logf("Wait for condition %s on %s %s/%s...", condition, kind, ns, name)
+		attemptT = retry.Attempt(t, func(t test.TestHelper) {
+			t.T().Helper()
+			shell.Execute(t,
+				fmt.Sprintf(`oc wait -n %s %s/%s --for condition=%s --timeout %s`, ns, kind, name, condition, "10s"),
+				require.OutputContains("condition met",
+					fmt.Sprintf("Condition %s met by %s %s/%s", condition, kind, ns, name),
+					fmt.Sprintf("Condition %s not met by %s %s/%s", condition, kind, ns, name)))
+		})
+		if !attemptT.Failed() {
+			attemptT.FlushLogBuffer()
+			return
+		}
+	}
+
+	// the last attempt has failed, so we print the buffered log statements and the output of `oc describe` to facilitate debugging
+	attemptT.FlushLogBuffer()
+	t.Logf("Running oc describe -n %s %s/%s\n%s", ns, kind, name, shell.Executef(t, `oc describe -n %s %s/%s`, ns, kind, name))
+	t.FailNow()
 }
 
 func (o OC) WaitSMMRReady(t test.TestHelper, ns string) {

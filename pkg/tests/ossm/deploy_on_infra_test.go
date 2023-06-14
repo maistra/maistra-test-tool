@@ -26,14 +26,13 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 var workername string
 
 func TestDeployOnInfraNodes(t *testing.T) {
-	NewTest(t).Id("T40").Groups(Full).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T40").Groups(test.Full, test.Disconnected).Run(func(t test.TestHelper) {
 		t.Log("This test verifies that the OSSM operator and Istio components can be configured to run on infrastructure nodes")
 		t.Skip("Skipping test due to https://issues.redhat.com/browse/OSSM-3837")
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_3) {
@@ -64,7 +63,7 @@ func TestDeployOnInfraNodes(t *testing.T) {
 			"node-role.kubernetes.io/infra=reserved:NoSchedule",
 			"node-role.kubernetes.io/infra=reserved:NoExecute")
 
-		t.NewSubTest("operator").Run(func(t TestHelper) {
+		t.NewSubTest("operator").Run(func(t test.TestHelper) {
 			t.Log("Verify OSSM Operator is deployed on infra node when configured")
 			t.Log("Reference: https://issues.redhat.com/browse/OSSM-2342")
 			t.Cleanup(func() {
@@ -101,7 +100,7 @@ spec:
 			})
 		})
 
-		t.NewSubTest("control plane").Run(func(t TestHelper) {
+		t.NewSubTest("control plane").Run(func(t test.TestHelper) {
 			t.Log("Verify that all control plane pods are deployed on infra node when configured")
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
@@ -141,7 +140,7 @@ spec:
 	})
 }
 
-func assertPodScheduledToNode(t TestHelper, pLabel string) {
+func assertPodScheduledToNode(t test.TestHelper, pLabel string) {
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		podLocator := pod.MatchingSelector(pLabel, meshNamespace)
 		po := podLocator(t, oc.DefaultOC)

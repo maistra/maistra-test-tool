@@ -8,11 +8,17 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 func TestOperatorCanReconcileSMCPWhenIstiodOffline(t *testing.T) {
-	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
+	test.NewTest(t).Groups(test.Full, test.Disconnected).Run(func(t test.TestHelper) {
 		t.Log("This test checks if the operator can reconcile an SMCP even if the istiod pod is missing")
+		t.Log("See https://issues.redhat.com/browse/OSSM-3235")
+
+		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
+			t.Skip("Skipped because OSSM-3235 is only fixed in 2.4+")
+		}
 
 		meshNamespace := env.GetDefaultMeshNamespace()
 		smcpName := env.GetDefaultSMCPName()

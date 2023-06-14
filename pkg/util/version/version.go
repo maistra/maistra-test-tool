@@ -6,42 +6,31 @@ import (
 	"strings"
 )
 
-var (
-	SMCP_2_0 = ParseVersion("v2.0")
-	SMCP_2_1 = ParseVersion("v2.1")
-	SMCP_2_2 = ParseVersion("v2.2")
-	SMCP_2_3 = ParseVersion("v2.3")
-	SMCP_2_4 = ParseVersion("v2.4")
-
-	VERSIONS = []*Version{
-		&SMCP_2_0,
-		&SMCP_2_1,
-		&SMCP_2_2,
-		&SMCP_2_3,
-		&SMCP_2_4,
-	}
-)
-
 type Version struct {
 	Major int
 	Minor int
 }
 
 func ParseVersion(version string) Version {
+	// This func can handle smcp versions and ocp versions. Example: smcp version v2.1.0 and ocp version 4.10.0
 	if len(version) > 0 && version[0] == 'v' {
 		version = version[1:]
 	}
+
 	majorMinor := strings.Split(version, ".")
-	if len(majorMinor) != 2 {
-		panic(fmt.Sprintf("invalid SMCP version: %s", version))
+
+	if len(majorMinor) < 2 {
+		panic(fmt.Sprintf("invalid version: %s", version))
 	}
+
 	major, err := strconv.Atoi(majorMinor[0])
 	if err != nil {
-		panic(fmt.Sprintf("invalid SMCP version: %s", version))
+		panic(fmt.Sprintf("invalid version: %s", version))
 	}
+
 	minor, err := strconv.Atoi(majorMinor[1])
 	if err != nil {
-		panic(fmt.Sprintf("invalid SMCP version: %s", version))
+		panic(fmt.Sprintf("invalid version: %s", version))
 	}
 
 	return Version{Major: major, Minor: minor}
@@ -75,27 +64,4 @@ func (this Version) LessThanOrEqual(that Version) bool {
 
 func (this Version) String() string {
 	return fmt.Sprintf("v%d.%d", this.Major, this.Minor)
-}
-
-func (this Version) GetPreviousVersion() Version {
-	var prevVersion *Version
-	for _, v := range VERSIONS {
-		if *v == this {
-			if prevVersion == nil {
-				panic(fmt.Sprintf("version %s is the first supported version", this))
-			}
-			return *prevVersion
-		}
-		prevVersion = v
-	}
-	panic(fmt.Sprintf("version %s not found in VERSIONS", this))
-}
-
-func (this Version) IsSupported() bool {
-	for _, v := range VERSIONS {
-		if *v == this {
-			return true
-		}
-	}
-	return false
 }

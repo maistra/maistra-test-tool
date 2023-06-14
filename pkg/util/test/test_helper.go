@@ -11,7 +11,7 @@ const (
 	FailurePrefix = "FAILURE: "
 )
 
-func NewTestContext(t *testing.T) TestHelper {
+func NewTestHelper(t *testing.T) TestHelper {
 	ctx := &testHelper{
 		t: t,
 	}
@@ -75,10 +75,12 @@ func (t *testHelper) Failed() bool {
 }
 
 func (t *testHelper) Skip(args ...any) {
+	t.t.Helper()
 	t.t.Skip(args...)
 }
 
 func (t *testHelper) Skipf(format string, args ...any) {
+	t.t.Helper()
 	t.t.Skipf(format, args...)
 }
 

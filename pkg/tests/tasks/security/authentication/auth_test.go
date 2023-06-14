@@ -23,6 +23,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
@@ -167,7 +168,7 @@ func TestAuthPolicy(t *testing.T) {
 
 			t.LogStep("Check httpbin request is successful")
 			retry.UntilSuccess(t, func(t TestHelper) {
-				assertResponseStatus(t, headersURL, nil, http.StatusOK)
+				requireResponseStatus(t, headersURL, nil, http.StatusOK)
 			})
 
 			t.LogStep("Apply a JWT policy")
@@ -178,19 +179,19 @@ func TestAuthPolicy(t *testing.T) {
 
 			t.LogStep("Check whether request without token returns 200")
 			retry.UntilSuccess(t, func(t TestHelper) {
-				assertResponseStatus(t, headersURL, nil, http.StatusOK)
+				requireResponseStatus(t, headersURL, nil, http.StatusOK)
 			})
 
 			t.LogStep("Check whether request with an invalid token returns 401")
 			retry.UntilSuccess(t, func(t TestHelper) {
-				assertResponseStatus(t, headersURL, request.WithHeader("Authorization", "Bearer deadbeef"), http.StatusUnauthorized)
+				requireResponseStatus(t, headersURL, request.WithHeader("Authorization", "Bearer deadbeef"), http.StatusUnauthorized)
 			})
 
 			t.LogStep("Check whether request with a valid token returns 200")
 			token := string(curl.Request(t, "https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/demo.jwt", nil))
 			token = strings.Trim(token, "\n")
 			retry.UntilSuccess(t, func(t TestHelper) {
-				assertResponseStatus(t, headersURL, request.WithHeader("Authorization", "Bearer "+token), http.StatusOK)
+				requireResponseStatus(t, headersURL, request.WithHeader("Authorization", "Bearer "+token), http.StatusOK)
 			})
 
 			// skip gen-jwt.py and test JWT expires
@@ -204,7 +205,7 @@ func TestAuthPolicy(t *testing.T) {
 			})
 
 			retry.UntilSuccess(t, func(t TestHelper) {
-				assertResponseStatus(t, headersURL, nil, http.StatusForbidden)
+				requireResponseStatus(t, headersURL, nil, http.StatusForbidden)
 			})
 		})
 
@@ -216,17 +217,17 @@ func TestAuthPolicy(t *testing.T) {
 			})
 
 			retry.UntilSuccess(t, func(t TestHelper) {
-				assertResponseStatus(t, headersURL, nil, http.StatusForbidden)
+				requireResponseStatus(t, headersURL, nil, http.StatusForbidden)
 
 				ipURL := fmt.Sprintf("http://%s/ip", ingressGatewayHost)
-				assertResponseStatus(t, ipURL, nil, http.StatusOK)
+				requireResponseStatus(t, ipURL, nil, http.StatusOK)
 			})
 		})
 	})
 }
 
-func assertResponseStatus(t TestHelper, url string, requestOption curl.RequestOption, statusCode int) {
-	curl.Request(t, url, requestOption, assert.ResponseStatus(statusCode))
+func requireResponseStatus(t TestHelper, url string, requestOption curl.RequestOption, statusCode int) {
+	curl.Request(t, url, requestOption, require.ResponseStatus(statusCode))
 }
 
 const (

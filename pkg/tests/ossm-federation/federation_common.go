@@ -22,7 +22,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -80,8 +79,8 @@ func (ft federationTest) run(t TestHelper) {
 		peer2Address = "west-mesh-ingress.east-mesh-system.svc.cluster.local"
 	} else {
 		t.Log("Using LoadBalancer service for ingress")
-		peer1Address = getLoadBalancerIngressAddress(t, ft.west.smcpNamespace, "east-mesh-ingress")
-		peer2Address = getLoadBalancerIngressAddress(t, ft.east.smcpNamespace, "west-mesh-ingress")
+		peer1Address = getLoadBalancerIngressAddress(t, ft.west, "east-mesh-ingress")
+		peer2Address = getLoadBalancerIngressAddress(t, ft.east, "west-mesh-ingress")
 	}
 
 	westMeshInfo := PeerInfo{Address: peer1Address, DiscoveryPort: "8188", ServicePort: "15443", Region: ft.west.region, Zone: ft.west.zone}
@@ -126,23 +125,23 @@ func (ft federationTest) run(t TestHelper) {
 	ft.checker(t, ft)
 }
 
-func getLoadBalancerIngressAddress(t TestHelper, ns, serviceName string) string {
+func getLoadBalancerIngressAddress(t TestHelper, c config, serviceName string) string {
 	var address string
 	retryFor10Minutes := retry.Options().MaxAttempts(6 * 10).DelayBetweenAttempts(10 * time.Second)
 	retry.UntilSuccessWithOptions(t, retryFor10Minutes, func(t TestHelper) {
 		// try to get the load balancer ip
-		address = shell.Executef(t, `oc -n %s get svc %s -o jsonpath="{.status.loadBalancer.ingress[].ip}"`, ns, serviceName)
+		address = c.oc.Invokef(t, `oc -n %s get svc %s -o jsonpath="{.status.loadBalancer.ingress[].ip}"`, c.smcpNamespace, serviceName)
 		if address != "" {
 			return
 		}
 
 		// try to get the load balancer hostname
-		address = shell.Executef(t, `oc -n %s get svc %s -o jsonpath="{.status.loadBalancer.ingress[].hostname}"`, ns, serviceName)
+		address = c.oc.Invokef(t, `oc -n %s get svc %s -o jsonpath="{.status.loadBalancer.ingress[].hostname}"`, c.smcpNamespace, serviceName)
 		if address != "" {
 			return
 		}
 
-		t.Fatalf("could not get ingress address from LoadBalancer service %s/%s", ns, serviceName)
+		t.Fatalf("could not get ingress address from LoadBalancer service %s/%s", c.smcpNamespace, serviceName)
 	})
 	return address
 }

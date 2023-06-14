@@ -5,9 +5,14 @@
 .PHONY: lint
 .PHONY: lint-go
 .PHONY: test
+.PHONY: test-cleanup
 .PHONY: Test%
+.PHONY: image
+.PHONY: push
 
 FINDFILES=find . \( -path ./.git -o -path ./.github -o -path ./tmp \) -prune -o -type f
+
+CONTAINER_IMAGE ?= quay.io/maistra/maistra-test-tool:latest
 
 all: test
 
@@ -31,3 +36,15 @@ test:
 # this prevents errors like "No rule to make target 'TestFaultInjection'" when you run "make test TestFaultInjection"
 Test%:
 	@:
+
+test-cleanup:
+	kubectl delete ns istio-system bookinfo foo bar mesh-external legacy --ignore-not-found
+
+image:
+	podman build -t ${CONTAINER_IMAGE} .
+
+push: image
+	podman push ${CONTAINER_IMAGE}
+
+clean:
+	rm -rf tests/result-*

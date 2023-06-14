@@ -26,7 +26,7 @@ import (
 )
 
 func TestMustGather(t *testing.T) {
-	NewTest(t).Id("T30").Groups(Full).Run(func(t TestHelper) {
+	NewTest(t).Id("T30").Groups(Full, Disconnected).Run(func(t TestHelper) {
 		t.Log("This test verifies must-gather log collection")
 
 		ns := "bookinfo"
@@ -39,7 +39,7 @@ func TestMustGather(t *testing.T) {
 		t.LogStep("Deploy bookinfo in bookinfo ns")
 		app.InstallAndWaitReady(t, app.Bookinfo(ns))
 
-		image := "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel8:" + env.GetMustGatherTag()
+		image := env.GetMustGatherImage()
 
 		t.LogStepf("Capture must-gather using image %s", image)
 		dir := shell.CreateTempDir(t, "must-gather-")

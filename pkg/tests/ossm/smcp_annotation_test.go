@@ -16,45 +16,44 @@ package ossm
 
 import (
 	_ "embed"
-	"encoding/json"
 	"testing"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestSMCPAnnotations(t *testing.T) {
-	NewTest(t).Id("T29").Groups(Full).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T29").Groups(test.Full, test.Disconnected).Run(func(t test.TestHelper) {
 		t.Log("Test annotations: verify deployment with sidecar.maistra.io/proxyEnv annotations and Enable automatic injection in SMCP to propagate the annotations to the sidecar")
 
 		DeployControlPlane(t) // TODO: move this to individual subtests and integrate patch if one exists
 
-		t.NewSubTest("proxyEnvoy").Run(func(t TestHelper) {
+		t.NewSubTest("proxyEnvoy").Run(func(t test.TestHelper) {
 			t.Parallel()
 			ns := "foo"
 			t.Cleanup(func() {
-				oc.RecreateNamespace(t, ns)
+				oc.DeleteFromTemplate(t, ns, testSSLDeploymentWithAnnotation, nil)
 			})
 			t.LogStep("Deploy TestSSL pod with annotations sidecar.maistra.io/proxyEnv")
 			oc.ApplyTemplate(t, ns, testSSLDeploymentWithAnnotation, nil)
 			oc.WaitDeploymentRolloutComplete(t, ns, "testenv")
 
 			t.LogStep("Get annotations and verify that the pod has the expected: sidecar.maistra.io/proxyEnv : { \"maistra_test_env\": \"env_value\", \"maistra_test_env_2\": \"env_value_2\" }")
-			annotations := GetPodAnnotations(t, pod.MatchingSelector("app=env", ns))
+			annotations := VerifyAndGetPodAnnotation(t, pod.MatchingSelector("app=env", ns))
 			assertAnnotationIsPresent(t, annotations, "sidecar.maistra.io/proxyEnv", `{ "maistra_test_env": "env_value", "maistra_test_env_2": "env_value_2" }`)
 		})
 
 		// Test that the SMCP automatic injection with quotes works
-		t.NewSubTest("quote_injection").Run(func(t TestHelper) {
+		t.NewSubTest("quote_injection").Run(func(t test.TestHelper) {
 			t.Parallel()
 			ns := "bar"
 			t.Cleanup(func() {
 				oc.Patch(t, meshNamespace, "smcp", smcpName, "json", `[{"op": "remove", "path": "/spec/proxy"}]`)
-				oc.RecreateNamespace(t, ns)
+				oc.DeleteFromTemplate(t, ns, testSSLDeploymentWithAnnotation, nil)
 			})
 			t.LogStep("Enable annotation auto injection in SMCP")
 			oc.Patch(t,
@@ -69,29 +68,45 @@ func TestSMCPAnnotations(t *testing.T) {
 			oc.WaitDeploymentRolloutComplete(t, ns, "testenv")
 
 			t.LogStep("Get annotations and verify that the pod has the expected: test1.annotation-from-smcp : test1, test2.annotation-from-smcp : [\"test2\"], test3.annotation-from-smcp : {test3}")
-			annotations := GetPodAnnotations(t, pod.MatchingSelector("app=env", ns))
-			assertAnnotationIsPresent(t, annotations, "test1.annotation-from-smcp", "test1")
-			assertAnnotationIsPresent(t, annotations, "test2.annotation-from-smcp", `["test2"]`)
-			assertAnnotationIsPresent(t, annotations, "test3.annotation-from-smcp", "{test3}")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				annotations := VerifyAndGetPodAnnotation(t, pod.MatchingSelector("app=env", ns))
+				assertAnnotationIsPresent(t, annotations, "test1.annotation-from-smcp", "test1")
+				assertAnnotationIsPresent(t, annotations, "test2.annotation-from-smcp", `["test2"]`)
+				assertAnnotationIsPresent(t, annotations, "test3.annotation-from-smcp", "{test3}")
+			})
 		})
 	})
 }
 
-func GetPodAnnotations(t TestHelper, podLocator oc.PodLocatorFunc) map[string]string {
-	annotations := map[string]string{}
+func VerifyAndGetPodAnnotation(t test.TestHelper, podLocator oc.PodLocatorFunc) map[string]string {
+	var data struct {
+		Metadata struct {
+			Annotations map[string]string `yaml:"annotations"`
+		} `yaml:"metadata"`
+	}
+
 	po := podLocator(t, oc.DefaultOC)
-	retry.UntilSuccess(t, func(t test.TestHelper) {
-		output := shell.Executef(t, "kubectl get pod %s -n %s -o jsonpath='{.metadata.annotations}'", po.Name, po.Namespace)
-		err := json.Unmarshal([]byte(output), &annotations)
-		if err != nil {
-			t.Fatalf("Error parsing pod annotations json: %v", err)
-		}
-	})
+	yamlString := oc.GetYaml(t, po.Namespace, "pod", po.Name)
+	err := yaml.Unmarshal([]byte(yamlString), &data)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal YAML: %s", err)
+	}
+
+	annotations := data.Metadata.Annotations
+	if len(annotations) == 0 {
+		oc.DeletePod(t, podLocator)
+		oc.WaitPodReady(t, podLocator)
+		t.Fatalf("Failed to get annotations from pod %s", po.Name)
+	}
+
 	return annotations
 }
 
-func assertAnnotationIsPresent(t TestHelper, annotations map[string]string, key string, expectedValue string) {
+func assertAnnotationIsPresent(t test.TestHelper, annotations map[string]string, key string, expectedValue string) {
+	locator := pod.MatchingSelector("app=env", "foo")
 	if annotations[key] != expectedValue {
+		oc.DeletePod(t, locator)
+		oc.WaitPodReady(t, locator)
 		t.Fatalf("Expected annotation %s=%s, but got %s", key, expectedValue, annotations[key])
 	}
 }

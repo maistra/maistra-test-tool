@@ -16,9 +16,24 @@ func ApplyString(t test.TestHelper, ns string, yamls ...string) {
 	DefaultOC.ApplyString(t, ns, yamls...)
 }
 
+func GetOCPVersion(t test.TestHelper) string {
+	t.T().Helper()
+	return DefaultOC.GetOCPVersion(t)
+}
+
+func ReplaceOrApplyString(t test.TestHelper, ns string, yaml string) {
+	t.T().Helper()
+	DefaultOC.ReplaceOrApplyString(t, ns, yaml)
+}
+
 func ApplyTemplate(t test.TestHelper, ns string, template string, input interface{}) {
 	t.T().Helper()
 	DefaultOC.ApplyTemplateString(t, ns, template, input)
+}
+
+func ReplaceOrApplyTemplate(t test.TestHelper, ns string, template string, input interface{}) {
+	t.T().Helper()
+	DefaultOC.ReplaceOrApplyTemplate(t, ns, template, input)
 }
 
 func DeleteFromTemplate(t test.TestHelper, ns string, yaml string, data interface{}) {
@@ -111,6 +126,11 @@ func GetPodIP(t test.TestHelper, podLocator PodLocatorFunc) string {
 	return DefaultOC.GetPodIP(t, podLocator)
 }
 
+func GetServiceClusterIP(t test.TestHelper, ns, serviceName string) string {
+	t.T().Helper()
+	return DefaultOC.GetServiceClusterIP(t, ns, serviceName)
+}
+
 func Logs(t test.TestHelper, podLocator PodLocatorFunc, container string, checks ...common.CheckFunc) {
 	t.T().Helper()
 	DefaultOC.Logs(t, podLocator, container, checks...)
@@ -131,11 +151,6 @@ func WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
 	DefaultOC.WaitPodReady(t, podLocator)
 }
 
-func WaitPodsReady(t test.TestHelper, ns, selector string) {
-	t.T().Helper()
-	DefaultOC.WaitPodsReady(t, ns, selector)
-}
-
 func UndoRollout(t test.TestHelper, ns string, kind, name string) {
 	t.T().Helper()
 	DefaultOC.UndoRollout(t, ns, kind, name)
@@ -154,6 +169,11 @@ func RestartAllPodsAndWaitReady(t test.TestHelper, namespaces ...string) {
 func RestartAllPods(t test.TestHelper, namespaces ...string) {
 	t.T().Helper()
 	DefaultOC.RestartAllPods(t, namespaces...)
+}
+
+func WaitPodsExist(t test.TestHelper, namespaces ...string) {
+	t.T().Helper()
+	DefaultOC.WaitPodsExist(t, namespaces...)
 }
 
 func WaitAllPodsReady(t test.TestHelper, namespaces ...string) {
@@ -217,7 +237,13 @@ func GetYaml(t test.TestHelper, ns, kind, name string, checks ...common.CheckFun
 	return DefaultOC.GetYaml(t, ns, kind, name, checks...)
 }
 
-func GetProxy(t test.TestHelper) Proxy {
+// GetJson returns the JSON representation of the resource, you can set a jsonPath to extract a specific value or send "" to get the full JSON
+func GetJson(t test.TestHelper, ns, kind, name string, jsonPath string) string {
+	t.T().Helper()
+	return DefaultOC.GetJson(t, ns, kind, name, jsonPath)
+}
+
+func GetProxy(t test.TestHelper) *Proxy {
 	t.T().Helper()
 	return DefaultOC.GetProxy(t)
 }

@@ -1,14 +1,11 @@
 package prometheus
 
 import (
-	"encoding/json"
-	"fmt"
-	"strings"
-
-	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
+
+var DefaultPrometheus = NewPrometheus("app=prometheus")
+var CustomPrometheus = NewPrometheus("prometheus=prometheus")
 
 type PrometheusResult struct {
 	Metric map[string]string `json:"metric"`
@@ -25,19 +22,10 @@ type PrometheusResponse struct {
 	Data   PrometheusResultData `json:"data"`
 }
 
+type Prometheus interface {
+	Query(t test.TestHelper, ns string, query string) PrometheusResponse
+}
+
 func Query(t test.TestHelper, ns string, query string) PrometheusResponse {
-	escapedQuery := strings.ReplaceAll(query, `'`, `'\\''`)
-
-	output := oc.Exec(t,
-		pod.MatchingSelector("app=prometheus", ns), "prometheus",
-		fmt.Sprintf("curl -sS localhost:9090/api/v1/query --data-urlencode 'query=%s'", escapedQuery))
-
-	result := &PrometheusResponse{}
-	err := json.Unmarshal([]byte(output), result)
-	if err != nil {
-		t.Log("Prometheus response:\n%s", output)
-		t.Fatalf("could not parse Prometheus response as JSON: %v", err)
-	}
-
-	return *result
+	return DefaultPrometheus.Query(t, ns, query)
 }
