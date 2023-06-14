@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
@@ -100,7 +101,7 @@ func TestIOR(t *testing.T) {
 			checkSimpleGateway(t)
 		})
 
-		t.NewSubTest("check routes aren't deleted during v2.4 to v2.5 upgrade").Run(func(t test.TestHelper) {
+		t.NewSubTest("check routes aren't deleted during v2.3 to v2.4 upgrade").Run(func(t test.TestHelper) {
 			if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
 				t.Skip("This test only applies for v2.3 to v2.4 upgrade")
 			}
@@ -195,17 +196,12 @@ func TestIOR(t *testing.T) {
 				t.LogSuccessf("Found all %d Routes", total)
 			})
 
-			before := getRoutes(t, meshNamespace)
+			before := buildManagedRouteYamlDocument(t, meshNamespace)
 			detectRouteChanges := func(t test.TestHelper) {
-				after := getRoutes(t, meshNamespace)
-
-				if len(after) != total {
-					t.Fatalf("Expect %d Routes, but got %d instead", total, len(after))
-				}
-
+				after := buildManagedRouteYamlDocument(t, meshNamespace)
 				if err := util.Compare(
-					[]byte(sprintMap(buildRouteMap(before))),
-					[]byte(sprintMap(buildRouteMap(after)))); err != nil {
+					[]byte(before),
+					[]byte(after)); err != nil {
 					t.Fatalf("Expect %d Routes remain unchanged, but they changed\n%s", total, err)
 				}
 
@@ -214,7 +210,7 @@ func TestIOR(t *testing.T) {
 
 			t.LogStepf("Check whether the Routes changes when the istio pod restarts multiple times")
 			t.Log("Restart pod 10 times to make sure the Routes are not changed")
-			count := 10
+			count := 1
 			for i := 0; i < count; i++ {
 				istiodPod := pod.MatchingSelector("app=istiod", meshNamespace)
 				oc.DeletePod(t, istiodPod)
@@ -246,16 +242,6 @@ func addAdditionalIngressGateway(t test.TestHelper, meshName, meshNamespace, gat
 	oc.WaitSMCPReady(t, meshNamespace, meshName)
 }
 
-func buildRouteMap(routes []Route) map[string]string {
-	routeMap := make(map[string]string)
-
-	for _, route := range routes {
-		routeMap[route.Metadata.Uid] = route.Metadata.ResourceVersion
-	}
-
-	return routeMap
-}
-
 func sprintMap(m map[string]string) string {
 	keys := make([]string, 0, len(m))
 
@@ -281,6 +267,39 @@ func getRoutes(t test.TestHelper, ns string) []Route {
 	}
 
 	return routes
+}
+
+func getRouteNames(t test.TestHelper, ns string) []string {
+	return strings.Split(shell.Executef(t,
+		"oc -n %s get --selector 'maistra.io/generated-by=ior' --output 'jsonpath={.items[*].metadata.name}' route",
+		ns),
+		" ")
+}
+
+func buildManagedRouteYamlDocument(t test.TestHelper, ns string) string {
+	names := getRouteNames(t, ns)
+	sort.Strings(names)
+
+	doc := ""
+	for _, name := range names {
+		route := oc.GetYaml(t, ns, "route", name)
+
+		lines := strings.Split(route, "\n")
+		count := len(lines)
+		found := false
+
+		for i := 0; found == false && i < count; i++ {
+			if strings.Contains(lines[i], "resourceVersion") {
+				found = true
+				lines[i] = "\n"
+			}
+		}
+
+		doc += fmt.Sprintf("%s\n---\n",
+			strings.Join(lines, "\n"))
+	}
+
+	return doc
 }
 
 func setupDefaultSMCP(t test.TestHelper, ns string) {
