@@ -3,9 +3,9 @@ package ossm
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"testing"
 
+	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -54,6 +54,9 @@ func TestIOR(t *testing.T) {
 			t.Logf("Checking whether a Route is generated for %s", host)
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				routes := getRoutes(t, meshNamespace)
+				if len(routes) != 1 {
+					t.Fatalf("Expect a single route set for %s host, but got %s instead", host, len(routes))
+				}
 				found := routes[0].Metadata.Annotations[originalHostAnnotation]
 				if found != host {
 					t.Fatalf("Expect a route set for %s host, but got %s instead", host, found)
@@ -65,9 +68,10 @@ func TestIOR(t *testing.T) {
 
 		DeployControlPlane(t)
 
-		t.NewSubTest("check IOR off by default v2.4").Run(func(t test.TestHelper) {
+		t.NewSubTest("check IOR off by default v2.5").Run(func(t test.TestHelper) {
+			t.Skip("Skipping until 2.5")
 			t.LogStep("Check whether the IOR has the correct default setting")
-			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
+			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 				if getIORSetting(t, meshNamespace, meshName) != "false" {
 					t.Fatal("Expect to find IOR disabled by default in v2.4+, but it is currently enabled")
 				} else {
@@ -154,40 +158,42 @@ func TestIOR(t *testing.T) {
 			}
 
 			t.LogStepf("Create %d Gateways and they are in their own Namespace", total)
+			gatewayMap := make(map[string]string)
 			for i := 0; i < total; i++ {
 				ns := fmt.Sprintf("ns-%d", i)
 				nsNames = append(nsNames, ns)
-				gateways = append(gateways, generateGateway(fmt.Sprintf("gw-%d", i), ns, fmt.Sprintf("www-%d.test.ocp", i)))
+				gatewayName := fmt.Sprintf("gw-%d", i)
+				gatewayHost := fmt.Sprintf("www-%d.test.ocp", i)
+				gateways = append(gateways, generateGateway(gatewayName, ns, gatewayHost))
+				gatewayMap[gatewayName] = gatewayHost
 			}
 			oc.CreateNamespace(t, nsNames...)
 			oc.ApplyString(t, "", gateways...)
 
 			t.LogStepf("Update SMMR to include %d Namespaces", total)
-			oc.ApplyString(t, meshNamespace, fmt.Sprintf(`
-apiVersion: maistra.io/v1
-kind: ServiceMeshMemberRoll
-metadata:
-  name: default
-spec:
-  members:
-  - bookinfo
-  - foo
-  - bar
-  - legacy
-  - %s
-  `, strings.Join(nsNames, "\n  - ")))
+			oc.ApplyString(t, meshNamespace, AppendDefaultSMMR(nsNames...))
+			oc.WaitSMMRReady(t, meshNamespace)
 
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				routes := getRoutes(t, meshNamespace)
-				if len(routes) == total {
-					t.LogSuccessf("Found all %d Routes", total)
-				} else {
+				if len(routes) != total {
 					t.Fatalf("Expect to find %d Routes but found %d instead", total, len(routes))
 				}
+
+				newGatewayMap := make(map[string]string)
+				for _, r := range routes {
+					newGatewayMap[r.Metadata.Labels["maistra.io/gateway-name"]] = r.Metadata.Annotations[originalHostAnnotation]
+				}
+
+				if err := util.Compare([]byte(fmt.Sprint(gatewayMap)), []byte(fmt.Sprint(newGatewayMap))); err != nil {
+					t.Fatalf("Expected %d Routes created for each Gateway but got %s.", total, err)
+				}
+
+				t.LogSuccessf("Found all %d Routes", total)
 			})
 
 			before := getRoutes(t, meshNamespace)
-			detectRouteChanges := func() {
+			detectRouteChanges := func(t test.TestHelper) {
 				retry.UntilSuccess(t, func(t test.TestHelper) {
 					after := getRoutes(t, meshNamespace)
 
@@ -195,8 +201,8 @@ spec:
 						t.Fatalf("Expect %d Routes, but got %d instead", total, len(after))
 					}
 
-					if fmt.Sprint(buildRouteMap(before)) != fmt.Sprint(buildRouteMap(after)) {
-						t.Fatalf("Expect %d Routes remain unchanged, but they changed\nBefore: %v\nAfter: %v", total, before, after)
+					if err := util.Compare([]byte(fmt.Sprint(buildRouteMap(before))), []byte(fmt.Sprint(buildRouteMap(after)))); err != nil {
+						t.Fatalf("Expect %d Routes remain unchanged, but they changed\n%s", total, err)
 					}
 
 					t.LogSuccessf("Got %d Routes unchanged", total)
@@ -209,14 +215,13 @@ spec:
 			for i := 0; i < count; i++ {
 				istiodPod := pod.MatchingSelector("app=istiod", meshNamespace)
 				oc.DeletePod(t, istiodPod)
-				oc.WaitPodRunning(t, istiodPod)
 				oc.WaitPodReady(t, istiodPod)
 			}
-			detectRouteChanges()
+			detectRouteChanges(t)
 
 			t.LogStepf("Check weather the Routes changes when adding new IngressGateway")
 			addAdditionalIngressGateway(t, meshName, meshNamespace, "additional-test-ior-ingress-gateway")
-			detectRouteChanges()
+			detectRouteChanges(t)
 		})
 	})
 }

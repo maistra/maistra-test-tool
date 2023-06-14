@@ -2,6 +2,8 @@ package ossm
 
 import (
 	_ "embed"
+	"fmt"
+	"strings"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
@@ -126,6 +128,13 @@ func getSMCPManifestCustom(t test.TestHelper, smcp SMCP) string {
 
 func GetSMMRTemplate() string {
 	return smmr
+}
+
+func AppendDefaultSMMR(namespaces ...string) string {
+	return fmt.Sprintf(`
+%s
+  - %s
+  `, smmr, strings.Join(namespaces, "\n  - "))
 }
 
 func GetProfileFile() string {
