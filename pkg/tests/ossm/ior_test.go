@@ -15,6 +15,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
+	"gopkg.in/yaml.v2"
 )
 
 type RouteMetadata struct {
@@ -71,7 +72,9 @@ func TestIOR(t *testing.T) {
 		DeployControlPlane(t)
 
 		t.NewSubTest("check IOR off by default v2.5").Run(func(t test.TestHelper) {
-			t.Skip("Skipping until 2.5")
+			if env.GetSMCPVersion().LessThan(version.SMCP_2_5) {
+				t.Skip("Skipping until 2.5")
+			}
 			t.LogStep("Check whether the IOR has the correct default setting")
 			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 				if getIORSetting(t, meshNamespace, meshName) != "false" {
@@ -86,13 +89,13 @@ func TestIOR(t *testing.T) {
 
 		t.NewSubTest("check IOR basic functionalities").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
-				if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
+				if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 					removeIORCustomSetting(t, meshNamespace, meshName)
 				}
 			})
 
 			t.LogStep("Ensure the IOR enabled")
-			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
+			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 				enableIOR(t, meshNamespace, meshName)
 			}
 
@@ -187,9 +190,18 @@ func TestIOR(t *testing.T) {
 					newGatewayMap[r.Metadata.Labels["maistra.io/gateway-name"]] = r.Metadata.Annotations[originalHostAnnotation]
 				}
 
-				if err := util.Compare(
-					[]byte(sprintMap(gatewayMap)),
-					[]byte(sprintMap(newGatewayMap))); err != nil {
+				var (
+					err        error
+					beforeYaml []byte
+					afterYaml  []byte
+				)
+				if beforeYaml, err = yaml.Marshal(gatewayMap); err != nil {
+					t.Fatalf("Failed to marshal %s", gatewayMap)
+				}
+				if afterYaml, err = yaml.Marshal(gatewayMap); err != nil {
+					t.Fatalf("Failed to marshal %s", newGatewayMap)
+				}
+				if err := util.Compare(beforeYaml, afterYaml); err != nil {
 					t.Fatalf("Expected %d Routes created for each Gateway but got %s.", total, err)
 				}
 
@@ -210,12 +222,13 @@ func TestIOR(t *testing.T) {
 
 			t.LogStepf("Check whether the Routes changes when the istio pod restarts multiple times")
 			t.Log("Restart pod 10 times to make sure the Routes are not changed")
-			count := 1
+			count := 10
 			for i := 0; i < count; i++ {
 				istiodPod := pod.MatchingSelector("app=istiod", meshNamespace)
 				oc.DeletePod(t, istiodPod)
 				oc.WaitPodReady(t, istiodPod)
 			}
+			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 			detectRouteChanges(t)
 
 			t.LogStepf("Check weather the Routes changes when adding new IngressGateway")
@@ -242,22 +255,6 @@ func addAdditionalIngressGateway(t test.TestHelper, meshName, meshNamespace, gat
 	oc.WaitSMCPReady(t, meshNamespace, meshName)
 }
 
-func sprintMap(m map[string]string) string {
-	keys := make([]string, 0, len(m))
-
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	res := ""
-	for _, k := range keys {
-		res += fmt.Sprintf("%s: %s\n", k, m[k])
-	}
-
-	return res
-}
-
 func getRoutes(t test.TestHelper, ns string) []Route {
 	res := shell.Executef(t, "oc -n %s get --selector 'maistra.io/generated-by=ior' --output 'jsonpath={.items}' route", ns)
 	var routes []Route
@@ -270,9 +267,10 @@ func getRoutes(t test.TestHelper, ns string) []Route {
 }
 
 func getRouteNames(t test.TestHelper, ns string) []string {
-	return strings.Split(shell.Executef(t,
-		"oc -n %s get --selector 'maistra.io/generated-by=ior' --output 'jsonpath={.items[*].metadata.name}' route",
-		ns),
+	return strings.Split(
+		shell.Executef(t,
+			"oc -n %s get --selector 'maistra.io/generated-by=ior' --output 'jsonpath={.items[*].metadata.name}' route",
+			ns),
 		" ")
 }
 
@@ -289,14 +287,13 @@ func buildManagedRouteYamlDocument(t test.TestHelper, ns string) string {
 		found := false
 
 		for i := 0; found == false && i < count; i++ {
-			if strings.Contains(lines[i], "resourceVersion") {
+			if strings.HasPrefix(strings.TrimSpace(lines[i]), "resourceVersion") {
 				found = true
-				lines[i] = "\n"
+				lines[i] = ""
 			}
 		}
 
-		doc += fmt.Sprintf("%s\n---\n",
-			strings.Join(lines, "\n"))
+		doc += fmt.Sprintf("%s\n---\n", strings.Join(lines, "\n"))
 	}
 
 	return doc
