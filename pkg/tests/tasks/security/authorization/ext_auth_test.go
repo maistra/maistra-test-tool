@@ -107,6 +107,88 @@ spec:
 	})
 }
 
+func TestEnvoyExtAuthzGrpcExtensionProvider(t *testing.T) {
+	test.NewTest(t).Id("T42").Groups(test.Full, test.InterOp).Run(func(t test.TestHelper) {
+		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
+			t.Skip("extensionProviders.envoyExtAuthzGrpc was added in v2.4")
+		}
+		t.Log("This test validates authorization policies with a JWT Token")
+
+		ns := "foo"
+
+		ossm.DeployControlPlane(t)
+
+		t.LogStep("Install httpbin and sleep")
+		app.InstallAndWaitReady(t, app.Httpbin(ns), app.Sleep(ns))
+		t.Cleanup(func() {
+			app.Uninstall(t, app.Httpbin(ns), app.Sleep(ns))
+		})
+
+		t.LogStep("Check if httpbin returns 200 OK when no authorization policies are in place")
+		assertHttpbinRequestSucceeds(t, ns, httpbinRequest("GET", "/ip"))
+
+		t.LogStep("Deploy the External Authorizer and Verify the sample external authorizer is up and running")
+		oc.ApplyTemplate(t, ns, ExternalAuthzService, nil)
+		t.Cleanup(func() {
+			oc.DeleteFromTemplate(t, ns, ExternalAuthzService, nil)
+		})
+
+		oc.WaitDeploymentRolloutComplete(t, ns, "ext-authz")
+
+		t.LogStep("Set envoyExtAuthzgRPC extension provider in SMCP")
+		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
+			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
+spec:
+  techPreview:
+    meshConfig:
+      extensionProviders:
+      - name: sample-ext-authz-grpc
+        envoyExtAuthzGrpc:
+          includeRequestHeadersInCheck:
+          - x-ext-authz
+          port: "9000"
+          service: ext-authz.foo.svc.cluster.local`)
+
+			t.Cleanup(func() {
+				oc.Patch(t, meshNamespace, "smcp", smcpName, "json",
+					`[{"op": "remove", "path": "/spec/techPreview"}]`)
+			})
+
+		} else {
+			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
+spec:
+  meshConfig:
+    extensionProviders:
+    - name: sample-ext-authz-grpc
+      envoyExtAuthzGrpc:
+        includeRequestHeadersInCheck:
+        - x-ext-authz
+        port: 9000
+        service: ext-authz.foo.svc.cluster.local`)
+
+			t.Cleanup(func() {
+				oc.Patch(t, meshNamespace, "smcp", smcpName, "json",
+					`[{"op": "remove", "path": "/spec/meshConfig"}]`)
+			})
+		}
+
+		t.LogStep("Deploy the external authorization in the Authorization policy")
+		t.Cleanup(func() {
+			oc.DeleteFromString(t, ns, ExternalRouteGrpc)
+		})
+		oc.ApplyString(t, ns, ExternalRouteGrpc)
+
+		t.LogStep("Verify a request to path /headers with header x-ext-authz: deny is denied by the sample ext_authz server:")
+		assertRequestDenied(t, ns, httpbinRequest("GET", "/headers", "x-ext-authz: deny"), "403")
+
+		t.LogStep("Verify a request to path /headers with header x-ext-authz: allow is allowed by the sample ext_authz server")
+		assertRequestAccepted(t, ns, httpbinRequest("GET", "/headers", "x-ext-authz: allow"))
+
+		t.LogStep("Verify a request to path /ip is allowed and does not trigger the external authorization")
+		assertHttpbinRequestSucceeds(t, ns, httpbinRequest("GET", "/ip"))
+	})
+}
+
 const (
 	ExternalRoute = `
 apiVersion: security.istio.io/v1beta1
@@ -129,7 +211,27 @@ spec:
     - operation:
        paths: ["/headers"]
 `
-
+  ExternalRouteGrpc = `
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: ext-authz
+  namespace: foo
+spec:
+  selector:
+    matchLabels:
+      app: httpbin
+  action: CUSTOM
+  provider:
+    # The provider name must match the extension provider defined in the mesh config.
+    # You can also replace this with sample-ext-authz-http to test the other external authorizer definition.
+    name: sample-ext-authz-grpc
+  rules:
+  # The rules specify when to trigger the external authorizer.
+  - to:
+    - operation:
+       paths: ["/headers"]
+`
 	ExternalAuthzService = `
 apiVersion: v1
 kind: Service
