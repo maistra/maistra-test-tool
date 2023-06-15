@@ -109,8 +109,8 @@ spec:
 
 func TestEnvoyExtAuthzGrpcExtensionProvider(t *testing.T) {
 	test.NewTest(t).Id("T42").Groups(test.Full, test.InterOp).Run(func(t test.TestHelper) {
-		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
-			t.Skip("extensionProviders.envoyExtAuthzGrpc was added in v2.4")
+		if env.GetSMCPVersion().LessThan(version.SMCP_2_3) {
+			t.Skip("extensionProviders.envoyExtAuthzGrpc is not supported in versions below v2.3")
 		}
 		t.Log("This test validates authorization policies with a JWT Token")
 
@@ -136,7 +136,7 @@ func TestEnvoyExtAuthzGrpcExtensionProvider(t *testing.T) {
 		oc.WaitDeploymentRolloutComplete(t, ns, "ext-authz")
 
 		t.LogStep("Set envoyExtAuthzgRPC extension provider in SMCP")
-		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
+		if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_3) {
 			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
 spec:
   techPreview:
@@ -154,22 +154,6 @@ spec:
 					`[{"op": "remove", "path": "/spec/techPreview"}]`)
 			})
 
-		} else {
-			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
-spec:
-  meshConfig:
-    extensionProviders:
-    - name: sample-ext-authz-grpc
-      envoyExtAuthzGrpc:
-        includeRequestHeadersInCheck:
-        - x-ext-authz
-        port: 9000
-        service: ext-authz.foo.svc.cluster.local`)
-
-			t.Cleanup(func() {
-				oc.Patch(t, meshNamespace, "smcp", smcpName, "json",
-					`[{"op": "remove", "path": "/spec/meshConfig"}]`)
-			})
 		}
 
 		t.LogStep("Deploy the external authorization in the Authorization policy")
@@ -211,7 +195,7 @@ spec:
     - operation:
        paths: ["/headers"]
 `
-  ExternalRouteGrpc = `
+	ExternalRouteGrpc = `
 apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
