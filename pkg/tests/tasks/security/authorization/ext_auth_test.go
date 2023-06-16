@@ -214,7 +214,7 @@ spec:
   # The rules specify when to trigger the external authorizer.
   - to:
     - operation:
-       paths: ["/headers"]
+        paths: ["/headers"]
 `
 	ExternalAuthzService = `
 apiVersion: v1
