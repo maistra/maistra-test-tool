@@ -445,6 +445,9 @@ func (o OC) GetProxy(t test.TestHelper) *Proxy {
 	proxyJson := o.GetJson(t, "", "proxy", "cluster", "{.status}")
 
 	proxy := &Proxy{}
+	if proxyJson == "" {
+		return proxy
+	}
 	var data map[string]interface{}
 	err := json.Unmarshal([]byte(proxyJson), &data)
 	if err != nil {
