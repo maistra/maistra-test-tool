@@ -196,6 +196,7 @@ tests/
     │   ├── report.xml              JUnit XML report for this ServiceMeshControlPlane version.
     │   ├── reruns.txt              List of test cases that failed and were executed multiple times.
     │   └── skipped.log             List of skipped test cases and corresponding reasons.
+    │   └── documentation.txt       List of all the test cases and subtest cases executed in the test run and his steps.
     ├── ...
     └── output.log                  The full test log across all SMCP versions.
 ```
