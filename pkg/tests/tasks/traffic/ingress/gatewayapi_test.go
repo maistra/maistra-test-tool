@@ -36,14 +36,15 @@ func TestGatewayApi(t *testing.T) {
 
 		oc.CreateNamespace(t, ns)
 
-		t.LogStep("Install httpbin")
-		app.InstallAndWaitReady(t, app.Httpbin(ns))
-
 		t.NewSubTest("Deploy the Kubernetes Gateway API").Run(func(t test.TestHelper) {
 
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
+				oc.RecreateNamespace(t, ns)
 			})
+
+			t.LogStep("Install httpbin")
+			app.InstallAndWaitReady(t, app.Httpbin(ns))
 
 			t.LogStep("Deploy the Gateway SMCP")
 
@@ -100,6 +101,9 @@ func TestGatewayApi(t *testing.T) {
 		})
 
 		t.NewSubTest("Deploy the Gateway-Controller Profile").Run(func(t test.TestHelper) {
+
+			t.LogStep("Install httpbin")
+			app.InstallAndWaitReady(t, app.Httpbin(ns))
 
 			t.LogStep("Deploy SMCP with the profile")
 			oc.ApplyTemplate(t,
