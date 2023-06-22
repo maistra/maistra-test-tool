@@ -147,8 +147,7 @@ metadata:
   name: default
 spec:
   members:
-  - member-0
-  - member-1
+  - "*"
   memberSelectors: []' | oc apply -f - -n %s --as user1 || true`, meshNamespace),
 				assert.OutputContains("does not have permission to access namespace",
 					"User is not allowed to update pods at the cluster scope",
