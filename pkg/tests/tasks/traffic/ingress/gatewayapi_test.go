@@ -80,9 +80,9 @@ func TestGatewayApi(t *testing.T) {
 			}
 
 			t.LogStep("Deploy the Gateway API configuration including a single exposed route (i.e., /get)")
-			oc.ApplyTemplate(t, ns, gatewayAndRouteYAML, map[string]string{"Gateway": "istio"})
+			oc.ApplyTemplate(t, ns, gatewayAndRouteYAML, map[string]string{"GatewayClassName": "istio"})
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns, gatewayAndRouteYAML, map[string]string{"Gateway": "istio"})
+				oc.DeleteFromTemplate(t, ns, gatewayAndRouteYAML, map[string]string{"GatewayClassName": "istio"})
 			})
 
 			t.LogStep("Wait for Gateway to be ready")
@@ -118,9 +118,9 @@ func TestGatewayApi(t *testing.T) {
 			oc.WaitSMMRReady(t, meshNamespace)
 
 			t.LogStep("Deploy the Gateway API configuration including a single exposed route (i.e., /get)")
-			oc.ApplyTemplate(t, ns, gatewayAndRouteYAML, map[string]string{"Gateway": "ocp"})
+			oc.ApplyTemplate(t, ns, gatewayAndRouteYAML, map[string]string{"GatewayClassName": "ocp"})
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns, gatewayAndRouteYAML, map[string]string{"Gateway": "ocp"})
+				oc.DeleteFromTemplate(t, ns, gatewayAndRouteYAML, map[string]string{"GatewayClassName": "ocp"})
 			})
 
 			t.LogStep("Wait for Gateway to be ready")
@@ -147,7 +147,7 @@ kind: Gateway
 metadata:
   name: gateway
 spec:
-  gatewayClassName: {{ .Gateway }}
+  gatewayClassName: {{ .GatewayClassName }}
   listeners:
   - name: default
     hostname: "*.example.com"
