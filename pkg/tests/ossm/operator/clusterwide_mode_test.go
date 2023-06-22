@@ -90,6 +90,97 @@ func TestClusterWideMode(t *testing.T) {
 			})
 		})
 
+		t.NewSubTest("validate required privileges for SMMR").Run(func(t test.TestHelper) {
+			t.Log("Ensure that regular users can't dynamically add namespaces to their mesh in the SMMR without the required privileges")
+
+			t.Cleanup(func() {
+				shell.Execute(t,
+					"oc delete user user1",
+					assert.OutputContains("deleted", "User deleted", "Error user not deleted"))
+				shell.Execute(t,
+					"oc adm policy remove-role-from-user admin user1 -n istio-system",
+					assert.OutputContains("removed", "User removed from role", "Error user not removed from role"))
+				shell.Execute(t,
+					"oc adm policy remove-role-from-user admin user1 -n member-0",
+					assert.OutputContains("removed", "User removed from role", "Error user not removed from role"))
+				shell.Execute(t,
+					"oc adm policy remove-role-from-user admin user1 -n member-1",
+					assert.OutputContains("removed", "User removed from role", "Error user not removed from role"))
+			})
+
+			t.LogStep("Create user")
+			shell.Execute(t,
+				"oc create user user1",
+				assert.OutputContains("user1 created", "User created", "Error creating user"))
+
+			t.LogStepf("Add role admin to user for istio namespace %s", meshNamespace)
+			t.Log("Add role admin to user for istio namespace will allow the user to be able to edit the SMMR but only for the istio namespace")
+			shell.Execute(t,
+				fmt.Sprintf("oc adm policy add-role-to-user admin user1 -n %s", meshNamespace),
+				assert.OutputContains("added", "Added role to user", "Error role not added to user"))
+
+			t.LogStep("Edit SMMR to add member-0 and member-1 as a member, expect to fail")
+			shell.Execute(t,
+				fmt.Sprintf(
+					`echo '
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  members:
+  - member-0
+  - member-1
+  memberSelectors: []' | oc apply -f - -n %s --as user1 || true`, meshNamespace),
+				assert.OutputContains("does not have permission to access namespace",
+					"User is not allowed to update pods at the cluster scope",
+					"User is allowed to update pods at the cluster scope"))
+
+			t.LogStep(`Edit SMMR to add "*" as a member, expect to fail`)
+			t.Log("Adding \"*\" as a member to verify that user can't add all the namespaces to the SMMR")
+			shell.Execute(t,
+				fmt.Sprintf(
+					`echo '
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  members:
+  - member-0
+  - member-1
+  memberSelectors: []' | oc apply -f - -n %s --as user1 || true`, meshNamespace),
+				assert.OutputContains("does not have permission to access namespace",
+					"User is not allowed to update pods at the cluster scope",
+					"User is allowed to update pods at the cluster scope"))
+
+			t.LogStep("Add role admin to user for namespace member-0 and member-1")
+			t.Log("Add role admin to user for member-0 and member-1 namespaces will allow the user to be able to edit the SMMR adding member-0 and member-1 as a member")
+			shell.Execute(t,
+				"oc adm policy add-role-to-user admin user1 -n member-0",
+				assert.OutputContains("added", "Added role to user for namespace member-0", "Error role not added to user"))
+			shell.Execute(t,
+				"oc adm policy add-role-to-user admin user1 -n member-1",
+				assert.OutputContains("added", "Added role to user for namespace member-1", "Error role not added to user"))
+
+			t.LogStep("Edit SMMR to add member-0 and member-1 as a member, expect to succeed")
+			shell.Execute(t,
+				fmt.Sprintf(
+					`echo '
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  members:
+  - member-0
+  - member-1
+  memberSelectors: []' | oc apply -f - -n %s --as user1 || true`, meshNamespace),
+				assert.OutputContains("configured",
+					"User is allowed to update pods at the cluster scope",
+					"User is not allowed to update pods at the cluster scope"))
+		})
+
 		t.NewSubTest("customize SMMR").Run(func(t test.TestHelper) {
 			t.Log("Check whether the SMMR can be modified")
 
