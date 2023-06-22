@@ -6,4 +6,5 @@ const (
 	Bar          = "bar"
 	Legacy       = "legacy"
 	MeshExternal = "mesh-external"
+	MetalLB      = "metallb-system"
 )

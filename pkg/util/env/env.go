@@ -62,7 +62,11 @@ func GetTestGroup() string {
 }
 
 func GetMustGatherImage() string {
-	return "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel8:" + getenv("MUST_GATHER_TAG", "2.3")
+	return "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel8:" + GetMustGatherTag()
+}
+
+func GetMustGatherTag() string {
+	return getenv("MUST_GATHER_TAG", "2.4")
 }
 
 func GetKubeconfig() string {
@@ -83,4 +87,8 @@ func IsLogFailedRetryAttempts() bool {
 
 func GetOutputDir() string {
 	return getenv("OUTPUT_DIR", fmt.Sprintf("%s/tests/result-%s/%s", GetRootDir(), initTime.Format("20060102150405"), GetSMCPVersion()))
+}
+
+func IsMetalLBInternalIPEnabled() bool {
+	return getenv("METALLB_INTERNAL_IP_ENABLED", "false") == "true"
 }

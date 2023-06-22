@@ -126,6 +126,11 @@ func GetPodIP(t test.TestHelper, podLocator PodLocatorFunc) string {
 	return DefaultOC.GetPodIP(t, podLocator)
 }
 
+func GetServiceClusterIP(t test.TestHelper, ns, serviceName string) string {
+	t.T().Helper()
+	return DefaultOC.GetServiceClusterIP(t, ns, serviceName)
+}
+
 func Logs(t test.TestHelper, podLocator PodLocatorFunc, container string, checks ...common.CheckFunc) {
 	t.T().Helper()
 	DefaultOC.Logs(t, podLocator, container, checks...)
@@ -232,12 +237,13 @@ func GetYaml(t test.TestHelper, ns, kind, name string, checks ...common.CheckFun
 	return DefaultOC.GetYaml(t, ns, kind, name, checks...)
 }
 
-func GetJson(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) string {
+// GetJson returns the JSON representation of the resource, you can set a jsonPath to extract a specific value or send "" to get the full JSON
+func GetJson(t test.TestHelper, ns, kind, name string, jsonPath string) string {
 	t.T().Helper()
-	return DefaultOC.GetJson(t, ns, kind, name, checks...)
+	return DefaultOC.GetJson(t, ns, kind, name, jsonPath)
 }
 
-func GetProxy(t test.TestHelper) Proxy {
+func GetProxy(t test.TestHelper) *Proxy {
 	t.T().Helper()
 	return DefaultOC.GetProxy(t)
 }
