@@ -94,10 +94,10 @@ func TestClusterWideMode(t *testing.T) {
 			t.Log("Case 1: user has admin role only in mesh namespace. Expectation: user can't edit SMMR with member-0 and member-1 namespaces")
 
 			t.Cleanup(func() {
-				deleteUserAndAddRole(t, "user1", "admin", meshNamespace)
+				deleteUserAndAdminRole(t, meshNamespace)
 			})
 
-			createUserAndAddRole(t, "user1", "admin", meshNamespace)
+			createUserAndAddAdminRole(t, meshNamespace)
 
 			t.LogStep("Edit SMMR to add member-0 and member-1 as a member, expect to fail")
 			shell.Execute(t,
@@ -122,10 +122,10 @@ spec:
 			t.Log("Case 2: user has admin role only in mesh namespace. Expectation: user can't edit SMMR with * wildcard")
 
 			t.Cleanup(func() {
-				deleteUserAndAddRole(t, "user1", "admin", meshNamespace)
+				deleteUserAndAdminRole(t, meshNamespace)
 			})
 
-			createUserAndAddRole(t, "user1", "admin", meshNamespace)
+			createUserAndAddAdminRole(t, meshNamespace)
 
 			t.LogStep(`Edit SMMR to add "*" as a member, expect to fail`)
 			t.Log("Adding \"*\" as a member to verify that user can't add all the namespaces to the SMMR")
@@ -150,10 +150,10 @@ spec:
 			t.Log("Case 3: user has admin role in mesh, member-0 and member-1 namespaces. Expectation: user can edit SMMR")
 
 			t.Cleanup(func() {
-				deleteUserAndAddRole(t, "user1", "admin", meshNamespace, "member-0", "member-1")
+				deleteUserAndAdminRole(t, meshNamespace, "member-0", "member-1")
 			})
 
-			createUserAndAddRole(t, "user1", "admin", meshNamespace, "member-0", "member-1")
+			createUserAndAddAdminRole(t, meshNamespace, "member-0", "member-1")
 
 			t.LogStep("Edit SMMR to add member-0 and member-1 as a member, expect to succeed")
 			shell.Execute(t,
@@ -177,10 +177,10 @@ spec:
 			t.Log("Case 4: user has admin role in member-0 and member-1 namespaces. Expectation: user can't edit SMMR")
 
 			t.Cleanup(func() {
-				deleteUserAndAddRole(t, "user1", "admin", "member-0", "member-1")
+				deleteUserAndAdminRole(t, "member-0", "member-1")
 			})
 
-			createUserAndAddRole(t, "user1", "admin", "member-0", "member-1")
+			createUserAndAddAdminRole(t, "member-0", "member-1")
 
 			t.LogStep("Edit SMMR to add member-0 and member-1 as a member, expect to fail")
 			shell.Execute(t,
@@ -420,30 +420,30 @@ func assertNumberOfAPIRequestsBetween(min, max int) common.CheckFunc {
 	}
 }
 
-func createUserAndAddRole(t test.TestHelper, user string, role string, namespaces ...string) {
-	t.LogStep(fmt.Sprintf("Create user %s", user))
+func createUserAndAddAdminRole(t test.TestHelper, namespaces ...string) {
+	t.LogStep("Create user user1")
 	shell.Execute(t,
-		fmt.Sprintf("oc create user %s", user),
-		assert.OutputContains(fmt.Sprintf("%s created", user), "User created", fmt.Sprintf("Error creating user %s", user)))
+		"oc create user user1",
+		assert.OutputContains("user1 created", "User created", "Error creating user user1"))
 
 	for _, namespace := range namespaces {
-		t.LogStepf("Add role %s to user %s for namespace %s", role, user, namespace)
+		t.LogStepf("Add role %s to user user1 for namespace %s", "admin", namespace)
 		shell.Execute(t,
-			fmt.Sprintf("oc adm policy add-role-to-user %s %s -n %s", role, user, namespace),
-			assert.OutputContains("added", fmt.Sprintf("Added role to user %s", user), fmt.Sprintf("Role not added to user %s", user)))
+			fmt.Sprintf("oc adm policy add-role-to-user %s user1 -n %s", "admin", namespace),
+			assert.OutputContains("added", "Added role to user user1", "Role not added to user user1"))
 	}
 }
 
-func deleteUserAndAddRole(t test.TestHelper, user string, role string, namespaces ...string) {
-	t.LogStep(fmt.Sprintf("Delete user %s", user))
+func deleteUserAndAdminRole(t test.TestHelper, namespaces ...string) {
+	t.LogStep("Delete user user1")
 	shell.Execute(t,
-		fmt.Sprintf("oc delete user %s", user),
+		"oc delete user user1",
 		assert.OutputContains("deleted", "User deleted", "Error user not deleted"))
 
 	for _, namespace := range namespaces {
-		t.LogStepf("Delete role %s to user %s for namespace %s", role, user, namespace)
+		t.LogStepf("Delete role %s to user user1 for namespace %s", "admin", namespace)
 		shell.Execute(t,
-			fmt.Sprintf("oc adm policy remove-role-from-user %s %s -n %s", role, user, namespace),
+			fmt.Sprintf("oc adm policy remove-role-from-user %s user1 -n %s", "admin", namespace),
 			assert.OutputContains("removed", "User removed from role", "Error user not removed from role"))
 	}
 }
