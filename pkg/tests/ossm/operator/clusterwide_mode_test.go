@@ -90,34 +90,14 @@ func TestClusterWideMode(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("validate required privileges for SMMR").Run(func(t test.TestHelper) {
-			t.Log("Ensure that regular users can't dynamically add namespaces to their mesh in the SMMR without the required privileges")
+		t.NewSubTest("validate privileges for SMMR case 1").Run(func(t test.TestHelper) {
+			t.Log("Case 1: user has admin role only in mesh namespace. Expectation: user can't edit SMMR with member-0 and member-1 namespaces")
 
 			t.Cleanup(func() {
-				shell.Execute(t,
-					"oc delete user user1",
-					assert.OutputContains("deleted", "User deleted", "Error user not deleted"))
-				shell.Execute(t,
-					"oc adm policy remove-role-from-user admin user1 -n istio-system",
-					assert.OutputContains("removed", "User removed from role", "Error user not removed from role"))
-				shell.Execute(t,
-					"oc adm policy remove-role-from-user admin user1 -n member-0",
-					assert.OutputContains("removed", "User removed from role", "Error user not removed from role"))
-				shell.Execute(t,
-					"oc adm policy remove-role-from-user admin user1 -n member-1",
-					assert.OutputContains("removed", "User removed from role", "Error user not removed from role"))
+				deleteUserAndAddRole(t, "user1", "admin", meshNamespace)
 			})
 
-			t.LogStep("Create user")
-			shell.Execute(t,
-				"oc create user user1",
-				assert.OutputContains("user1 created", "User created", "Error creating user"))
-
-			t.LogStepf("Add role admin to user for istio namespace %s", meshNamespace)
-			t.Log("Add role admin to user for istio namespace will allow the user to be able to edit the SMMR but only for the istio namespace")
-			shell.Execute(t,
-				fmt.Sprintf("oc adm policy add-role-to-user admin user1 -n %s", meshNamespace),
-				assert.OutputContains("added", "Added role to user", "Error role not added to user"))
+			createUserAndAddRole(t, "user1", "admin", meshNamespace)
 
 			t.LogStep("Edit SMMR to add member-0 and member-1 as a member, expect to fail")
 			shell.Execute(t,
@@ -133,8 +113,19 @@ spec:
   - member-1
   memberSelectors: []' | oc apply -f - -n %s --as user1 || true`, meshNamespace),
 				assert.OutputContains("does not have permission to access namespace",
-					"User is not allowed to update pods at the cluster scope",
-					"User is allowed to update pods at the cluster scope"))
+					"User is not allowed to update SMMR",
+					"User is allowed to update SMMR"))
+
+		})
+
+		t.NewSubTest("validate privileges for SMMR case 2").Run(func(t test.TestHelper) {
+			t.Log("Case 2: user has admin role only in mesh namespace. Expectation: user can't edit SMMR with * wildcard")
+
+			t.Cleanup(func() {
+				deleteUserAndAddRole(t, "user1", "admin", meshNamespace)
+			})
+
+			createUserAndAddRole(t, "user1", "admin", meshNamespace)
 
 			t.LogStep(`Edit SMMR to add "*" as a member, expect to fail`)
 			t.Log("Adding \"*\" as a member to verify that user can't add all the namespaces to the SMMR")
@@ -149,18 +140,20 @@ spec:
   members:
   - "*"
   memberSelectors: []' | oc apply -f - -n %s --as user1 || true`, meshNamespace),
-				assert.OutputContains("does not have permission to access namespace",
-					"User is not allowed to update pods at the cluster scope",
-					"User is allowed to update pods at the cluster scope"))
+				assert.OutputContains("denied the request",
+					"User is not allowed to update SMMR",
+					"User is allowed to update SMMR"))
 
-			t.LogStep("Add role admin to user for namespace member-0 and member-1")
-			t.Log("Add role admin to user for member-0 and member-1 namespaces will allow the user to be able to edit the SMMR adding member-0 and member-1 as a member")
-			shell.Execute(t,
-				"oc adm policy add-role-to-user admin user1 -n member-0",
-				assert.OutputContains("added", "Added role to user for namespace member-0", "Error role not added to user"))
-			shell.Execute(t,
-				"oc adm policy add-role-to-user admin user1 -n member-1",
-				assert.OutputContains("added", "Added role to user for namespace member-1", "Error role not added to user"))
+		})
+
+		t.NewSubTest("validate privileges for SMMR case 3").Run(func(t test.TestHelper) {
+			t.Log("Case 3: user has admin role in mesh, member-0 and member-1 namespaces. Expectation: user can edit SMMR")
+
+			t.Cleanup(func() {
+				deleteUserAndAddRole(t, "user1", "admin", meshNamespace, "member-0", "member-1")
+			})
+
+			createUserAndAddRole(t, "user1", "admin", meshNamespace, "member-0", "member-1")
 
 			t.LogStep("Edit SMMR to add member-0 and member-1 as a member, expect to succeed")
 			shell.Execute(t,
@@ -176,8 +169,35 @@ spec:
   - member-1
   memberSelectors: []' | oc apply -f - -n %s --as user1 || true`, meshNamespace),
 				assert.OutputContains("configured",
-					"User is allowed to update pods at the cluster scope",
-					"User is not allowed to update pods at the cluster scope"))
+					"User is allowed to update SMMR at the cluster scope",
+					"User is not allowed to update SMMR at the cluster scope"))
+		})
+
+		t.NewSubTest("validate privileges for SMMR case 4").Run(func(t test.TestHelper) {
+			t.Log("Case 4: user has admin role in member-0 and member-1 namespaces. Expectation: user can't edit SMMR")
+
+			t.Cleanup(func() {
+				deleteUserAndAddRole(t, "user1", "admin", "member-0", "member-1")
+			})
+
+			createUserAndAddRole(t, "user1", "admin", "member-0", "member-1")
+
+			t.LogStep("Edit SMMR to add member-0 and member-1 as a member, expect to fail")
+			shell.Execute(t,
+				fmt.Sprintf(
+					`echo '
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  members:
+  - member-0
+  - member-1
+  memberSelectors: []' | oc apply -f - -n %s --as user1 || true`, meshNamespace),
+				assert.OutputContains("forbidden",
+					"User is not allowed to update SMMR",
+					"User is allowed to update SMMR"))
 		})
 
 		t.NewSubTest("customize SMMR").Run(func(t test.TestHelper) {
@@ -397,6 +417,34 @@ func assertNumberOfAPIRequestsBetween(min, max int) common.CheckFunc {
 		} else {
 			t.LogSuccessf("number of API requests (%d) is in range (%d - %d)", numberOfRequests, min, max)
 		}
+	}
+}
+
+func createUserAndAddRole(t test.TestHelper, user string, role string, namespaces ...string) {
+	t.LogStep(fmt.Sprintf("Create user %s", user))
+	shell.Execute(t,
+		fmt.Sprintf("oc create user %s", user),
+		assert.OutputContains(fmt.Sprintf("%s created", user), "User created", fmt.Sprintf("Error creating user %s", user)))
+
+	for _, namespace := range namespaces {
+		t.LogStepf("Add role %s to user %s for namespace %s", role, user, namespace)
+		shell.Execute(t,
+			fmt.Sprintf("oc adm policy add-role-to-user %s %s -n %s", role, user, namespace),
+			assert.OutputContains("added", fmt.Sprintf("Added role to user %s", user), fmt.Sprintf("Role not added to user %s", user)))
+	}
+}
+
+func deleteUserAndAddRole(t test.TestHelper, user string, role string, namespaces ...string) {
+	t.LogStep(fmt.Sprintf("Delete user %s", user))
+	shell.Execute(t,
+		fmt.Sprintf("oc delete user %s", user),
+		assert.OutputContains("deleted", "User deleted", "Error user not deleted"))
+
+	for _, namespace := range namespaces {
+		t.LogStepf("Delete role %s to user %s for namespace %s", role, user, namespace)
+		shell.Execute(t,
+			fmt.Sprintf("oc adm policy remove-role-from-user %s %s -n %s", role, user, namespace),
+			assert.OutputContains("removed", "User removed from role", "Error user not removed from role"))
 	}
 }
 
