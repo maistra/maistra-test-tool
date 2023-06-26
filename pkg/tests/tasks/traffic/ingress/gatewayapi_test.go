@@ -22,12 +22,8 @@ func TestGatewayApi(t *testing.T) {
 			t.Skip("TestGatewayApi was added in v2.3")
 		}
 		ns := "foo"
-		t.Cleanup(func() {
-			oc.RecreateNamespace(t, meshNamespace)
-			oc.RecreateNamespace(t, ns)
-		})
 
-		var SMCP_NAME = "basic"
+		smcpName := env.GetDefaultSMCPName()
 
 		ossm.DeployControlPlane(t)
 
@@ -49,7 +45,7 @@ func TestGatewayApi(t *testing.T) {
 			t.LogStep("Deploy the Gateway SMCP")
 
 			if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
-				oc.Patch(t, meshNamespace, "smcp", SMCP_NAME, "merge", `
+				oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
         spec:
           runtime:
             components:
@@ -61,19 +57,19 @@ func TestGatewayApi(t *testing.T) {
                     PILOT_ENABLE_GATEWAY_API_DEPLOYMENT_CONTROLLER: “true”`)
 
 				t.Cleanup(func() {
-					oc.Patch(t, meshNamespace, "smcp", SMCP_NAME, "json",
+					oc.Patch(t, meshNamespace, "smcp", smcpName, "json",
 						`[{"op": "remove", "path": "/spec/runtime"}]`)
 				})
 
 			} else {
-				oc.Patch(t, meshNamespace, "smcp", SMCP_NAME, "merge", `
+				oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
         spec:
           techPreview:
             gatewayAPI:
               enabled: true`)
 
 				t.Cleanup(func() {
-					oc.Patch(t, meshNamespace, "smcp", SMCP_NAME, "json",
+					oc.Patch(t, meshNamespace, "smcp", smcpName, "json",
 						`[{"op": "remove", "path": "/spec/techPreview"}]`)
 				})
 
@@ -102,6 +98,11 @@ func TestGatewayApi(t *testing.T) {
 
 		t.NewSubTest("Deploy the Gateway-Controller Profile").Run(func(t test.TestHelper) {
 
+			t.Cleanup(func() {
+				oc.RecreateNamespace(t, meshNamespace)
+				oc.RecreateNamespace(t, ns)
+			})
+
 			t.LogStep("Install httpbin")
 			app.InstallAndWaitReady(t, app.Httpbin(ns))
 
@@ -126,7 +127,7 @@ func TestGatewayApi(t *testing.T) {
 			t.LogStep("Wait for Gateway to be ready")
 			oc.WaitCondition(t, ns, "Gateway", "gateway", "Ready")
 
-			t.LogStep("Verfiy the GatewayApi access the httpbin service using curl")
+			t.LogStep("Verify the Gateway-Controller Profile access the httpbin service using curl")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				oc.Exec(t,
 					pod.MatchingSelector("app=istiod", meshNamespace),
