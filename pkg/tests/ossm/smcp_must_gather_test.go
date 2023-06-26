@@ -124,7 +124,7 @@ func TestMustGather(t *testing.T) {
 				"**/namespaces/istio-system/istio-system.yaml",
 				"**/namespaces/bookinfo/bookinfo.yaml",
 				"**/namespaces/openshift-operators/openshift-operators.yaml",
-				"**/namespaces/*/rbac.authorization.k8s.io/rolebindings/istiod-clusterrole-basic-istio-system.yaml")
+				"**/namespaces/*/rbac.authorization.k8s.io/rolebindings/mesh-users.yaml")
 		})
 
 		t.NewSubTest("cluster service version files validation").Run(func(t TestHelper) {
