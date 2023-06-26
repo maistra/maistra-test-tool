@@ -34,7 +34,7 @@ var workername string
 func TestDeployOnInfraNodes(t *testing.T) {
 	test.NewTest(t).Id("T40").Groups(test.Full, test.Disconnected).Run(func(t test.TestHelper) {
 		t.Log("This test verifies that the OSSM operator and Istio components can be configured to run on infrastructure nodes")
-		// t.Skip("Skipping test due to https://issues.redhat.com/browse/OSSM-3837")
+
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_3) {
 			t.Skip("Deploy On Infra node is available in SMCP versions v2.3+")
 		}
