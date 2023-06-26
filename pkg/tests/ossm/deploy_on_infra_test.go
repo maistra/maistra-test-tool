@@ -34,7 +34,7 @@ var workername string
 func TestDeployOnInfraNodes(t *testing.T) {
 	test.NewTest(t).Id("T40").Groups(test.Full, test.Disconnected).Run(func(t test.TestHelper) {
 		t.Log("This test verifies that the OSSM operator and Istio components can be configured to run on infrastructure nodes")
-		t.Skip("Skipping test due to https://issues.redhat.com/browse/OSSM-3837")
+		// t.Skip("Skipping test due to https://issues.redhat.com/browse/OSSM-3837")
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_3) {
 			t.Skip("Deploy On Infra node is available in SMCP versions v2.3+")
 		}
@@ -43,10 +43,11 @@ func TestDeployOnInfraNodes(t *testing.T) {
 		}
 		output := shell.Executef(t, `oc get subscription -n %s servicemeshoperator || true`, env.GetOperatorNamespace())
 		if strings.Contains(output, "NotFound") {
-			t.Skip("Skipping test because servicemeshoperator Subscription wass't found")
+			t.Skip("Skipping test because servicemeshoperator Subscription wasn't found")
 		}
 
 		t.Cleanup(func() {
+			oc.Patch(t, env.GetOperatorNamespace(), "subscription", "servicemeshoperator", "json", `[{"op": "remove", "path": "/spec/config/tolerations"}]`)
 			oc.TaintNode(t, "-l node-role.kubernetes.io/infra",
 				"node-role.kubernetes.io/infra=reserved:NoSchedule-",
 				"node-role.kubernetes.io/infra=reserved:NoExecute-")
@@ -54,7 +55,7 @@ func TestDeployOnInfraNodes(t *testing.T) {
 			oc.Label(t, "", "node", workername, "node-role.kubernetes.io-")
 		})
 
-		t.LogStep("Setup: Get a worker node from the cluster that does not have the istio operator installed, label it as infra")
+		t.LogStep("Setup: Get a worker node from the cluster that does not have the istio operator installed and label it as infra")
 		workername = pickWorkerNode(t)
 		t.Logf("Worker node selected: %s", workername)
 		oc.Label(t, "", "node", workername, "node-role.kubernetes.io/infra=")
@@ -66,9 +67,6 @@ func TestDeployOnInfraNodes(t *testing.T) {
 		t.NewSubTest("operator").Run(func(t test.TestHelper) {
 			t.Log("Verify OSSM Operator is deployed on infra node when configured")
 			t.Log("Reference: https://issues.redhat.com/browse/OSSM-2342")
-			t.Cleanup(func() {
-				oc.Patch(t, env.GetOperatorNamespace(), "subscription", "servicemeshoperator", "json", `[{"op": "remove", "path": "/spec/config/tolerations"}]`)
-			})
 
 			t.LogStep("Patch subscription to run on infra nodes and wait for the operator pod to be ready")
 			oc.Patch(t, env.GetOperatorNamespace(), "subscription", "servicemeshoperator", "merge", `
@@ -84,13 +82,14 @@ spec:
       key: node-role.kubernetes.io/infra
       value: reserved
 `)
+			locator := pod.MatchingSelector("name=istio-operator", "openshift-operators")
+			oc.DeletePod(t, locator) //This a workaround for https://issues.redhat.com/browse/OSSM-4260
 
 			t.LogStepf("Verify operator pod is running on the infra node. Node expected: %s", workername)
-			locator := pod.MatchingSelector("name=istio-operator", "openshift-operators")
-			oc.WaitPodReady(t, locator)
-			operatorPod := locator(t, oc.DefaultOC)
-
 			retry.UntilSuccess(t, func(t test.TestHelper) {
+				locator = pod.MatchingSelector("name=istio-operator", "openshift-operators")
+				oc.WaitPodReady(t, locator)
+				operatorPod := locator(t, oc.DefaultOC)
 				shell.Execute(t,
 					fmt.Sprintf(`oc get pod -n openshift-operators %s -o jsonpath='{.spec.nodeName}'`, operatorPod.Name),
 					assert.OutputContains(
@@ -110,7 +109,7 @@ spec:
 
 			DeployControlPlane(t)
 
-			t.LogStep("Patch SMCP to run all control plane components on infra nodes and wait for the SMCP to be ready")
+			t.LogStep("Deploy SMCP and patch to run all control plane components on infra nodes")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
 spec:
@@ -156,7 +155,8 @@ func assertPodScheduledToNode(t test.TestHelper, pLabel string) {
 func pickWorkerNode(t test.TestHelper) string {
 	workerNodes := shell.Execute(t, "oc get nodes -l node-role.kubernetes.io/worker= -o jsonpath='{.items[*].metadata.name}'")
 	operatorNode := shell.Execute(t, "oc get pods -n openshift-operators -l name=istio-operator -o jsonpath='{.items[0].spec.nodeName}'")
-	for _, node := range strings.Split(workerNodes, "\n") {
+	for _, node := range strings.Split(workerNodes, " ") {
+		node = strings.TrimSpace(node)
 		if node != operatorNode {
 			return node
 		}
