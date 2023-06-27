@@ -269,7 +269,7 @@ func (o OC) WaitSMCPReady(t test.TestHelper, ns string, name string) {
 	t.T().Helper()
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		o.WaitCondition(t, ns, "smcp", name, "Ready")
+		o.WaitFor(t, ns, "smcp", name, "condition=Ready")
 	})
 }
 

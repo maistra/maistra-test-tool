@@ -69,7 +69,7 @@ func installOperator(t test.TestHelper, oc oc.OC) {
 			t.Error("metallb-operator-controller-manager not found - waiting until exists")
 		}
 	})
-	oc.WaitCondition(t, ns.MetalLB, "deployments", "metallb-operator-controller-manager", "Available")
+	oc.WaitFor(t, ns.MetalLB, "deployments", "metallb-operator-controller-manager", "condition=Available")
 }
 
 func deployMetalLB(t test.TestHelper, oc oc.OC) {
@@ -86,7 +86,7 @@ func deployMetalLB(t test.TestHelper, oc oc.OC) {
 			t.Error("MetalLB controller not found - waiting until exists")
 		}
 	})
-	oc.WaitCondition(t, ns.MetalLB, "deployments", "controller", "Available")
+	oc.WaitFor(t, ns.MetalLB, "deployments", "controller", "condition=Available")
 }
 
 func createAddressPool(t test.TestHelper, oc oc.OC) {

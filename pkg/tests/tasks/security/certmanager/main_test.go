@@ -2,16 +2,12 @@ package certmanager
 
 import (
 	_ "embed"
-	"fmt"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
-	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
-	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
@@ -85,11 +81,8 @@ func setupCertManagerOperator(t test.TestHelper) {
 
 func waitOperatorSucceded(t test.TestHelper, certManagerOperatorNs string) {
 	t.Log("Waiting for cert-manager-operator to succeed")
-	retry.UntilSuccess(t, func(t test.TestHelper) {
-		shell.Execute(t,
-			fmt.Sprintf("oc get csv %s -n %s -o jsonpath='{.status.phase}'", certmanagerVersion, certManagerOperatorNs),
-			assert.OutputContains("Succeeded", "Operator ready", "Failed to wait for cert-manager-operator to succeed"))
-	})
+
+	oc.WaitFor(t, certManagerOperatorNs, "csv", certmanagerVersion, "jsonpath='{.status.phase}'=Succeeded")
 	oc.WaitPodReady(t, pod.MatchingSelector("name=cert-manager-operator", certManagerOperatorNs))
 	oc.WaitPodReady(t, pod.MatchingSelector("app=cert-manager", certManagerNs))
 }
