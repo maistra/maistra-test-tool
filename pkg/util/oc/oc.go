@@ -186,9 +186,9 @@ func DeletePodNoWait(t test.TestHelper, podLocator PodLocatorFunc) {
 	DefaultOC.DeletePodNoWait(t, podLocator)
 }
 
-func WaitCondition(t test.TestHelper, ns string, kind string, name string, condition string) {
+func WaitFor(t test.TestHelper, ns string, kind string, name string, forCondition string) {
 	t.T().Helper()
-	DefaultOC.WaitCondition(t, ns, kind, name, condition)
+	DefaultOC.WaitFor(t, ns, kind, name, forCondition)
 }
 
 func WaitSMMRReady(t test.TestHelper, ns string) {

@@ -146,22 +146,22 @@ func (o OC) DeletePodNoWait(t test.TestHelper, podLocator PodLocatorFunc) {
 	shell.Executef(t, `oc -n %s delete pod %s --wait=false`, pod.Namespace, pod.Name)
 }
 
-// WaitCondition runs `oc wait` 30 times every 10 seconds. If the resource doesn't
+// WaitFor runs `oc wait` 30 times every 10 seconds. If the resource doesn't
 // reach the specified condition in the last attempt, the function logs the failure
-// and
-func (o OC) WaitCondition(t test.TestHelper, ns string, kind string, name string, condition string) {
+// ForCondition is the condition to wait for, e.g. "condition=Ready"
+func (o OC) WaitFor(t test.TestHelper, ns string, kind string, name string, forCondition string) {
 	t.T().Helper()
 	maxAttempts := 30
 	var attemptT *test.RetryTestHelper
 	for i := 0; i < maxAttempts; i++ {
-		t.Logf("Wait for condition %s on %s %s/%s...", condition, kind, ns, name)
+		t.Logf("Wait for condition %s on %s %s/%s...", forCondition, kind, ns, name)
 		attemptT = retry.Attempt(t, func(t test.TestHelper) {
 			t.T().Helper()
 			shell.Execute(t,
-				fmt.Sprintf(`oc wait -n %s %s/%s --for condition=%s --timeout %s`, ns, kind, name, condition, "10s"),
+				fmt.Sprintf(`oc wait -n %s %s/%s --for %s --timeout %s`, ns, kind, name, forCondition, "10s"),
 				require.OutputContains("condition met",
-					fmt.Sprintf("Condition %s met by %s %s/%s", condition, kind, ns, name),
-					fmt.Sprintf("Condition %s not met by %s %s/%s", condition, kind, ns, name)))
+					fmt.Sprintf("Condition %s met by %s %s/%s", forCondition, kind, ns, name),
+					fmt.Sprintf("Condition %s not met by %s %s/%s", forCondition, kind, ns, name)))
 		})
 		if !attemptT.Failed() {
 			attemptT.FlushLogBuffer()

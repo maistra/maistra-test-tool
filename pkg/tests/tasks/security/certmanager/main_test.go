@@ -17,6 +17,7 @@ var (
 	meshNamespace         = env.GetDefaultMeshNamespace()
 	certManagerOperatorNs = "cert-manager-operator"
 	certManagerNs         = "cert-manager"
+	certmanagerVersion    = "cert-manager-operator.v1.11.1"
 
 	//go:embed yaml/cert-manager-operator.yaml
 	certManagerOperator string
@@ -60,7 +61,7 @@ func setupCertManagerOperator(t test.TestHelper) {
 
 	t.Cleanup(func() {
 		oc.DeleteFromString(t, certManagerNs, rootCA)
-		oc.DeleteFromString(t, certManagerOperatorNs, certManagerOperator)
+		oc.DeleteFromTemplate(t, certManagerOperatorNs, certManagerOperator, map[string]string{"Version": certmanagerVersion})
 		oc.DeleteNamespace(t, certManagerOperatorNs)
 		oc.DeleteNamespace(t, certManagerNs)
 	})
@@ -71,10 +72,17 @@ func setupCertManagerOperator(t test.TestHelper) {
 	oc.CreateNamespace(t, certManagerOperatorNs)
 
 	t.LogStep("Install cert-manager-operator")
-	oc.ApplyString(t, certManagerOperatorNs, certManagerOperator)
-	oc.WaitPodReady(t, pod.MatchingSelector("name=cert-manager-operator", certManagerOperatorNs))
-	oc.WaitPodReady(t, pod.MatchingSelector("app=cert-manager", certManagerNs))
+	oc.ApplyTemplate(t, certManagerOperatorNs, certManagerOperator, map[string]string{"Version": certmanagerVersion})
+	waitOperatorSucceded(t, certManagerOperatorNs)
 
 	t.LogStep("Create root ca")
 	oc.ApplyString(t, certManagerNs, rootCA)
+}
+
+func waitOperatorSucceded(t test.TestHelper, certManagerOperatorNs string) {
+	t.Log("Waiting for cert-manager-operator to succeed")
+
+	oc.WaitFor(t, certManagerOperatorNs, "csv", certmanagerVersion, "jsonpath='{.status.phase}'=Succeeded")
+	oc.WaitPodReady(t, pod.MatchingSelector("name=cert-manager-operator", certManagerOperatorNs))
+	oc.WaitPodReady(t, pod.MatchingSelector("app=cert-manager", certManagerNs))
 }
