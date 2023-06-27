@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
@@ -47,12 +48,16 @@ func TestDeployOnInfraNodes(t *testing.T) {
 		}
 
 		t.Cleanup(func() {
-			oc.Patch(t, env.GetOperatorNamespace(), "subscription", "servicemeshoperator", "json", `[{"op": "remove", "path": "/spec/config/tolerations"}]`)
+			oc.Patch(t, env.GetOperatorNamespace(), "subscription", "servicemeshoperator", "json", `[{"op": "remove", "path": "/spec/config"}]`)
 			oc.TaintNode(t, "-l node-role.kubernetes.io/infra",
 				"node-role.kubernetes.io/infra=reserved:NoSchedule-",
 				"node-role.kubernetes.io/infra=reserved:NoExecute-")
 			oc.Label(t, "", "node", workername, "node-role.kubernetes.io/infra-")
 			oc.Label(t, "", "node", workername, "node-role.kubernetes.io-")
+			//TODO: to improve this after merge this PR: https://github.com/maistra/maistra-test-tool/pull/597 we need to reuse waitOperatorSucceded and make that func available to all the code
+			// Use waitOperatorSucceded will avoid flaky in this test case
+			locator := pod.MatchingSelector("name=istio-operator", "openshift-operators")
+			oc.WaitPodReady(t, locator)
 		})
 
 		t.LogStep("Setup: Get a worker node from the cluster that does not have the istio operator installed and label it as infra")
@@ -82,12 +87,10 @@ spec:
       key: node-role.kubernetes.io/infra
       value: reserved
 `)
-			locator := pod.MatchingSelector("name=istio-operator", "openshift-operators")
-			oc.DeletePod(t, locator) //This a workaround for https://issues.redhat.com/browse/OSSM-4260
 
 			t.LogStepf("Verify operator pod is running on the infra node. Node expected: %s", workername)
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				locator = pod.MatchingSelector("name=istio-operator", "openshift-operators")
+				locator := pod.MatchingSelector("name=istio-operator", "openshift-operators")
 				oc.WaitPodReady(t, locator)
 				operatorPod := locator(t, oc.DefaultOC)
 				shell.Execute(t,
@@ -103,8 +106,6 @@ spec:
 			t.Log("Verify that all control plane pods are deployed on infra node when configured")
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
-				InstallSMCP(t, meshNamespace)
-				oc.WaitSMCPReady(t, meshNamespace, smcpName)
 			})
 
 			DeployControlPlane(t)
@@ -130,7 +131,7 @@ spec:
 			})
 
 			t.LogStep("Verify that the following control plane pods are running on the infra node: istiod, istio-ingressgateway, istio-egressgateway, jaeger, grafana, prometheus")
-			istioPodLabelSelectors := []string{"app=istiod", "app=istio-ingressgateway", "app=istio-egressgateway", "app=jaeger", "app=grafana", "app=prometheus"}
+			istioPodLabelSelectors := []string{"app=istiod", "app=istio-ingressgateway", "app=istio-egressgateway", "app=grafana", "app=prometheus", "app=jaeger"}
 			for _, pLabel := range istioPodLabelSelectors {
 				assertPodScheduledToNode(t, pLabel)
 			}
@@ -140,7 +141,9 @@ spec:
 }
 
 func assertPodScheduledToNode(t test.TestHelper, pLabel string) {
-	retry.UntilSuccess(t, func(t test.TestHelper) {
+	// Increased the between retries to account for the time it takes for the pods to be scheduled on the infra node meanwhile other relocations are done at the same time.
+	// Jaeger pod takes the longest to be scheduled on the infra node.
+	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(2*time.Second), func(t test.TestHelper) {
 		podLocator := pod.MatchingSelector(pLabel, meshNamespace)
 		po := podLocator(t, oc.DefaultOC)
 		shell.Execute(t,
