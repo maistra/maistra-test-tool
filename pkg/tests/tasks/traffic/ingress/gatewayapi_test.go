@@ -82,7 +82,7 @@ func TestGatewayApi(t *testing.T) {
 			})
 
 			t.LogStep("Wait for Gateway to be ready")
-			oc.WaitCondition(t, ns, "Gateway", "gateway", "Ready")
+			oc.WaitFor(t, ns, "Gateway", "gateway", "condition=Ready")
 
 			t.LogStep("Verfiy the GatewayApi access the httpbin service using curl")
 			retry.UntilSuccess(t, func(t TestHelper) {
@@ -125,7 +125,7 @@ func TestGatewayApi(t *testing.T) {
 			})
 
 			t.LogStep("Wait for Gateway to be ready")
-			oc.WaitCondition(t, ns, "Gateway", "gateway", "Ready")
+			oc.WaitFor(t, ns, "Gateway", "gateway", "condition=Ready")
 
 			t.LogStep("Verify the Gateway-Controller Profile access the httpbin service using curl")
 			retry.UntilSuccess(t, func(t TestHelper) {
