@@ -23,6 +23,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -30,18 +31,23 @@ import (
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func TestSingleClusterFederation(t *testing.T) {
+func TestFederation(t *testing.T) {
 	NewTest(t).Id("T31").Groups(Full, ARM).Run(func(t TestHelper) {
+		//This test will be executed in multicluster only if two kubeconfigs are provided and those cluster are not in ROSA
+		//To ROSA test of federation we have this testcase: TestMultiClusterFederationFailover
+		t.Log("Both OC clusters are set respectively to cluster west and east if they are provided with two kubeconfig files, if not, both are set from the same file")
+		ocWest, ocEast := setKubeconfig()
+
 		federationTest{
 			testdataPath: "testdata/traffic-splitting",
 			west: config{
-				oc:                oc.DefaultOC,
+				oc:                ocWest,
 				smcpName:          "west-mesh",
 				smcpNamespace:     "west-mesh-system",
 				bookinfoNamespace: "west-mesh-bookinfo",
 			},
 			east: config{
-				oc:                oc.DefaultOC,
+				oc:                ocEast,
 				smcpName:          "east-mesh",
 				smcpNamespace:     "east-mesh-system",
 				bookinfoNamespace: "east-mesh-bookinfo",
@@ -56,18 +62,20 @@ func TestSingleClusterFederation(t *testing.T) {
 	})
 }
 
-func TestSingleClusterFederationDifferentCerts(t *testing.T) {
+func TestFederationDifferentCerts(t *testing.T) {
 	NewTest(t).Id("T32").Groups(Full).Run(func(t TestHelper) {
+
+		ocWest, ocEast := setKubeconfig()
 		federationTest{
 			testdataPath: "testdata/traffic-splitting",
 			west: config{
-				oc:                oc.DefaultOC,
+				oc:                ocWest,
 				smcpName:          "west-mesh",
 				smcpNamespace:     "west-mesh-system",
 				bookinfoNamespace: "west-mesh-bookinfo",
 			},
 			east: config{
-				oc:                oc.DefaultOC,
+				oc:                ocEast,
 				smcpName:          "east-mesh",
 				smcpNamespace:     "east-mesh-system",
 				bookinfoNamespace: "east-mesh-bookinfo",
@@ -87,6 +95,16 @@ func TestSingleClusterFederationDifferentCerts(t *testing.T) {
 			checker:           defaultChecker,
 		}.run(t)
 	})
+}
+
+func setKubeconfig() (*oc.OC, *oc.OC) {
+	ocWest := oc.DefaultOC
+	ocEast := oc.DefaultOC
+	kubeconfig2 := env.GetKubeconfig2()
+	if kubeconfig2 != "" && !env.IsRosa() {
+		ocEast = oc.WithKubeconfig(kubeconfig2)
+	}
+	return ocWest, ocEast
 }
 
 func defaultBookinfoInstaller(t TestHelper, ft federationTest) {
