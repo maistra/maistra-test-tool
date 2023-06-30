@@ -10,7 +10,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
@@ -27,7 +26,7 @@ var (
 		"v4.10": "metallb-operator.4.10.0-202305032028",
 		"v4.11": "metallb-operator.4.11.0-202302271715",
 		"v4.12": "metallb-operator.4.12.0-202305102015",
-		"v4.13": "metallb-operator.v4.13.0-202304190216",
+		"v4.13": "metallb-operator.v4.13.0-202306141157",
 	}
 )
 
@@ -63,6 +62,7 @@ func installOperator(t test.TestHelper, oc oc.OC) {
 	//nolint:typecheck
 	ocpVersion := version.ParseVersion(oc.GetOCPVersion(t))
 	metallbVersion := metallbVersions[ocpVersion.String()]
+	t.Log(fmt.Sprintf("MetalLB version: %s", metallbVersion))
 	oc.ApplyTemplateString(t, ns.MetalLB, metallbOperator, map[string]string{"Version": metallbVersion})
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		if !oc.ResourceExists(t, ns.MetalLB, "deployments", "metallb-operator-controller-manager") {
@@ -108,7 +108,7 @@ spec:
 `
 	var ips []string
 	retry.UntilSuccess(t, func(t test.TestHelper) {
-		out := shell.Execute(t,
+		out := oc.Invoke(t,
 			`kubectl get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[*].status.addresses[?(@.type=="InternalIP")].address}'`,
 			assert.OutputDoesNotContain("Error from server", "Found internal IPs", "failed to get internal node IPs"))
 		ips = strings.Fields(out)
