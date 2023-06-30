@@ -58,6 +58,9 @@ func setupCertManagerOperator(t test.TestHelper) {
 	if smcpVer.LessThan(version.SMCP_2_4) {
 		return
 	}
+	if env.GetArch() == "z" || env.GetArch() == "p" {
+		return
+	}
 
 	t.Cleanup(func() {
 		oc.DeleteFromString(t, certManagerNs, rootCA)
