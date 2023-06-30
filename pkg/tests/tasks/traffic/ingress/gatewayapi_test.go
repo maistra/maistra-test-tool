@@ -97,6 +97,9 @@ func TestGatewayApi(t *testing.T) {
 		})
 
 		t.NewSubTest("Deploy the Gateway-Controller Profile").Run(func(t test.TestHelper) {
+			if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
+				t.Skip("Gateway-Controller Profile was added in v2.4")
+			}
 
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
