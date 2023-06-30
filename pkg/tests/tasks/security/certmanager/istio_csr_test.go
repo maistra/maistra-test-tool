@@ -31,6 +31,9 @@ func TestIstioCsr(t *testing.T) {
 		if ocpVersion.LessThan(version.OCP_4_12) {
 			t.Skip("istio-csr is not supported in OCP older than v4.12")
 		}
+		if env.GetArch() == "z" || env.GetArch() == "p" {
+			t.Skip("istio-csr is not supported for IBM Z&P")
+		}
 
 		meshValues := map[string]string{
 			"Name":    smcpName,
