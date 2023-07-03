@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -65,11 +66,6 @@ func installOperator(t test.TestHelper) {
 func waitOperatorSucceded(t test.TestHelper, certManagerOperatorNs string) {
 	t.Log("Waiting for cert-manager-operator to succeed")
 	oc.WaitFor(t, certManagerOperatorNs, "csv", certmanagerVersion, "jsonpath='{.status.phase}'=Succeeded")
-
-	retry.UntilSuccess(t, func(t test.TestHelper) {
-		//This is a hack to wait for the pods to be ready because the pods app=cert-manager take a long time to be ready
-		//With this hack we will avoid flaky tests and we do not increase the timeout for the entire oc.WaitPodReady
-		oc.WaitPodReady(t, pod.MatchingSelector("name=cert-manager-operator", certManagerOperatorNs))
-		oc.WaitPodReady(t, pod.MatchingSelector("app=cert-manager", certManagerNs))
-	})
+	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(4*time.Second), pod.MatchingSelector("name=cert-manager-operator", certManagerOperatorNs))
+	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(4*time.Second), pod.MatchingSelector("app=cert-manager", certManagerNs))
 }

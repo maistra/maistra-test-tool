@@ -81,10 +81,10 @@ func (o OC) WaitPodRunning(t test.TestHelper, podLocator PodLocatorFunc) {
 	})
 }
 
-func (o OC) WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
+func (o OC) WaitPodReadyWithOptions(t test.TestHelper, options retry.RetryOptions, podLocator PodLocatorFunc) {
 	t.T().Helper()
 	var pod NamespacedName
-	retry.UntilSuccess(t, func(t test.TestHelper) {
+	retry.UntilSuccessWithOptions(t, options, func(t test.TestHelper) {
 		t.T().Helper()
 		pod = podLocator(t, &o)
 		condition := o.Invokef(t, "kubectl -n %s wait --for condition=Ready pod %s --timeout 1s || true", pod.Namespace, pod.Name) // TODO: Change shell execute to do not fail on error

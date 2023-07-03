@@ -2,6 +2,7 @@ package oc
 
 import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -148,7 +149,12 @@ func WaitPodRunning(t test.TestHelper, podLocator PodLocatorFunc) {
 
 func WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
 	t.T().Helper()
-	DefaultOC.WaitPodReady(t, podLocator)
+	DefaultOC.WaitPodReadyWithOptions(t, retry.Options(), podLocator)
+}
+
+func WaitPodReadyWithOptions(t test.TestHelper, retry retry.RetryOptions, podLocator PodLocatorFunc) {
+	t.T().Helper()
+	DefaultOC.WaitPodReadyWithOptions(t, retry, podLocator)
 }
 
 func UndoRollout(t test.TestHelper, ns string, kind, name string) {
