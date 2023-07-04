@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/certmanageroperator"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
@@ -23,6 +24,8 @@ import (
 
 func TestIstioCsr(t *testing.T) {
 	test.NewTest(t).Id("T38").Groups(test.Full, test.ARM, test.InterOp).Run(func(t test.TestHelper) {
+		//Validate OCP version, this test setup can't be executed in OCP versions less than 4.12
+		//More information in: https://57747--docspreview.netlify.app/openshift-enterprise/latest/service_mesh/v2x/ossm-security.html#ossm-cert-manager-integration-istio_ossm-security
 		smcpVer := env.GetSMCPVersion()
 		if smcpVer.LessThan(version.SMCP_2_4) {
 			t.Skip("istio-csr is not supported in SMCP older than v2.4")
@@ -53,7 +56,10 @@ func TestIstioCsr(t *testing.T) {
 			oc.DeleteSecret(t, meshNamespace, "istiod-tls")
 			oc.DeleteSecret(t, meshNamespace, "istio-ca")
 			oc.RecreateNamespace(t, ns.Foo)
+			certmanageroperator.Uninstall(t)
 		})
+
+		certmanageroperator.InstallIfNotExist(t)
 
 		t.LogStep("Uninstall existing SMCP")
 		oc.RecreateNamespace(t, meshNamespace)
