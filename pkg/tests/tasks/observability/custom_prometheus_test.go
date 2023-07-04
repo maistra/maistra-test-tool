@@ -125,7 +125,7 @@ func ocWaitOperatorInstall(t test.TestHelper, ns, subscriptionName string) {
 		"{.status.installPlanRef.kind}", "InstallPlan",
 		"Install plan was created.", "Wait for install plan failed.")
 	installPlanName := ocGetJsonpath(t, ns, "subscription", subscriptionName, "{.status.installPlanRef.name}")
-	oc.WaitFor(t, ns, "installplan", installPlanName, "condition=Installed")
+	oc.WaitCondition(t, ns, "installplan", installPlanName, "Installed")
 }
 
 func installPrometheusOperator(t test.TestHelper, ns string) {
