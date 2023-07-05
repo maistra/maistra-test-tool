@@ -1,6 +1,8 @@
 package oc
 
 import (
+	"fmt"
+
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -192,9 +194,14 @@ func DeletePodNoWait(t test.TestHelper, podLocator PodLocatorFunc) {
 	DefaultOC.DeletePodNoWait(t, podLocator)
 }
 
-func WaitFor(t test.TestHelper, ns string, kind string, name string, forCondition string) {
+func WaitCondition(t test.TestHelper, ns string, kind string, name string, condition string) {
 	t.T().Helper()
-	DefaultOC.WaitFor(t, ns, kind, name, forCondition)
+	DefaultOC.WaitFor(t, ns, kind, name, fmt.Sprintf("condition=%s", condition))
+}
+
+func WaitForPhase(t test.TestHelper, ns string, kind string, name string, phase string) {
+	t.T().Helper()
+	DefaultOC.WaitFor(t, ns, kind, name, fmt.Sprintf("jsonpath='{.status.phase}'=%s", phase))
 }
 
 func WaitSMMRReady(t test.TestHelper, ns string) {

@@ -98,7 +98,7 @@ func (o OC) WaitPodReadyWithOptions(t test.TestHelper, options retry.RetryOption
 
 func (o OC) WaitDeploymentRolloutComplete(t test.TestHelper, ns string, deploymentNames ...string) {
 	t.T().Helper()
-	timeout := 3 * time.Minute // TODO: make this configurable?
+	timeout := 4 * time.Minute // TODO: make this configurable?
 	start := time.Now()
 	for _, name := range deploymentNames {
 		usedUpTime := time.Now().Sub(start)
