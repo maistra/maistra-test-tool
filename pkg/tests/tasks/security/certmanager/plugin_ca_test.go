@@ -50,6 +50,7 @@ func TestPluginCaCert(t *testing.T) {
 			oc.DeleteFromString(t, meshNamespace, cacerts)
 			oc.DeleteSecret(t, meshNamespace, "cacerts")
 			oc.RecreateNamespace(t, ns.Foo)
+			certmanageroperator.Uninstall(t)
 		})
 
 		certmanageroperator.InstallIfNotExist(t)
