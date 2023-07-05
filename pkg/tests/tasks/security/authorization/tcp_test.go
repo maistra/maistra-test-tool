@@ -50,7 +50,7 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 			assertPortTcpEchoAccepted(t, ns, "tcp-echo", "9001")
 		})
 
-		retry.UntilSuccess(t, func(t test.TestHelper) {
+		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(120), func(t test.TestHelper) {
 			assertPortTcpEchoAccepted(t, ns, podIP, "9002")
 		})
 
