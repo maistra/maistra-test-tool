@@ -68,7 +68,7 @@ func waitOperatorSucceded(t test.TestHelper, certManagerOperatorNs string) {
 	// When the operator is installed, the CSV take some time to be created, need to wait until is created to validate the phase
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		if !certManagerOperatorExists(t) {
-			t.Fatalf("cert-manager-operator is not yet installed")
+			t.Error("cert-manager-operator is not yet installed")
 		}
 	})
 
