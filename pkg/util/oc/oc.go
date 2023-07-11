@@ -1,8 +1,8 @@
 package oc
 
 import (
-	"time"
 	"fmt"
+	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
