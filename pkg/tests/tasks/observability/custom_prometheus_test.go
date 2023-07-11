@@ -88,7 +88,7 @@ func TestCustomPrometheus(t *testing.T) {
 				fmt.Sprintf(`istio_requests_total{namespace="%s",container="istio-proxy",source_app="istio-ingressgateway",destination_app="productpage"}`, ns.Bookinfo))
 
 			if len(resp.Data.Result) == 0 {
-				t.Errorf("No data points received from Prometheus API")
+				t.Errorf("No data points received from Prometheus API, status: %s", resp.Status)
 			}
 		})
 	})
