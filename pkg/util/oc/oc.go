@@ -2,8 +2,10 @@ package oc
 
 import (
 	"time"
+	"fmt"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -16,6 +18,11 @@ func WithKubeconfig(location string) *OC {
 func ApplyString(t test.TestHelper, ns string, yamls ...string) {
 	t.T().Helper()
 	DefaultOC.ApplyString(t, ns, yamls...)
+}
+
+func GetOCPVersion(t test.TestHelper) string {
+	t.T().Helper()
+	return DefaultOC.GetOCPVersion(t)
 }
 
 func ReplaceOrApplyString(t test.TestHelper, ns string, yaml string) {
@@ -123,6 +130,11 @@ func GetPodIP(t test.TestHelper, podLocator PodLocatorFunc) string {
 	return DefaultOC.GetPodIP(t, podLocator)
 }
 
+func GetServiceClusterIP(t test.TestHelper, ns, serviceName string) string {
+	t.T().Helper()
+	return DefaultOC.GetServiceClusterIP(t, ns, serviceName)
+}
+
 func Logs(t test.TestHelper, podLocator PodLocatorFunc, container string, checks ...common.CheckFunc) {
 	t.T().Helper()
 	DefaultOC.Logs(t, podLocator, container, checks...)
@@ -145,7 +157,12 @@ func WaitPodRunning(t test.TestHelper, podLocator PodLocatorFunc) {
 
 func WaitPodReady(t test.TestHelper, podLocator PodLocatorFunc) {
 	t.T().Helper()
-	DefaultOC.WaitPodReady(t, podLocator)
+	DefaultOC.WaitPodReadyWithOptions(t, retry.Options(), podLocator)
+}
+
+func WaitPodReadyWithOptions(t test.TestHelper, retry retry.RetryOptions, podLocator PodLocatorFunc) {
+	t.T().Helper()
+	DefaultOC.WaitPodReadyWithOptions(t, retry, podLocator)
 }
 
 func UndoRollout(t test.TestHelper, ns string, kind, name string) {
@@ -185,7 +202,12 @@ func DeletePodNoWait(t test.TestHelper, podLocator PodLocatorFunc) {
 
 func WaitCondition(t test.TestHelper, ns string, kind string, name string, condition string) {
 	t.T().Helper()
-	DefaultOC.WaitCondition(t, ns, kind, name, condition)
+	DefaultOC.WaitFor(t, ns, kind, name, fmt.Sprintf("condition=%s", condition))
+}
+
+func WaitForPhase(t test.TestHelper, ns string, kind string, name string, phase string) {
+	t.T().Helper()
+	DefaultOC.WaitFor(t, ns, kind, name, fmt.Sprintf("jsonpath='{.status.phase}'=%s", phase))
 }
 
 func WaitSMMRReady(t test.TestHelper, ns string) {
@@ -234,12 +256,13 @@ func GetYaml(t test.TestHelper, ns, kind, name string, checks ...common.CheckFun
 	return DefaultOC.GetYaml(t, ns, kind, name, checks...)
 }
 
-func GetJson(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) string {
+// GetJson returns the JSON representation of the resource, you can set a jsonPath to extract a specific value or send "" to get the full JSON
+func GetJson(t test.TestHelper, ns, kind, name string, jsonPath string) string {
 	t.T().Helper()
-	return DefaultOC.GetJson(t, ns, kind, name, checks...)
+	return DefaultOC.GetJson(t, ns, kind, name, jsonPath)
 }
 
-func GetProxy(t test.TestHelper) Proxy {
+func GetProxy(t test.TestHelper) *Proxy {
 	t.T().Helper()
 	return DefaultOC.GetProxy(t)
 }

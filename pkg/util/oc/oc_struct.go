@@ -30,10 +30,38 @@ func NewOC(kubeconfig string) *OC {
 
 func (o OC) ApplyTemplateString(t test.TestHelper, ns string, tmpl string, input interface{}) {
 	t.T().Helper()
-	o.withKubeconfig(t, func() {
+	o.retryFunction(t, func() {
 		t.T().Helper()
 		o.ApplyString(t, ns, template.Run(t, tmpl, input))
 	})
+}
+
+func (o OC) GetOCPVersion(t test.TestHelper) string {
+	t.T().Helper()
+	output := ""
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		output = shell.Execute(t, "oc version")
+		// The output have this format:
+		// 	Client Version: 4.12.0-rc.5
+		// Kustomize Version: v4.5.7
+		// Server Version: 4.10.59
+		// Kubernetes Version: v1.23.17+16bcd69
+	})
+
+	// We want to split only the line with "Server Version"
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "Server Version") {
+			// Get the version number
+			version := strings.Split(line, ":")[1]
+			version = strings.TrimSpace(version)
+			return version
+		}
+	}
+	// We never reach this point so if this happens we will return an error
+	t.Fatal("Unable to get OCP version")
+	return ""
 }
 
 func (o OC) ReplaceOrApplyString(t test.TestHelper, ns string, yaml string) {
@@ -62,7 +90,7 @@ func (o OC) DeleteFromTemplate(t test.TestHelper, ns string, tmpl string, input 
 
 func (o OC) ApplyTemplateFile(t test.TestHelper, ns string, tmplFile string, input interface{}) {
 	t.T().Helper()
-	o.withKubeconfig(t, func() {
+	o.retryFunction(t, func() {
 		t.T().Helper()
 		templateString, err := os.ReadFile(tmplFile)
 		if err != nil {
@@ -72,8 +100,8 @@ func (o OC) ApplyTemplateFile(t test.TestHelper, ns string, tmplFile string, inp
 	})
 }
 
-// This function can be called by both ApplyString and ApplyFile. Accept as argument: multiple yaml string or yaml file to apply
-func (o OC) applyWithRetry(t test.TestHelper, ns string, inputKind string, arg string) {
+// retryFunction retries the specified function if it fails.
+func (o OC) retryFunction(t test.TestHelper, f func()) {
 	t.T().Helper()
 	maxAttempts := 5
 	var attemptT *test.RetryTestHelper
@@ -81,20 +109,11 @@ func (o OC) applyWithRetry(t test.TestHelper, ns string, inputKind string, arg s
 	for i := 0; i < maxAttempts; i++ {
 		attemptT = retry.Attempt(t, func(t test.TestHelper) {
 			t.T().Helper()
-			o.withKubeconfig(t, func() {
-				t.T().Helper()
-				if inputKind == "string" {
-					shell.ExecuteWithInput(t, fmt.Sprintf("oc %s apply -f -", nsFlag(ns)), arg)
-				} else if inputKind == "file" {
-					o.Invokef(t, "oc %s apply -f %s", nsFlag(ns), arg)
-				} else {
-					t.Fatalf("Invalid inputKind: %s", inputKind)
-				}
-			})
+			o.withKubeconfig(t, f)
 		})
 		if !attemptT.Failed() {
 			if warning {
-				t.Logf("WARNING: Apply attempt %d of %d succeeded after previous failures.", i+1, maxAttempts)
+				t.Logf("WARNING: attempt %d of %d succeeded after previous failures.", i+1, maxAttempts)
 			}
 			attemptT.FlushLogBuffer()
 			return
@@ -106,17 +125,25 @@ func (o OC) applyWithRetry(t test.TestHelper, ns string, inputKind string, arg s
 
 	// the last attempt has failed, so we print the buffered log statements
 	attemptT.FlushLogBuffer()
-	t.Fatalf("Running apply command failed after %d attempts.", maxAttempts)
+	t.Fatalf("Command failed after %d attempts.", maxAttempts)
 }
 
-// By default we made retries inside this function if it fails, so we do not need to wrap apply into a retry.Until...
+// ApplyString applies the specified YAMLs using oc apply and retries if the command fails.
 func (o OC) ApplyString(t test.TestHelper, ns string, yamls ...string) {
-	o.applyWithRetry(t, ns, "string", concatenateYamls(yamls...))
+	t.T().Helper()
+	o.retryFunction(t, func() {
+		t.T().Helper()
+		shell.ExecuteWithInput(t, fmt.Sprintf("oc %s apply -f -", nsFlag(ns)), concatenateYamls(yamls...))
+	})
 }
 
-// By default we made retries inside this function if it fails, so we do not need to wrap apply into a retry.Until...
+// ApplyFile applies the specified file using oc apply and retries if the command fails.
 func (o OC) ApplyFile(t test.TestHelper, ns string, file string) {
-	o.applyWithRetry(t, ns, "file", file)
+	t.T().Helper()
+	o.retryFunction(t, func() {
+		t.T().Helper()
+		o.Invokef(t, "oc %s apply -f %s", nsFlag(ns), file)
+	})
 }
 
 func (o OC) DeleteFromString(t test.TestHelper, ns string, yamls ...string) {
@@ -242,7 +269,7 @@ func (o OC) WaitSMCPReady(t test.TestHelper, ns string, name string) {
 	t.T().Helper()
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		o.WaitCondition(t, ns, "smcp", name, "Ready")
+		o.WaitFor(t, ns, "smcp", name, "condition=Ready")
 	})
 }
 
@@ -377,9 +404,13 @@ func (o OC) Label(t test.TestHelper, ns string, kind string, name string, labels
 func (o OC) Get(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) string {
 	t.T().Helper()
 	var val string
+	element := fmt.Sprintf("%s/%s", kind, name)
+	if name == "" {
+		element = kind
+	}
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		val = shell.Execute(t, fmt.Sprintf("oc %s get %s/%s", nsFlag(ns), kind, name), checks...)
+		val = shell.Execute(t, fmt.Sprintf("oc %s get %s", nsFlag(ns), element), checks...)
 	})
 	return val
 }
@@ -394,42 +425,55 @@ func (o OC) GetYaml(t test.TestHelper, ns, kind, name string, checks ...common.C
 	return val
 }
 
-func (o OC) GetJson(t test.TestHelper, ns, kind, name string, checks ...common.CheckFunc) string {
+func (o OC) GetJson(t test.TestHelper, ns, kind, name, jsonPath string) string {
 	t.T().Helper()
-	var val string
+	var jsonString string
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		val = shell.Execute(t, fmt.Sprintf("oc %s get %s/%s -ojson", nsFlag(ns), kind, name), checks...)
+		if jsonPath == "" {
+			jsonString = shell.Execute(t, fmt.Sprintf(`oc %s get %s %s -o json`, nsFlag(ns), kind, name))
+		} else {
+			jsonPath = strings.ReplaceAll(jsonPath, "'", `'"'"'`)
+			jsonString = shell.Execute(t, fmt.Sprintf(`oc %s get %s %s -o jsonpath='%s'`, nsFlag(ns), kind, name, jsonPath))
+		}
 	})
-	return val
+	return jsonString
 }
 
 // GetProxy returns the Proxy object from the cluster
-func (o OC) GetProxy(t test.TestHelper) Proxy {
-	type ProxyResource struct {
-		Status Proxy `json:"status"`
+func (o OC) GetProxy(t test.TestHelper) *Proxy {
+	proxyJson := o.GetJson(t, "", "proxy", "cluster", "{.status}")
+
+	proxy := &Proxy{}
+	if proxyJson == "" {
+		return proxy
 	}
-
-	proxyResource := ProxyResource{}
-
-	proxyYaml := o.GetJson(t, "", "proxy", "cluster")
-	err := json.Unmarshal([]byte(proxyYaml), &proxyResource)
+	var data map[string]interface{}
+	err := json.Unmarshal([]byte(proxyJson), &data)
 	if err != nil {
-		t.Fatalf("Could not parse Proxy resource: %v", err)
+		t.Fatalf("Failed to parse JSON: %s\n", err)
 	}
-
-	proxy := proxyResource.Status
-	if proxy.HTTPProxy != "" {
-		t.Logf("HTTP_PROXY: %q", proxy.HTTPProxy)
+	if data["httpProxy"] != nil {
+		proxy.HTTPProxy = data["httpProxy"].(string)
 	}
-	if proxy.HTTPSProxy != "" {
-		t.Logf("HTTPS_PROXY: %q", proxy.HTTPSProxy)
+	if data["httpsProxy"] != nil {
+		proxy.HTTPSProxy = data["httpsProxy"].(string)
 	}
-	if proxy.NoProxy != "" {
-		t.Logf("NO_PROXY: %q", proxy.NoProxy)
+	if data["noProxy"] != nil {
+		proxy.NoProxy = data["noProxy"].(string)
 	}
-
 	return proxy
+}
+
+func (o OC) ResourceExists(t test.TestHelper, ns, kind, name string) bool {
+	t.T().Helper()
+	var exists bool
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		output := shell.Execute(t, fmt.Sprintf("oc %s get %s/%s || true", nsFlag(ns), kind, name))
+		exists = !(strings.Contains(output, "Error from server (NotFound)") || strings.Contains(output, "No resources found"))
+	})
+	return exists
 }
 
 func setEnv(t test.TestHelper, key string, value string) {

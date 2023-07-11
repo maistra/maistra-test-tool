@@ -1,0 +1,56 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: istio-egressgateway
+spec:
+  selector:
+    istio: egressgateway
+  servers:
+  - port:
+      number: 443
+      name: tls
+      protocol: TLS
+    hosts:
+    - my-nginx.mesh-external.svc.cluster.local
+    tls:
+      mode: PASSTHROUGH
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: egress-gateway-route-egress-traffic-to-external-nginx
+spec:
+  hosts:
+  - my-nginx.mesh-external.svc.cluster.local
+  gateways:
+  - istio-egressgateway
+  tls:
+  - match:
+    - port: 443
+      sniHosts:
+      - my-nginx.mesh-external.svc.cluster.local
+    route:
+    - destination:
+        host: my-nginx.mesh-external.svc.cluster.local
+        port:
+          number: 443
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: mesh-route-egress-traffic-to-external-nginx-through-egress-gateway
+spec:
+  hosts:
+  - my-nginx.mesh-external.svc.cluster.local
+  gateways:
+  - mesh
+  tls:
+  - match:
+    - port: 443
+      sniHosts:
+      - my-nginx.mesh-external.svc.cluster.local
+    route:
+    - destination:
+        host: istio-egressgateway.{{ .Namespace }}.svc.cluster.local
+        port:
+          number: 443

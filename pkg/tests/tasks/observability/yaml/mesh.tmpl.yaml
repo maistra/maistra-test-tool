@@ -1,0 +1,36 @@
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: {{ .Name }}
+spec:
+  addons:
+    grafana:
+      enabled: false
+    kiali:
+      enabled: true
+      name: kiali-user-workload-monitoring
+    prometheus:
+      enabled: false
+  extensionProviders:
+  - name: prometheus
+    prometheus: {}
+  gateways:
+    egress:
+      enabled: false
+    openshiftRoute:
+      enabled: false
+  security:
+    dataPlane:
+      mtls: true
+    manageNetworkPolicy: false
+  tracing:
+    type: None
+  version: {{ .Version }}
+---
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  members:
+  - {{ .Member }}

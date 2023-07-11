@@ -1,4 +1,0 @@
-apiVersion: maistra.io/v2
-kind: ServiceMeshControlPlane
-spec:
-  mode: ClusterWide
