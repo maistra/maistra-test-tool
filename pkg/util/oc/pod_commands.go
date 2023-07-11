@@ -56,6 +56,14 @@ func (o OC) Logs(t test.TestHelper, podLocator PodLocatorFunc, container string,
 		checks...)
 }
 
+func (o OC) LogsSince(t test.TestHelper, start time.Time, podLocator PodLocatorFunc, container string, checks ...common.CheckFunc) {
+	t.T().Helper()
+	pod := podLocator(t, &o)
+	o.Invoke(t,
+		fmt.Sprintf("kubectl logs -n %s %s -c %s --since=%ds", pod.Namespace, pod.Name, container, int(time.Since(start).Round(time.Second).Seconds())),
+		checks...)
+}
+
 func (o OC) LogsFromPods(t test.TestHelper, ns, selector string, checks ...common.CheckFunc) {
 	t.T().Helper()
 	o.Invoke(t,
