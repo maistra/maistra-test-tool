@@ -2,6 +2,7 @@ package oc
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -60,7 +61,7 @@ func (o OC) LogsSince(t test.TestHelper, start time.Time, podLocator PodLocatorF
 	t.T().Helper()
 	pod := podLocator(t, &o)
 	o.Invoke(t,
-		fmt.Sprintf("kubectl logs -n %s %s -c %s --since=%ds", pod.Namespace, pod.Name, container, int(time.Since(start).Round(time.Second).Seconds())),
+		fmt.Sprintf("kubectl logs -n %s %s -c %s --since=%ds", pod.Namespace, pod.Name, container, int(math.Ceil(time.Since(start).Seconds()))),
 		checks...)
 }
 
