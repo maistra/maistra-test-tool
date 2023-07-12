@@ -206,7 +206,7 @@ func checkConfigurationReloadingTriggered(t test.TestHelper, start time.Time) {
 			prometheusPodSelector, "config-reloader",
 			assert.OutputContains("Reload triggered",
 				"Triggered configuration reloading",
-				"Expected to trigger configuration reloading, but did not",
+				fmt.Sprintf("Expected to trigger configuration reloading, but did not. Start time: %s", start.String()),
 			),
 		)
 	})
