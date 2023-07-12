@@ -11,12 +11,14 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	namespaces "github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 var prometheusPodSelector oc.PodLocatorFunc = pod.MatchingSelector("app=prometheus,maistra-control-plane=istio-system", meshNamespace)
@@ -24,6 +26,10 @@ var prometheusPodSelector oc.PodLocatorFunc = pod.MatchingSelector("app=promethe
 func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
 		t.Log("This test checks if the operator can update Prometheus ConfigMap when the SMMR is updated")
+
+		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
+			t.Skip("Test only valid in SMCP versions v2.4+")
+		}
 
 		t.Cleanup(func() {
 			oc.ApplyString(t, meshNamespace, smmr)
