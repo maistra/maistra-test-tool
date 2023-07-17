@@ -40,6 +40,10 @@ func TestIOR(t *testing.T) {
 	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
 		t.Log("This test verifies the behavior of IOR.")
 
+		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
+			t.Skip("This case is only valid for 2.4 or higher SMCP version")
+		}
+
 		meshNamespace := env.GetDefaultMeshNamespace()
 		meshName := env.GetDefaultSMCPName()
 
