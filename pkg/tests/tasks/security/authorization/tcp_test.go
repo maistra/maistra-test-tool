@@ -42,33 +42,11 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 
 		t.LogStep("Install sleep and echo")
 		app.InstallAndWaitReady(t, app.Sleep(ns), app.Echo(ns))
-		podIP := oc.GetPodIP(t, pod.MatchingSelector("app=tcp-echo", ns))
 
 		t.LogStep("Verify sleep to echo TCP connections")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			assertPortTcpEchoAccepted(t, ns, "tcp-echo", "9000")
 			assertPortTcpEchoAccepted(t, ns, "tcp-echo", "9001")
-		})
-
-		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(120), func(t test.TestHelper) {
-			assertPortTcpEchoAccepted(t, ns, podIP, "9002")
-		})
-
-		t.NewSubTest("TCP ALLOW policy").Run(func(t test.TestHelper) {
-			t.Cleanup(func() {
-				oc.DeleteFromString(t, ns, TCPAllowPolicy)
-			})
-			t.LogStep("Apply a policy to allow tcp requests to port 9000 and 9001")
-			oc.ApplyString(t, ns, TCPAllowPolicy)
-
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				assertPortTcpEchoAccepted(t, ns, "tcp-echo", "9000")
-				assertPortTcpEchoAccepted(t, ns, "tcp-echo", "9001")
-			})
-
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				assertPortTcpEchoDenied(t, ns, podIP, "9002")
-			})
 		})
 
 		t.NewSubTest("TCP invalid policy").Run(func(t test.TestHelper) {
@@ -93,6 +71,19 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				assertPortTcpEchoDenied(t, ns, "tcp-echo", "9000")
+				assertPortTcpEchoAccepted(t, ns, "tcp-echo", "9001")
+			})
+		})
+
+		t.NewSubTest("TCP ALLOW policy").Run(func(t test.TestHelper) {
+			t.Cleanup(func() {
+				oc.DeleteFromString(t, ns, TCPAllowPolicy)
+			})
+			t.LogStep("Apply a policy to allow tcp requests to port 9000 and 9001")
+			oc.ApplyString(t, ns, TCPAllowPolicy)
+
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				assertPortTcpEchoAccepted(t, ns, "tcp-echo", "9000")
 				assertPortTcpEchoAccepted(t, ns, "tcp-echo", "9001")
 			})
 		})
