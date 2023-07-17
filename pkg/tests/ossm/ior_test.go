@@ -54,6 +54,11 @@ func TestIOR(t *testing.T) {
 			oc.ApplyString(t, "", generateGateway("gw", meshNamespace, host))
 		}
 
+		deleteSimpleGateway := func(t test.TestHelper) {
+			t.Logf("Deleting Gateway for %s host", host)
+			oc.DeleteFromString(t, "", generateGateway("gw", meshNamespace, host))
+		}
+
 		checkSimpleGateway := func(t test.TestHelper) {
 			t.Logf("Checking whether a Route is generated for %s", host)
 			retry.UntilSuccess(t, func(t test.TestHelper) {
@@ -93,6 +98,7 @@ func TestIOR(t *testing.T) {
 				if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 					removeIORCustomSetting(t, meshNamespace, meshName)
 				}
+				deleteSimpleGateway(t)
 			})
 
 			t.LogStep("Ensure the IOR enabled")
