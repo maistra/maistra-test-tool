@@ -45,8 +45,8 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 
 		t.LogStep("Verify sleep to echo TCP connections")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
-			assertPortTcpEchoAccepted(t, ns, "tcp-echo", "9000")
-			assertPortTcpEchoAccepted(t, ns, "tcp-echo", "9001")
+			assertPortTcpEchoAccepted(t, ns, "9000")
+			assertPortTcpEchoAccepted(t, ns, "9001")
 		})
 
 		t.NewSubTest("TCP invalid policy").Run(func(t test.TestHelper) {
@@ -57,8 +57,8 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 			oc.ApplyString(t, ns, TCPAllowGETPolicy)
 
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				assertPortTcpEchoDenied(t, ns, "tcp-echo", "9000")
-				assertPortTcpEchoDenied(t, ns, "tcp-echo", "9001")
+				assertPortTcpEchoDenied(t, ns, "9000")
+				assertPortTcpEchoDenied(t, ns, "9001")
 			})
 		})
 
@@ -70,8 +70,8 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 			oc.ApplyString(t, ns, TCPDenyGETPolicy)
 
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				assertPortTcpEchoDenied(t, ns, "tcp-echo", "9000")
-				assertPortTcpEchoAccepted(t, ns, "tcp-echo", "9001")
+				assertPortTcpEchoDenied(t, ns, "9000")
+				assertPortTcpEchoAccepted(t, ns, "9001")
 			})
 		})
 
@@ -83,31 +83,31 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 			oc.ApplyString(t, ns, TCPAllowPolicy)
 
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				assertPortTcpEchoAccepted(t, ns, "tcp-echo", "9000")
-				assertPortTcpEchoAccepted(t, ns, "tcp-echo", "9001")
+				assertPortTcpEchoAccepted(t, ns, "9000")
+				assertPortTcpEchoAccepted(t, ns, "9001")
 			})
 		})
 	})
 }
 
-func assertPortTcpEchoAccepted(t test.TestHelper, ns string, host string, port string) {
+func assertPortTcpEchoAccepted(t test.TestHelper, ns string, port string) {
 	oc.Exec(t,
 		pod.MatchingSelector("app=sleep", ns),
 		"sleep",
 		fmt.Sprintf(`sh -c 'echo "port %s" | nc %s %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`,
-			port, host, port),
+			port, "tcp-echo", port),
 		assert.OutputContains(
 			"connection succeeded",
 			fmt.Sprintf("Got expected hello message on port %s", port),
 			fmt.Sprintf("Expected return message hello, but failed on port %s", port)))
 }
 
-func assertPortTcpEchoDenied(t test.TestHelper, ns string, host string, port string) {
+func assertPortTcpEchoDenied(t test.TestHelper, ns string, port string) {
 	oc.Exec(t,
 		pod.MatchingSelector("app=sleep", ns),
 		"sleep",
 		fmt.Sprintf(`sh -c 'echo "port %s" | nc %s %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`,
-			port, host, port),
+			port, "tcp-echo", port),
 		assert.OutputContains(
 			"connection rejected",
 			fmt.Sprintf("Got expected connection rejected on port %s", port),
