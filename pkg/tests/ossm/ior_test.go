@@ -40,10 +40,6 @@ func TestIOR(t *testing.T) {
 	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
 		t.Log("This test verifies the behavior of IOR.")
 
-		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
-			t.Skip("This case is only valid for 2.4 or higher SMCP version")
-		}
-
 		meshNamespace := env.GetDefaultMeshNamespace()
 		meshName := env.GetDefaultSMCPName()
 
@@ -56,6 +52,11 @@ func TestIOR(t *testing.T) {
 		createSimpleGateway := func(t test.TestHelper) {
 			t.Logf("Creating Gateway for %s host", host)
 			oc.ApplyString(t, "", generateGateway("gw", meshNamespace, host))
+		}
+
+		deleteSimpleGateway := func(t test.TestHelper) {
+			t.Logf("Deleting Gateway for %s host", host)
+			oc.DeleteFromString(t, "", generateGateway("gw", meshNamespace, host))
 		}
 
 		checkSimpleGateway := func(t test.TestHelper) {
@@ -97,6 +98,7 @@ func TestIOR(t *testing.T) {
 				if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 					removeIORCustomSetting(t, meshNamespace, meshName)
 				}
+				deleteSimpleGateway(t)
 			})
 
 			t.LogStep("Ensure the IOR enabled")
