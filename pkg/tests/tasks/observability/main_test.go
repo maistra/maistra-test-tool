@@ -30,6 +30,9 @@ var (
 
 	//go:embed yaml/kiali-user-workload-monitoring.tmpl.yaml
 	kialiUserWorkloadMonitoringTmpl string
+
+	//go:embed yaml/networ-policy.yaml
+	networkPolicy string
 )
 
 func TestMain(m *testing.M) {
