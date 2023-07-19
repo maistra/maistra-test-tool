@@ -126,7 +126,7 @@ func TestOpenShiftMonitoring(t *testing.T) {
 				oc.DeleteFromString(t, ns.Foo, istioProxyMonitor)
 				oc.DeleteFromString(t, meshNamespace, enableTrafficMetrics)
 				app.Uninstall(t, app.Httpbin(ns.Foo))
-				oc.DeleteFromTemplate(t, ns.Foo, networkPolicy, map[string]string{"namespace": ns.Foo})
+				oc.DeleteFromTemplate(t, meshNamespace, networkPolicy, map[string]string{"namespace": meshNamespace})
 				oc.DeleteFromTemplate(t, meshNamespace, meshTmpl, meshValues)
 			})
 
