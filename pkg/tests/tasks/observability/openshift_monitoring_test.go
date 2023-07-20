@@ -131,7 +131,7 @@ func TestOpenShiftMonitoring(t *testing.T) {
 			})
 
 			t.LogStep("Deploying SMCP")
-			meshValues["ManageNetworkPolicy"] = "true"
+			meshValues["manageNetworkPolicy"] = "true"
 			oc.ApplyTemplate(t, meshNamespace, meshTmpl, meshValues)
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
@@ -147,6 +147,7 @@ func TestOpenShiftMonitoring(t *testing.T) {
 
 			t.LogStep("Deploying NetworkPolicy")
 			oc.ApplyTemplate(t, meshNamespace, networkPolicy, map[string]string{"namespace": meshNamespace})
+			oc.ApplyTemplate(t, ns.Foo, networkPolicy, map[string]string{"namespace": ns.Foo})
 
 			t.LogStep("Apply Prometheus monitors")
 			oc.ApplyString(t, meshNamespace, istiodMonitor)

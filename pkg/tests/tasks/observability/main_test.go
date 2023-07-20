@@ -31,7 +31,7 @@ var (
 	//go:embed yaml/kiali-user-workload-monitoring.tmpl.yaml
 	kialiUserWorkloadMonitoringTmpl string
 
-	//go:embed yaml/networ-policy.yaml
+	//go:embed yaml/network-policy.yaml
 	networkPolicy string
 )
 
