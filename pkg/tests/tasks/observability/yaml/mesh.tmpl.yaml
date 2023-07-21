@@ -22,7 +22,7 @@ spec:
   security:
     dataPlane:
       mtls: true
-    manageNetworkPolicy: false
+    manageNetworkPolicy: {{ .manageNetworkPolicy }}
   tracing:
     type: None
   version: {{ .Version }}

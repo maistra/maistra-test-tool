@@ -41,9 +41,10 @@ func TestOpenShiftMonitoring(t *testing.T) {
 			t.Skip("integration with OpenShift Monitoring stack is not supported in OSSM older than v2.4.0")
 		}
 		meshValues := map[string]string{
-			"Name":    smcpName,
-			"Version": smcpVer.String(),
-			"Member":  ns.Foo,
+			"Name":                smcpName,
+			"Version":             smcpVer.String(),
+			"Member":              ns.Foo,
+			"manageNetworkPolicy": "false",
 		}
 		kialiValues := map[string]string{
 			"SmcpName":      smcpName,
@@ -51,13 +52,7 @@ func TestOpenShiftMonitoring(t *testing.T) {
 		}
 
 		t.Cleanup(func() {
-			oc.DeleteFromString(t, meshNamespace, istiodMonitor)
-			oc.DeleteFromString(t, ns.Foo, istioProxyMonitor)
-			oc.DeleteFromString(t, meshNamespace, enableTrafficMetrics)
 			oc.DeleteFromTemplate(t, monitoringNs, clusterMonitoringConfigTmpl, map[string]bool{"Enabled": false})
-			oc.DeleteFromString(t, meshNamespace, enableTrafficMetrics)
-			app.Uninstall(t, app.Httpbin(ns.Foo))
-			oc.DeleteFromTemplate(t, meshNamespace, meshTmpl, meshValues)
 			oc.DeleteFromTemplate(t, meshNamespace, kialiUserWorkloadMonitoringTmpl, kialiValues)
 			oc.DeleteSecret(t, meshNamespace, thanosTokenSecret)
 		})
@@ -95,46 +90,100 @@ func TestOpenShiftMonitoring(t *testing.T) {
 		t.LogStep("Deploying Kiali")
 		oc.ApplyTemplate(t, meshNamespace, kialiUserWorkloadMonitoringTmpl, kialiValues)
 
-		t.LogStep("Deploying SMCP")
-		oc.ApplyTemplate(t, meshNamespace, meshTmpl, meshValues)
-		oc.WaitSMCPReady(t, meshNamespace, smcpName)
+		t.NewSubTest("SMCP manageNetworkPolicy false").Run(func(t test.TestHelper) {
+			t.Cleanup(func() {
+				oc.DeleteFromString(t, meshNamespace, istiodMonitor)
+				oc.DeleteFromString(t, ns.Foo, istioProxyMonitor)
+				oc.DeleteFromString(t, meshNamespace, enableTrafficMetrics)
+				app.Uninstall(t, app.Httpbin(ns.Foo))
+				oc.DeleteFromTemplate(t, meshNamespace, meshTmpl, meshValues)
+			})
 
-		t.LogStep("Wait until Kiali is ready")
-		oc.WaitCondition(t, meshNamespace, "Kiali", kialiName, "Successful")
+			t.LogStep("Deploying SMCP")
+			oc.ApplyTemplate(t, meshNamespace, meshTmpl, meshValues)
+			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
-		t.LogStep("Verify that Kiali was reconciled by Istio Operator")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			output := shell.Executef(t, "oc get kiali %s -n %s -o jsonpath='{.spec.deployment.accessible_namespaces}'", kialiName, meshNamespace)
-			if output != fmt.Sprintf(`["%s"]`, ns.Foo) {
-				t.Errorf(`unexpected accessible namespaces: got '%s', expected: '["%s"]'`, output, ns.Foo)
-			}
+			waitKialiAndVerifyIsReconciled(t)
+
+			t.LogStep("Enable Prometheus telemetry")
+			oc.ApplyString(t, meshNamespace, enableTrafficMetrics)
+
+			t.LogStep("Deploy httpbin")
+			app.InstallAndWaitReady(t, app.Httpbin(ns.Foo))
+			oc.WaitPodsExist(t, ns.Foo)
+			oc.WaitAllPodsReady(t, ns.Foo)
+
+			t.LogStep("Apply Prometheus monitors")
+			oc.ApplyString(t, meshNamespace, istiodMonitor)
+			oc.ApplyString(t, ns.Foo, istioProxyMonitor)
+
+			generateTrafficAndcheckMetrics(t, thanosToken)
 		})
 
-		t.LogStep("Enable Prometheus telemetry")
-		oc.ApplyString(t, meshNamespace, enableTrafficMetrics)
+		t.NewSubTest("SMCP manageNetworkPolicy true").Run(func(t test.TestHelper) {
+			t.Cleanup(func() {
+				oc.DeleteFromString(t, meshNamespace, istiodMonitor)
+				oc.DeleteFromString(t, ns.Foo, istioProxyMonitor)
+				oc.DeleteFromString(t, meshNamespace, enableTrafficMetrics)
+				app.Uninstall(t, app.Httpbin(ns.Foo))
+				oc.DeleteFromTemplate(t, meshNamespace, networkPolicy, map[string]string{"namespace": meshNamespace})
+				oc.DeleteFromTemplate(t, meshNamespace, meshTmpl, meshValues)
+			})
 
-		t.LogStep("Deploy httpbin")
-		app.InstallAndWaitReady(t, app.Httpbin(ns.Foo))
-		oc.WaitPodsExist(t, ns.Foo)
-		oc.WaitAllPodsReady(t, ns.Foo)
+			t.LogStep("Deploying SMCP")
+			meshValues["manageNetworkPolicy"] = "true"
+			oc.ApplyTemplate(t, meshNamespace, meshTmpl, meshValues)
+			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
-		t.LogStep("Apply Prometheus monitors")
-		oc.ApplyString(t, meshNamespace, istiodMonitor)
-		oc.ApplyString(t, ns.Foo, istioProxyMonitor)
+			waitKialiAndVerifyIsReconciled(t)
 
-		t.LogStep("Generate some ingress traffic")
-		oc.ApplyFile(t, ns.Foo, "https://raw.githubusercontent.com/maistra/istio/maistra-2.4/samples/httpbin/httpbin-gateway.yaml")
-		httpbinURL := fmt.Sprintf("http://%s/headers", istio.GetIngressGatewayHost(t, meshNamespace))
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			curl.Request(t, httpbinURL, nil, assert.ResponseStatus(http.StatusOK))
+			t.LogStep("Enable Prometheus telemetry")
+			oc.ApplyString(t, meshNamespace, enableTrafficMetrics)
+
+			t.LogStep("Deploy httpbin")
+			app.InstallAndWaitReady(t, app.Httpbin(ns.Foo))
+			oc.WaitPodsExist(t, ns.Foo)
+			oc.WaitAllPodsReady(t, ns.Foo)
+
+			t.LogStep("Deploying NetworkPolicy")
+			oc.ApplyTemplate(t, meshNamespace, networkPolicy, map[string]string{"namespace": meshNamespace})
+			oc.ApplyTemplate(t, ns.Foo, networkPolicy, map[string]string{"namespace": ns.Foo})
+
+			t.LogStep("Apply Prometheus monitors")
+			oc.ApplyString(t, meshNamespace, istiodMonitor)
+			oc.ApplyString(t, ns.Foo, istioProxyMonitor)
+
+			generateTrafficAndcheckMetrics(t, thanosToken)
 		})
-
-		t.LogStep("Check istiod metrics")
-		checkMetricExists(t, meshNamespace, "pilot_info", thanosToken)
-
-		t.LogStep("Check httpbin metrics")
-		checkMetricExists(t, ns.Foo, "istio_requests_total", thanosToken)
 	})
+}
+
+func waitKialiAndVerifyIsReconciled(t test.TestHelper) {
+	t.LogStep("Wait until Kiali is ready")
+	oc.WaitCondition(t, meshNamespace, "Kiali", kialiName, "Successful")
+
+	t.LogStep("Verify that Kiali was reconciled by Istio Operator")
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		output := shell.Executef(t, "oc get kiali %s -n %s -o jsonpath='{.spec.deployment.accessible_namespaces}'", kialiName, meshNamespace)
+		if output != fmt.Sprintf(`["%s"]`, ns.Foo) {
+			t.Errorf(`unexpected accessible namespaces: got '%s', expected: '["%s"]'`, output, ns.Foo)
+		}
+	})
+}
+
+func generateTrafficAndcheckMetrics(t test.TestHelper, thanosToken string) {
+	t.LogStep("Generate some ingress traffic")
+	oc.ApplyFile(t, ns.Foo, "https://raw.githubusercontent.com/maistra/istio/maistra-2.4/samples/httpbin/httpbin-gateway.yaml")
+	httpbinURL := fmt.Sprintf("http://%s/headers", istio.GetIngressGatewayHost(t, meshNamespace))
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		curl.Request(t, httpbinURL, nil, assert.ResponseStatus(http.StatusOK))
+	})
+
+	t.LogStep("Check istiod metrics")
+	checkMetricExists(t, meshNamespace, "pilot_info", thanosToken)
+
+	t.LogStep("Check httpbin metrics")
+	checkMetricExists(t, ns.Foo, "istio_requests_total", thanosToken)
 }
 
 func checkMetricExists(t test.TestHelper, ns, metricName, token string) {
