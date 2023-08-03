@@ -191,7 +191,10 @@ func (o OC) createSecretOrConfigMapFromFiles(t test.TestHelper, ns string, kind 
 		if kind == "secret generic" {
 			k = "secret"
 		}
-		o.DeleteResource(t, ns, k, name)
+		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(5).LogAttempts(false), func(t test.TestHelper) {
+			t.T().Helper()
+			o.DeleteResource(t, ns, k, name)
+		})
 		cmd := fmt.Sprintf(`oc create %s %s -n %s `, kind, name, ns)
 		for _, file := range files {
 			cmd += fmt.Sprintf(" --from-file=%s", file)
