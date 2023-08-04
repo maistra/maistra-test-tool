@@ -10,8 +10,10 @@ import (
 )
 
 var (
-	smcpName      = env.GetDefaultSMCPName()
-	meshNamespace = env.GetDefaultMeshNamespace()
+	smcpName                 = env.GetDefaultSMCPName()
+	meshNamespace            = env.GetDefaultMeshNamespace()
+	monitoringNs             = "openshift-monitoring"
+	userWorkloadMonitoringNs = "openshift-user-workload-monitoring"
 
 	//go:embed yaml/cluster-monitoring-config.tmpl.yaml
 	clusterMonitoringConfigTmpl string
@@ -25,8 +27,14 @@ var (
 	//go:embed yaml/istio-proxy-monitor.yaml
 	istioProxyMonitor string
 
+	//go:embed yaml/federated-monitor.yaml
+	federatedMonitor string
+
 	//go:embed yaml/mesh.tmpl.yaml
 	meshTmpl string
+
+	//go:embed yaml/federated-monitoring-mesh.tmpl.yaml
+	federatedMonitoringMeshTmpl string
 
 	//go:embed yaml/kiali-user-workload-monitoring.tmpl.yaml
 	kialiUserWorkloadMonitoringTmpl string
