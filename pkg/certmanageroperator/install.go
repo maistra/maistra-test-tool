@@ -51,8 +51,8 @@ func Uninstall(t test.TestHelper) {
 }
 
 func certManagerOperatorExists(t test.TestHelper) bool {
-	output := shell.Execute(t, fmt.Sprintf("oc get csv %s -n cert-manager-operator -o name||true", certmanagerVersion))
-	return !strings.Contains(output, "NotFound")
+	output := shell.Execute(t, fmt.Sprintf(`oc get csv -A -o custom-columns="NAME:.metadata.name,REPLACES:.spec.replaces" |grep %s`, certmanagerVersion))
+	return strings.Contains(output, certmanagerVersion)
 }
 
 func installOperator(t test.TestHelper) {
@@ -66,13 +66,13 @@ func installOperator(t test.TestHelper) {
 func waitOperatorSucceded(t test.TestHelper, certManagerOperatorNs string) {
 	t.Log("Waiting for cert-manager-operator to succeed")
 	// When the operator is installed, the CSV take some time to be created, need to wait until is created to validate the phase
-	retry.UntilSuccess(t, func(t test.TestHelper) {
+	retry.UntilSuccessWithOptions(t, retry.Options().DelayBetweenAttempts(5*time.Second).MaxAttempts(60), func(t test.TestHelper) {
 		if !certManagerOperatorExists(t) {
 			t.Error("cert-manager-operator is not yet installed")
 		}
 	})
 
 	oc.WaitForPhase(t, certManagerOperatorNs, "csv", certmanagerVersion, "Succeeded")
-	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(4*time.Second), pod.MatchingSelector("name=cert-manager-operator", certManagerOperatorNs))
-	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(4*time.Second), pod.MatchingSelector("app=cert-manager", certManagerNs))
+	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector("name=cert-manager-operator", certManagerOperatorNs))
+	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector("app=cert-manager", certManagerNs))
 }
