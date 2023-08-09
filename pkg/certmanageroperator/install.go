@@ -51,7 +51,7 @@ func Uninstall(t test.TestHelper) {
 }
 
 func certManagerOperatorExists(t test.TestHelper) bool {
-	output := shell.Execute(t, fmt.Sprintf(`oc get csv -A -o custom-columns="NAME:.metadata.name,REPLACES:.spec.replaces" |grep %s`, certmanagerVersion))
+	output := shell.Execute(t, fmt.Sprintf(`oc get csv -A -o custom-columns="NAME:.metadata.name,REPLACES:.spec.replaces" |grep %s ||true`, certmanagerVersion))
 	return strings.Contains(output, certmanagerVersion)
 }
 
