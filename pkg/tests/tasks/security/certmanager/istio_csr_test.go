@@ -112,7 +112,7 @@ func TestIstioCsr(t *testing.T) {
 		})
 
 		t.LogStep("Check mTLS traffic from ingress gateway to httpbin")
-		oc.ApplyFile(t, ns.Foo, "https://raw.githubusercontent.com/maistra/istio/maistra-2.4/samples/httpbin/httpbin-gateway.yaml")
+		oc.ApplyFile(t, ns.Foo, "https://raw.githubusercontent.com/maistra/istio/maistra-2.5/samples/httpbin/httpbin-gateway.yaml")
 		httpbinURL := fmt.Sprintf("http://%s/headers", istio.GetIngressGatewayHost(t, meshNamespace))
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			curl.Request(t, httpbinURL, nil, assert.ResponseStatus(http.StatusOK))
