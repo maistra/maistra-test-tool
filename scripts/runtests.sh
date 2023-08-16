@@ -2,7 +2,7 @@
 
 set -e
 
-OPERATOR_VERSION=${OPERATOR_VERSION:-"2.4.0"}
+OPERATOR_VERSION=${OPERATOR_VERSION:-"2.5.0"}
 OPERATOR_VERSION="${OPERATOR_VERSION#v}" # remove "v" prefix if necessary
 
 echo "OSSM Operator version is $OPERATOR_VERSION"
@@ -10,7 +10,8 @@ echo "OSSM Operator version is $OPERATOR_VERSION"
 case "$OPERATOR_VERSION" in
     2.3.*) SUPPORTED_VERSIONS=("v2.1" "v2.2" "v2.3") ;;
     2.4.*) SUPPORTED_VERSIONS=("v2.2" "v2.3" "v2.4") ;;
-    *) echo "ERROR: unknown operator version: $OPERATOR_VERSION; expect either 2.3.x or 2.4.x"; exit 1 ;;
+    2.5.*) SUPPORTED_VERSIONS=("v2.3" "v2.4" "v2.5") ;;
+    *) echo "ERROR: unknown operator version: $OPERATOR_VERSION; expect either 2.3.x, 2.4.x or 2.5.x"; exit 1 ;;
 esac
 
 log() {

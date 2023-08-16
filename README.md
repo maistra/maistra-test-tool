@@ -56,11 +56,11 @@ This command runs the entire test suite against the minimum supported `ServiceMe
 
 #### Running against a specific Operator version
 
-By default, maistra-test-tool assumes that the OSSM Operator version is `2.4.0` and runs tests against the `v2.2`, `v2.3`, and `v2.4` version of the ServiceMeshControlPlane.
-To run against the '2.3.x' version of the Operator, run the tests with the `OPERATOR_VERSION` environment variable set to `2.3.x`. For example, for Operator version `2.3.3`, run the tests as follows:
+By default, maistra-test-tool assumes that the OSSM Operator version is `2.5.0` and runs tests against the `v2.3`, `v2.4`, and `v2.5` version of the ServiceMeshControlPlane.
+To run against the '2.4.x' version of the Operator, run the tests with the `OPERATOR_VERSION` environment variable set to `2.4.x`. For example, for Operator version `2.4.2`, run the tests as follows:
 
 ```console
-OPERATOR_VERSION=2.3.3 make test
+OPERATOR_VERSION=2.4.2 make test
 ```
 
 ### Running a group of tests
