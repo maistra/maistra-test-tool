@@ -43,6 +43,7 @@ runTestsAgainstVersion() {
                 log "      Please make sure the image is accessible from the disconnected environment doing the correct mirroring"
                 log "      and the host is correct"
                 log "      the current dir is $PWD"
+                log "      list of files in the current dir: $(ls -la)"
                 sed -i '' "s;quay.io/maistra/examples;${BASTION_HOST}:55555/maistra/examples;g" images.yaml
                 sed -i '' "s;quay.io/openshifttest/;${BASTION_HOST}:55555/openshifttest/;g" images.yaml
             fi
