@@ -44,8 +44,8 @@ runTestsAgainstVersion() {
                 log "      and the host is correct"
                 log "      the current dir is $PWD"
                 log "      list of files in the current dir: $(ls -la)"
-                sed -i '' "s;quay.io/maistra/examples;${BASTION_HOST}:55555/maistra/examples;g" images.yaml
-                sed -i '' "s;quay.io/openshifttest/;${BASTION_HOST}:55555/openshifttest/;g" images.yaml
+                sed -i "s|quay.io/maistra/examples|${BASTION_HOST}:55555/maistra/examples|g" images.yaml
+                sed -i "s|qquay.io/openshifttest/|${BASTION_HOST}:55555/openshifttest/|g" images.yaml
             fi
         else
             logHeader "Executing all tests against SMCP $SMCP_VERSION"
