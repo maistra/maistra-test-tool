@@ -72,6 +72,8 @@ For example, to run the tests in the `smoke` group, run the following command:
 TEST_GROUP=smoke make test
 ```
 
+Take in count that when you set `disconnected` as `TEST_GROUP`, the test will need to pass also the bastion host using this variable: `BASTION_HOST`, if you don't set it, the test will fail because the repleace of the image will fail.
+
 See [pkg/util/test/test.go](pkg/util/test/test.go#L13-L18) for a list of available test groups.
 
 ### Running a single test case
