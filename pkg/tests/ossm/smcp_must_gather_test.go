@@ -32,7 +32,7 @@ import (
 )
 
 func TestMustGather(t *testing.T) {
-	NewTest(t).Id("T30").Groups(Full, Disconnected).Run(func(t TestHelper) {
+	NewTest(t).Id("T30").Groups(Full).Run(func(t TestHelper) {
 		t.Log("This test verifies must-gather log collection")
 
 		ns := "bookinfo"

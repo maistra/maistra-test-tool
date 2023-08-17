@@ -38,6 +38,14 @@ runTestsAgainstVersion() {
     if [ -z "$TEST_CASE" ]; then
         if [ -n "$TEST_GROUP" ]; then
             logHeader "Executing tests in group '$TEST_GROUP' against SMCP $SMCP_VERSION"
+            if [ "$TEST_GROUP" = "disconnected" ]; then
+                log "NOTE: The script will modify the host of the image to be deployed in the ../images.yaml file"
+                log "      Please make sure the image is accessible from the disconnected environment doing the correct mirroring"
+                log "      and the host is correct"
+                sed -i '' "s;quay.io/maistra/examples;${BASTION_HOST}:55555/maistra/examples;g" images.yaml
+                sed -i '' "s;quay.io/openshifttest/;${BASTION_HOST}:55555/openshifttest/;g" images.yaml
+                ## bastion.fhdisc.maistra.upshift.redhat.com:55555/openshifttest/sleep:multiarch
+            fi
         else
             logHeader "Executing all tests against SMCP $SMCP_VERSION"
         fi
