@@ -77,7 +77,7 @@ func (t *topLevelTest) Run(f func(t TestHelper)) {
 		t.t.Log()
 		if th.Failed() {
 			t.t.Logf("Test failed in %.2fs (excluding cleanup)", time.Now().Sub(start).Seconds())
-			if env.MustGatherEnable() {
+			if env.IsMustGatherEnabled() {
 				captureMustGather(t.t)
 			}
 		} else {

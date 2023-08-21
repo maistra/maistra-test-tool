@@ -25,7 +25,7 @@ func (t subTest) Run(f func(t TestHelper)) {
 			t.Log()
 			if th.Failed() {
 				t.Logf("Subtest failed in %.2fs (excluding cleanup)", time.Now().Sub(start).Seconds())
-				if env.MustGatherEnable() {
+				if env.IsMustGatherEnabled() {
 					captureMustGather(t)
 				}
 			} else {
