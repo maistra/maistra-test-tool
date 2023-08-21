@@ -39,8 +39,9 @@ runTestsAgainstVersion() {
         if [ -n "$TEST_GROUP" ]; then
             logHeader "Executing tests in group '$TEST_GROUP' against SMCP $SMCP_VERSION"
             if [ "$TEST_GROUP" = "disconnected" ]; then
-                if [ -n "$BASTION_HOST" ]; then
-                    echo "ERROR: must specify BASTION_USER env var when running disconnected tests"
+                if [ -z "$BASTION_HOST" ]; then
+                    echo "BASTION_HOST=$BASTION_HOST"
+                    echo "ERROR: must specify BASTION_HOST env var when running disconnected tests"
                     exit 1
                 fi
                 log "NOTE: The script will modify the host of the image to be deployed in the ../images.yaml file"
