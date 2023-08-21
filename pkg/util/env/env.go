@@ -69,6 +69,10 @@ func GetMustGatherTag() string {
 	return getenv("MUST_GATHER_TAG", "2.4")
 }
 
+func IsMustGatherEnabled() bool {
+	return getenv("MUST_GATHER", "true") == "true"
+}
+
 func GetKubeconfig() string {
 	return getenv("KUBECONFIG", "")
 }

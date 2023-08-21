@@ -3,6 +3,8 @@ package test
 import (
 	"testing"
 	"time"
+
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 )
 
 type subTest struct {
@@ -23,7 +25,9 @@ func (t subTest) Run(f func(t TestHelper)) {
 			t.Log()
 			if th.Failed() {
 				t.Logf("Subtest failed in %.2fs (excluding cleanup)", time.Now().Sub(start).Seconds())
-				captureMustGather(t)
+				if env.IsMustGatherEnabled() {
+					captureMustGather(t)
+				}
 			} else {
 				t.Logf("Subtest completed in %.2fs (excluding cleanup)", time.Now().Sub(start).Seconds())
 			}

@@ -134,6 +134,14 @@ To run tests on Red Hat Openshift Service on AWS (ROSA), set the `ROSA` environm
 ROSA=true make test
 ```
 
+### Disable must-gather for failed tests cases
+
+To disable must-gather run after each test case failure in the test run, set the `MUST_GATHER` environment variable to `false`. Take into count that if the variable does not exist by default it is set to `true`:
+
+```console
+MUST_GATHER=false make test
+```
+
 ### Running multi-cluster test cases
 
 The test suite contains both single- and multi-cluster test cases. 
