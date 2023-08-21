@@ -38,7 +38,7 @@ runTestsAgainstVersion() {
     if [ -z "$TEST_CASE" ]; then
         if [ -n "$TEST_GROUP" ]; then
             logHeader "Executing tests in group '$TEST_GROUP' against SMCP $SMCP_VERSION"
-            if [ "$TEST_GROUP" = "disconnected" ]; then
+            if [ "$TEST_GROUP" = "disconnected" ] && [ -n "$BASTION_HOST" ]; then
                 log "NOTE: The script will modify the host of the image to be deployed in the ../images.yaml file"
                 log "      Please make sure the image is accessible from the disconnected environment doing the correct mirroring"
                 log "      and the host is correct"
