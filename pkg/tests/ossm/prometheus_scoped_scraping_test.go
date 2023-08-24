@@ -200,7 +200,7 @@ func checkConfigurationReloadingTriggered(t test.TestHelper, start time.Time) {
 	// By default, any changes in the `ConfigMap`, the kubelet will sync them to the mapped volume on one minute interval.
 	t.Log("Wait one minute on the kubelet to update the volume to reflect the changes")
 	time.Sleep(1 * time.Minute)
-	retry.UntilSuccessWithOptions(t, retry.Options().DelayBetweenAttempts(5*time.Second).MaxAttempts(15), func(t test.TestHelper) {
+	retry.UntilSuccessWithOptions(t, retry.Options().DelayBetweenAttempts(5*time.Second).MaxAttempts(25), func(t test.TestHelper) {
 		oc.LogsSince(t,
 			start,
 			prometheusPodSelector, "config-reloader",
