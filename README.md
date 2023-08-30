@@ -211,6 +211,65 @@ tests/
     └── output.log                  The full test log across all SMCP versions.
 ```
 
+## Help
+
+You can run `make help` to get the available commands.
+
+```console
+$ make help
+Usage: make <target>
+
+Available targets:
+  all               - build and run all tests
+  build             - build the test binary
+  check             - run all pre-commit checks
+  lint              - run all linters
+  lint-go           - run the Go linter
+  test              - run all tests
+  test-cleanup      - delete all test resources
+  Test<test-name>   - run the specified test
+  image             - build the container image
+  push              - push the container image to the registry
+  clean             - remove all generated files
+  test-groups       - list all test groups
+  test-groups-<group-name>
+                    - list all tests in the specified group
+  help              - print this help message
+```
+
+## Verify available testing groups
+
+You can run `make test-groups` to get the available testing groups.
+
+```console
+$ make test-groups
+Available test groups:
+
+ARM
+Full
+Smoke
+InterOp
+Disconnected
+
+Test group count: 5
+To run all tests in a group, use 'TEST_GROUP=<group-name> make test'
+```
+
+## Verify test packages that are part of a testing group
+
+You can run `make test-groups-<group-name>` to get the available test packages that are part of a testing group.
+
+```console
+$ make test-groups-Smoke
+Available tests in group 'Smoke':
+
+pkg/tests/tasks/traffic/request_routing_test.go
+pkg/tests/ossm/smoke_test.go
+
+Test package count in Test Group 'Smoke': 2
+To run all tests in group 'Smoke', use 'TEST_GROUP='Smoke' make test'
+```
+
 ## License
 
 [Maistra OpenShift Test Tool](https://github.com/maistra/maistra-test-tool) is [Apache 2.0 licensed](https://github.com/maistra/maistra-test-tool/blob/development/LICENSE)
