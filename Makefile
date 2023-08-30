@@ -48,3 +48,41 @@ push: image
 
 clean:
 	rm -rf tests/result-*
+
+test-groups:
+# Display all the test groups available in the test suite
+	@echo "Available test groups:"
+	@echo ""
+	@awk '/^	[a-zA-Z0-9_]+[ \t]+TestGroup =/ {gsub(/^[ \t]+/, "", $$1); gsub("\"", "", $$3); print $$1}' pkg/util/test/test.go
+	@echo ""
+	@echo "Test group count:" `awk '/^	[a-zA-Z0-9_]+[ \t]+TestGroup =/ {gsub(/^[ \t]+/, "", $$1); gsub("\"", "", $$3); print $$1}' pkg/util/test/test.go | wc -l`
+	@echo "To run all tests in a group, use 'TEST_GROUP=<group-name> make test'"
+
+test-groups-%:
+# Display all the tests in the specified test group
+	@echo "Available tests in group '$*':"
+	@echo ""
+	@find pkg/tests -name "*_test.go" -exec grep -El 'Groups\(.*$*' {} \;
+	@echo ""
+	@echo "Test package count in Test Group '$*':" `find pkg/tests -name "*_test.go" -exec grep -El 'Groups\(.*$*' {} \; | wc -l`
+	@echo "To run all tests in group '$*', use 'TEST_GROUP='$*' make test'"
+
+help:
+	@echo "Usage: make <target>"
+	@echo ""
+	@echo "Available targets:"
+	@echo "  all               - build and run all tests"
+	@echo "  build             - build the test binary"
+	@echo "  check             - run all pre-commit checks"
+	@echo "  lint              - run all linters"
+	@echo "  lint-go           - run the Go linter"
+	@echo "  test              - run all tests"
+	@echo "  test-cleanup      - delete all test resources"
+	@echo "  Test<test-name>   - run the specified test"
+	@echo "  image             - build the container image"
+	@echo "  push              - push the container image to the registry"
+	@echo "  clean             - remove all generated files"
+	@echo "  test-groups       - list all test groups"
+	@echo "  test-groups-<group-name>"
+	@echo "                    - list all tests in the specified group"
+	@echo "  help              - print this help message"
