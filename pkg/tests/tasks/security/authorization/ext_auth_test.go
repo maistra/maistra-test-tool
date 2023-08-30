@@ -139,13 +139,12 @@ func TestEnvoyExtAuthzGrpcExtensionProvider(t *testing.T) {
 		if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_3) {
 			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
 spec:
-  techPreview:
-    meshConfig:
-      extensionProviders:
+  meshConfig:
+    extensionProviders:
       - name: sample-ext-authz-grpc
         envoyExtAuthzGrpc:
           includeRequestHeadersInCheck:
-          - x-ext-authz
+            - x-ext-authz
           port: "9000"
           service: ext-authz.foo.svc.cluster.local`)
 
