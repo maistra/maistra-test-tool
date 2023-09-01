@@ -16,7 +16,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func TestAlpnFilterDisabledForNonIstioTraffic(t *testing.T) {
+func TestAlpnFilterDisabledForNonIstioMtls(t *testing.T) {
 	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
 
 		t.Cleanup(func() {
@@ -34,7 +34,7 @@ func TestAlpnFilterDisabledForNonIstioTraffic(t *testing.T) {
 		app.InstallAndWaitReady(t, app.Nginx(ns.Foo))
 		oc.CreateTLSSecret(t, meshNamespace, "nginx-server-certs", env.GetRootDir()+"/sampleCerts/nginx.example.com/nginx.example.com.key", env.GetRootDir()+"/sampleCerts/nginx.example.com/nginx.example.com.crt")
 
-		templParamSets := []nginx_ingressgateway_yaml_tmpl_params{
+		templParamSets := []nginxIngressgatewayYamlTmplParams{
 			{
 				Ns:                ns.Foo,
 				Subset:            false,
@@ -62,11 +62,11 @@ func TestAlpnFilterDisabledForNonIstioTraffic(t *testing.T) {
 			t.NewSubTest(fmt.Sprintf("Testing connection through gateway with parameters: %+v", tmplParam)).Run(func(t test.TestHelper) {
 
 				t.Cleanup(func() {
-					oc.DeleteFromTemplate(t, ns.Foo, nginx_ingressgateway_yaml_tmpl, tmplParam)
+					oc.DeleteFromTemplate(t, ns.Foo, nginxIngressgatewayYamlTmpl, tmplParam)
 				})
 
 				t.Log(fmt.Sprintf("Applying gateway, virtual service, and destination rule for the nginx app using parameters: %+v", tmplParam))
-				oc.ApplyTemplate(t, ns.Foo, nginx_ingressgateway_yaml_tmpl, tmplParam)
+				oc.ApplyTemplate(t, ns.Foo, nginxIngressgatewayYamlTmpl, tmplParam)
 
 				retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(15).DelayBetweenAttempts(time.Second), func(t test.TestHelper) {
 
@@ -82,13 +82,13 @@ func TestAlpnFilterDisabledForNonIstioTraffic(t *testing.T) {
 	})
 }
 
-type nginx_ingressgateway_yaml_tmpl_params struct {
+type nginxIngressgatewayYamlTmplParams struct {
 	Ns                string
 	Subset            bool
 	PortLevelSettings bool
 }
 
-var nginx_ingressgateway_yaml_tmpl = `
+var nginxIngressgatewayYamlTmpl = `
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
