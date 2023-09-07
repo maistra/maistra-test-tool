@@ -136,7 +136,25 @@ func TestEnvoyExtAuthzGrpcExtensionProvider(t *testing.T) {
 		oc.WaitDeploymentRolloutComplete(t, ns, "ext-authz")
 
 		t.LogStep("Set envoyExtAuthzgRPC extension provider in SMCP")
-		if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_3) {
+		if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
+			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
+spec:
+  techPreview:
+    meshConfig:
+      extensionProviders:
+        - name: sample-ext-authz-grpc
+          envoyExtAuthzGrpc:
+            includeRequestHeadersInCheck:
+              - x-ext-authz
+            port: "9000"
+            service: ext-authz.foo.svc.cluster.local`)
+
+			t.Cleanup(func() {
+				oc.Patch(t, meshNamespace, "smcp", smcpName, "json",
+					`[{"op": "remove", "path": "/spec/techPreview"}]`)
+			})
+
+		} else {
 			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
 spec:
   meshConfig:
@@ -145,14 +163,13 @@ spec:
         envoyExtAuthzGrpc:
           includeRequestHeadersInCheck:
             - x-ext-authz
-          port: "9000"
+          port: 9000
           service: ext-authz.foo.svc.cluster.local`)
 
 			t.Cleanup(func() {
 				oc.Patch(t, meshNamespace, "smcp", smcpName, "json",
-					`[{"op": "remove", "path": "/spec/techPreview"}]`)
+					`[{"op": "remove", "path": "/spec/meshConfig"}]`)
 			})
-
 		}
 
 		t.LogStep("Deploy the external authorization in the Authorization policy")
