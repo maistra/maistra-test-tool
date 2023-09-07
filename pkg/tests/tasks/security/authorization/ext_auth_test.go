@@ -136,7 +136,7 @@ func TestEnvoyExtAuthzGrpcExtensionProvider(t *testing.T) {
 		oc.WaitDeploymentRolloutComplete(t, ns, "ext-authz")
 
 		t.LogStep("Set envoyExtAuthzgRPC extension provider in SMCP")
-		if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
+		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
 			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
 spec:
   techPreview:
