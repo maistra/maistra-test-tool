@@ -1,49 +1,49 @@
 # This file contains all the images used in maistra-test-tool (for each architecture).
 
 bookinfo-mongodb:
-  x86: quay.io/maistra/examples-bookinfo-mongodb:2.4.0
+  x86: quay.io/maistra/examples-bookinfo-mongodb:2.3.0
   arm: quay.io/maistra/examples-bookinfo-mongodb:2.4.0
   p: quay.io/maistra/examples-bookinfo-mongodb:2.1.0-ibm-p
   z: quay.io/maistra/examples-bookinfo-mongodb:2.1-z
 
 bookinfo-productpage-v1:
-  x86: quay.io/maistra/examples-bookinfo-productpage-v1:2.4.0
+  x86: quay.io/maistra/examples-bookinfo-productpage-v1:2.3.0
   arm: quay.io/maistra/examples-bookinfo-productpage-v1:2.4.0
   p: quay.io/maistra/examples-bookinfo-productpage-v1:2.1.0-ibm-p
   z: quay.io/maistra/examples-bookinfo-productpage-v1:2.1-z
 
 bookinfo-details-v1:
-  x86: quay.io/maistra/examples-bookinfo-details-v1:2.4.0
+  x86: quay.io/maistra/examples-bookinfo-details-v1:2.3.0
   arm: quay.io/maistra/examples-bookinfo-details-v1:2.4.0
   p: quay.io/maistra/examples-bookinfo-details-v1:2.1.0-ibm-p
   z: quay.io/maistra/examples-bookinfo-details-v1:2.1-z
 
 bookinfo-ratings-v1:
-  x86: quay.io/maistra/examples-bookinfo-ratings-v1:2.4.0
+  x86: quay.io/maistra/examples-bookinfo-ratings-v1:2.3.0
   arm: quay.io/maistra/examples-bookinfo-ratings-v1:2.4.0
   p: quay.io/maistra/examples-bookinfo-ratings-v1:2.1.0-ibm-p
   z: quay.io/maistra/examples-bookinfo-ratings-v1:2.1-z
 
 bookinfo-ratings-v2:
-  x86: quay.io/maistra/examples-bookinfo-ratings-v2:2.4.0
+  x86: quay.io/maistra/examples-bookinfo-ratings-v2:2.3.0
   arm: quay.io/maistra/examples-bookinfo-ratings-v2:2.4.0
   p: quay.io/maistra/examples-bookinfo-ratings-v2:2.1.0-ibm-p
   z: quay.io/maistra/examples-bookinfo-ratings-v2:2.1-z
 
 bookinfo-reviews-v1:
-  x86: quay.io/maistra/examples-bookinfo-reviews-v1:2.4.0
+  x86: quay.io/maistra/examples-bookinfo-reviews-v1:2.3.0
   arm: quay.io/maistra/examples-bookinfo-reviews-v1:2.4.0
   p: quay.io/maistra/examples-bookinfo-reviews-v1:2.1.0-ibm-p
   z: quay.io/maistra/examples-bookinfo-reviews-v1:2.1-z
 
 bookinfo-reviews-v2:
-  x86: quay.io/maistra/examples-bookinfo-reviews-v2:2.4.0
+  x86: quay.io/maistra/examples-bookinfo-reviews-v2:2.3.0
   arm: quay.io/maistra/examples-bookinfo-reviews-v2:2.4.0
   p: quay.io/maistra/examples-bookinfo-reviews-v2:2.1.0-ibm-p
   z: quay.io/maistra/examples-bookinfo-reviews-v2:2.1-z
 
 bookinfo-reviews-v3:
-  x86: quay.io/maistra/examples-bookinfo-reviews-v3:2.4.0
+  x86: quay.io/maistra/examples-bookinfo-reviews-v3:2.3.0
   arm: quay.io/maistra/examples-bookinfo-reviews-v3:2.4.0
   p: quay.io/maistra/examples-bookinfo-reviews-v3:2.1.0-ibm-p
   z: quay.io/maistra/examples-bookinfo-reviews-v3:2.1-z
