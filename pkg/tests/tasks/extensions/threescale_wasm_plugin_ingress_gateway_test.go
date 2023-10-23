@@ -20,7 +20,7 @@ import (
 	"testing"
 )
 
-func TestThreeScaleWasmPlugin(t *testing.T) {
+func TestThreeScaleWasmPluginIngressGateway(t *testing.T) {
 	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Foo)
