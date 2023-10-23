@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: 3scale
+  labels:
+    3scale: backend
+spec:
+  selector:
+    matchLabels:
+      3scale: backend
+  template:
+    metadata:
+      labels:
+        3scale: backend
+    spec:
+      containers:
+      - name: wiremock
+        image: rbillon59/wiremock-loadtest:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: wiremock-mapping
+          mountPath: /home/wiremock/mappings
+      volumes:
+      - name: wiremock-mapping
+        configMap:
+          name: wiremock-mapping-3scale-backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: 3scale
+  labels:
+    3scale: backend
+spec:
+  type: ClusterIP
+  selector:
+    3scale: backend
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+# This is a mock response for 3scale backend API, which is called on plugin initialization to fetch a configuration for specified services.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wiremock-mapping-3scale-backend
+  namespace: 3scale
+data:
+  static.json: |
+    {
+      "request": {
+        "method": "GET",
+        "url": "/transactions/authrep.xml?service_id=123&service_token=3d3bfe783a66ad7576c2389d4a8623ea613cc5146dce2e603b001ccac17e36f8&user_key=bar&usage[hits]=1"
+      },
+      "response": {
+        "status": 200
+      }
+    }

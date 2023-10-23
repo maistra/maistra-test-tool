@@ -1,0 +1,48 @@
+apiVersion: extensions.istio.io/v1alpha1
+kind: WasmPlugin
+metadata:
+  name: 3scale-plugin-for-ingress-gateway
+  namespace: istio-system
+spec:
+  url: oci://quay.io/3scale/threescale-wasm-auth:0.0.4
+  phase: AUTHZ
+  selector:
+    matchLabels:
+      istio: ingressgateway
+  pluginConfig:
+    api: v1
+    system:
+      name: 3scale-system
+      upstream:
+        name: outbound|80||system.3scale.svc.cluster.local
+        url: http://system.3scale.svc.cluster.local
+        timeout: 5000
+      token: abc
+    backend:
+      name: 3scale-backend
+      upstream:
+        name: outbound|80||backend.3scale.svc.cluster.local
+        url: http://backend.3scale.svc.cluster.local
+        timeout: 5000
+      extensions:
+      - no_body
+    services:
+    - id: '123'
+      authorities:
+      - "*"
+      # At least user_key or app_id must be specified here.
+      credentials:
+        user_key:
+        # Operation `filter` populates credential based on Envoy filters metadata.
+        # In this case, metadata will come from `envoy.filters.http.jwt_authn` filter.
+        - filter:
+            path:
+            - envoy.filters.http.jwt_authn
+            - "0"
+            # JWT token used in the tests contains one custom claim `"foo":"bar"`
+            # and this claim is used in the test to populate user_key.
+            keys:
+            - foo
+            ops:
+            - take:
+                head: 1
