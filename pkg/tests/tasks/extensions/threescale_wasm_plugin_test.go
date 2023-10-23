@@ -16,18 +16,12 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/request"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
-	"github.com/maistra/maistra-test-tool/pkg/util/version"
 
 	"testing"
 )
 
 func TestThreeScaleWasmPlugin(t *testing.T) {
 	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
-		smcpVer := env.GetSMCPVersion()
-		if !smcpVer.Equals(version.SMCP_2_4) {
-			t.Skip("This test is only relevant for v2.4")
-		}
-
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Foo)
 			oc.RecreateNamespace(t, meshNamespace)
@@ -36,7 +30,7 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 
 		meshValues := map[string]string{
 			"Name":    smcpName,
-			"Version": smcpVer.String(),
+			"Version": env.GetSMCPVersion().String(),
 			"Member":  ns.Foo,
 		}
 
