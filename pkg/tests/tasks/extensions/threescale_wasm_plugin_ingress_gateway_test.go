@@ -34,6 +34,10 @@ func TestThreeScaleWasmPluginIngressGateway(t *testing.T) {
 			"Member":  ns.Foo,
 		}
 
+		t.LogStep("Deploying SMCP")
+		oc.ApplyTemplate(t, meshNamespace, meshTmpl, meshValues)
+		oc.WaitSMCPReady(t, meshNamespace, smcpName)
+
 		t.LogStep("Deploying 3scale mocks")
 		oc.CreateNamespace(t, threeScaleNs)
 		oc.ApplyString(t, threeScaleNs, threeScaleBackend)
@@ -41,10 +45,6 @@ func TestThreeScaleWasmPluginIngressGateway(t *testing.T) {
 		oc.ApplyString(t, threeScaleNs, threeScaleSystem)
 		oc.ApplyString(t, meshNamespace, threeScaleSystemSvcEntry)
 		oc.WaitAllPodsReady(t, threeScaleNs)
-
-		t.LogStep("Deploying SMCP")
-		oc.ApplyTemplate(t, meshNamespace, meshTmpl, meshValues)
-		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Configuring authz and authn")
 		oc.ApplyString(t, meshNamespace, authentication.JWTAuthPolicyForIngressGateway)
