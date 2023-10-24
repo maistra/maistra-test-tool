@@ -172,9 +172,9 @@ func TestAuthPolicy(t *testing.T) {
 			})
 
 			t.LogStep("Apply a JWT policy")
-			oc.ApplyString(t, meshNamespace, JWTAuthPolicyForIngressGateway)
+			oc.ApplyString(t, meshNamespace, JWTAuthPolicy)
 			t.Cleanup(func() {
-				oc.DeleteFromString(t, meshNamespace, JWTAuthPolicyForIngressGateway)
+				oc.DeleteFromString(t, meshNamespace, JWTAuthPolicy)
 			})
 
 			t.LogStep("Check whether request without token returns 200")
@@ -344,6 +344,20 @@ spec:
         port:
           number: 8000
         host: httpbin.foo.svc.cluster.local
+`
+
+	JWTAuthPolicy = `
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: jwt-example
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway
+  jwtRules:
+  - issuer: testing@secure.istio.io
+    jwksUri: https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/jwks.json
 `
 
 	RequireTokenPolicy = `

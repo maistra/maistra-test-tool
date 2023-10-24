@@ -14,27 +14,11 @@
 
 package authentication
 
-const (
-	PeerAuthenticationMTLSStrict = `
+const PeerAuthenticationMTLSStrict = `
 apiVersion: security.istio.io/v1beta1
 kind: PeerAuthentication
 metadata:
   name: default
 spec:
   mtls:
-    mode: STRICT
-`
-	JWTAuthPolicyForIngressGateway = `
-apiVersion: security.istio.io/v1beta1
-kind: RequestAuthentication
-metadata:
-  name: jwt-filter-for-ingress-gateway
-spec:
-  selector:
-    matchLabels:
-      istio: ingressgateway
-  jwtRules:
-  - issuer: testing@secure.istio.io
-    jwksUri: https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/jwks.json
-`
-)
+    mode: STRICT`
