@@ -2,22 +2,22 @@ package extensions
 
 import (
 	"fmt"
-	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
-	"github.com/maistra/maistra-test-tool/pkg/util/pod"
-	"github.com/maistra/maistra-test-tool/pkg/util/version"
 	"net/http"
 	"strings"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/request"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 
 	"testing"
 )
@@ -69,7 +69,7 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 		ingressGatewayHost := istio.GetIngressGatewayHost(t, meshNamespace)
 		headersURL := fmt.Sprintf("http://%s/headers", ingressGatewayHost)
 		token := string(curl.Request(t, tokenURL, nil))
-		token = strings.Trim(string(curl.Request(t, tokenURL, nil)), "\n")
+		token = strings.Trim(token, "\n")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			curl.Request(t, headersURL, request.WithHeader("Authorization", "Bearer "+token), require.ResponseStatus(http.StatusOK))
 		})
