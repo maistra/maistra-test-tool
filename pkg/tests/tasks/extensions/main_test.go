@@ -30,8 +30,11 @@ var (
 	//go:embed yaml/mesh.tmpl.yaml
 	meshTmpl string
 
-	//go:embed yaml/wasm-plugin-ingress-gateway.yaml
-	wasmPluginIngressGateway string
+	//go:embed yaml/jwt-authn.tmpl.yaml
+	jwtAuthnTmpl string
+
+	//go:embed yaml/wasm-plugin.tmpl.yaml
+	wasmPluginTmpl string
 )
 
 func TestMain(m *testing.M) {

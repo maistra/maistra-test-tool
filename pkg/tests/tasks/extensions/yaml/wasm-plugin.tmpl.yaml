@@ -1,14 +1,13 @@
 apiVersion: extensions.istio.io/v1alpha1
 kind: WasmPlugin
 metadata:
-  name: 3scale-plugin-for-ingress-gateway
-  namespace: istio-system
+  name: 3scale-plugin-{{ .AppLabel }}
 spec:
   url: oci://quay.io/3scale/threescale-wasm-auth:0.0.4
   phase: AUTHZ
   selector:
     matchLabels:
-      istio: ingressgateway
+      app: {{ .AppLabel }}
   pluginConfig:
     api: v1
     system:
