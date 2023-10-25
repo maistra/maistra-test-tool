@@ -1,0 +1,186 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: system
+  namespace: 3scale
+  labels:
+    3scale: system
+spec:
+  selector:
+    matchLabels:
+      3scale: system
+  template:
+    metadata:
+      labels:
+        3scale: system
+    spec:
+      containers:
+      - name: wiremock
+        image: wiremock/wiremock:3.2.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: wiremock-mapping
+          mountPath: /home/wiremock/mappings
+      volumes:
+      - name: wiremock-mapping
+        configMap:
+          name: wiremock-mapping-3scale-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: system
+  namespace: 3scale
+  labels:
+    3scale: system
+spec:
+  type: ClusterIP
+  selector:
+    3scale: system
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+# This is a mock response for 3scale admin API, which is called on plugin initialization to fetch a configuration for specified services.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wiremock-mapping-3scale-system
+  namespace: 3scale
+data:
+  static.json: |
+    {
+      "request": {
+        "method": "GET",
+        "url": "/admin/api/services/123/proxy/configs/production/latest.json?access_token=abc"
+      },
+      "response": {
+        "status": 200,
+        "jsonBody": {
+          "proxy_config": {
+            "id": 92726,
+            "version": 1,
+            "environment": "production",
+            "content": {
+              "id": 2555417777820,
+              "account_id": 2445582571513,
+              "name": "echo-api",
+              "oneline_description": null,
+              "description": "Echo API",
+              "txt_api": null,
+              "txt_support": null,
+              "txt_features": null,
+              "created_at": "2019-03-19T09:01:01Z",
+              "updated_at": "2019-03-19T09:04:29Z",
+              "logo_file_name": null,
+              "logo_content_type": null,
+              "logo_file_size": null,
+              "state": "incomplete",
+              "intentions_required": false,
+              "draft_name": "",
+              "infobar": null,
+              "terms": null,
+              "display_provider_keys": false,
+              "tech_support_email": null,
+              "admin_support_email": null,
+              "credit_card_support_email": null,
+              "buyers_manage_apps": true,
+              "buyers_manage_keys": true,
+              "custom_keys_enabled": true,
+              "buyer_plan_change_permission": "request",
+              "buyer_can_select_plan": false,
+              "notification_settings": null,
+              "default_application_plan_id": null,
+              "default_service_plan_id": null,
+              "default_end_user_plan_id": null,
+              "end_user_registration_required": true,
+              "tenant_id": 2445582571513,
+              "system_name": "echo-api",
+              "backend_version": "1",
+              "mandatory_app_key": true,
+              "buyer_key_regenerate_enabled": true,
+              "support_email": "joaquim@redhat.com",
+              "referrer_filters_required": false,
+              "deployment_option": "self_managed",
+              "kubernetes_service_link": null,
+              "proxiable?": true,
+              "backend_authentication_type": "service_token",
+              "backend_authentication_value": "3d3bfe783a66ad7576c2389d4a8623ea613cc5146dce2e603b001ccac17e36f8",
+              "proxy": {
+                "id": 124012,
+                "tenant_id": 2445582571513,
+                "service_id": 2555417777820,
+                "endpoint": "http://production.3scale.net:80",
+                "deployed_at": null,
+                "api_backend": "https://echo-api.3scale.net:443",
+                "auth_app_key": "app_key",
+                "auth_app_id": "app_id",
+                "auth_user_key": "api-key",
+                "credentials_location": "headers",
+                "error_auth_failed": "Authentication failed",
+                "error_auth_missing": "Authentication Missing",
+                "created_at": "2019-03-19T09:01:01Z",
+                "updated_at": "2019-03-19T09:04:29Z",
+                "error_status_auth_failed": 403,
+                "error_headers_auth_failed": "text/plain; charset=us-ascii",
+                "error_status_auth_missing": 401,
+                "error_headers_auth_missing": "text/plain; charset=us-ascii",
+                "error_no_match": "No Mapping Rule matched",
+                "error_status_no_match": 404,
+                "error_headers_no_match": "text/plain; charset=us-ascii",
+                "secret_token": "MySecretTokenBetweenApicastAndMyBackend_1237120312",
+                "hostname_rewrite": "",
+                "oauth_login_url": null,
+                "sandbox_endpoint": "http://staging.3scale.net:80",
+                "api_test_path": "/",
+                "api_test_success": null,
+                "apicast_configuration_driven": true,
+                "oidc_issuer_endpoint": null,
+                "lock_version": 3,
+                "authentication_method": "1",
+                "hostname_rewrite_for_sandbox": "echo-api.3scale.net",
+                "endpoint_port": 80,
+                "valid?": true,
+                "service_backend_version": "1",
+                "hosts": [
+                    "production.3scale.net",
+                    "staging.3scale.net"
+                ],
+                "backend": {
+                  "endpoint": "https://su1.3scale.net",
+                  "host": "su1.3scale.net"
+                },
+                "policy_chain": [
+                  {
+                    "name": "apicast",
+                    "version": "builtin",
+                    "configuration": {}
+                  }
+                ],
+                "proxy_rules": [
+                  {
+                    "id": 375837,
+                    "proxy_id": 124012,
+                    "http_method": "GET",
+                    "pattern": "/",
+                    "metric_id": 2555418191876,
+                    "metric_system_name": "hits",
+                    "delta": 1,
+                    "tenant_id": 2445582571513,
+                    "created_at": "2019-03-19T09:01:01Z",
+                    "updated_at": "2019-03-19T09:01:01Z",
+                    "redirect_url": null,
+                    "position": 1,
+                    "last": false,
+                    "parameters": [],
+                    "querystring_parameters": {}
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
