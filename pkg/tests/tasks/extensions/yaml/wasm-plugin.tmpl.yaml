@@ -8,6 +8,10 @@ spec:
   selector:
     matchLabels:
       app: {{ .AppLabel }}
+  {{ if .ServerMode }}
+  match:
+  - mode: SERVER
+  {{ end }}
   pluginConfig:
     api: v1
     system:
