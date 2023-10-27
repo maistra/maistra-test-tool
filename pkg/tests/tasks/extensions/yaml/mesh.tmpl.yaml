@@ -23,6 +23,14 @@ spec:
     accessLogging:
       file:
         name: /dev/stdout
+  {{ if .ApplyWasmPluginsToInboundOnly }}
+  runtime:
+    components:
+      pilot:
+        container:
+          env:
+            APPLY_WASM_PLUGINS_TO_INBOUND_ONLY: "true"
+  {{ end }}
   tracing:
     type: None
   version: {{ .Version }}

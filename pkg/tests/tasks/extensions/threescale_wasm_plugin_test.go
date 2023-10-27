@@ -34,14 +34,12 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 			oc.DeleteNamespace(t, threeScaleNs)
 		})
 
-		meshValues := map[string]string{
+		t.LogStep("Deploy SMCP")
+		oc.ApplyTemplate(t, meshNamespace, meshTmpl, map[string]string{
 			"Name":    smcpName,
 			"Version": env.GetSMCPVersion().String(),
 			"Member":  ns.Foo,
-		}
-
-		t.LogStep("Deploy SMCP")
-		oc.ApplyTemplate(t, meshNamespace, meshTmpl, meshValues)
+		})
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Deploy 3scale mocks")
@@ -88,11 +86,7 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 		app.InstallAndWaitReady(t, app.Sleep(ns.Foo))
 
 		t.LogStep("Verify that a request from sleep to httpbin with token returns 200")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			oc.Exec(t, pod.MatchingSelector("app=sleep", ns.Foo), "sleep",
-				fmt.Sprintf(`curl http://httpbin:8000/headers -H "Authorization: Bearer %s" -s -o /dev/null -w "%%{http_code}"`, token),
-				assert.OutputContains("200", "Received 200 as expected", "Received unexpected status code"))
-		})
+		sendRequestFromSleepToHttpbin(t, token, "200")
 
 		t.LogStep("Apply JWT config and 3scale plugin to sleep")
 		oc.ApplyTemplate(t, ns.Foo, jwtAuthnTmpl, map[string]interface{}{"AppLabel": "sleep"})
@@ -103,18 +97,32 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 			// JWT authentication filter is applied only to inbound listeners, so 3scale plugin configured
 			// to use JWT filter metadata always fails on outbound.
 			t.LogStep("Verify that a request from sleep to httpbin returns 403")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				oc.Exec(t, pod.MatchingSelector("app=sleep", ns.Foo), "sleep",
-					fmt.Sprintf(`curl http://httpbin:8000/headers -H "Authorization: Bearer %s" -s -o /dev/null -w "%%{http_code}"`, token),
-					assert.OutputContains("403", "Received 403 as expected", "Received unexpected status code"))
-			})
+			sendRequestFromSleepToHttpbin(t, token, "403")
+
+			if env.GetSMCPVersion().Equals(version.SMCP_2_3) {
+				t.LogStep("Set flag APPLY_WASM_PLUGINS_TO_INBOUND_ONLY in istiod and send a request again")
+				oc.ApplyTemplate(t, meshNamespace, meshTmpl, map[string]interface{}{
+					"Name":                          smcpName,
+					"Version":                       env.GetSMCPVersion().String(),
+					"Member":                        ns.Foo,
+					"ApplyWasmPluginsToInboundOnly": true,
+				})
+				oc.WaitSMCPReady(t, meshNamespace, smcpName)
+				sendRequestFromSleepToHttpbin(t, token, "200")
+			}
 		} else {
 			t.LogStep("Verify that a request from sleep to httpbin returns 200")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				oc.Exec(t, pod.MatchingSelector("app=sleep", ns.Foo), "sleep",
-					fmt.Sprintf(`curl http://httpbin:8000/headers -H "Authorization: Bearer %s" -s -o /dev/null -w "%%{http_code}"`, token),
-					assert.OutputContains("200", "Received 200 as expected", "Received unexpected status code"))
-			})
+			sendRequestFromSleepToHttpbin(t, token, "200")
 		}
+	})
+}
+
+func sendRequestFromSleepToHttpbin(t test.TestHelper, token, expectedHTTPStatus string) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		oc.Exec(t, pod.MatchingSelector("app=sleep", ns.Foo), "sleep",
+			fmt.Sprintf(`curl http://httpbin:8000/headers -H "Authorization: Bearer %s" -s -o /dev/null -w "%%{http_code}"`, token),
+			assert.OutputContains(expectedHTTPStatus,
+				fmt.Sprintf("Received %s as expected", expectedHTTPStatus),
+				"Received unexpected status code"))
 	})
 }
