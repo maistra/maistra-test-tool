@@ -34,6 +34,10 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 			oc.DeleteNamespace(t, threeScaleNs)
 		})
 
+		if env.GetArch() == "z" || env.GetArch() == "p" {
+			t.Skip("Web Assembly is not supported for IBM Z&P")
+		}
+
 		t.LogStep("Deploy SMCP")
 		oc.ApplyTemplate(t, meshNamespace, meshTmpl, map[string]string{
 			"Name":    smcpName,
