@@ -392,11 +392,15 @@ func (o OC) TaintNode(t test.TestHelper, name string, taints ...string) {
 	})
 }
 
+func (o OC) RemoveLabel(t test.TestHelper, ns string, kind string, name string, label string) {
+	o.Label(t, ns, kind, name, label+"-")
+}
+
 func (o OC) Label(t test.TestHelper, ns string, kind string, name string, labels string) {
 	t.T().Helper()
 	nsFlag := ""
 	if ns != "" {
-		nsFlag = "-n " + ns
+		nsFlag = fmt.Sprintf("-n %s ", ns)
 	}
 	o.withKubeconfig(t, func() {
 		t.T().Helper()

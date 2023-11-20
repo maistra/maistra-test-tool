@@ -52,9 +52,9 @@ func TestDeployOnInfraNodes(t *testing.T) {
 			oc.TaintNode(t, "-l node-role.kubernetes.io/infra",
 				"node-role.kubernetes.io/infra=reserved:NoSchedule-",
 				"node-role.kubernetes.io/infra=reserved:NoExecute-")
-			oc.Label(t, "", "node", workername, "node-role.kubernetes.io/infra-")
-			oc.Label(t, "", "node", workername, "node-role.kubernetes.io-")
-			//TODO: to improve this after merge this PR: https://github.com/maistra/maistra-test-tool/pull/597 we need to reuse waitOperatorSucceded and make that func available to all the code
+			oc.RemoveLabel(t, "", "node", workername, "node-role.kubernetes.io/infra")
+			oc.RemoveLabel(t, "", "node", workername, "node-role.kubernetes.io")
+			// TODO: to improve this after merge this PR: https://github.com/maistra/maistra-test-tool/pull/597 we need to reuse waitOperatorSucceded and make that func available to all the code
 			// Use waitOperatorSucceded will avoid flaky in this test case
 			locator := pod.MatchingSelector("name=istio-operator", "openshift-operators")
 			oc.WaitPodReady(t, locator)
