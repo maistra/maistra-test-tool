@@ -60,12 +60,26 @@ spec:
   techPreview:
     meshConfig:
       extensionProviders:
-      - name: sample-ext-authz-http
-        envoyExtAuthzHttp:
-          includeRequestHeadersInCheck:
-          - x-ext-authz
-          port: "8000"
-          service: ext-authz.foo.svc.cluster.local`)
+        - name: sample-ext-authz-http
+          envoyExtAuthzHttp:
+            headersToDownstreamOnDeny:
+              - set-cookie
+              - location
+            headersToDownstreamOnAllow:
+              - set-cookie
+              - location
+            headersToUpstreamOnAllow:
+              - location
+              - email
+              - authorization
+              - path
+              - x-auth-request-user
+              - x-auth-request-email
+              - x-auth-request-access-token
+            includeRequestHeadersInCheck:
+              - x-ext-authz
+            port: "8000"
+            service: ext-authz.foo.svc.cluster.local`)
 
 			t.Cleanup(func() {
 				oc.Patch(t, meshNamespace, "smcp", smcpName, "json",
@@ -77,12 +91,26 @@ spec:
 spec:
   meshConfig:
     extensionProviders:
-    - name: sample-ext-authz-http
-      envoyExtAuthzHttp:
-        includeRequestHeadersInCheck:
-        - x-ext-authz
-        port: 8000
-        service: ext-authz.foo.svc.cluster.local`)
+      - name: sample-ext-authz-http
+        envoyExtAuthzHttp:
+          headersToDownstreamOnDeny:
+            - set-cookie
+            - location
+          headersToDownstreamOnAllow:
+            - set-cookie
+            - location
+          headersToUpstreamOnAllow:
+            - location
+            - email
+            - authorization
+            - path
+            - x-auth-request-user
+            - x-auth-request-email
+            - x-auth-request-access-token
+          includeRequestHeadersInCheck:
+            - x-ext-authz
+          port: 8000
+          service: ext-authz.foo.svc.cluster.local`)
 
 			t.Cleanup(func() {
 				oc.Patch(t, meshNamespace, "smcp", smcpName, "json",
