@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
@@ -80,6 +81,32 @@ func TestSMMRAutoCreationAndDeletion(t *testing.T) {
 			})
 		})
 
+	})
+}
+
+func TestSMMReconciliation(t *testing.T) {
+	NewTest(t).Groups(Full, Disconnected).Run(func(t TestHelper) {
+		t.Log("This test verifies whether the member-of label is added back to the namespace")
+		t.Log("See https://issues.redhat.com/browse/OSSM-1397")
+
+		t.Cleanup(func() {
+			oc.RecreateNamespace(t, meshNamespace)
+		})
+
+		DeployControlPlane(t)
+
+		t.Log("Remove maistra.io/member-of label from bookinfo namespace")
+		oc.RemoveLabel(t, "", "Namespace", ns.Bookinfo, "maistra.io/member-of")
+
+		t.LogStep("Check if label was added back by the operator")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			oc.GetYaml(t,
+				"", "namespace", ns.Bookinfo,
+				assert.OutputContains(
+					"maistra.io/member-of",
+					"The maistra.io/member-of label was added back",
+					"The maistra.io/member-of label was not added back"))
+		})
 	})
 }
 

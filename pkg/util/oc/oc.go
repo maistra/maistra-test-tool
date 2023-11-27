@@ -236,6 +236,11 @@ func TouchSMCP(t test.TestHelper, ns string, name string) {
 	DefaultOC.TouchSMCP(t, ns, name)
 }
 
+func RemoveLabel(t test.TestHelper, ns string, kind string, name string, label string) {
+	t.T().Helper()
+	DefaultOC.RemoveLabel(t, ns, kind, name, label)
+}
+
 func Label(t test.TestHelper, ns string, kind string, name string, labels string) {
 	t.T().Helper()
 	DefaultOC.Label(t, ns, kind, name, labels)
