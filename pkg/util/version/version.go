@@ -36,6 +36,14 @@ func ParseVersion(version string) Version {
 	return Version{Major: major, Minor: minor}
 }
 
+func ParseVersions(versions string) []Version {
+	var result []Version
+	for _, version := range strings.Split(versions, " ") {
+		result = append(result, ParseVersion(version))
+	}
+	return result
+}
+
 func (this Version) Equals(that Version) bool {
 	return this.Major == that.Major && this.Minor == that.Minor
 }
