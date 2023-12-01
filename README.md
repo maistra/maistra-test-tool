@@ -155,6 +155,51 @@ To run multi-cluster tests, ensure that the `KUBECONFIG2` environment variable p
 
 The tests in maistra-test-tool are standard go tests and can be run in an IDE using standard methods. No special setup is required.
 
+#### VSCode tweaks
+
+To show/run/debug code in VSCode, you need to install the GO extension.
+
+##### Running test
+
+If you want to run some test case directly from VSCode (via the Testing panel or from source code tooltips), you need to pass required ENVs and flags and increase the default test timeout. Add(update) the following settings into settings.json (`CTRL+SHIFT+P` > `Open User Settings (JSON)`)
+```
+    "go.testEnvFile": "${workspaceFolder}/test.env",
+    "go.testTimeout": "30m",
+    "go.testFlags": [
+        "-v"
+    ]
+```
+After that, create `test.env` file in the test suite root and add all required/desired environment variables, e.g.
+```
+SMCP_VERSION=2.4
+MUST_GATHER=false
+```
+
+##### Debugging test
+
+The test can be also debugged (via the Testing panel or from source code tooltips) with the setting above however, the debug console doesn't show the same output in the debug console as during the running phase in output. You can use the following custom launch.json (Add it to the .vscode folder or update the existing one)
+```
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug test case",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${fileDirname}",
+            "envFile": "${workspaceFolder}/test.env",
+            "args": [
+                "-test.v",
+                "-test.run",
+                "${selectedText}"
+            ],
+        }
+    ]
+}
+```
+After that, you can easily debug the test case by highlighting the name of the test method and pressing F5 (If you have that `Debug test case` config selected in the Run and Debug panel).
+
 ### Reducing log output
 
 Due to the eventually-consistent nature of OpenShift clusters, each test performs a series of retry attempts of each action it performs. 
