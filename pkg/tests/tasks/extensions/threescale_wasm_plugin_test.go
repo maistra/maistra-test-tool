@@ -97,12 +97,17 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 		oc.ApplyTemplate(t, ns.Foo, wasmPluginTmpl, map[string]interface{}{"AppLabel": "sleep"})
 
 		if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_3) {
-			// A request should fail, because in 2.3 and 2.4, WASM plugins are applied to inbound and outbound listeners.
+			// A request should fail, because in 2.3+, WASM plugins are applied to inbound and outbound listeners.
 			// JWT authentication filter is applied only to inbound listeners, so 3scale plugin configured
 			// to use JWT filter metadata always fails on outbound.
 			t.LogStep("Verify that a request from sleep to httpbin returns 403")
 			sendRequestFromSleepToHttpbin(t, token, "403")
+		} else {
+			t.LogStep("Verify that a request from sleep to httpbin returns 200")
+			sendRequestFromSleepToHttpbin(t, token, "200")
+		}
 
+		if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_3) {
 			t.LogStep("Set flag APPLY_WASM_PLUGINS_TO_INBOUND_ONLY in istiod and send a request again")
 			oc.ApplyTemplate(t, meshNamespace, meshTmpl, map[string]interface{}{
 				"Name":                          smcpName,
@@ -111,28 +116,30 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 				"ApplyWasmPluginsToInboundOnly": true,
 			})
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
-			sendRequestFromSleepToHttpbin(t, token, "200")
-
-			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
-				t.LogStep("Disable APPLY_WASM_PLUGINS_TO_INBOUND_ONLY and make sure that 403 is returned again")
-				oc.ApplyTemplate(t, meshNamespace, meshTmpl, map[string]interface{}{
-					"Name":                          smcpName,
-					"Version":                       env.GetSMCPVersion().String(),
-					"Member":                        ns.Foo,
-					"ApplyWasmPluginsToInboundOnly": false,
-				})
-				oc.WaitSMCPReady(t, meshNamespace, smcpName)
+			// SMCP v2.5 no longer supports APPLY_WASM_PLUGINS_TO_INBOUND_ONLY
+			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 				sendRequestFromSleepToHttpbin(t, token, "403")
-
-				t.LogStep("Enable SERVER mode in the WASM plugin and check if returns 200")
-				oc.ApplyTemplate(t, ns.Foo, wasmPluginTmpl, map[string]interface{}{
-					"AppLabel":   "sleep",
-					"ServerMode": true,
-				})
+			} else {
 				sendRequestFromSleepToHttpbin(t, token, "200")
 			}
-		} else {
-			t.LogStep("Verify that a request from sleep to httpbin returns 200")
+		}
+
+		if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
+			t.LogStep("Disable APPLY_WASM_PLUGINS_TO_INBOUND_ONLY and make sure that 403 is returned again")
+			oc.ApplyTemplate(t, meshNamespace, meshTmpl, map[string]interface{}{
+				"Name":                          smcpName,
+				"Version":                       env.GetSMCPVersion().String(),
+				"Member":                        ns.Foo,
+				"ApplyWasmPluginsToInboundOnly": false,
+			})
+			oc.WaitSMCPReady(t, meshNamespace, smcpName)
+			sendRequestFromSleepToHttpbin(t, token, "403")
+
+			t.LogStep("Enable SERVER mode in the WASM plugin and check if returns 200")
+			oc.ApplyTemplate(t, ns.Foo, wasmPluginTmpl, map[string]interface{}{
+				"AppLabel":   "sleep",
+				"ServerMode": true,
+			})
 			sendRequestFromSleepToHttpbin(t, token, "200")
 		}
 	})
