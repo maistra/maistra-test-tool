@@ -22,7 +22,7 @@ var (
 
 	certManagerOperatorNs = "cert-manager-operator"
 	certManagerNs         = "cert-manager"
-	certmanagerVersion    = "cert-manager-operator.v1.12.0"
+	certmanagerVersion    = "cert-manager-operator.v1.12.1"
 )
 
 func InstallIfNotExist(t test.TestHelper) {
