@@ -28,15 +28,16 @@ const (
 
 func TestThreeScaleWasmPlugin(t *testing.T) {
 	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
+
+		if env.GetArch() == "z" || env.GetArch() == "p" {
+			t.Skip("Web Assembly is not supported for IBM Z&P")
+		}
+
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Foo)
 			oc.RecreateNamespace(t, meshNamespace)
 			oc.DeleteNamespace(t, threeScaleNs)
 		})
-
-		if env.GetArch() == "z" || env.GetArch() == "p" {
-			t.Skip("Web Assembly is not supported for IBM Z&P")
-		}
 
 		t.LogStep("Deploy SMCP")
 		oc.ApplyTemplate(t, meshNamespace, meshTmpl, map[string]string{
