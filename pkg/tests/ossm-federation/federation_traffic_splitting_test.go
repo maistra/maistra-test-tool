@@ -52,9 +52,9 @@ func TestFederation(t *testing.T) {
 				smcpNamespace:     "east-mesh-system",
 				bookinfoNamespace: "east-mesh-bookinfo",
 			},
-			controlPlaneInstaller: func(t TestHelper, ft federationTest) {
-				installSMCPandSMMR(t, ft.west, ft.testdataPath+"/west-mesh/smcp.yaml", ft.testdataPath+"/west-mesh/smmr.yaml")
-				installSMCPandSMMR(t, ft.east, ft.testdataPath+"/east-mesh/smcp.yaml", ft.testdataPath+"/east-mesh/smmr.yaml")
+			controlPlaneInstaller: func(t TestHelper, ft federationTest, ingressServiceType string) {
+				installSMCPandSMMR(t, ft.west, ft.testdataPath+"/west-mesh/smcp.yaml", ft.testdataPath+"/west-mesh/smmr.yaml", ingressServiceType)
+				installSMCPandSMMR(t, ft.east, ft.testdataPath+"/east-mesh/smcp.yaml", ft.testdataPath+"/east-mesh/smmr.yaml", ingressServiceType)
 			},
 			bookinfoInstaller: defaultBookinfoInstaller,
 			checker:           defaultChecker,
@@ -80,7 +80,7 @@ func TestFederationDifferentCerts(t *testing.T) {
 				smcpNamespace:     "east-mesh-system",
 				bookinfoNamespace: "east-mesh-bookinfo",
 			},
-			controlPlaneInstaller: func(t TestHelper, ft federationTest) {
+			controlPlaneInstaller: func(t TestHelper, ft federationTest, ingressServiceType string) {
 				t.Log("Create Secret 'cacerts' for custom CA certs in west-mesh")
 				ft.west.oc.CreateGenericSecretFromFiles(t, ft.west.smcpNamespace, "cacerts",
 					"testdata/cacerts/ca-cert.pem",
@@ -88,8 +88,8 @@ func TestFederationDifferentCerts(t *testing.T) {
 					"testdata/cacerts/root-cert.pem",
 					"testdata/cacerts/cert-chain.pem")
 
-				installSMCPandSMMR(t, ft.west, ft.testdataPath+"/west-mesh/smcp_custom_cert.yaml", ft.testdataPath+"/west-mesh/smmr.yaml")
-				installSMCPandSMMR(t, ft.east, ft.testdataPath+"/east-mesh/smcp.yaml", ft.testdataPath+"/east-mesh/smmr.yaml")
+				installSMCPandSMMR(t, ft.west, ft.testdataPath+"/west-mesh/smcp_custom_cert.yaml", ft.testdataPath+"/west-mesh/smmr.yaml", ingressServiceType)
+				installSMCPandSMMR(t, ft.east, ft.testdataPath+"/east-mesh/smcp.yaml", ft.testdataPath+"/east-mesh/smmr.yaml", ingressServiceType)
 			},
 			bookinfoInstaller: defaultBookinfoInstaller,
 			checker:           defaultChecker,
