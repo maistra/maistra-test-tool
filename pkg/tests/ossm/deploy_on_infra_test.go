@@ -23,6 +23,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/operator"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
@@ -48,16 +49,14 @@ func TestDeployOnInfraNodes(t *testing.T) {
 		}
 
 		t.Cleanup(func() {
+			csvName := operator.GetCsvName(t, env.GetOperatorNamespace(), "servicemeshoperator")
 			oc.Patch(t, env.GetOperatorNamespace(), "subscription", "servicemeshoperator", "json", `[{"op": "remove", "path": "/spec/config"}]`)
 			oc.TaintNode(t, "-l node-role.kubernetes.io/infra",
 				"node-role.kubernetes.io/infra=reserved:NoSchedule-",
 				"node-role.kubernetes.io/infra=reserved:NoExecute-")
 			oc.RemoveLabel(t, "", "node", workername, "node-role.kubernetes.io/infra")
 			oc.RemoveLabel(t, "", "node", workername, "node-role.kubernetes.io")
-			// TODO: to improve this after merge this PR: https://github.com/maistra/maistra-test-tool/pull/597 we need to reuse waitOperatorSucceded and make that func available to all the code
-			// Use waitOperatorSucceded will avoid flaky in this test case
-			locator := pod.MatchingSelector("name=istio-operator", "openshift-operators")
-			oc.WaitPodReady(t, locator)
+			operator.WaitForOperatorReady(t, env.GetOperatorNamespace(), "name=istio-operator", csvName)
 		})
 
 		t.LogStep("Setup: Get a worker node from the cluster that does not have the istio operator installed and label it as infra")

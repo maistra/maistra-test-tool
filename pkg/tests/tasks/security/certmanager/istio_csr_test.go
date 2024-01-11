@@ -56,6 +56,7 @@ func TestIstioCsr(t *testing.T) {
 			oc.DeleteSecret(t, meshNamespace, "istiod-tls")
 			oc.DeleteSecret(t, meshNamespace, "istio-ca")
 			oc.RecreateNamespace(t, ns.Foo)
+			certmanageroperator.Uninstall(t)
 		})
 
 		certmanageroperator.InstallIfNotExist(t)

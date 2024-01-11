@@ -20,6 +20,7 @@ tests/result-*
 ### VisualStudioCode ###
 .vscode
 .history
+**/__debug*
 
 # a file with custom ENVs, e.g. for passing ENVs into VS code run/debbug runners
 test.env
