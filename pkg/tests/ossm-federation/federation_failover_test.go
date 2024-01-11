@@ -68,9 +68,9 @@ func TestMultiClusterFederationFailover(t *testing.T) {
 				region:            eastRegion,
 				zone:              eastZone,
 			},
-			controlPlaneInstaller: func(t TestHelper, ft federationTest) {
-				installSMCPandSMMR(t, ft.west, ft.testdataPath+"/west-mesh/smcp.yaml", ft.testdataPath+"/west-mesh/smmr.yaml")
-				installSMCPandSMMR(t, ft.east, ft.testdataPath+"/east-mesh/smcp.yaml", ft.testdataPath+"/east-mesh/smmr.yaml")
+			controlPlaneInstaller: func(t TestHelper, ft federationTest, ingressServiceType string) {
+				installSMCPandSMMR(t, ft.west, ft.testdataPath+"/west-mesh/smcp.yaml", ft.testdataPath+"/west-mesh/smmr.yaml", ingressServiceType)
+				installSMCPandSMMR(t, ft.east, ft.testdataPath+"/east-mesh/smcp.yaml", ft.testdataPath+"/east-mesh/smmr.yaml", ingressServiceType)
 			},
 			bookinfoInstaller: func(t TestHelper, ft federationTest) {
 				t.LogStep("Install bookinfo in west-mesh")

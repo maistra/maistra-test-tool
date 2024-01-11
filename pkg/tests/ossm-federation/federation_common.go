@@ -40,7 +40,7 @@ type federationTest struct {
 	west config
 	east config
 
-	controlPlaneInstaller func(t TestHelper, ft federationTest)
+	controlPlaneInstaller func(t TestHelper, ft federationTest, ingressServiceType string)
 	bookinfoInstaller     func(t TestHelper, ft federationTest)
 	checker               func(t TestHelper, ft federationTest)
 }
@@ -65,7 +65,12 @@ func (ft federationTest) run(t TestHelper) {
 	ocEast.CreateNamespace(t, ft.east.smcpNamespace, ft.east.bookinfoNamespace)
 
 	t.LogStep("Install control planes for west-mesh and east-mesh")
-	ft.controlPlaneInstaller(t, ft)
+
+	ingressServiceType := "LoadBalancer"
+	if singleCluster {
+		ingressServiceType = "ClusterIP"
+	}
+	ft.controlPlaneInstaller(t, ft, ingressServiceType)
 
 	t.LogStep("Wait for west-mesh and east-mesh installation to complete")
 	ocWest.WaitSMCPReady(t, ft.west.smcpNamespace, ft.west.smcpName)
@@ -155,10 +160,11 @@ func getRootCertificate(t TestHelper, c config) string {
 	return data[key]
 }
 
-func installSMCPandSMMR(t TestHelper, c config, smcpFile, smmrFile string) {
+func installSMCPandSMMR(t TestHelper, c config, smcpFile, smmrFile string, ingressServiceType string) {
 	t.Logf("Install ServiceMeshControlPlane %s in namespace %s", c.smcpName, c.smcpNamespace)
 	c.oc.ApplyTemplateFile(t, c.smcpNamespace, smcpFile, map[string]string{
-		"Version": env.GetSMCPVersion().String(),
+		"Version":            env.GetSMCPVersion().String(),
+		"IngressServiceType": ingressServiceType,
 	})
 
 	t.Log("Create ServiceMeshMemberRoll")

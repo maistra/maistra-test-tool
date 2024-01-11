@@ -61,7 +61,7 @@ spec:
         enabled: true
         routerMode: sni-dnat
         service:
-          type: LoadBalancer
+          type: {{ .IngressServiceType }}
           metadata:
             labels:
               # to prevent east-mesh-ingress's service from including default ingress pods
