@@ -53,6 +53,10 @@ func GetSMCPVersion() version.Version {
 	return version.ParseVersion(getenv("SMCP_VERSION", "v2.5"))
 }
 
+func GetOperatorVersion() version.Version {
+	return version.ParseVersion(getenv("OPERATOR_VERSION", "v2.5"))
+}
+
 func GetArch() string {
 	return getenv("OCP_ARCH", "x86")
 }
