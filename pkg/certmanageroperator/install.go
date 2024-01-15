@@ -2,14 +2,12 @@ package certmanageroperator
 
 import (
 	_ "embed"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/operator"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -26,7 +24,7 @@ var (
 )
 
 func InstallIfNotExist(t test.TestHelper) {
-	if certManagerOperatorExists(t) {
+	if operator.OperatorExists(t, certmanagerVersion) {
 		t.Log("cert-manager-operator is already installed")
 	} else {
 		t.Log("cert-manager-operator is not installed, starting installation")
@@ -50,11 +48,6 @@ func Uninstall(t test.TestHelper) {
 	oc.DeleteNamespace(t, certManagerNs)
 }
 
-func certManagerOperatorExists(t test.TestHelper) bool {
-	output := shell.Execute(t, fmt.Sprintf(`oc get csv -A -o custom-columns="NAME:.metadata.name,REPLACES:.spec.replaces" |grep %s ||true`, certmanagerVersion))
-	return strings.Contains(output, certmanagerVersion)
-}
-
 func installOperator(t test.TestHelper) {
 	t.LogStep("Create namespace for cert-manager-operator")
 	oc.CreateNamespace(t, certManagerOperatorNs)
@@ -64,15 +57,6 @@ func installOperator(t test.TestHelper) {
 }
 
 func waitOperatorSucceded(t test.TestHelper, certManagerOperatorNs string) {
-	t.Log("Waiting for cert-manager-operator to succeed")
-	// When the operator is installed, the CSV take some time to be created, need to wait until is created to validate the phase
-	retry.UntilSuccessWithOptions(t, retry.Options().DelayBetweenAttempts(5*time.Second).MaxAttempts(70), func(t test.TestHelper) {
-		if !certManagerOperatorExists(t) {
-			t.Error("cert-manager-operator is not yet installed")
-		}
-	})
-
-	oc.WaitForPhase(t, certManagerOperatorNs, "csv", certmanagerVersion, "Succeeded")
-	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(70).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector("name=cert-manager-operator", certManagerOperatorNs))
+	operator.WaitForOperatorReady(t, certManagerOperatorNs, "name=cert-manager-operator", certmanagerVersion)
 	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(70).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector("app=cert-manager", certManagerNs))
 }
