@@ -1,12 +1,14 @@
 package ingress
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/gatewayapi"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -28,7 +30,8 @@ func TestGatewayApi(t *testing.T) {
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install Gateway API CRD's")
-		shell.Executef(t, "kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null && echo 'Gateway API CRDs already installed' || kubectl apply -k github.com/kubernetes-sigs/gateway-api/config/crd/experimental?ref=v0.5.1")
+		shell.Executef(t, "kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null && echo 'Gateway API CRDs already installed' || kubectl apply -k github.com/kubernetes-sigs/gateway-api/config/crd/experimental?ref=%s",
+			gatewayapi.GetSupportedVersion(env.GetSMCPVersion()))
 
 		oc.CreateNamespace(t, ns)
 
@@ -82,14 +85,14 @@ func TestGatewayApi(t *testing.T) {
 			})
 
 			t.LogStep("Wait for Gateway to be ready")
-			oc.WaitCondition(t, ns, "Gateway", "gateway", "Ready")
+			oc.WaitCondition(t, ns, "Gateway", "gateway", gatewayapi.GetWaitingCondition(env.GetSMCPVersion()))
 
 			t.LogStep("Verfiy the GatewayApi access the httpbin service using curl")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				oc.Exec(t,
 					pod.MatchingSelector("app=istio-ingressgateway", meshNamespace),
 					"istio-proxy",
-					"curl http://gateway.foo.svc.cluster.local:8080/get -H Host:httpbin.example.com -s -o /dev/null -w %{http_code}",
+					fmt.Sprintf("curl http://%s.foo.svc.cluster.local:8080/get -H Host:httpbin.example.com -s -o /dev/null -w %%{http_code}", gatewayapi.GetDefaultServiceName(env.GetSMCPVersion(), "gateway", "istio")),
 					assert.OutputContains("200",
 						"Access the httpbin service with GatewayApi",
 						"Unable to access the httpbin service with GatewayApi"))
@@ -128,14 +131,14 @@ func TestGatewayApi(t *testing.T) {
 			})
 
 			t.LogStep("Wait for Gateway to be ready")
-			oc.WaitCondition(t, ns, "Gateway", "gateway", "Ready")
+			oc.WaitCondition(t, ns, "Gateway", "gateway", gatewayapi.GetWaitingCondition(env.GetSMCPVersion()))
 
 			t.LogStep("Verify the Gateway-Controller Profile access the httpbin service using curl")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				oc.Exec(t,
 					pod.MatchingSelector("app=istiod", meshNamespace),
 					"discovery",
-					"curl http://gateway.foo.svc.cluster.local:8080/get -H Host:httpbin.example.com -s -o /dev/null -w %{http_code}",
+					fmt.Sprintf("curl http://%s.foo.svc.cluster.local:8080/get -H Host:httpbin.example.com -s -o /dev/null -w %%{http_code}", gatewayapi.GetDefaultServiceName(env.GetSMCPVersion(), "gateway", "ocp")),
 					assert.OutputContains("200",
 						"Access the httpbin service with GatewayApi",
 						"Unable to access the httpbin service with GatewayApi"))
@@ -149,6 +152,8 @@ const gatewayAndRouteYAML = `
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
 metadata:
+  annotations:
+    networking.istio.io/service-type: "ClusterIP"
   name: gateway
 spec:
   gatewayClassName: {{ .GatewayClassName }}
