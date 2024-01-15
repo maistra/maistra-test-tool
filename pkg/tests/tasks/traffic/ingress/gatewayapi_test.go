@@ -152,6 +152,8 @@ const gatewayAndRouteYAML = `
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
 metadata:
+  annotations:
+    networking.istio.io/service-type: "ClusterIP"
   name: gateway
 spec:
   gatewayClassName: {{ .GatewayClassName }}
