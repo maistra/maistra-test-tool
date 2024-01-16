@@ -16,9 +16,7 @@ package traffic
 
 import (
 	_ "embed"
-	"fmt"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
@@ -28,8 +26,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
-	"github.com/maistra/maistra-test-tool/pkg/util/template"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -55,19 +51,14 @@ func TestRequestTimeouts(t *testing.T) {
 		oc.ApplyString(t, ns, app.BookinfoVirtualServicesAllV1)
 
 		t.LogStep("make sure there is no timeout before applying delay and timeout in VirtualServices")
-		reviewV1Podname := strings.TrimSpace(shell.Execute(t, fmt.Sprintf(`oc get pods -n %s | grep reviews-v1 | awk '{print $1}'`, ns)))
-		templateString, err := os.ReadFile("../../../../testdata/resources/html/productpage-normal-user-v1.html")
-		if err != nil {
-			t.Fatalf("could not read template file %s: %v", templateString, err)
-		}
-		htmlFile := template.Run(t, string(templateString), struct{ ReviewV1Podname string }{ReviewV1Podname: reviewV1Podname})
-		os.WriteFile("../../../../testdata/resources/html/modified-productpage-normal-user-v1.html", []byte(htmlFile), 0644)
+
+		expectedResponseFile := TestreviewV1(t, "productpage-normal-user-v1.html")
 
 		retry.UntilSuccess(t, func(t TestHelper) {
 			curl.Request(t,
 				productpageURL, nil,
 				assert.ResponseMatchesFile(
-					"modified-productpage-normal-user-v1.html",
+					expectedResponseFile,
 					"received normal productpage response",
 					"unexpected response",
 					app.ProductPageResponseFiles...))

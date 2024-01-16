@@ -16,9 +16,7 @@ package traffic
 
 import (
 	_ "embed"
-	"fmt"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -28,8 +26,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
-	"github.com/maistra/maistra-test-tool/pkg/util/template"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -80,13 +76,7 @@ func TestFaultInjection(t *testing.T) {
 		t.NewSubTest("ratings-fault-abort").Run(func(t TestHelper) {
 			oc.ApplyString(t, ns, ratingsVirtualServiceWithHttpStatus500)
 
-			reviewV2Podname := strings.TrimSpace(shell.Execute(t, fmt.Sprintf(`oc get pods -n %s | grep reviews-v2 | awk '{print $1}'`, ns)))
-			templateString, err := os.ReadFile("../../../../testdata/resources/html/productpage-test-user-v2-rating-unavailable.html")
-			if err != nil {
-				t.Fatalf("could not read template file %s: %v", templateString, err)
-			}
-			htmlFile := template.Run(t, string(templateString), struct{ ReviewV2Podname string }{ReviewV2Podname: reviewV2Podname})
-			os.WriteFile("../../../../testdata/resources/html/modified-productpage-test-user-v2-rating-unavailable.html", []byte(htmlFile), 0644)
+			expectedResponseFile := TestreviewV2(t, "productpage-test-user-v2-rating-unavailable.html")
 
 			t.LogStep("check if productpage shows ratings service as unavailable due to abort injection")
 			retry.UntilSuccess(t, func(t TestHelper) {
@@ -94,7 +84,7 @@ func TestFaultInjection(t *testing.T) {
 					app.BookinfoProductPageURL(t, meshNamespace),
 					curl.WithCookieJar(testUserCookieJar),
 					assert.ResponseMatchesFile(
-						"modified-productpage-test-user-v2-rating-unavailable.html",
+						expectedResponseFile,
 						"productpage shows 'ratings service is currently unavailable' as expected",
 						"expected productpage to show ratings service as unavailable, but got a different response",
 						app.ProductPageResponseFiles...))

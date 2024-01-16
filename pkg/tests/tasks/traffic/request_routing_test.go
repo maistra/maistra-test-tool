@@ -15,9 +15,7 @@
 package traffic
 
 import (
-	"fmt"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
@@ -26,8 +24,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
-	"github.com/maistra/maistra-test-tool/pkg/util/template"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -52,14 +48,7 @@ func TestRequestRouting(t *testing.T) {
 		t.NewSubTest("not-logged-in").Run(func(t TestHelper) {
 			oc.ApplyString(t, ns, app.BookinfoVirtualServicesAllV1)
 
-			reviewV1Podname := strings.TrimSpace(shell.Execute(t, fmt.Sprintf(`oc get pods -n %s | grep reviews-v1 | awk '{print $1}'`, ns)))
-			templateString, err := os.ReadFile("../../../../testdata/resources/html/productpage-normal-user-v1.html")
-			if err != nil {
-				t.Fatalf("could not read template file %s: %v", templateString, err)
-			}
-			htmlFile := template.Run(t, string(templateString), struct{ ReviewV1Podname string }{ReviewV1Podname: reviewV1Podname})
-			fmt.Println(htmlFile)
-			os.WriteFile("../../../../testdata/resources/html/modified-productpage-normal-user-v1.html", []byte(htmlFile), 0644)
+			expectedResponseFile := TestreviewV1(t, "productpage-normal-user-v1.html")
 
 			t.LogStep("get productpage without logging in; expect to get reviews-v1 (5x)")
 			retry.UntilSuccess(t, func(t TestHelper) {
@@ -67,7 +56,7 @@ func TestRequestRouting(t *testing.T) {
 					curl.Request(t,
 						productpageURL, nil,
 						require.ResponseMatchesFile(
-							"modified-productpage-normal-user-v1.html",
+							expectedResponseFile,
 							"productpage called reviews-v1",
 							"expected productpage to call reviews-v1, but got an unexpected response",
 							app.ProductPageResponseFiles...))
@@ -78,13 +67,7 @@ func TestRequestRouting(t *testing.T) {
 		t.NewSubTest("logged-in").Run(func(t TestHelper) {
 			oc.ApplyString(t, ns, app.BookinfoVirtualServiceReviewsV2)
 
-			reviewV2Podname := strings.TrimSpace(shell.Execute(t, fmt.Sprintf(`oc get pods -n %s | grep reviews-v2 | awk '{print $1}'`, ns)))
-			template2String, err := os.ReadFile("../../../../testdata/resources/html/productpage-test-user-v2.html")
-			if err != nil {
-				t.Fatalf("could not read template file %s: %v", template2String, err)
-			}
-			html2File := template.Run(t, string(template2String), struct{ ReviewV2Podname string }{ReviewV2Podname: reviewV2Podname})
-			os.WriteFile("../../../../testdata/resources/html/modified-productpage-test-user-v2.html", []byte(html2File), 0644)
+			expectedResponseFile2 := TestreviewV2(t, "productpage-test-user-v2.html")
 
 			t.LogStep("get productpage as logged-in user; expect to get reviews-v2 (5x)")
 			retry.UntilSuccess(t, func(t TestHelper) {
@@ -93,7 +76,7 @@ func TestRequestRouting(t *testing.T) {
 						productpageURL,
 						curl.WithCookieJar(testUserCookieJar),
 						require.ResponseMatchesFile(
-							"modified-productpage-test-user-v2.html",
+							expectedResponseFile2,
 							"productpage called reviews-v2",
 							"expected productpage to call reviews-v2, but got an unexpected response",
 							app.ProductPageResponseFiles...))
