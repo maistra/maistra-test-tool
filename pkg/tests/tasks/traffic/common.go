@@ -44,3 +44,19 @@ func TestreviewV2(t TestHelper, file string) string {
 	return "modified-" + file
 
 }
+
+func TestreviewV3(t TestHelper, file string) string {
+
+	ns := "bookinfo"
+
+	reviewV3Podname := pod.MatchingSelector("app=reviews,version=v3", ns)(t, oc.DefaultOC).Name
+	template3String, err := os.ReadFile("../../../../testdata/resources/html/" + file)
+	if err != nil {
+		t.Fatalf("could not read template file %s: %v", template3String, err)
+	}
+	html2File := template.Run(t, string(template3String), struct{ ReviewV3Podname string }{ReviewV3Podname: reviewV3Podname})
+	os.WriteFile("../../../../testdata/resources/html/modified-"+file, []byte(html2File), 0644)
+
+	return "modified-" + file
+
+}
