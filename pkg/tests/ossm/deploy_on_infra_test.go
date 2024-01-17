@@ -139,6 +139,46 @@ spec:
 	})
 }
 
+func TestExcludeCniFromNode(t *testing.T) {
+	test.NewTest(t).Id("T43").Groups(test.Full, test.Disconnected).Run(func(t test.TestHelper) {
+		t.Log("Verify that CNI pods are not scheduled on node with maistra.io/exclude-cni label")
+		t.Log("See https://issues.redhat.com/browse/OSSM-1698")
+
+		if env.GetSMCPVersion().LessThan(version.SMCP_2_5) {
+			t.Skip("Exclude cni pods in nodes are available in SMCP versions v2.5+")
+		}
+		if env.IsRosa() {
+			t.Skip("Skipping test on ROSA due to lack of permissions")
+		}
+		t.Cleanup(func() {
+			oc.RemoveLabel(t, "", "node", workername, "maistra.io/exclude-cni")
+		})
+
+		workername = pickWorkerNode(t)
+		cniPodApp := fmt.Sprintf("istio-cni-node-v%d-%d", env.GetSMCPVersion().Major, env.GetSMCPVersion().Minor)
+
+		t.Logf("Check that cni pod %s is running on selected worker %s", cniPodApp, workername)
+		shell.Execute(t,
+			fmt.Sprintf(`oc get pod -n %s -l k8s-app=%s --field-selector spec.nodeName=%s -o jsonpath='{.items[*].metadata.name}'`, env.GetOperatorNamespace(), cniPodApp, workername),
+			assert.OutputContains(
+				cniPodApp,
+				fmt.Sprintf("Found CNI pod %s which is running on the worker node %s", cniPodApp, workername),
+				fmt.Sprintf("No CNI pod %s is running on the worker node %s", cniPodApp, workername)))
+
+		t.Logf("Label the node %s with maistra.io/exclude-cni=true to exclude the cni pods", workername)
+		oc.Label(t, "", "node", workername, "maistra.io/exclude-cni=true")
+		// worker does not contain cni pod anymore
+		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(20).DelayBetweenAttempts(2*time.Second), func(t test.TestHelper) {
+			shell.Execute(t,
+				fmt.Sprintf(`oc get pod -n %s -l k8s-app=%s --field-selector spec.nodeName=%s -o jsonpath='{.items[*].metadata.name}'`, env.GetOperatorNamespace(), cniPodApp, workername),
+				assert.OutputDoesNotContain(
+					cniPodApp,
+					fmt.Sprintf("CNI pod %s isn't running on the worker node %s anymore", cniPodApp, workername),
+					fmt.Sprintf("Found CNI pod %s which is still running on the worker node %s, but it should not be, waiting", cniPodApp, workername)))
+		})
+	})
+}
+
 func assertPodScheduledToNode(t test.TestHelper, pLabel string) {
 	// Increased the between retries to account for the time it takes for the pods to be scheduled on the infra node meanwhile other relocations are done at the same time.
 	// Jaeger pod takes the longest to be scheduled on the infra node.
