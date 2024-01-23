@@ -16,6 +16,7 @@ package traffic
 
 import (
 	_ "embed"
+	"os"
 	"testing"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -42,6 +44,7 @@ func TestFaultInjection(t *testing.T) {
 
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns)
+			os.Remove(env.GetRootDir() + `/testdata/resources/html/modified-productpage-test-user-v2-rating-unavailable.html`)
 		})
 
 		ossm.DeployControlPlane(t)
@@ -74,13 +77,15 @@ func TestFaultInjection(t *testing.T) {
 		t.NewSubTest("ratings-fault-abort").Run(func(t TestHelper) {
 			oc.ApplyString(t, ns, ratingsVirtualServiceWithHttpStatus500)
 
+			expectedResponseFile := TestreviewV2(t, "productpage-test-user-v2-rating-unavailable.html")
+
 			t.LogStep("check if productpage shows ratings service as unavailable due to abort injection")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				curl.Request(t,
 					app.BookinfoProductPageURL(t, meshNamespace),
 					curl.WithCookieJar(testUserCookieJar),
 					assert.ResponseMatchesFile(
-						"productpage-test-user-v2-rating-unavailable.html",
+						expectedResponseFile,
 						"productpage shows 'ratings service is currently unavailable' as expected",
 						"expected productpage to show ratings service as unavailable, but got a different response",
 						app.ProductPageResponseFiles...))

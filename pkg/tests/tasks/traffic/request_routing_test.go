@@ -15,12 +15,14 @@
 package traffic
 
 import (
+	"os"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -32,6 +34,8 @@ func TestRequestRouting(t *testing.T) {
 
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns)
+			os.Remove(env.GetRootDir() + `/testdata/resources/html/modified-productpage-test-user-v2.html`)
+			os.Remove(env.GetRootDir() + `/testdata/resources/html/modified-productpage-normal-user-v1.html`)
 		})
 
 		ossm.DeployControlPlane(t)
@@ -45,13 +49,15 @@ func TestRequestRouting(t *testing.T) {
 		t.NewSubTest("not-logged-in").Run(func(t TestHelper) {
 			oc.ApplyString(t, ns, app.BookinfoVirtualServicesAllV1)
 
+			expectedResponseFile := TestreviewV1(t, "productpage-normal-user-v1.html")
+
 			t.LogStep("get productpage without logging in; expect to get reviews-v1 (5x)")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				for i := 0; i < 5; i++ {
 					curl.Request(t,
 						productpageURL, nil,
 						require.ResponseMatchesFile(
-							"productpage-normal-user-v1.html",
+							expectedResponseFile,
 							"productpage called reviews-v1",
 							"expected productpage to call reviews-v1, but got an unexpected response",
 							app.ProductPageResponseFiles...))
@@ -62,6 +68,8 @@ func TestRequestRouting(t *testing.T) {
 		t.NewSubTest("logged-in").Run(func(t TestHelper) {
 			oc.ApplyString(t, ns, app.BookinfoVirtualServiceReviewsV2)
 
+			expectedResponseFile2 := TestreviewV2(t, "productpage-test-user-v2.html")
+
 			t.LogStep("get productpage as logged-in user; expect to get reviews-v2 (5x)")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				for i := 0; i < 5; i++ {
@@ -69,7 +77,7 @@ func TestRequestRouting(t *testing.T) {
 						productpageURL,
 						curl.WithCookieJar(testUserCookieJar),
 						require.ResponseMatchesFile(
-							"productpage-test-user-v2.html",
+							expectedResponseFile2,
 							"productpage called reviews-v2",
 							"expected productpage to call reviews-v2, but got an unexpected response",
 							app.ProductPageResponseFiles...))

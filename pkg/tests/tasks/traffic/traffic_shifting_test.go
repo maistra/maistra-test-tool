@@ -17,6 +17,7 @@ package traffic
 import (
 	_ "embed"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	. "github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -36,6 +38,8 @@ func TestTrafficShifting(t *testing.T) {
 
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns)
+			os.Remove(env.GetRootDir() + `/testdata/resources/html/modified-productpage-normal-user-v3.html`)
+			os.Remove(env.GetRootDir() + `/testdata/resources/html/modified-productpage-normal-user-v1.html`)
 		})
 
 		ossm.DeployControlPlane(t)
@@ -46,16 +50,20 @@ func TestTrafficShifting(t *testing.T) {
 
 		oc.ApplyString(t, ns, app.BookinfoVirtualServicesAllV1)
 
+		expectedResponseFile := TestreviewV1(t, "productpage-normal-user-v1.html")
+		expectedResponseFile3 := TestreviewV3(t, "productpage-normal-user-v3.html")
+
 		t.NewSubTest("50 percent to v3").Run(func(t TestHelper) {
 			t.LogStep("configure VirtualService to split traffic 50% to v1 and 50% to v3")
 			oc.ApplyString(t, ns, splitReviews5050BetweenV1andV3)
 
 			t.LogStep("Make 100 requests and check if v1 and v3 get 50% of requests each (tolerance: 20%)")
+
 			retry.UntilSuccess(t, func(t TestHelper) {
 				tolerance := 0.20
 				checkTrafficRatio(t, productpageURL, 100, tolerance, map[string]float64{
-					"productpage-normal-user-v1.html": 0.5,
-					"productpage-normal-user-v3.html": 0.5,
+					expectedResponseFile:  0.5,
+					expectedResponseFile3: 0.5,
 				})
 			})
 		})
@@ -68,8 +76,8 @@ func TestTrafficShifting(t *testing.T) {
 			retry.UntilSuccess(t, func(t TestHelper) {
 				tolerance := 0.0
 				checkTrafficRatio(t, productpageURL, 100, tolerance, map[string]float64{
-					"productpage-normal-user-v1.html": 0.0,
-					"productpage-normal-user-v3.html": 1.0,
+					expectedResponseFile:  0.0,
+					expectedResponseFile3: 1.0,
 				})
 			})
 		})

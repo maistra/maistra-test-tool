@@ -16,6 +16,7 @@ package traffic
 
 import (
 	_ "embed"
+	"os"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
@@ -23,6 +24,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -37,6 +39,7 @@ func TestRequestTimeouts(t *testing.T) {
 
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns)
+			os.Remove(env.GetRootDir() + `/testdata/resources/html/modified-productpage-normal-user-v1.html`)
 		})
 
 		ossm.DeployControlPlane(t)
@@ -49,11 +52,14 @@ func TestRequestTimeouts(t *testing.T) {
 		oc.ApplyString(t, ns, app.BookinfoVirtualServicesAllV1)
 
 		t.LogStep("make sure there is no timeout before applying delay and timeout in VirtualServices")
+
+		expectedResponseFile := TestreviewV1(t, "productpage-normal-user-v1.html")
+
 		retry.UntilSuccess(t, func(t TestHelper) {
 			curl.Request(t,
 				productpageURL, nil,
 				assert.ResponseMatchesFile(
-					"productpage-normal-user-v1.html",
+					expectedResponseFile,
 					"received normal productpage response",
 					"unexpected response",
 					app.ProductPageResponseFiles...))
