@@ -20,7 +20,7 @@ func TestreviewV1(t TestHelper, file string) string {
 
 	templateString, err := os.ReadFile(env.GetRootDir() + "/testdata/resources/html/" + file)
 	if err != nil {
-		t.Fatalf("could not read template file %s: %v", templateString, err)
+		t.Fatalf("could not read template file %s: %v", file, err)
 	}
 	htmlFile := template.Run(t, string(templateString), struct{ ReviewV1Podname string }{ReviewV1Podname: reviewV1Podname})
 	fmt.Println(htmlFile)
@@ -37,7 +37,7 @@ func TestreviewV2(t TestHelper, file string) string {
 	reviewV2Podname := pod.MatchingSelector("app=reviews,version=v2", ns)(t, oc.DefaultOC).Name
 	template2String, err := os.ReadFile(env.GetRootDir() + "/testdata/resources/html/" + file)
 	if err != nil {
-		t.Fatalf("could not read template file %s: %v", template2String, err)
+		t.Fatalf("could not read template file %s: %v", file, err)
 	}
 	html2File := template.Run(t, string(template2String), struct{ ReviewV2Podname string }{ReviewV2Podname: reviewV2Podname})
 	os.WriteFile(env.GetRootDir()+"/testdata/resources/html/modified-"+file, []byte(html2File), 0644)
@@ -53,7 +53,7 @@ func TestreviewV3(t TestHelper, file string) string {
 	reviewV3Podname := pod.MatchingSelector("app=reviews,version=v3", ns)(t, oc.DefaultOC).Name
 	template3String, err := os.ReadFile(env.GetRootDir() + "/testdata/resources/html/" + file)
 	if err != nil {
-		t.Fatalf("could not read template file %s: %v", template3String, err)
+		t.Fatalf("could not read template file %s: %v", file, err)
 	}
 	html2File := template.Run(t, string(template3String), struct{ ReviewV3Podname string }{ReviewV3Podname: reviewV3Podname})
 	os.WriteFile(env.GetRootDir()+"/testdata/resources/html/modified-"+file, []byte(html2File), 0644)
