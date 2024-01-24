@@ -75,13 +75,13 @@ spec:
 
       initContainers:
       - name: init
-        image: curlimages/curl
+        image: curlimages/curl:8.4.0
         command: ["/bin/echo", "[init worked]"]
         imagePullPolicy: IfNotPresent
 
       containers:
       - name: sleep
-        image: curlimages/curl
+        image: curlimages/curl:8.4.0
         command: ["/bin/sleep", "3650d"]
         imagePullPolicy: IfNotPresent`
 )
