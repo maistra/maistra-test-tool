@@ -186,6 +186,7 @@ func (o OC) WaitFor(t test.TestHelper, ns string, kind string, name string, forC
 
 func (o OC) WaitSMMRReady(t test.TestHelper, ns string) {
 	t.T().Helper()
+	t.Logf("Wait for smmr/default to be ready in namespace %s", ns)
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
 		shell.Executef(t, `oc -n %s wait --for condition=Ready smmr/default --timeout 300s`, ns)
