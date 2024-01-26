@@ -47,8 +47,6 @@ func TestClusterWideMode(t *testing.T) {
 
 		t.LogStep("Install cluster-wide SMCP")
 		oc.ApplyTemplate(t, meshNamespace, clusterWideSMCP, ossm.DefaultSMCP())
-
-		t.LogStep("Wait for SMCP to be Ready")
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.NewSubTest("SMMR auto-creation").Run(func(t test.TestHelper) {
@@ -305,6 +303,100 @@ spec:
 			})
 		})
 
+		t.NewSubTest("verify that namespaces without istio-enable label are not included to the SMMR list").Run(func(t test.TestHelper) {
+			membersList := []string{"member-1", "member-3"}
+			notInMembersList := []string{"member-0", "member-2", "member-4"}
+
+			t.Cleanup(func() {
+				for _, member := range []string{"member-0", "member-2", "member-4"} {
+					oc.RemoveLabel(t, "", "Namespace", member, "istio-injection")
+					oc.Label(t, "", "Namespace", member, "istio-injection=enabled")
+				}
+			})
+
+			t.LogStep("Wait for SMMR to be Ready")
+			oc.WaitSMMRReady(t, meshNamespace)
+
+			t.LogStep("Remove istio-injection=enabled label from member-0/2/4 namespaces")
+			for _, member := range []string{"member-0", "member-2", "member-4"} {
+				t.Logf("Removing label from namespace %s", member)
+				oc.RemoveLabel(t, "", "Namespace", member, "istio-injection")
+			}
+
+			t.LogStep("Wait for SMMR to be Ready")
+			oc.WaitSMMRReady(t, meshNamespace)
+
+			t.LogStep("Check whether the SMMR shows the 2 namespaces created as members")
+			assertMembers(t, meshNamespace, membersList)
+			assertNonMembers(t, meshNamespace, notInMembersList)
+
+			t.LogStep("Add other label istio-injection to the namespaces....")
+			t.Log("Add istio-injection=disabled label to member-2 namespace")
+			oc.Label(t, "", "Namespace", "member-2", "istio-injection=disabled")
+			t.Log("Add istio-injection=notanoption label to member-4 namespace")
+			oc.Label(t, "", "Namespace", "member-4", "istio-injection=notanoption")
+
+			t.LogStep("Wait for SMMR to be Ready")
+			oc.WaitSMMRReady(t, meshNamespace)
+
+			t.LogStep("Check whether the SMMR shows the 2 namespaces created as members")
+			assertMembers(t, meshNamespace, membersList)
+			assertNonMembers(t, meshNamespace, notInMembersList)
+		})
+
+		t.NewSubTest("verify strict mTLS across service mesh members and not members").Run(func(t test.TestHelper) {
+			t.Log("Test strict mTLS across service mesh members")
+			t.Log("Doc: https://docs.openshift.com/container-platform/4.14/service_mesh/v2x/ossm-security.html#ossm-security-enabling-strict-mtls_ossm-security")
+
+			t.Cleanup(func() {
+				oc.RecreateNamespace(t, "foo", "legacy")
+				oc.Patch(t,
+					meshNamespace, "smcp", smcpName, "merge",
+					`{"spec":{"security":{"dataPlane":{"mtls":false}}}}`,
+				)
+				oc.WaitSMCPReady(t, meshNamespace, smcpName)
+			})
+
+			t.LogStep("Apply SMMR to select foo and legacy as members")
+			oc.ApplyString(t, meshNamespace, fooLegacySMMR)
+			oc.WaitSMCPReady(t, meshNamespace, smcpName)
+
+			t.LogStep("Install sleep in foo and legacy namespaces")
+			app.InstallAndWaitReady(t,
+				app.Sleep("foo"),
+				app.Httpbin("foo"),
+				app.HttpbinNoSidecar("legacy"))
+
+			t.LogStep("Apply SMCP with STRICT mTLS true")
+			oc.Patch(t,
+				meshNamespace, "smcp", smcpName, "merge",
+				`{"spec":{"security":{"dataPlane":{"mtls":true}}}}`,
+			)
+			oc.WaitSMCPReady(t, meshNamespace, smcpName)
+
+			t.LogStep("Check if mTLS is enabled in foo")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				oc.Exec(t,
+					pod.MatchingSelector("app=sleep", "foo"),
+					"sleep",
+					"curl http://httpbin.foo:8000/headers -s",
+					assert.OutputContains("X-Forwarded-Client-Cert",
+						"mTLS is enabled in namespace foo (X-Forwarded-Client-Cert header is present)",
+						"mTLS is not enabled in namespace foo (X-Forwarded-Client-Cert header is not present)"))
+			})
+
+			t.LogStep("Check that mTLS is NOT enabled in legacy")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				oc.Exec(t,
+					pod.MatchingSelector("app=sleep", "foo"),
+					"sleep",
+					"curl http://httpbin.legacy:8000/headers -s",
+					assert.OutputDoesNotContain("X-Forwarded-Client-Cert",
+						"mTLS is not enabled in namespace legacy (X-Forwarded-Client-Cert header is not present)",
+						"mTLS is enabled in namespace legacy, but shouldn't be (X-Forwarded-Client-Cert header is present when it shouldn't be)"))
+			})
+		})
+
 		t.NewSubTest("cluster wide works with profiles").Run(func(t test.TestHelper) {
 			t.Log("Check whether the cluster wide feature works with profiles")
 
@@ -371,9 +463,15 @@ func verifyMembersInSMMR(t test.TestHelper, meshNamespace string, membersList []
 		}
 		if found != shouldExist {
 			if shouldExist {
-				t.Fatalf("The member '%s' is missing from the members list.", member)
+				t.Fatalf("FAILURE: The member '%s' is missing from the members list.", member)
 			} else {
-				t.Fatalf("Expected namespace %s to not be a member, but it was", member)
+				t.Fatalf("FAILURE: Expected namespace %s to not be a member, but it was", member)
+			}
+		} else {
+			if shouldExist {
+				t.Logf("SUCCESS: Namespace %s is a member of the SMMR", member)
+			} else {
+				t.Logf("SUCCESS: Namespace %s is not a member of the SMMR as expected", member)
 			}
 		}
 	}
@@ -504,6 +602,17 @@ spec:
   members:
   - member-0
   - member-1
+  memberSelectors: []`
+
+	fooLegacySMMR = `
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  members:
+  - foo
+  - legacy
   memberSelectors: []`
 
 	smmrMultipleSelectors = `
