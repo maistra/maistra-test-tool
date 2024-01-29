@@ -33,7 +33,7 @@ const (
 // crc config set memory 20480
 // crc config set cpus 8
 func TestOpenShiftMonitoring(t *testing.T) {
-	test.NewTest(t).Id("openshift-monitoring-integration").Groups(test.Full).Run(func(t test.TestHelper) {
+	test.NewTest(t).Id("openshift-monitoring-integration").Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
 		smcpVer := env.GetSMCPVersion()
 		if smcpVer.LessThan(version.SMCP_2_4) {
 			t.Skip("integration with OpenShift Monitoring stack is not supported in OSSM older than v2.4.0")

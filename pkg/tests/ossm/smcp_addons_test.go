@@ -25,7 +25,7 @@ import (
 )
 
 func TestSMCPAddons(t *testing.T) {
-	NewTest(t).Id("T34").Groups(Full, Disconnected).Run(func(t TestHelper) {
+	NewTest(t).Id("T34").Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
 		// Created a subtest because we need to add more test related to Addons in the future.
 		t.NewSubTest("3scale_addon").Run(func(t TestHelper) {
 			t.LogStep("Enable 3scale in a SMCP expecting to get validation error.")

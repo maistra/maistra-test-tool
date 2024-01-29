@@ -40,7 +40,7 @@ var (
 )
 
 func TestRateLimiting(t *testing.T) {
-	NewTest(t).Id("T28").Groups(Full).MaxVersion(version.SMCP_2_2).Run(func(t TestHelper) {
+	NewTest(t).Id("T28").Groups(Full, ARM).MaxVersion(version.SMCP_2_2).Run(func(t TestHelper) {
 		ns := "bookinfo"
 		nsRedis := "redis"
 

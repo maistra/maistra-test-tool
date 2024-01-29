@@ -33,7 +33,7 @@ import (
 )
 
 func TestIngressGateways(t *testing.T) {
-	NewTest(t).Id("T8").Groups(Full, InterOp).Run(func(t TestHelper) {
+	NewTest(t).Id("T8").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
 		ns := "bookinfo"
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns)

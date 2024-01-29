@@ -27,7 +27,7 @@ const (
 )
 
 func TestThreeScaleWasmPlugin(t *testing.T) {
-	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
+	test.NewTest(t).Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
 
 		if env.GetArch() == "z" || env.GetArch() == "p" {
 			t.Skip("Web Assembly is not supported for IBM Z&P")
