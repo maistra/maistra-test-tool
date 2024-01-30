@@ -68,7 +68,7 @@ tcp-echo:
 
 fortio:
   x86: fortio/fortio:latest_release
-  arm: quay.io/openshifttest/fortio:multiarch
+  arm: docker.io/fortio/fortio:latest
   p: quay.io/maistra/fortio.test:0.0-ibm-p
   z: quay.io/maistra/fortio:0.0-ibm-z
 
