@@ -12,7 +12,7 @@ import (
 )
 
 func TestRoutePreventAdditionalIngress(t *testing.T) {
-	NewTest(t).Id("T48").Groups(Full).MaxVersion(version.SMCP_2_5).Run(func(t TestHelper) {
+	NewTest(t).Id("T48").Groups(Full, ARM).MaxVersion(version.SMCP_2_5).Run(func(t TestHelper) {
 
 		ER := "extra-routes"
 

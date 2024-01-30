@@ -23,7 +23,7 @@ import (
 func TestCustomPrometheus(t *testing.T) {
 	const customPrometheusNs = "custom-prometheus"
 
-	test.NewTest(t).Id("custom-prometheus").Groups(test.Full).Run(func(t test.TestHelper) {
+	test.NewTest(t).Id("custom-prometheus").Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
 		smcpVer := env.GetSMCPVersion()
 		if smcpVer.LessThan(version.SMCP_2_4) {
 			t.Skip("Extension providers are not supported in OSSM older than v2.4.0")

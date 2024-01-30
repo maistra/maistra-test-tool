@@ -32,7 +32,7 @@ import (
 )
 
 func TestTrustDomainMigration(t *testing.T) {
-	NewTest(t).Id("T24").Groups(Full, InterOp).Run(func(t TestHelper) {
+	NewTest(t).Id("T24").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
 		foo := "foo"
 		bar := "bar"
 

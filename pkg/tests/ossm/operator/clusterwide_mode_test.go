@@ -30,7 +30,7 @@ type ServiceMeshMemberRoll struct {
 }
 
 func TestClusterWideMode(t *testing.T) {
-	test.NewTest(t).Groups(test.Full, test.Disconnected).MinVersion(version.SMCP_2_4).Run(func(t test.TestHelper) {
+	test.NewTest(t).Groups(test.Full, test.Disconnected, test.ARM).MinVersion(version.SMCP_2_4).Run(func(t test.TestHelper) {
 		t.Log("This test verifies the behavior of SMCP.spec.mode: ClusterWide")
 
 		smcpName := env.GetDefaultSMCPName()

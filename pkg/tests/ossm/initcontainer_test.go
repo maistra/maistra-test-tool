@@ -28,7 +28,7 @@ func TestInitContainerNotRemovedDuringInjection(t *testing.T) {
 	const goldString = "[init worked]"
 	const podSelector = "app=sleep-init"
 
-	NewTest(t).Id("T33").Groups(Full).Run(func(t TestHelper) {
+	NewTest(t).Id("T33").Groups(Full, ARM).Run(func(t TestHelper) {
 		t.Log("Checking init container not removed during sidecar injection.")
 
 		t.Cleanup(func() {

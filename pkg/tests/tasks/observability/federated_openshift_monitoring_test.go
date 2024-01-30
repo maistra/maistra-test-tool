@@ -20,7 +20,7 @@ import (
 // TestFederatedOpenShiftMonitoring requires OpenShift Monitoring stack to be enabled.
 // See the comment on TestOpenShiftMonitoring for help setting up on crc
 func TestFederatedOpenShiftMonitoring(t *testing.T) {
-	test.NewTest(t).Id("federated-openshift-monitoring-integration").Groups(test.Full).Run(func(t test.TestHelper) {
+	test.NewTest(t).Id("federated-openshift-monitoring-integration").Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
 		meshValues := map[string]string{
 			"Name":    smcpName,
 			"Version": env.GetSMCPVersion().String(),

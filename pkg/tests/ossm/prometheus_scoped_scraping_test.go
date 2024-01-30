@@ -24,7 +24,7 @@ import (
 var prometheusPodSelector oc.PodLocatorFunc = pod.MatchingSelector("app=prometheus,maistra-control-plane=istio-system", meshNamespace)
 
 func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
-	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
+	test.NewTest(t).Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
 		t.Log("This test checks if the operator can update Prometheus ConfigMap when the SMMR is updated")
 
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {

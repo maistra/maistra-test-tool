@@ -30,7 +30,7 @@ import (
 )
 
 func TestMTlsMigration(t *testing.T) {
-	test.NewTest(t).Id("T19").Groups(test.Full, test.InterOp).Run(func(t test.TestHelper) {
+	test.NewTest(t).Id("T19").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 		meshNamespace := env.GetDefaultMeshNamespace()
 
 		t.Cleanup(func() {

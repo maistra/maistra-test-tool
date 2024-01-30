@@ -35,7 +35,7 @@ import (
 )
 
 func TestAuthPolicy(t *testing.T) {
-	NewTest(t).Id("T18").Groups(Full, InterOp).Run(func(t TestHelper) {
+	NewTest(t).Id("T18").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
 		meshNamespace := env.GetDefaultMeshNamespace()
 
 		t.Cleanup(func() {
