@@ -62,7 +62,7 @@ sleep:
 
 tcp-echo:
   x86: docker.io/istio/tcp-echo-server:1.2
-  arm: docker.io/istio/tcp-echo-server:1.2
+  arm: docker.io/h0tbird/tcp-echo-server:1.2
   p: quay.io/maistra/tcp-echo-server:0.0-ibm-p
   z: quay.io/maistra/tcp-echo-server:2.0-ibm-z
 
