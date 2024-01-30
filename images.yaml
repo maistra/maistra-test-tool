@@ -81,6 +81,7 @@ helloworld:
   x86: quay.io/jewertow/examples-helloworld-v1
   p: quay.io/maistra/helloworld-v1:0.0-ibm-p
   z: quay.io/maistra/helloworld-v1:0.0-ibm-z
+  arm: docker.io/tanjunchen/helloworld-v1:latest-arm
 
 ext-authz:
   x86: gcr.io/istio-testing/ext-authz:latest
