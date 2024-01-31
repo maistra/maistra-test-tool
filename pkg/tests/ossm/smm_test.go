@@ -86,7 +86,7 @@ func TestSMMRAutoCreationAndDeletion(t *testing.T) {
 }
 
 func TestSMMReconciliation(t *testing.T) {
-	NewTest(t).Groups(Full, Disconnected).Run(func(t TestHelper) {
+	NewTest(t).Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
 		t.Log("This test verifies whether the member-of label is added back to the namespace")
 		t.Log("See https://issues.redhat.com/browse/OSSM-1397")
 

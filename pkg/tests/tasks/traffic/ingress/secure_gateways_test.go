@@ -47,7 +47,7 @@ var (
 )
 
 func TestSecureGateways(t *testing.T) {
-	NewTest(t).Id("T9").Groups(Full, InterOp).Run(func(t TestHelper) {
+	NewTest(t).Id("T9").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
 		ns := "bookinfo"
 
 		t.Cleanup(func() {

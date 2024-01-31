@@ -29,7 +29,7 @@ import (
 
 // TestAuthorizationTCPTraffic validates authorization polices for TCP traffic.
 func TestAuthorizationTCPTraffic(t *testing.T) {
-	test.NewTest(t).Id("T21").Groups(test.Full, test.InterOp).Run(func(t test.TestHelper) {
+	test.NewTest(t).Id("T21").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 		ns := "foo"
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns)
