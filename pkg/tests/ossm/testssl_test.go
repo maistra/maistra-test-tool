@@ -15,11 +15,13 @@ package ossm
 
 import (
 	_ "embed"
+	"fmt"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/istio"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -72,7 +74,7 @@ spec:
 		t.LogStep("Check testssl.sh results")
 		command := "./testssl/testssl.sh -P -6 productpage:9080 || true"
 		if env.GetArch() == "arm" {
-			command = "/home/testssl/testssl.sh -P -6 istio-ingressgateway-istio-system.apps.rsarm.servicemesh.rhqeaws.com/productpage || true"
+			command = fmt.Sprintf("testssl.sh -P -6 %s/productpage || true", istio.GetIngressGatewayHost(t, meshNamespace))
 		}
 		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(10), func(t TestHelper) {
 			oc.Exec(t,
@@ -114,4 +116,5 @@ spec:
       containers:
       - name: testssl
         image: {{ image "testssl" }}
+        command: ["tail", "-f", "/dev/null"]
 `
