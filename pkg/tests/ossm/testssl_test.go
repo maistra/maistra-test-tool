@@ -27,7 +27,7 @@ import (
 )
 
 func TestSSL(t *testing.T) {
-	NewTest(t).Id("T27").Groups(Full, InterOp).Run(func(t TestHelper) {
+	NewTest(t).Id("T27").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
 		ns := "bookinfo"
 		t.Cleanup(func() {
 			oc.Patch(t, meshNamespace, "smcp", smcpName, "json", `[{"op": "remove", "path": "/spec/security/controlPlane/tls"}]`)
