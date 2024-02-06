@@ -74,6 +74,7 @@ fortio:
 
 testssl:
   x86: quay.io/maistra/testssl:latest
+  arm: quay.io/maistra/testssl:2.5
   p: quay.io/maistra/testssl:0.0-ibm-p
   z: quay.io/maistra/testssl:0.0-ibm-z
 

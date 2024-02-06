@@ -19,6 +19,7 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -26,7 +27,7 @@ import (
 )
 
 func TestSSL(t *testing.T) {
-	NewTest(t).Id("T27").Groups(Full, InterOp).Run(func(t TestHelper) {
+	NewTest(t).Id("T27").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
 		ns := "bookinfo"
 		t.Cleanup(func() {
 			oc.Patch(t, meshNamespace, "smcp", smcpName, "json", `[{"op": "remove", "path": "/spec/security/controlPlane/tls"}]`)
@@ -69,11 +70,15 @@ spec:
 		oc.WaitDeploymentRolloutComplete(t, ns, "testssl")
 
 		t.LogStep("Check testssl.sh results")
+		command := "./testssl/testssl.sh -P -6 productpage:9080 || true"
+		if env.GetArch() == "arm" {
+			command = "./testssl.sh -P -6 productpage:9080 || true"
+		}
 		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(10), func(t TestHelper) {
 			oc.Exec(t,
 				pod.MatchingSelector("app=testssl", ns),
 				"testssl",
-				"./testssl/testssl.sh -P -6 productpage:9080 || true",
+				command,
 				assert.OutputContains(
 					"TLSv1.2",
 					"Received the TLSv1.2 needed in the testssl.sh results",
@@ -109,4 +114,5 @@ spec:
       containers:
       - name: testssl
         image: {{ image "testssl" }}
+        command: ["tail", "-f", "/dev/null"]
 `
