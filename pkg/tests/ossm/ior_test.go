@@ -77,14 +77,14 @@ func TestIOR(t *testing.T) {
 
 		DeployControlPlane(t)
 
-		t.NewSubTest("check IOR off by default v2.5").Run(func(t test.TestHelper) {
+		t.NewSubTest("check IOR on by default v2.5").Run(func(t test.TestHelper) {
 			if env.GetSMCPVersion().LessThan(version.SMCP_2_5) {
 				t.Skip("Skipping until 2.5")
 			}
 			t.LogStep("Check whether the IOR has the correct default setting")
 			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 				if getIORSetting(t, meshNamespace, meshName) != "true" {
-					t.Fatal("Expect to find IOR disabled by default in v2.4+, but it is currently enabled")
+					t.Fatal("Expect to find IOR disabled by default in v2.4+,but it is currently enabled")
 				} else {
 					t.LogSuccess("Got the expected true for IOR setting")
 				}
