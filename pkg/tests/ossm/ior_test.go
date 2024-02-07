@@ -37,7 +37,7 @@ const (
 
 // TestIOR tests IOR error regarding routes recreated: https://issues.redhat.com/browse/OSSM-1974. IOR will be deprecated on 2.4 and willl be removed on 3.0
 func TestIOR(t *testing.T) {
-	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
+	test.NewTest(t).Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
 		t.Log("This test verifies the behavior of IOR.")
 
 		meshNamespace := env.GetDefaultMeshNamespace()
