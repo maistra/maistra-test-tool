@@ -37,7 +37,7 @@ const (
 
 // TestIOR tests IOR error regarding routes recreated: https://issues.redhat.com/browse/OSSM-1974. IOR will be deprecated on 2.4 and willl be removed on 3.0
 func TestIOR(t *testing.T) {
-	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
+	test.NewTest(t).Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
 		t.Log("This test verifies the behavior of IOR.")
 
 		meshNamespace := env.GetDefaultMeshNamespace()
@@ -77,19 +77,15 @@ func TestIOR(t *testing.T) {
 
 		DeployControlPlane(t)
 
-		t.NewSubTest("check IOR off by default v2.5").Run(func(t test.TestHelper) {
+		t.NewSubTest("check IOR on by default v2.5").Run(func(t test.TestHelper) {
 			if env.GetSMCPVersion().LessThan(version.SMCP_2_5) {
 				t.Skip("Skipping until 2.5")
-			}
-			t.LogStep("Check whether the IOR has the correct default setting")
-			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
-				if getIORSetting(t, meshNamespace, meshName) != "false" {
-					t.Fatal("Expect to find IOR disabled by default in v2.4+, but it is currently enabled")
-				} else {
-					t.LogSuccess("Got the expected false for IOR setting")
-				}
 			} else {
-				t.Skip("IOR is not set by default versions less than v2.3")
+				if getIORSetting(t, meshNamespace, meshName) != "true" {
+					t.Fatal("Expect to find IOR enabled by default in v2.5+, but it is currently disabled")
+				} else {
+					t.LogSuccess("Got the expected true for IOR setting")
+				}
 			}
 		})
 
