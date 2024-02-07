@@ -148,6 +148,7 @@ func (o OC) ApplyFile(t test.TestHelper, ns string, file string) {
 
 func (o OC) DeleteFromString(t test.TestHelper, ns string, yamls ...string) {
 	t.T().Helper()
+	t.Logf("Deleting resources from namespace %s", ns)
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
 		shell.ExecuteWithInput(t, fmt.Sprintf("oc %s delete -f - --ignore-not-found", nsFlag(ns)), concatenateYamls(yamls...))
@@ -156,6 +157,7 @@ func (o OC) DeleteFromString(t test.TestHelper, ns string, yamls ...string) {
 
 func (o OC) DeleteFile(t test.TestHelper, ns string, file string) {
 	t.T().Helper()
+	t.Logf("Deleting file %s from namespace %s", file, ns)
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
 		shell.Executef(t, "kubectl delete %s -f %s --ignore-not-found", nsFlag(ns), file)

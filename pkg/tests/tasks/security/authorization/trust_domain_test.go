@@ -36,6 +36,9 @@ func TestTrustDomainMigration(t *testing.T) {
 		foo := "foo"
 		bar := "bar"
 
+		t.Log("This test verifies trust domain migration")
+		t.Log("Doc reference: https://istio.io/latest/docs/tasks/security/authorization/authz-td-migration/")
+
 		t.Cleanup(func() {
 			oc.DeleteFromString(t, foo, TrustDomainPolicy)
 			oc.Patch(t, meshNamespace, "smcp", smcpName, "json", `[{"op": "remove", "path": "/spec/security"}]`)
@@ -48,33 +51,40 @@ func TestTrustDomainMigration(t *testing.T) {
 
 		ossm.DeployControlPlane(t) // integrate the applyTrustDomain patch here
 
+		t.LogStep("Apply old-td trust domain")
 		applyTrustDomain(t, "old-td", "", true)
 
+		t.LogStep("Install httpbin and sleep in multiple namespaces")
 		app.InstallAndWaitReady(t,
 			app.Httpbin(foo),
 			app.Sleep(foo),
 			app.Sleep(bar))
 
-		t.Log("Apply deny all policy except sleep in bar namespace")
+		t.LogStep("Apply trust domain policy to foo namespace")
 		oc.ApplyString(t, foo, TrustDomainPolicy)
 
 		t.NewSubTest("Case 1: Verifying policy works").Run(func(t TestHelper) {
+			t.LogStep("Check whether requests to foo namespace return 403 to foo namespace and 200 to bar namespace")
 			runCurlInSleepPod(t, foo, http.StatusForbidden)
 			runCurlInSleepPod(t, bar, http.StatusOK)
 		})
 
 		t.NewSubTest("Case 2: Migrate trust domain without trust domain aliases").Run(func(t TestHelper) {
+			t.LogStep("Apply new-td trust domain")
 			applyTrustDomain(t, "new-td", "", true)
 			oc.RestartAllPodsAndWaitReady(t, foo, bar)
 
+			t.LogStep("Check whether requests to foo namespace return 403 to foo and bar namespaces")
 			runCurlInSleepPod(t, foo, http.StatusForbidden)
 			runCurlInSleepPod(t, bar, http.StatusForbidden)
 		})
 
 		t.NewSubTest("Case 3: Migrate trust domain with trust domain aliases").Run(func(t TestHelper) {
+			t.LogStep("Apply new-td trust domain with alias old-td")
 			applyTrustDomain(t, "new-td", "old-td", true)
 			oc.RestartAllPodsAndWaitReady(t, foo, bar)
 
+			t.LogStep("Check whether requests to foo namespace return 403 to foo and 200 to bar namespaces")
 			runCurlInSleepPod(t, foo, http.StatusForbidden)
 			runCurlInSleepPod(t, bar, http.StatusOK)
 		})

@@ -38,6 +38,9 @@ func TestAuthPolicy(t *testing.T) {
 	NewTest(t).Id("T18").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
 		meshNamespace := env.GetDefaultMeshNamespace()
 
+		t.Log("This test validates authentication policies.")
+		t.Log("Doc reference: https://istio.io/latest/docs/tasks/security/authentication/authn-policy/")
+
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, "foo", "bar", "legacy")
 		})
@@ -96,16 +99,18 @@ func TestAuthPolicy(t *testing.T) {
 				oc.DeleteFromString(t, meshNamespace, PeerAuthenticationMTLSStrict)
 			})
 
+			t.LogStep("Check whether requests from legacy namespace to foo and bar namespace return 000 placeholder")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				from := "legacy"
 				for _, to := range []string{"foo", "bar"} {
 					oc.Exec(t,
 						pod.MatchingSelector("app=sleep", from),
 						"sleep",
-						fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%{http_code}" || echo "failed to connect"`, to, from, to),
-						assert.OutputDoesNotContain("200",
-							"Global mTLS expected 000",
-							"Response 000 as expected"))
+						fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%{http_code}" || echo %s`,
+							to, from, to, curlFailedMessage),
+						assert.OutputContains("000",
+							fmt.Sprintf("sleep.%s request to httpbin.%s received expected placeholder 000", from, to),
+							fmt.Sprintf("sleep.%s request to httpbin.%s, expexted placeholder 000 not found", from, to)))
 				}
 			})
 		})
@@ -116,6 +121,8 @@ func TestAuthPolicy(t *testing.T) {
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, "foo", PeerAuthenticationMTLSStrict)
 			})
+
+			t.LogStep("Check whether requests succeed except from sleep namespace to foo namespace")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				for _, from := range []string{"foo", "bar", "legacy"} {
 					for _, to := range []string{"foo", "bar"} {
@@ -135,12 +142,16 @@ func TestAuthPolicy(t *testing.T) {
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, "bar", WorkloadPolicyStrict)
 			})
+
+			t.LogStep("Check whether request failed from legacy namespace to bar namespace")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				assertConnectionFailure(t, "legacy", "bar")
 			})
 
 			t.LogStep("Refine mutual TLS per port")
 			oc.ApplyString(t, "bar", PortPolicy)
+
+			t.LogStep("Check whether request succeed from legacy namespace to bar namespace")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				assertConnectionSuccessful(t, "legacy", "bar")
 			})
@@ -152,6 +163,8 @@ func TestAuthPolicy(t *testing.T) {
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, "foo", OverwritePolicy)
 			})
+
+			t.LogStep("Check whether request succeed legacy namespace to foo namespace")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				assertConnectionSuccessful(t, "legacy", "foo")
 			})
@@ -229,6 +242,10 @@ func TestAuthPolicy(t *testing.T) {
 func requireResponseStatus(t TestHelper, url string, requestOption curl.RequestOption, statusCode int) {
 	curl.Request(t, url, requestOption, require.ResponseStatus(statusCode))
 }
+
+const (
+	curlFailedMessage = "CURL_FAILED"
+)
 
 const (
 	WorkloadPolicyStrict = `

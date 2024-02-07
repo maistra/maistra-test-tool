@@ -36,7 +36,7 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 		})
 
 		t.Log("This test validates authorization policies for TCP traffic.")
-		t.Log("Doc reference: https://istio.io/v1.14/docs/tasks/security/authorization/authz-tcp/")
+		t.Log("Doc reference: https://istio.io/latest/docs/tasks/security/authorization/authz-tcp/")
 
 		ossm.DeployControlPlane(t)
 
@@ -56,6 +56,7 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 			t.LogStep("Apply an invalid policy to allow requests to port 9000 and add an HTTP GET field")
 			oc.ApplyString(t, ns, TCPAllowGETPolicy)
 
+			t.LogStep("Check whether the requests to port 9000 and 9001 are denied")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				assertPortTcpEchoDenied(t, ns, "9000")
 				assertPortTcpEchoDenied(t, ns, "9001")
@@ -69,6 +70,7 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 			t.LogStep("Apply a policy to deny tcp requests to port 9000")
 			oc.ApplyString(t, ns, TCPDenyGETPolicy)
 
+			t.LogStep("Check whether the request to port 9000 is denied and request to port 9001 is accepted")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				assertPortTcpEchoDenied(t, ns, "9000")
 				assertPortTcpEchoAccepted(t, ns, "9001")
@@ -82,6 +84,7 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 			t.LogStep("Apply a policy to allow tcp requests to port 9000 and 9001")
 			oc.ApplyString(t, ns, TCPAllowPolicy)
 
+			t.LogStep("Check whether the requests to port 9000 and 9001 are accepted")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				assertPortTcpEchoAccepted(t, ns, "9000")
 				assertPortTcpEchoAccepted(t, ns, "9001")
