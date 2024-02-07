@@ -84,7 +84,7 @@ func TestIOR(t *testing.T) {
 			t.LogStep("Check whether the IOR has the correct default setting")
 			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 				if getIORSetting(t, meshNamespace, meshName) != "true" {
-					t.Fatal("Expect to find IOR disabled by default in v2.4+,but it is currently enabled")
+					t.Fatal("Expect to find IOR enabled by default in v2.4+,but it is currently disabled")
 				} else {
 					t.LogSuccess("Got the expected true for IOR setting")
 				}
