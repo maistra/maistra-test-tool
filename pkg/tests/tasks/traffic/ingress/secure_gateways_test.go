@@ -50,6 +50,9 @@ func TestSecureGateways(t *testing.T) {
 	NewTest(t).Id("T9").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
 		ns := "bookinfo"
 
+		t.Log("This test verifies secure gateways.")
+		t.Log("Doc reference: https://istio.io/latest/docs/tasks/traffic-management/ingress/secure-ingress/")
+
 		t.Cleanup(func() {
 			oc.DeleteSecret(t, meshNamespace, "httpbin-credential")
 			oc.DeleteSecret(t, meshNamespace, "helloworld-credential")
@@ -80,6 +83,7 @@ func TestSecureGateways(t *testing.T) {
 				createRouteWithTLS(t, meshNamespace, "httpbin.example.com", "https", "istio-ingressgateway", "passthrough")
 			}
 
+			t.LogStep("check if httpbin responds with teapot")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				curl.Request(t,
 					teapotURL,
