@@ -21,11 +21,14 @@ import (
 )
 
 var (
-	httpbinSampleServerCertKey = env.GetRootDir() + "/sampleCerts/httpbin.example.com/httpbin.example.com.key"
-	httpbinSampleServerCert    = env.GetRootDir() + "/sampleCerts/httpbin.example.com/httpbin.example.com.crt"
-	httpbinSampleCACert        = env.GetRootDir() + "/sampleCerts/httpbin.example.com/example.com.crt"
-	httpbinSampleClientCert    = env.GetRootDir() + "/sampleCerts/httpbin.example.com/httpbin-client.example.com.crt"
-	httpbinSampleClientCertKey = env.GetRootDir() + "/sampleCerts/httpbin.example.com/httpbin-client.example.com.key"
+	httpbinSampleServerCertKey        = env.GetRootDir() + "/sampleCerts/httpbin.example.com/httpbin.example.com.key"
+	httpbinSampleServerCert           = env.GetRootDir() + "/sampleCerts/httpbin.example.com/httpbin.example.com.crt"
+	httpbinSampleCACert               = env.GetRootDir() + "/sampleCerts/httpbin.example.com/example.com.crt"
+	httpbinSampleCACrl                = env.GetRootDir() + "/sampleCerts/httpbin.example.com/example.com.crl"
+	httpbinSampleClientCert           = env.GetRootDir() + "/sampleCerts/httpbin.example.com/httpbin-client.example.com.crt"
+	httpbinSampleClientCertKey        = env.GetRootDir() + "/sampleCerts/httpbin.example.com/httpbin-client.example.com.key"
+	httpbinSampleClientRevokedCert    = env.GetRootDir() + "/sampleCerts/httpbin.example.com/httpbin-client-revoked.example.com.crt"
+	httpbinSampleClientRevokedCertKey = env.GetRootDir() + "/sampleCerts/httpbin.example.com/httpbin-client-revoked.example.com.key"
 
 	helloworldServerCertKey = env.GetRootDir() + "/sampleCerts/helloworldv1/helloworld-v1.example.com.key"
 	helloworldServerCert    = env.GetRootDir() + "/sampleCerts/helloworldv1/helloworld-v1.example.com.crt"
