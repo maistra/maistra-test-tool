@@ -9,7 +9,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-type HTTPResponseCheckFunc func(t test.TestHelper, response *http.Response, responseBody []byte, duration time.Duration)
+type HTTPResponseCheckFunc func(t test.TestHelper, response *http.Response, responseBody []byte, responseErr error, duration time.Duration)
 
 func Request(t test.TestHelper, url string, requestOption RequestOption, checks ...HTTPResponseCheckFunc) []byte {
 	t.T().Helper()
@@ -34,9 +34,9 @@ func Request(t test.TestHelper, url string, requestOption RequestOption, checks 
 		t.Fatalf("failed to modify request: %v", err)
 	}
 
-	resp, err := client.Do(req)
-	if err != nil {
-		t.Logf("failed to get HTTP Response: %v", err)
+	resp, resp_err := client.Do(req)
+	if resp_err != nil {
+		t.Logf("failed to get HTTP Response: %v", resp_err)
 	}
 
 	var responseBody []byte
@@ -54,7 +54,7 @@ func Request(t test.TestHelper, url string, requestOption RequestOption, checks 
 
 	duration := time.Since(startT)
 	for _, check := range checks {
-		check(t, resp, responseBody, duration)
+		check(t, resp, responseBody, resp_err, duration)
 	}
 	return responseBody
 }

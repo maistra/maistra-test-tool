@@ -138,7 +138,11 @@ func TestSecureGateways(t *testing.T) {
 					request.WithTLS(httpbinSampleCACert, "httpbin.example.com", gatewayHost, gatewayPort),
 					assert.RequestFails(
 						"request failed as expected",
-						"expected request to fail because no client certificate was provided"))
+						"expected request to fail because no client certificate was provided"),
+					assert.RequestFailsWithErrorMessage(
+						"Get \"https://httpbin.example.com:443/status/418\": remote error: tls: certificate require",
+						"request failed with expected error message",
+						"request failed but with different error message"))
 			})
 
 			t.LogStep("check if SSL handshake succeeds when client certificate is given")
@@ -173,7 +177,11 @@ func TestSecureGateways(t *testing.T) {
 					request.WithTLS(httpbinSampleCACert, "httpbin.example.com", gatewayHost, gatewayPort),
 					assert.RequestFails(
 						"request failed as expected",
-						"expected request to fail because no client certificate was provided"))
+						"expected request to fail because no client certificate was provided"),
+					assert.RequestFailsWithErrorMessage(
+						"Get \"https://httpbin.example.com:443/status/418\": remote error: tls: certificate require",
+						"request failed with expected error message",
+						"request failed but with different error message"))
 			})
 
 			t.LogStep("check if SSL handshake succeeds when client certificate is given")
@@ -195,7 +203,11 @@ func TestSecureGateways(t *testing.T) {
 						WithClientCertificate(httpbinSampleClientRevokedCert, httpbinSampleClientRevokedCertKey),
 					assert.RequestFails(
 						"request failed as expected",
-						"expected request to fail because revoked client certificate was provided"))
+						"expected request to fail because revoked client certificate was provided"),
+					assert.RequestFailsWithErrorMessage(
+						"Get \"https://httpbin.example.com:443/status/418\": remote error: tls: revoked certificate",
+						"request failed with expected error message",
+						"request failed but with different error message"))
 			})
 		})
 	})
