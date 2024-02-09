@@ -43,7 +43,7 @@ func TestEnvoyExtAuthzHttpExtensionProvider(t *testing.T) {
 		})
 
 		t.LogStep("Check if httpbin returns 200 OK when no authorization policies are in place")
-		assertHttpbinRequestSucceeds(t, ns, httpbinRequest("GET", "/ip"))
+		app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/ip")
 
 		t.LogStep("Deploy the External Authorizer and Verify the sample external authorizer is up and running")
 		oc.ApplyTemplate(t, ns, ExternalAuthzService, nil)
@@ -125,13 +125,13 @@ spec:
 		oc.ApplyString(t, ns, ExternalRoute)
 
 		t.LogStep("Verify a request to path /headers with header x-ext-authz: deny is denied by the sample ext_authz server:")
-		assertRequestDenied(t, ns, httpbinRequest("GET", "/headers", "x-ext-authz: deny"), "403")
+		app.AssertSleepPodRequestForbidden(t, ns, "http://httpbin:8000/headers", app.CurlOpts{Headers: []string{"x-ext-authz: deny"}})
 
 		t.LogStep("Verify a request to path /headers with header x-ext-authz: allow is allowed by the sample ext_authz server")
-		assertRequestAccepted(t, ns, httpbinRequest("GET", "/headers", "x-ext-authz: allow"))
+		app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/headers", app.CurlOpts{Headers: []string{"x-ext-authz: allow"}})
 
 		t.LogStep("Verify a request to path /ip is allowed and does not trigger the external authorization")
-		assertHttpbinRequestSucceeds(t, ns, httpbinRequest("GET", "/ip"))
+		app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/ip")
 	})
 }
 
@@ -153,7 +153,7 @@ func TestEnvoyExtAuthzGrpcExtensionProvider(t *testing.T) {
 		})
 
 		t.LogStep("Check if httpbin returns 200 OK when no authorization policies are in place")
-		assertHttpbinRequestSucceeds(t, ns, httpbinRequest("GET", "/ip"))
+		app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/ip")
 
 		t.LogStep("Deploy the External Authorizer and Verify the sample external authorizer is up and running")
 		oc.ApplyTemplate(t, ns, ExternalAuthzService, nil)
@@ -207,13 +207,13 @@ spec:
 		oc.ApplyString(t, ns, ExternalRouteGrpc)
 
 		t.LogStep("Verify a request to path /headers with header x-ext-authz: deny is denied by the sample ext_authz server:")
-		assertRequestDenied(t, ns, httpbinRequest("GET", "/headers", "x-ext-authz: deny"), "403")
+		app.AssertSleepPodRequestForbidden(t, ns, "http://httpbin:8000/headers", app.CurlOpts{Headers: []string{"x-ext-authz: deny"}})
 
 		t.LogStep("Verify a request to path /headers with header x-ext-authz: allow is allowed by the sample ext_authz server")
-		assertRequestAccepted(t, ns, httpbinRequest("GET", "/headers", "x-ext-authz: allow"))
+		app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/headers", app.CurlOpts{Headers: []string{"x-ext-authz: allow"}})
 
 		t.LogStep("Verify a request to path /ip is allowed and does not trigger the external authorization")
-		assertHttpbinRequestSucceeds(t, ns, httpbinRequest("GET", "/ip"))
+		app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/ip")
 	})
 }
 

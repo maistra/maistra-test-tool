@@ -40,13 +40,15 @@ func TestAuthorizationJWT(t *testing.T) {
 		app.InstallAndWaitReady(t, app.Httpbin(ns), app.Sleep(ns))
 
 		t.LogStep("Check if httpbin returns 200 OK when no authorization policies are in place")
-		assertHttpbinRequestSucceeds(t, ns, httpbinRequest("GET", "/ip"))
+		app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/ip")
 
 		jwtURL := "https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/demo.jwt"
 		token := string(curl.Request(t, jwtURL, nil))
 
 		groupURL := "https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/groups-scope.jwt"
 		tokenGroup := string(curl.Request(t, groupURL, nil))
+
+		headersUrl := "http://httpbin:8000/headers"
 
 		t.Cleanup(func() {
 			oc.DeleteFromString(t, ns, JWTExampleRule)
@@ -55,10 +57,10 @@ func TestAuthorizationJWT(t *testing.T) {
 
 		t.NewSubTest("Allow requests with valid JWT and list-typed claims").Run(func(t test.TestHelper) {
 			t.LogStep("Verify that a request with an invalid JWT is denied")
-			assertRequestDenied(t, ns, httpbinRequest("GET", "/headers", bearerTokenHeader("invalidToken")), "401")
+			app.AssertSleepPodRequestUnauthorized(t, ns, headersUrl, app.CurlOpts{Headers: []string{bearerTokenHeader("invalidToken")}})
 
 			t.LogStep("Verify that a request without a JWT is allowed because there is no authorization policy")
-			assertRequestAccepted(t, ns, httpbinRequest("GET", "/headers"))
+			app.AssertSleepPodRequestSuccess(t, ns, headersUrl)
 		})
 
 		t.NewSubTest("Security authorization allow JWT requestPrincipal").Run(func(t test.TestHelper) {
@@ -67,10 +69,10 @@ func TestAuthorizationJWT(t *testing.T) {
 			})
 			oc.ApplyString(t, ns, JWTRequireRule)
 			t.LogStep("Verify that a request with a valid JWT is allowed")
-			assertRequestAccepted(t, ns, httpbinRequest("GET", "/headers", bearerTokenHeader(token)))
+			app.AssertSleepPodRequestSuccess(t, ns, headersUrl, app.CurlOpts{Headers: []string{bearerTokenHeader(token)}})
 
 			t.LogStep("Verify request without a JWT is denied")
-			assertRequestDenied(t, ns, httpbinRequest("GET", "/headers"), "403")
+			app.AssertSleepPodRequestForbidden(t, ns, headersUrl)
 		})
 
 		t.NewSubTest("Security authorization allow JWT claims group").Run(func(t test.TestHelper) {
@@ -79,10 +81,10 @@ func TestAuthorizationJWT(t *testing.T) {
 			})
 			oc.ApplyString(t, ns, JWTGroupClaimRule)
 			t.LogStep("Verify that a request with the JWT that includes group1 in the groups claim is allowed")
-			assertRequestAccepted(t, ns, httpbinRequest("GET", "/headers", bearerTokenHeader(tokenGroup)))
+			app.AssertSleepPodRequestSuccess(t, ns, headersUrl, app.CurlOpts{Headers: []string{bearerTokenHeader(tokenGroup)}})
 
 			t.LogStep("Verify that a request with a JWT, which does not have the groups claim is rejected")
-			assertRequestDenied(t, ns, httpbinRequest("GET", "/headers", bearerTokenHeader(token)), "403")
+			app.AssertSleepPodRequestForbidden(t, ns, headersUrl, app.CurlOpts{Headers: []string{bearerTokenHeader(token)}})
 		})
 	})
 }

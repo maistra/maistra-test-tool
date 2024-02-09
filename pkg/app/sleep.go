@@ -1,7 +1,13 @@
 package app
 
 import (
+	"fmt"
+
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -52,6 +58,78 @@ func (a *sleep) WaitReady(t test.TestHelper) {
 	t.T().Helper()
 	oc.WaitDeploymentRolloutComplete(t, a.ns, "sleep")
 }
+
+type CurlOpts struct {
+	Method  string
+	Headers []string
+	Options []string
+}
+
+func ExecInSleepPod(t test.TestHelper, ns string, command string, checks ...common.CheckFunc) {
+	t.T().Helper()
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		t.T().Helper()
+		oc.Exec(t, pod.MatchingSelector("app=sleep", ns), "sleep", command, checks...)
+	})
+}
+
+func AssertSleepPodRequestSuccess(t test.TestHelper, sleepNamespace string, url string, opts ...CurlOpts) {
+	assertSleepPodRequestResponse(t, sleepNamespace, url, "200", opts...)
+}
+
+func AssertSleepPodRequestFailure(t test.TestHelper, sleepNamespace string, url string, opts ...CurlOpts) {
+	assertSleepPodRequestResponse(t, sleepNamespace, url, curlFailedMessage, opts...)
+}
+
+func AssertSleepPodRequestForbidden(t test.TestHelper, sleepNamespace string, url string, opts ...CurlOpts) {
+	assertSleepPodRequestResponse(t, sleepNamespace, url, "403", opts...)
+}
+
+func AssertSleepPodRequestUnauthorized(t test.TestHelper, sleepNamespace string, url string, opts ...CurlOpts) {
+	assertSleepPodRequestResponse(t, sleepNamespace, url, "401", opts...)
+}
+
+func AssertSleepPodZeroesPlaceholder(t test.TestHelper, sleepNamespace string, url string, opts ...CurlOpts) {
+	assertSleepPodRequestResponse(t, sleepNamespace, url, "000", opts...)
+}
+
+func assertSleepPodRequestResponse(t test.TestHelper, sleepNamespace, url, expected string, opts ...CurlOpts) {
+	command := buildCurlCmd(url, opts...)
+	ExecInSleepPod(t, sleepNamespace, command,
+		assert.OutputContains(expected,
+			fmt.Sprintf("Got expected \"%s\"", expected),
+			fmt.Sprintf("Expect \"%s\", but got a different response", expected)))
+}
+
+func buildCurlCmd(url string, opts ...CurlOpts) string {
+	var opt CurlOpts
+	if len(opts) > 0 {
+		opt = opts[0]
+	} else {
+		opt = CurlOpts{}
+	}
+
+	method, headers, options := "", "", ""
+	if opt.Method == "" {
+		method = "GET"
+	} else {
+		method = opt.Method
+	}
+	if opt.Options != nil {
+		for _, option := range opt.Options {
+			options += " " + option
+		}
+	}
+	if opt.Headers != nil {
+		for _, header := range opt.Headers {
+			headers += fmt.Sprintf(` -H "%s"`, header)
+		}
+	}
+
+	return fmt.Sprintf(`curl -sS %s%s -X %s -o /dev/null -w "%%{http_code}" %s 2>/dev/null || echo %s`, options, headers, method, url, curlFailedMessage)
+}
+
+const curlFailedMessage = "CURL_FAILED"
 
 const sleepTemplate = `
 apiVersion: v1

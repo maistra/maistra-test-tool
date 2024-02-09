@@ -16,17 +16,12 @@ package authorization
 
 import (
 	"fmt"
-	"net/http"
-	"strconv"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
-	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/pod"
-	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
@@ -35,6 +30,7 @@ func TestTrustDomainMigration(t *testing.T) {
 	NewTest(t).Id("T24").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
 		foo := "foo"
 		bar := "bar"
+		httpbinUrl := "http://httpbin.foo:8000/ip"
 
 		t.Log("This test verifies trust domain migration")
 		t.Log("Doc reference: https://istio.io/latest/docs/tasks/security/authorization/authz-td-migration/")
@@ -65,8 +61,8 @@ func TestTrustDomainMigration(t *testing.T) {
 
 		t.NewSubTest("Case 1: Verifying policy works").Run(func(t TestHelper) {
 			t.LogStep("Check whether requests to foo namespace return 403 to foo namespace and 200 to bar namespace")
-			runCurlInSleepPod(t, foo, http.StatusForbidden)
-			runCurlInSleepPod(t, bar, http.StatusOK)
+			app.AssertSleepPodRequestForbidden(t, foo, httpbinUrl)
+			app.AssertSleepPodRequestSuccess(t, bar, httpbinUrl)
 		})
 
 		t.NewSubTest("Case 2: Migrate trust domain without trust domain aliases").Run(func(t TestHelper) {
@@ -75,8 +71,8 @@ func TestTrustDomainMigration(t *testing.T) {
 			oc.RestartAllPodsAndWaitReady(t, foo, bar)
 
 			t.LogStep("Check whether requests to foo namespace return 403 to foo and bar namespaces")
-			runCurlInSleepPod(t, foo, http.StatusForbidden)
-			runCurlInSleepPod(t, bar, http.StatusForbidden)
+			app.AssertSleepPodRequestForbidden(t, foo, httpbinUrl)
+			app.AssertSleepPodRequestForbidden(t, bar, httpbinUrl)
 		})
 
 		t.NewSubTest("Case 3: Migrate trust domain with trust domain aliases").Run(func(t TestHelper) {
@@ -85,20 +81,9 @@ func TestTrustDomainMigration(t *testing.T) {
 			oc.RestartAllPodsAndWaitReady(t, foo, bar)
 
 			t.LogStep("Check whether requests to foo namespace return 403 to foo and 200 to bar namespaces")
-			runCurlInSleepPod(t, foo, http.StatusForbidden)
-			runCurlInSleepPod(t, bar, http.StatusOK)
+			app.AssertSleepPodRequestForbidden(t, foo, httpbinUrl)
+			app.AssertSleepPodRequestSuccess(t, bar, httpbinUrl)
 		})
-	})
-}
-
-func runCurlInSleepPod(t TestHelper, ns string, expectedStatus int) {
-	t.Logf("Verifying curl output, expecting %d", expectedStatus)
-	retry.UntilSuccess(t, func(t TestHelper) {
-		oc.Exec(t,
-			pod.MatchingSelector("app=sleep", ns),
-			"sleep",
-			`curl http://httpbin.foo:8000/ip -sS -o /dev/null -w "%{http_code}\n"`,
-			assert.OutputContains(strconv.Itoa(expectedStatus), "", ""))
 	})
 }
 

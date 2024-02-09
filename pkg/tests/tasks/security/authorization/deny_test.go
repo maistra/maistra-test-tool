@@ -26,6 +26,8 @@ import (
 func TestAuthorizationDenyAllow(t *testing.T) {
 	test.NewTest(t).Id("T23").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 		ns := "foo"
+		curlOptsAdmin := app.CurlOpts{Headers: []string{"x-token: admin"}}
+		curlOptsGuest := app.CurlOpts{Headers: []string{"x-token: guest"}}
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns)
 		})
@@ -38,7 +40,7 @@ func TestAuthorizationDenyAllow(t *testing.T) {
 		app.InstallAndWaitReady(t, app.Httpbin(ns), app.Sleep(ns))
 
 		t.LogStep("Check if httpbin returns 200 OK when no authorization policies are in place")
-		assertHttpbinRequestSucceeds(t, ns, httpbinRequest("GET", "/ip"))
+		app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/ip")
 
 		t.NewSubTest("explicitly deny request").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
@@ -48,10 +50,10 @@ func TestAuthorizationDenyAllow(t *testing.T) {
 			oc.ApplyString(t, ns, DenyGETPolicy)
 
 			t.LogStep("Verify that GET request is denied")
-			assertRequestDenied(t, ns, httpbinRequest("GET", "/get"), "403")
+			app.AssertSleepPodRequestForbidden(t, ns, "http://httpbin:8000/get")
 
 			t.LogStep("Verify that POST request is allowed")
-			assertRequestAccepted(t, ns, httpbinRequest("POST", "/post"))
+			app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/post", app.CurlOpts{Method: "POST"})
 		})
 
 		t.NewSubTest("deny request header").Run(func(t test.TestHelper) {
@@ -62,10 +64,10 @@ func TestAuthorizationDenyAllow(t *testing.T) {
 			oc.ApplyString(t, ns, DenyHeaderNotAdminPolicy)
 
 			t.LogStep("Verify that GET request with HTTP header 'x-token: admin' is allowed")
-			assertRequestAccepted(t, ns, httpbinRequest("GET", "/get", "x-token: admin"))
+			app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/get", curlOptsAdmin)
 
 			t.LogStep("Verify that GET request with HTTP header 'x-token: guest' is denied")
-			assertRequestDenied(t, ns, httpbinRequest("GET", "/get", "x-token: guest"), "403")
+			app.AssertSleepPodRequestForbidden(t, ns, "http://httpbin:8000/get", curlOptsGuest)
 		})
 
 		t.NewSubTest("allow request path").Run(func(t test.TestHelper) {
@@ -80,13 +82,13 @@ func TestAuthorizationDenyAllow(t *testing.T) {
 			oc.ApplyString(t, ns, AllowPathIPPolicy)
 
 			t.LogStep("Verify that GET request with the HTTP header 'x-token: guest' at path '/ip' is denied")
-			assertRequestDenied(t, ns, httpbinRequest("GET", "/ip", "x-token: guest"), "403")
+			app.AssertSleepPodRequestForbidden(t, ns, "http://httpbin:8000/ip", curlOptsGuest)
 
 			t.LogStep("Verify that GET request with HTTP header 'x-token: admin' at path '/ip' is allowed")
-			assertRequestAccepted(t, ns, httpbinRequest("GET", "/ip", "x-token: admin"))
+			app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/ip", curlOptsAdmin)
 
 			t.LogStep("Verify that GET request with HTTP header 'x-token: admin' at path '/get' is denied")
-			assertRequestDenied(t, ns, httpbinRequest("GET", "/get", "x-token: admin"), "403")
+			app.AssertSleepPodRequestForbidden(t, ns, "http://httpbin:8000/get", curlOptsAdmin)
 		})
 	})
 }

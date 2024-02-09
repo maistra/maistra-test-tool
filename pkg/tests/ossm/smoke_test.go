@@ -24,7 +24,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -135,23 +134,19 @@ func checkSMCP(t TestHelper, ns string) {
 }
 
 func assertTrafficFlowsThroughProxy(t TestHelper, ns string) {
-	retry.UntilSuccess(t, func(t test.TestHelper) {
-		oc.Exec(t,
-			pod.MatchingSelector("app=sleep", ns), "sleep",
-			"curl -sI http://productpage:9080",
-			assert.OutputContains(
-				"HTTP/1.1 200 OK",
-				"ProductPage returns 200 OK",
-				"ProductPage didn't return 200 OK"),
-			assert.OutputContains(
-				"server: istio-envoy",
-				"HTTP header 'server: istio-envoy' is present in the response",
-				"HTTP header 'server: istio-envoy' is missing from the response"),
-			assert.OutputContains(
-				"x-envoy-decorator-operation",
-				"HTTP header 'x-envoy-decorator-operation' is present in the response",
-				"HTTP header 'x-envoy-decorator-operation' is missing from the response"))
-	})
+	app.ExecInSleepPod(t, ns, "curl -sI http://productpage:9080",
+		assert.OutputContains(
+			"HTTP/1.1 200 OK",
+			"ProductPage returns 200 OK",
+			"ProductPage didn't return 200 OK"),
+		assert.OutputContains(
+			"server: istio-envoy",
+			"HTTP header 'server: istio-envoy' is present in the response",
+			"HTTP header 'server: istio-envoy' is missing from the response"),
+		assert.OutputContains(
+			"x-envoy-decorator-operation",
+			"HTTP header 'x-envoy-decorator-operation' is present in the response",
+			"HTTP header 'x-envoy-decorator-operation' is missing from the response"))
 }
 
 func assertProxiesReadyInLessThan10Seconds(t TestHelper, ns string) {

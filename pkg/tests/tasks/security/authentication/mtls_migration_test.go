@@ -20,11 +20,8 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
-	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
-	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
@@ -54,7 +51,7 @@ func TestMTlsMigration(t *testing.T) {
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			for _, from := range fromNamespaces {
 				for _, to := range toNamespaces {
-					assertConnectionSuccessful(t, from, to)
+					app.AssertSleepPodRequestSuccess(t, from, fmt.Sprintf("http://httpbin.%s:8000/ip", to))
 				}
 			}
 		})
@@ -67,10 +64,11 @@ func TestMTlsMigration(t *testing.T) {
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				for _, from := range fromNamespaces {
 					for _, to := range toNamespaces {
+						url := fmt.Sprintf("http://httpbin.%s:8000/ip", to)
 						if from == "legacy" && to == "foo" {
-							assertConnectionFailure(t, from, to)
+							app.AssertSleepPodRequestFailure(t, from, url)
 						} else {
-							assertConnectionSuccessful(t, from, to)
+							app.AssertSleepPodRequestSuccess(t, from, url)
 						}
 					}
 				}
@@ -88,36 +86,15 @@ func TestMTlsMigration(t *testing.T) {
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				for _, from := range fromNamespaces {
 					for _, to := range toNamespaces {
+						url := fmt.Sprintf("http://httpbin.%s:8000/ip", to)
 						if from == "legacy" {
-							assertConnectionFailure(t, from, to)
+							app.AssertSleepPodRequestFailure(t, from, url)
 						} else {
-							assertConnectionSuccessful(t, from, to)
+							app.AssertSleepPodRequestSuccess(t, from, url)
 						}
 					}
 				}
 			})
 		})
 	})
-}
-
-func assertConnectionSuccessful(t test.TestHelper, from string, to string) {
-	curlFromTo(t, from, to,
-		assert.OutputContains("200",
-			fmt.Sprintf("%s connects to %s", from, to),
-			fmt.Sprintf("%s can't connect to %s", from, to)))
-}
-
-func assertConnectionFailure(t test.TestHelper, from string, to string) {
-	curlFromTo(t, from, to,
-		assert.OutputContains("failed to connect",
-			fmt.Sprintf("%s can't conect to %s", from, to),
-			fmt.Sprintf("%s can connect to %s, but shouldn't", from, to)))
-}
-
-func curlFromTo(t test.TestHelper, from string, to string, checks ...common.CheckFunc) {
-	oc.Exec(t,
-		pod.MatchingSelector("app=sleep", from),
-		"sleep",
-		fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%{http_code}" || echo "failed to connect"`, to, from, to),
-		checks...)
 }
