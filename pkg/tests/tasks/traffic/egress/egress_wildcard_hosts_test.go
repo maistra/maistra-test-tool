@@ -21,8 +21,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/pod"
-	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -64,25 +62,21 @@ func TestEgressWildcard(t *testing.T) {
 
 func assertExternalRequestSuccess(t TestHelper, ns string) {
 	t.LogStep("Check external request to en.wikipedia.org and de.wikipedia.org")
-	retry.UntilSuccess(t, func(t TestHelper) {
-		oc.Exec(t,
-			pod.MatchingSelector("app=sleep", ns),
-			"sleep",
-			`curl -s https://en.wikipedia.org/wiki/Main_Page`,
-			assert.OutputContains(
-				"<title>Wikipedia, the free encyclopedia</title>",
-				"Received the correct response from en.wikipedia.org",
-				"Failed to receive the correct response from en.wikipedia.org"))
+	app.ExecInSleepPod(t,
+		ns,
+		`curl -s https://en.wikipedia.org/wiki/Main_Page`,
+		assert.OutputContains(
+			"<title>Wikipedia, the free encyclopedia</title>",
+			"Received the correct response from en.wikipedia.org",
+			"Failed to receivExecInSleepPode the correct response from en.wikipedia.org"))
 
-		oc.Exec(t,
-			pod.MatchingSelector("app=sleep", ns),
-			"sleep",
-			`curl -s https://de.wikipedia.org/wiki/Wikipedia:Hauptseite`,
-			assert.OutputContains(
-				"<title>Wikipedia – Die freie Enzyklopädie</title>",
-				"Received the correct response from de.wikipedia.org",
-				"Failed to receive the correct response from de.wikipedia.org"))
-	})
+	app.ExecInSleepPod(t,
+		ns,
+		`curl -s https://de.wikipedia.org/wiki/Wikipedia:Hauptseite`,
+		assert.OutputContains(
+			"<title>Wikipedia – Die freie Enzyklopädie</title>",
+			"Received the correct response from de.wikipedia.org",
+			"Failed to receive the correct response from de.wikipedia.org"))
 }
 
 const (

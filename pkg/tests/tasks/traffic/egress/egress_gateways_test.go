@@ -33,8 +33,7 @@ func TestEgressGateways(t *testing.T) {
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install sleep pod")
-		sleep := app.Sleep(ns.Bookinfo)
-		app.InstallAndWaitReady(t, sleep)
+		app.InstallAndWaitReady(t, app.Sleep(ns.Bookinfo))
 
 		t.NewSubTest("HTTP").Run(func(t TestHelper) {
 			t.LogStepf("Install external httpbin")
@@ -53,7 +52,7 @@ func TestEgressGateways(t *testing.T) {
 				oc.DeleteFromTemplate(t, ns.Bookinfo, httpbinHttpGateway, smcp)
 			})
 
-			assertRequestSuccess(t, sleep, "http://httpbin.mesh-external:8000/headers")
+			app.AssertSleepPodRequestSuccess(t, ns.Bookinfo, "http://httpbin.mesh-external:8000/headers")
 		})
 
 		t.NewSubTest("HTTPS").Run(func(t TestHelper) {
@@ -79,7 +78,12 @@ func TestEgressGateways(t *testing.T) {
 			})
 
 			t.Log("Send HTTPS request to external nginx")
-			assertInsecureRequestSuccess(t, sleep, "https://my-nginx.mesh-external.svc.cluster.local")
+			app.AssertSleepPodRequestSuccess(
+				t,
+				ns.Bookinfo,
+				"https://my-nginx.mesh-external.svc.cluster.local",
+				app.CurlOpts{Options: []string{"--insecure"}},
+			)
 		})
 	})
 }

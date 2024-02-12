@@ -38,8 +38,7 @@ func TestTLSOriginationSDS(t *testing.T) {
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install sleep pod")
-		sleep := app.Sleep(ns.Bookinfo)
-		app.InstallAndWaitReady(t, sleep)
+		app.InstallAndWaitReady(t, app.Sleep(ns.Bookinfo))
 
 		t.LogStep("Deploy nginx mTLS server and create secrets in the mesh namespace")
 		app.InstallAndWaitReady(t, app.NginxExternalMTLS(ns.MeshExternal))
@@ -51,6 +50,6 @@ func TestTLSOriginationSDS(t *testing.T) {
 		oc.ApplyString(t, meshNamespace, nginxServiceEntry, originateMtlsSdsSToNginx)
 
 		t.Log("Send HTTP request to external nginx to verify mTLS origination")
-		assertRequestSuccess(t, sleep, "http://my-nginx.mesh-external.svc.cluster.local")
+		app.AssertSleepPodRequestSuccess(t, ns.Bookinfo, "http://my-nginx.mesh-external.svc.cluster.local")
 	})
 }

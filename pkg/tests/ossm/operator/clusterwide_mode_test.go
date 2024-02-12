@@ -375,26 +375,20 @@ spec:
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 			t.LogStep("Check if mTLS is enabled in foo")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				oc.Exec(t,
-					pod.MatchingSelector("app=sleep", "foo"),
-					"sleep",
-					"curl http://httpbin.foo:8000/headers -s",
-					assert.OutputContains("X-Forwarded-Client-Cert",
-						"mTLS is enabled in namespace foo (X-Forwarded-Client-Cert header is present)",
-						"mTLS is not enabled in namespace foo (X-Forwarded-Client-Cert header is not present)"))
-			})
+			app.ExecInSleepPod(t,
+				"foo",
+				"curl http://httpbin.foo:8000/headers -s",
+				assert.OutputContains("X-Forwarded-Client-Cert",
+					"mTLS is enabled in namespace foo (X-Forwarded-Client-Cert header is present)",
+					"mTLS is not enabled in namespace foo (X-Forwarded-Client-Cert header is not present)"))
 
 			t.LogStep("Check that mTLS is NOT enabled in legacy")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				oc.Exec(t,
-					pod.MatchingSelector("app=sleep", "foo"),
-					"sleep",
-					"curl http://httpbin.legacy:8000/headers -s",
-					assert.OutputDoesNotContain("X-Forwarded-Client-Cert",
-						"mTLS is not enabled in namespace legacy (X-Forwarded-Client-Cert header is not present)",
-						"mTLS is enabled in namespace legacy, but shouldn't be (X-Forwarded-Client-Cert header is present when it shouldn't be)"))
-			})
+			app.ExecInSleepPod(t,
+				"foo",
+				"curl http://httpbin.legacy:8000/headers -s",
+				assert.OutputDoesNotContain("X-Forwarded-Client-Cert",
+					"mTLS is not enabled in namespace legacy (X-Forwarded-Client-Cert header is not present)",
+					"mTLS is enabled in namespace legacy, but shouldn't be (X-Forwarded-Client-Cert header is present when it shouldn't be)"))
 		})
 
 		t.NewSubTest("cluster wide works with profiles").Run(func(t test.TestHelper) {

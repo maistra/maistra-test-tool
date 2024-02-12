@@ -45,8 +45,7 @@ func TestAccessExternalServices(t *testing.T) {
 		ossm.DeployControlPlane(t)
 
 		t.LogStepf("Install sleep into %s", ns.Bookinfo)
-		sleep := app.Sleep(ns.Bookinfo)
-		app.InstallAndWaitReady(t, sleep)
+		app.InstallAndWaitReady(t, app.Sleep(ns.Bookinfo))
 
 		t.LogStepf("Install httpbin in %s", ns.MeshExternal)
 		httpbin := app.HttpbinNoSidecar(ns.MeshExternal)
@@ -54,7 +53,7 @@ func TestAccessExternalServices(t *testing.T) {
 
 		t.LogStep("Make request to external httpbin from sleep")
 		httpbinHeadersUrl := fmt.Sprintf("http://%s.%s:8000/headers", httpbin.Name(), httpbin.Namespace())
-		assertRequestSuccess(t, sleep, httpbinHeadersUrl)
+		app.AssertSleepPodRequestSuccess(t, ns.Bookinfo, httpbinHeadersUrl)
 
 		t.LogStep("Make sure that external httpbin was not discovered by Istio") // - it would happen if mesh-external namespaces was added to the SMMR
 		istioctl.CheckClusters(t,
@@ -79,7 +78,7 @@ func TestAccessExternalServices(t *testing.T) {
 		)
 
 		t.LogStep("Make request to external httpbin from sleep again, and expect it denied")
-		assertRequestFailure(t, sleep, httpbinHeadersUrl)
+		app.AssertSleepPodRequestFailure(t, ns.Bookinfo, httpbinHeadersUrl)
 
 		t.NewSubTest("allow request to external httpbin after applying ServiceEntry").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
@@ -90,7 +89,7 @@ func TestAccessExternalServices(t *testing.T) {
 			oc.ApplyString(t, ns.Bookinfo, httpbinServiceEntry)
 
 			t.LogStep("Send a request to external httpbin")
-			assertRequestSuccess(t, sleep, httpbinHeadersUrl)
+			app.AssertSleepPodRequestSuccess(t, ns.Bookinfo, httpbinHeadersUrl)
 		})
 	})
 }

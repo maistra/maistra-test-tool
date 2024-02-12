@@ -28,7 +28,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/request"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -63,33 +62,23 @@ func TestAuthPolicy(t *testing.T) {
 		retry.UntilSuccess(t, func(t TestHelper) {
 			for _, from := range fromNamespaces {
 				for _, to := range toNamespaces {
-					assertConnectionSuccessful(t, from, to)
+					app.AssertSleepPodRequestSuccess(t, from, fmt.Sprintf("http://httpbin.%s:8000/ip", to))
 				}
 			}
 		})
 
 		t.NewSubTest("enable auto mTLS").Run(func(t TestHelper) {
 			t.LogStep("Check if mTLS is enabled in foo")
-			retry.UntilSuccess(t, func(t TestHelper) {
-				oc.Exec(t,
-					pod.MatchingSelector("app=sleep", "foo"),
-					"sleep",
-					"curl http://httpbin.foo:8000/headers -s",
-					assert.OutputContains("X-Forwarded-Client-Cert",
-						"mTLS is enabled in namespace foo (X-Forwarded-Client-Cert header is present)",
-						"mTLS is not enabled in namespace foo (X-Forwarded-Client-Cert header is not present)"))
-			})
+			app.ExecInSleepPod(t, "foo", "curl http://httpbin.foo:8000/headers -s",
+				assert.OutputContains("X-Forwarded-Client-Cert",
+					"mTLS is enabled in namespace foo (X-Forwarded-Client-Cert header is present)",
+					"mTLS is not enabled in namespace foo (X-Forwarded-Client-Cert header is not present)"))
 
 			t.LogStep("Check that mTLS is NOT enabled in legacy")
-			retry.UntilSuccess(t, func(t TestHelper) {
-				oc.Exec(t,
-					pod.MatchingSelector("app=sleep", "foo"),
-					"sleep",
-					"curl http://httpbin.legacy:8000/headers -s",
-					assert.OutputDoesNotContain("X-Forwarded-Client-Cert",
-						"mTLS is not enabled in namespace legacy (X-Forwarded-Client-Cert header is not present)",
-						"mTLS is enabled in namespace legacy, but shouldn't be (X-Forwarded-Client-Cert header is present when it shouldn't be)"))
-			})
+			app.ExecInSleepPod(t, "legacy", "curl http://httpbin.legacy:8000/headers -s",
+				assert.OutputDoesNotContain("X-Forwarded-Client-Cert",
+					"mTLS is not enabled in namespace legacy (X-Forwarded-Client-Cert header is not present)",
+					"mTLS is enabled in namespace legacy, but shouldn't be (X-Forwarded-Client-Cert header is present when it shouldn't be)"))
 		})
 
 		t.NewSubTest("enable global mTLS STRICT mode").Run(func(t TestHelper) {
@@ -98,19 +87,11 @@ func TestAuthPolicy(t *testing.T) {
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, meshNamespace, PeerAuthenticationMTLSStrict)
 			})
-
 			t.LogStep("Check whether requests from legacy namespace to foo and bar namespace return 000 placeholder")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				from := "legacy"
 				for _, to := range []string{"foo", "bar"} {
-					oc.Exec(t,
-						pod.MatchingSelector("app=sleep", from),
-						"sleep",
-						fmt.Sprintf(`curl http://httpbin.%s:8000/ip -s -o /dev/null -w "sleep.%s to httpbin.%s: %%{http_code}" || echo %s`,
-							to, from, to, curlFailedMessage),
-						assert.OutputContains("000",
-							fmt.Sprintf("sleep.%s request to httpbin.%s received expected placeholder 000", from, to),
-							fmt.Sprintf("sleep.%s request to httpbin.%s, expexted placeholder 000 not found", from, to)))
+					app.AssertSleepPodZeroesPlaceholder(t, from, fmt.Sprintf("http://httpbin.%s:8000/ip", to))
 				}
 			})
 		})
@@ -126,10 +107,11 @@ func TestAuthPolicy(t *testing.T) {
 			retry.UntilSuccess(t, func(t TestHelper) {
 				for _, from := range []string{"foo", "bar", "legacy"} {
 					for _, to := range []string{"foo", "bar"} {
+						url := fmt.Sprintf("http://httpbin.%s:8000/ip", to)
 						if from == "legacy" && to == "foo" {
-							assertConnectionFailure(t, from, to)
+							app.AssertSleepPodRequestFailure(t, from, url)
 						} else {
-							assertConnectionSuccessful(t, from, to)
+							app.AssertSleepPodRequestSuccess(t, from, url)
 						}
 					}
 				}
@@ -145,7 +127,7 @@ func TestAuthPolicy(t *testing.T) {
 
 			t.LogStep("Check whether request failed from legacy namespace to bar namespace")
 			retry.UntilSuccess(t, func(t TestHelper) {
-				assertConnectionFailure(t, "legacy", "bar")
+				app.AssertSleepPodRequestFailure(t, "legacy", "http://httpbin.bar:8000/ip")
 			})
 
 			t.LogStep("Refine mutual TLS per port")
@@ -153,7 +135,7 @@ func TestAuthPolicy(t *testing.T) {
 
 			t.LogStep("Check whether request succeed from legacy namespace to bar namespace")
 			retry.UntilSuccess(t, func(t TestHelper) {
-				assertConnectionSuccessful(t, "legacy", "bar")
+				app.AssertSleepPodRequestSuccess(t, "legacy", "http://httpbin.bar:8000/ip")
 			})
 		})
 
@@ -166,7 +148,7 @@ func TestAuthPolicy(t *testing.T) {
 
 			t.LogStep("Check whether request succeed legacy namespace to foo namespace")
 			retry.UntilSuccess(t, func(t TestHelper) {
-				assertConnectionSuccessful(t, "legacy", "foo")
+				app.AssertSleepPodRequestSuccess(t, "legacy", "http://httpbin.foo:8000/ip")
 			})
 		})
 
@@ -242,10 +224,6 @@ func TestAuthPolicy(t *testing.T) {
 func requireResponseStatus(t TestHelper, url string, requestOption curl.RequestOption, statusCode int) {
 	curl.Request(t, url, requestOption, require.ResponseStatus(statusCode))
 }
-
-const (
-	curlFailedMessage = "CURL_FAILED"
-)
 
 const (
 	WorkloadPolicyStrict = `

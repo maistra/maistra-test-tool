@@ -72,7 +72,7 @@ func TestTLSOrigination(t *testing.T) {
 			})
 
 			t.LogStep("Verify that request to external nginx is routed through the egress gateway (response 200 indicates that the TLS origination is done by the egress gateway)")
-			execInSleepPod(t, ns.Bookinfo,
+			app.ExecInSleepPod(t, ns.Bookinfo,
 				`curl -sS http://my-nginx.mesh-external.svc.cluster.local`,
 				assert.OutputContains(
 					"Welcome to nginx",
@@ -114,7 +114,7 @@ func TestTLSOrigination(t *testing.T) {
 			app.WaitReady(t, app.NginxExternalMTLS(ns.MeshExternal))
 
 			t.LogStep("Verify NGINX server")
-			execInSleepPod(t, ns.Bookinfo,
+			app.ExecInSleepPod(t, ns.Bookinfo,
 				`curl -sS http://my-nginx.mesh-external.svc.cluster.local`,
 				assert.OutputContains(
 					"Welcome to nginx",

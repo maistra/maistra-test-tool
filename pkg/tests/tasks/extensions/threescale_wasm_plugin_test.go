@@ -6,14 +6,12 @@ import (
 	"strings"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
-	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/request"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -89,9 +87,11 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 
 		t.LogStep("Deploy sleep app")
 		app.InstallAndWaitReady(t, app.Sleep(ns.Foo))
+		httpbinUrl := "http://httpbin:8000/headers"
+		CurlOpts := app.CurlOpts{Headers: []string{"Authorization: Bearer " + token}}
 
 		t.LogStep("Verify that a request from sleep to httpbin with token returns 200")
-		sendRequestFromSleepToHttpbin(t, token, "200")
+		app.AssertSleepPodRequestSuccess(t, ns.Foo, httpbinUrl, CurlOpts)
 
 		t.LogStep("Apply JWT config and 3scale plugin to sleep")
 		oc.ApplyTemplate(t, ns.Foo, jwtAuthnTmpl, map[string]interface{}{"AppLabel": "sleep"})
@@ -102,10 +102,10 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 			// JWT authentication filter is applied only to inbound listeners, so 3scale plugin configured
 			// to use JWT filter metadata always fails on outbound.
 			t.LogStep("Verify that a request from sleep to httpbin returns 403")
-			sendRequestFromSleepToHttpbin(t, token, "403")
+			app.AssertSleepPodRequestForbidden(t, ns.Foo, httpbinUrl, CurlOpts)
 		} else {
 			t.LogStep("Verify that a request from sleep to httpbin returns 200")
-			sendRequestFromSleepToHttpbin(t, token, "200")
+			app.AssertSleepPodRequestSuccess(t, ns.Foo, httpbinUrl, CurlOpts)
 		}
 
 		if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_3) {
@@ -119,9 +119,12 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 			// SMCP v2.5 no longer supports APPLY_WASM_PLUGINS_TO_INBOUND_ONLY
 			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
-				sendRequestFromSleepToHttpbin(t, token, "403")
+				t.LogStep("Verify that a request from sleep to httpbin returns 403, for SMCP v2.5+")
+				app.AssertSleepPodRequestForbidden(t, ns.Foo, httpbinUrl, CurlOpts)
+
 			} else {
-				sendRequestFromSleepToHttpbin(t, token, "200")
+				t.LogStep("Verify that a request from sleep to httpbin returns 200")
+				app.AssertSleepPodRequestSuccess(t, ns.Foo, httpbinUrl, CurlOpts)
 			}
 		}
 
@@ -134,24 +137,20 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 				"ApplyWasmPluginsToInboundOnly": false,
 			})
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
-			sendRequestFromSleepToHttpbin(t, token, "403")
+
+			t.LogStep("Verify that a request from sleep to httpbin returns 403")
+			app.AssertSleepPodRequestForbidden(t, ns.Foo, httpbinUrl, CurlOpts)
 
 			t.LogStep("Enable SERVER mode in the WASM plugin and check if returns 200")
 			oc.ApplyTemplate(t, ns.Foo, wasmPluginTmpl, map[string]interface{}{
 				"AppLabel":   "sleep",
 				"ServerMode": true,
 			})
-			sendRequestFromSleepToHttpbin(t, token, "200")
+
+			t.LogStep("Verify that a request from sleep to httpbin returns 200")
+			app.AssertSleepPodRequestSuccess(t, ns.Foo, httpbinUrl, CurlOpts)
 		}
 	})
 }
 
-func sendRequestFromSleepToHttpbin(t test.TestHelper, token, expectedHTTPStatus string) {
-	retry.UntilSuccess(t, func(t test.TestHelper) {
-		oc.Exec(t, pod.MatchingSelector("app=sleep", ns.Foo), "sleep",
-			fmt.Sprintf(`curl http://httpbin:8000/headers -H "Authorization: Bearer %s" -s -o /dev/null -w "%%{http_code}"`, token),
-			assert.OutputContains(expectedHTTPStatus,
-				fmt.Sprintf("Received %s as expected", expectedHTTPStatus),
-				"Received unexpected status code"))
-	})
-}
+//fmt.Sprintf(`curl http://httpbin:8000/headers -H "Authorization: Bearer %s" -s -o /dev/null -w "%%{http_code}"`, token),

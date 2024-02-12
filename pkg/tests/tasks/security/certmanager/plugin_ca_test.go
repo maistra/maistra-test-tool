@@ -76,17 +76,8 @@ func TestPluginCaCert(t *testing.T) {
 		t.LogStep("Deploy httpbin and sleep")
 		app.InstallAndWaitReady(t, app.Httpbin(ns.Foo), app.Sleep(ns.Foo))
 
-		t.LogStep("Check if httpbin returns 200 OK ")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			oc.Exec(t,
-				pod.MatchingSelector("app=sleep", ns.Foo),
-				"sleep",
-				`curl http://httpbin:8000/ip -s -o /dev/null -w "%{http_code}"`,
-				assert.OutputContains(
-					"200",
-					"Got expected 200 OK from httpbin",
-					"Expected 200 OK from httpbin, but got a different HTTP code"))
-		})
+		t.LogStep("Check if httpbin returns 200 OK")
+		app.AssertSleepPodRequestSuccess(t, ns.Foo, "http://httpbin:8000/ip")
 
 		t.LogStep("Check mTLS traffic from ingress gateway to httpbin")
 		oc.ApplyFile(t, ns.Foo, "https://raw.githubusercontent.com/maistra/istio/maistra-2.5/samples/httpbin/httpbin-gateway.yaml")

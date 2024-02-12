@@ -22,8 +22,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/pod"
-	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -44,10 +42,8 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 		app.InstallAndWaitReady(t, app.Sleep(ns), app.Echo(ns))
 
 		t.LogStep("Verify sleep to echo TCP connections")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			assertPortTcpEchoAccepted(t, ns, "9000")
-			assertPortTcpEchoAccepted(t, ns, "9001")
-		})
+		assertPortTcpEchoAccepted(t, ns, "9000")
+		assertPortTcpEchoAccepted(t, ns, "9001")
 
 		t.NewSubTest("TCP invalid policy").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
@@ -57,10 +53,8 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 			oc.ApplyString(t, ns, TCPAllowGETPolicy)
 
 			t.LogStep("Check whether the requests to port 9000 and 9001 are denied")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				assertPortTcpEchoDenied(t, ns, "9000")
-				assertPortTcpEchoDenied(t, ns, "9001")
-			})
+			assertPortTcpEchoDenied(t, ns, "9000")
+			assertPortTcpEchoDenied(t, ns, "9001")
 		})
 
 		t.NewSubTest("TCP deny policy").Run(func(t test.TestHelper) {
@@ -71,10 +65,8 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 			oc.ApplyString(t, ns, TCPDenyGETPolicy)
 
 			t.LogStep("Check whether the request to port 9000 is denied and request to port 9001 is accepted")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				assertPortTcpEchoDenied(t, ns, "9000")
-				assertPortTcpEchoAccepted(t, ns, "9001")
-			})
+			assertPortTcpEchoDenied(t, ns, "9000")
+			assertPortTcpEchoAccepted(t, ns, "9001")
 		})
 
 		t.NewSubTest("TCP ALLOW policy").Run(func(t test.TestHelper) {
@@ -85,18 +77,15 @@ func TestAuthorizationTCPTraffic(t *testing.T) {
 			oc.ApplyString(t, ns, TCPAllowPolicy)
 
 			t.LogStep("Check whether the requests to port 9000 and 9001 are accepted")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				assertPortTcpEchoAccepted(t, ns, "9000")
-				assertPortTcpEchoAccepted(t, ns, "9001")
-			})
+			assertPortTcpEchoAccepted(t, ns, "9000")
+			assertPortTcpEchoAccepted(t, ns, "9001")
 		})
 	})
 }
 
 func assertPortTcpEchoAccepted(t test.TestHelper, ns string, port string) {
-	oc.Exec(t,
-		pod.MatchingSelector("app=sleep", ns),
-		"sleep",
+	app.ExecInSleepPod(t,
+		ns,
 		fmt.Sprintf(`sh -c 'echo "port %s" | nc %s %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`,
 			port, "tcp-echo", port),
 		assert.OutputContains(
@@ -106,9 +95,8 @@ func assertPortTcpEchoAccepted(t test.TestHelper, ns string, port string) {
 }
 
 func assertPortTcpEchoDenied(t test.TestHelper, ns string, port string) {
-	oc.Exec(t,
-		pod.MatchingSelector("app=sleep", ns),
-		"sleep",
+	app.ExecInSleepPod(t,
+		ns,
 		fmt.Sprintf(`sh -c 'echo "port %s" | nc %s %s' | grep "hello" && echo 'connection succeeded' || echo 'connection rejected'`,
 			port, "tcp-echo", port),
 		assert.OutputContains(

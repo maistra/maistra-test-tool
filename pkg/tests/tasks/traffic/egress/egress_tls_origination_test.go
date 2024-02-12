@@ -26,16 +26,15 @@ import (
 
 func TestEgressTLSOrigination(t *testing.T) {
 	test.NewTest(t).Id("T12").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
-		sleep := app.Sleep(ns.Bookinfo)
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.MeshExternal)
-			app.Uninstall(t, sleep)
+			app.Uninstall(t, app.Sleep(ns.Bookinfo))
 		})
 
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install sleep pod")
-		app.InstallAndWaitReady(t, sleep)
+		app.InstallAndWaitReady(t, app.Sleep(ns.Bookinfo))
 
 		t.NewSubTest("TrafficManagement_egress_tls_origination").Run(func(t test.TestHelper) {
 			t.Log("TLS origination for egress traffic")
@@ -51,7 +50,7 @@ func TestEgressTLSOrigination(t *testing.T) {
 			oc.ApplyString(t, ns.Bookinfo, meshRouteHttpRequestsToHttpsPort)
 			oc.ApplyString(t, ns.Bookinfo, originateTlsToNginx)
 
-			assertRequestSuccess(t, sleep, "http://my-nginx.mesh-external.svc.cluster.local")
+			app.AssertSleepPodRequestSuccess(t, ns.Bookinfo, "http://my-nginx.mesh-external.svc.cluster.local")
 		})
 	})
 }
