@@ -138,7 +138,11 @@ func TestSecureGateways(t *testing.T) {
 					request.WithTLS(httpbinSampleCACert, "httpbin.example.com", gatewayHost, gatewayPort),
 					assert.RequestFails(
 						"request failed as expected",
-						"expected request to fail because no client certificate was provided"))
+						"expected request to fail because no client certificate was provided"),
+					assert.RequestFailsWithErrorMessage(
+						"Get \"https://httpbin.example.com:443/status/418\": remote error: tls: certificate require",
+						"request failed with expected error message",
+						"request failed but with different error message"))
 			})
 
 			t.LogStep("check if SSL handshake succeeds when client certificate is given")
@@ -149,6 +153,61 @@ func TestSecureGateways(t *testing.T) {
 						WithTLS(httpbinSampleCACert, "httpbin.example.com", gatewayHost, gatewayPort).
 						WithClientCertificate(httpbinSampleClientCert, httpbinSampleClientCertKey),
 					assert.ResponseContains("-=[ teapot ]=-"))
+			})
+		})
+
+		t.NewSubTest("mutual_tls_with_crl").Run(func(t TestHelper) {
+			t.Log("Reference: https://issues.redhat.com/browse/OSSM-414")
+			if env.GetSMCPVersion().LessThan(version.SMCP_2_5) {
+				t.Skip("Skipping until 2.5")
+			}
+			t.LogStep("configure Gateway with tls.mode=Mutual and provide CRL file")
+			oc.CreateGenericSecretFromFiles(t, meshNamespace, "httpbin-credential",
+				"tls.key="+httpbinSampleServerCertKey,
+				"tls.crt="+httpbinSampleServerCert,
+				"ca.crt="+httpbinSampleCACert,
+				"ca.crl="+httpbinSampleCACrl)
+			oc.ApplyString(t, ns, gatewayHttpbinMTLSYaml)
+
+			createRouteWithTLS(t, meshNamespace, "httpbin.example.com", "https", "istio-ingressgateway", "passthrough")
+			t.LogStep("check if SSL handshake fails when no client certificate is given")
+			retry.UntilSuccess(t, func(t TestHelper) {
+				curl.Request(t,
+					teapotURL,
+					request.WithTLS(httpbinSampleCACert, "httpbin.example.com", gatewayHost, gatewayPort),
+					assert.RequestFails(
+						"request failed as expected",
+						"expected request to fail because no client certificate was provided"),
+					assert.RequestFailsWithErrorMessage(
+						"Get \"https://httpbin.example.com:443/status/418\": remote error: tls: certificate require",
+						"request failed with expected error message",
+						"request failed but with different error message"))
+			})
+
+			t.LogStep("check if SSL handshake succeeds when client certificate is given")
+			retry.UntilSuccess(t, func(t TestHelper) {
+				curl.Request(t,
+					teapotURL,
+					request.
+						WithTLS(httpbinSampleCACert, "httpbin.example.com", gatewayHost, gatewayPort).
+						WithClientCertificate(httpbinSampleClientCert, httpbinSampleClientCertKey),
+					assert.ResponseContains("-=[ teapot ]=-"))
+			})
+
+			t.LogStep("check if SSL handshake fails when revoked client certificate is given")
+			retry.UntilSuccess(t, func(t TestHelper) {
+				curl.Request(t,
+					teapotURL,
+					request.
+						WithTLS(httpbinSampleCACert, "httpbin.example.com", gatewayHost, gatewayPort).
+						WithClientCertificate(httpbinSampleClientRevokedCert, httpbinSampleClientRevokedCertKey),
+					assert.RequestFails(
+						"request failed as expected",
+						"expected request to fail because revoked client certificate was provided"),
+					assert.RequestFailsWithErrorMessage(
+						"Get \"https://httpbin.example.com:443/status/418\": remote error: tls: revoked certificate",
+						"request failed with expected error message",
+						"request failed but with different error message"))
 			})
 		})
 	})

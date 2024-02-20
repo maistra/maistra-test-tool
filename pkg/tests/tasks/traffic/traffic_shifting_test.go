@@ -90,7 +90,7 @@ func checkTrafficRatio(t TestHelper, url string, numberOfRequests int, tolerance
 		curl.Request(t,
 			url, nil,
 			require.ResponseStatus(http.StatusOK),
-			func(t TestHelper, response *http.Response, responseBody []byte, duration time.Duration) {
+			func(t TestHelper, response *http.Response, responseBody []byte, responseErr error, duration time.Duration) {
 				comparisonErrors := map[string]error{}
 				matched := false
 				for file := range ratios {

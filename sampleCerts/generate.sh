@@ -6,20 +6,91 @@ set -ex
 
 # httpbin.example.com
 pushd httpbin.example.com
+
+# root CA for httpbin.example.com, helloworld-v1.example.com, bookinfo.com
 echo "Create sample CA"; echo
-openssl req -x509 -sha256 -nodes -days 3650 -newkey rsa:2048 -subj '/O=example Inc./CN=example.com' -keyout example.com.key -out example.com.crt
+openssl req -x509 -sha256 -nodes -days 3650 -newkey rsa:2048 -subj '/O=example Inc./CN=*.example.com' -keyout example.com.key -out example.com.crt -addext "subjectAltName = DNS:*.example.com"
+
+cat > "client.conf" <<EOF
+[req]
+req_extensions = v3_req
+distinguished_name = req_distinguished_name
+[req_distinguished_name]
+[ v3_req ]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth, serverAuth
+subjectAltName = @alt_names
+[alt_names]
+DNS.1 = httpbin-client.example.com
+DNS.2 = www.httpbin-client.example.com
+EOF
+
+cat > "server.conf" <<EOF
+[req]
+req_extensions = v3_req
+distinguished_name = req_distinguished_name
+[req_distinguished_name]
+[ v3_req ]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth, serverAuth
+subjectAltName = @alt_names
+[alt_names]
+DNS.1 = httpbin.example.com
+DNS.2 = www.httpbin.example.com
+EOF
 
 echo "Create httpbin server certs"; echo
-openssl req -out httpbin.example.com.csr -newkey rsa:2048 -nodes -keyout httpbin.example.com.key -subj "/CN=httpbin.example.com/O=httpbin organization"
-openssl x509 -req -sha256 -days 3650 -CA example.com.crt -CAkey example.com.key -set_serial 0 -in httpbin.example.com.csr -out httpbin.example.com.crt
-echo "Add SANs"; echo
-openssl x509 -req -extfile <(printf "subjectAltName=DNS:httpbin.example.com,DNS:www.httpbin.example.com") -days 3650 -in httpbin.example.com.csr -CA example.com.crt -CAkey example.com.key -CAcreateserial -out httpbin.example.com.crt
+openssl req -out httpbin.example.com.csr -newkey rsa:2048 -nodes -keyout httpbin.example.com.key -subj "/CN=httpbin.example.com/O=httpbin organization" -config "server.conf"
+openssl x509 -req -days 3650 -CA example.com.crt -CAkey example.com.key -set_serial 0 -in httpbin.example.com.csr -out httpbin.example.com.crt -extensions v3_req -extfile "server.conf"
 
 echo "Create httpbin client certs"; echo
-openssl req -out httpbin-client.example.com.csr -newkey rsa:2048 -nodes -keyout httpbin-client.example.com.key -subj "/CN=httpbin-client.example.com/O=client organization"
-openssl x509 -req -sha256 -days 3650 -CA example.com.crt -CAkey example.com.key -set_serial 1 -in httpbin-client.example.com.csr -out httpbin-client.example.com.crt
-echo "Add SANs"; echo
-openssl x509 -req -extfile <(printf "subjectAltName=DNS:httpbin-client.example.com,DNS:www.httpbin-client.example.com") -days 3650 -in httpbin-client.example.com.csr -CA example.com.crt -CAkey example.com.key -CAcreateserial -out httpbin-client.example.com.crt
+openssl req -out httpbin-client.example.com.csr -newkey rsa:2048 -nodes -keyout httpbin-client.example.com.key -subj "/CN=httpbin-client.example.com/O=client organization" -config "client.conf"
+openssl x509 -req -days 3650 -CA example.com.crt -CAkey example.com.key -set_serial 0 -in httpbin-client.example.com.csr -out httpbin-client.example.com.crt -extensions v3_req -extfile "client.conf"
+
+echo "Create second httpbin client certs"; echo
+openssl req -out httpbin-client-revoked.example.com.csr -newkey rsa:2048 -nodes -keyout httpbin-client-revoked.example.com.key -subj "/CN=httpbin-client.example.com/O=client organization" -config "client.conf"
+openssl x509 -req -days 3650 -CA example.com.crt -CAkey example.com.key -set_serial 1 -in httpbin-client-revoked.example.com.csr -out httpbin-client-revoked.example.com.crt -extensions v3_req -extfile "client.conf"
+
+# revoke db and config
+cat /dev/null > "index.txt"
+cat > "crl.conf" <<EOF
+[ ca ]
+default_ca      = CA_default             # The default ca section
+
+[ CA_default ]
+dir             = "./"                   # Where everything is kept
+database        = "./index.txt"          # database index file.
+certificate     = "./example.com.crt"    # The CA certificate
+private_key     = "./example.com.key"    # The private key
+
+# crlnumber must also be commented out to leave a V1 CRL.
+crl_extensions = crl_ext
+
+default_md      = sha256                # use SHA-256 by default
+default_crl_days= 3650                  # how long before next CRL
+
+[ crl_ext ]
+# CRL extensions.
+# Only issuerAltName and authorityKeyIdentifier make any sense in a CRL.
+authorityKeyIdentifier=keyid:always
+[req]
+req_extensions = v3_req
+distinguished_name = req_distinguished_name
+[req_distinguished_name]
+[ v3_req ]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth, serverAuth
+subjectAltName = @alt_names
+[alt_names]
+DNS = *.example.com
+EOF
+# revoke only client2 certificate
+openssl ca -config "crl.conf" -revoke "httpbin-client-revoked.example.com.crt"
+openssl ca -gencrl -out "example.com.crl" -config "crl.conf"
+
 popd
 
 # helloworld-v1.example.com
