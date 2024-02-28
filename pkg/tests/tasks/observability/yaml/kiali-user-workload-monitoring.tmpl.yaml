@@ -12,9 +12,8 @@ spec:
       url_service_version: "http://istiod-{{ .SmcpName }}.{{ .SmcpNamespace }}:15014/version"
     prometheus:
       auth:
-        token: secret:thanos-querier-web-token:token
         type: bearer
-        use_kiali_token: false
+        use_kiali_token: true
       query_scope:
         mesh_id: "unique-mesh-id"
       thanos_proxy:

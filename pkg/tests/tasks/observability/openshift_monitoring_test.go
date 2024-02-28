@@ -52,7 +52,6 @@ func TestOpenShiftMonitoring(t *testing.T) {
 		t.Cleanup(func() {
 			oc.DeleteFromTemplate(t, monitoringNs, clusterMonitoringConfigTmpl, map[string]bool{"Enabled": false})
 			oc.DeleteFromTemplate(t, meshNamespace, kialiUserWorkloadMonitoringTmpl, kialiValues)
-			oc.DeleteSecret(t, meshNamespace, thanosTokenSecret)
 		})
 
 		t.LogStep("Waiting until user workload monitoring stack is up and running")
@@ -60,33 +59,11 @@ func TestOpenShiftMonitoring(t *testing.T) {
 		oc.WaitPodsExist(t, userWorkloadMonitoringNs)
 		oc.WaitAllPodsReady(t, userWorkloadMonitoringNs)
 
-		t.LogStep("Fetch Thanos secret")
-		var secret string
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			secret = shell.Executef(t,
-				`kubectl get secrets --no-headers -o custom-columns=":metadata.name" -n %s | grep %s`, userWorkloadMonitoringNs, thanosTokenPrefix)
-			if strings.Contains(secret, "Error") {
-				t.Errorf("unexpected error: %s", secret)
-			}
-			// secret name contains '\n', because it's parsed from a single output column
-			secretList := strings.Split(secret, "\n")
-			secret = secretList[0]
-		})
-
-		t.LogStep("Fetch Thanos token")
-		var thanosToken string
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			thanosToken = shell.Executef(t, "oc get secret %s -n %s --template={{.data.token}} | base64 -d", secret, userWorkloadMonitoringNs)
-			if strings.Contains(thanosToken, "Error") {
-				t.Errorf("unexpected error: %s", thanosToken)
-			}
-		})
-
-		t.LogStep("Create secret with Thanos token for Kiali")
-		shell.Executef(t, "oc create secret generic %s -n %s --from-literal=token=%s", thanosTokenSecret, meshNamespace, thanosToken)
-
 		t.LogStep("Deploying Kiali")
 		oc.ApplyTemplate(t, meshNamespace, kialiUserWorkloadMonitoringTmpl, kialiValues)
+
+		t.LogStep("Grant cluster-monitoring-view to Kiali")
+		oc.ApplyTemplate(t, meshNamespace, kialiClusterMonitoringView, kialiValues)
 
 		t.NewSubTest("SMCP manageNetworkPolicy false").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
@@ -103,6 +80,9 @@ func TestOpenShiftMonitoring(t *testing.T) {
 
 			waitKialiAndVerifyIsReconciled(t)
 
+			t.LogStep("Fetch Kiali token")
+			kialiToken := fetchKialiToken(t)
+
 			t.LogStep("Enable Prometheus telemetry")
 			oc.ApplyString(t, meshNamespace, enableTrafficMetrics)
 
@@ -115,7 +95,7 @@ func TestOpenShiftMonitoring(t *testing.T) {
 			oc.ApplyString(t, meshNamespace, istiodMonitor)
 			oc.ApplyString(t, ns.Foo, istioProxyMonitor)
 
-			generateTrafficAndcheckMetrics(t, thanosToken)
+			generateTrafficAndcheckMetrics(t, kialiToken)
 		})
 
 		t.NewSubTest("SMCP manageNetworkPolicy true").Run(func(t test.TestHelper) {
@@ -135,6 +115,9 @@ func TestOpenShiftMonitoring(t *testing.T) {
 
 			waitKialiAndVerifyIsReconciled(t)
 
+			t.LogStep("Fetch Kiali token")
+			kialiToken := fetchKialiToken(t)
+
 			t.LogStep("Enable Prometheus telemetry")
 			oc.ApplyString(t, meshNamespace, enableTrafficMetrics)
 
@@ -151,7 +134,7 @@ func TestOpenShiftMonitoring(t *testing.T) {
 			oc.ApplyString(t, meshNamespace, istiodMonitor)
 			oc.ApplyString(t, ns.Foo, istioProxyMonitor)
 
-			generateTrafficAndcheckMetrics(t, thanosToken)
+			generateTrafficAndcheckMetrics(t, kialiToken)
 		})
 	})
 }
@@ -200,6 +183,18 @@ func checkMetricExists(t test.TestHelper, ns, metricName, token string) {
 
 func prometheusQuery(ns, metricName, token string) string {
 	return fmt.Sprintf(
-		`curl -X GET -kG "https://localhost:9092/api/v1/query?namespace=%s&query=%s" --data-urlencode "query=up" -H "Authorization: Bearer %s"`,
+		`curl -X GET -kG "https://localhost:9091/api/v1/query?namespace=%s&query=%s" --data-urlencode "query=up" -H "Authorization: Bearer %s"`,
 		ns, metricName, token)
+}
+
+func fetchKialiToken(t test.TestHelper) string {
+	var kialiToken string
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		kialiToken = shell.Executef(t, "oc exec -n %s $(oc get pods -n %s -l app=kiali -o jsonpath='{.items[].metadata.name}') "+
+			"-- cat /var/run/secrets/kubernetes.io/serviceaccount/token", meshNamespace, meshNamespace)
+		if strings.Contains(kialiToken, "Error") {
+			t.Errorf("unexpected error: %s", kialiToken)
+		}
+	})
+	return kialiToken
 }
