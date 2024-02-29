@@ -21,9 +21,7 @@ import (
 )
 
 const (
-	kialiName         = "kiali-user-workload-monitoring"
-	thanosTokenPrefix = "prometheus-user-workload-token-"
-	thanosTokenSecret = "thanos-querier-web-token"
+	kialiName = "kiali-user-workload-monitoring"
 )
 
 // TestOpenShiftMonitoring requires OpenShift Monitoring stack to be enabled.
