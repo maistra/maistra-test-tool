@@ -143,9 +143,25 @@ func waitKialiAndVerifyIsReconciled(t test.TestHelper) {
 
 	t.LogStep("Verify that Kiali was reconciled by Istio Operator")
 	retry.UntilSuccess(t, func(t test.TestHelper) {
-		output := shell.Executef(t, "oc get kiali %s -n %s -o jsonpath='{.spec.deployment.accessible_namespaces}'", kialiName, meshNamespace)
-		if output != fmt.Sprintf(`["%s"]`, ns.Foo) {
-			t.Errorf(`unexpected accessible namespaces: got '%s', expected: '["%s"]'`, output, ns.Foo)
+		accessibleNamespaces := shell.Executef(t, "oc get kiali %s -n %s -o jsonpath='{.spec.deployment.accessible_namespaces}'", kialiName, meshNamespace)
+		if accessibleNamespaces != fmt.Sprintf(`["%s"]`, ns.Foo) {
+			t.Errorf(`unexpected accessible namespaces: got '%s', expected: '["%s"]'`, accessibleNamespaces, ns.Foo)
+		}
+		configMapName := shell.Executef(t, "oc get kiali %s -n %s -o jsonpath='{.spec.external_services.istio.config_map_name}'", kialiName, meshNamespace)
+		if configMapName != fmt.Sprintf("istio-%s", smcpName) {
+			t.Errorf("unexpected istio config map name: got '%s', expected: 'istio-%s'", configMapName, smcpName)
+		}
+		sidecarInjectorConfigMapName := shell.Executef(t, "oc get kiali %s -n %s -o jsonpath='{.spec.external_services.istio.istio_sidecar_injector_config_map_name:}'", kialiName, meshNamespace)
+		if sidecarInjectorConfigMapName != fmt.Sprintf("istio-sidecar-injector-%s", smcpName) {
+			t.Errorf("unexpected sidecar injecto config map name: got '%s', expected: 'istio-sidecar-injector-%s'", sidecarInjectorConfigMapName, smcpName)
+		}
+		deploymentName := shell.Executef(t, "oc get kiali %s -n %s -o jsonpath='{.spec.external_services.istio.istiod_deployment_name}'", kialiName, meshNamespace)
+		if deploymentName != fmt.Sprintf("istiod-%s", smcpName) {
+			t.Errorf("unexpected istiod deployment name: got '%s', expected: 'istiod-%s'", deploymentName, smcpName)
+		}
+		urlServiceVersion := shell.Executef(t, "oc get kiali %s -n %s -o jsonpath='{.spec.external_services.istio.url_service_version}'", kialiName, meshNamespace)
+		if urlServiceVersion != fmt.Sprintf("http://istiod-%s.%s:15014/version", smcpName, meshNamespace) {
+			t.Errorf("unexpected URL service version: got '%s', expected: 'http://istiod-%s.%s:15014/version'", urlServiceVersion, smcpName, meshNamespace)
 		}
 	})
 }
