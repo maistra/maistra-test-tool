@@ -4,12 +4,6 @@ metadata:
   name: kiali-user-workload-monitoring
 spec:
   external_services:
-    istio:
-      config_map_name: istio-{{ .SmcpName }}
-      istio_sidecar_injector_config_map_name: istio-sidecar-injector-{{ .SmcpName }}
-      istiod_deployment_name: istiod-{{ .SmcpName }}
-      istiod_pod_monitoring_port: 15014
-      url_service_version: "http://istiod-{{ .SmcpName }}.{{ .SmcpNamespace }}:15014/version"
     prometheus:
       auth:
         type: bearer
@@ -19,4 +13,3 @@ spec:
       thanos_proxy:
         enabled: true
       url: https://thanos-querier.openshift-monitoring.svc.cluster.local:9091
-  version: v1.65
