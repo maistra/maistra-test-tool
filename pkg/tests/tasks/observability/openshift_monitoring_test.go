@@ -59,6 +59,8 @@ func TestOpenShiftMonitoring(t *testing.T) {
 
 		t.LogStep("Deploying Kiali")
 		oc.ApplyTemplate(t, meshNamespace, kialiUserWorkloadMonitoringTmpl, kialiValues)
+		oc.WaitPodRunning(t, pod.MatchingSelector("app=kiali", meshNamespace))
+		kialiPodName := shell.Executef(t, "oc get pod -l app=kiali -n %s -o jsonpath='{.items[0].metadata.name}'", meshNamespace)
 
 		t.LogStep("Grant cluster-monitoring-view to Kiali")
 		oc.ApplyTemplate(t, meshNamespace, kialiClusterMonitoringView, kialiValues)
@@ -77,6 +79,9 @@ func TestOpenShiftMonitoring(t *testing.T) {
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 			waitKialiAndVerifyIsReconciled(t)
+			t.LogStep("Wait until the old Kiali pod has been deleted")
+			oc.WaitUntilResourceExist(t, meshNamespace, "pod", kialiPodName)
+			kialiPodName = shell.Executef(t, "oc get pod -l app=kiali -n %s -o jsonpath='{.items[0].metadata.name}'", meshNamespace)
 
 			t.LogStep("Fetch Kiali token")
 			kialiToken := fetchKialiToken(t)
@@ -112,6 +117,9 @@ func TestOpenShiftMonitoring(t *testing.T) {
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 			waitKialiAndVerifyIsReconciled(t)
+			t.LogStep("Wait until the old Kiali pod has been deleted")
+			oc.WaitUntilResourceExist(t, meshNamespace, "pod", kialiPodName)
+			kialiPodName = shell.Executef(t, "oc get pod -l app=kiali -n %s -o jsonpath='{.items[0].metadata.name}'", meshNamespace)
 
 			t.LogStep("Fetch Kiali token")
 			kialiToken := fetchKialiToken(t)

@@ -215,3 +215,20 @@ func (o OC) DeletePod(t test.TestHelper, podLocator PodLocatorFunc) {
 				fmt.Sprintf("Pod %s deletion return an error", pod.Name)))
 	})
 }
+
+func (o OC) WaitUntilResourceExist(t test.TestHelper, ns string, kind string, name string) {
+	t.T().Helper()
+	t.Logf("Wait until %s/%s in namespace %s exist", kind, name, ns)
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		retry.UntilSuccessWithOptions(t, retry.Options().DelayBetweenAttempts(5*time.Second), func(t test.TestHelper) {
+			t.T().Helper()
+			shell.Execute(t,
+				fmt.Sprintf(`oc -n %s get %s/%s --ignore-not-found`, ns, kind, name),
+				assert.OutputDoesNotContain(name,
+					fmt.Sprintf("%s/%s was deleted", kind, name),
+					fmt.Sprintf("%s/%s still exist", kind, name),
+				))
+		})
+	})
+}
