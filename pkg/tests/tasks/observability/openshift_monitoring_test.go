@@ -151,7 +151,7 @@ func waitKialiAndVerifyIsReconciled(t test.TestHelper) {
 		if configMapName != fmt.Sprintf("istio-%s", smcpName) {
 			t.Errorf("unexpected istio config map name: got '%s', expected: 'istio-%s'", configMapName, smcpName)
 		}
-		sidecarInjectorConfigMapName := shell.Executef(t, "oc get kiali %s -n %s -o jsonpath='{.spec.external_services.istio.istio_sidecar_injector_config_map_name:}'", kialiName, meshNamespace)
+		sidecarInjectorConfigMapName := shell.Executef(t, "oc get kiali %s -n %s -o jsonpath='{.spec.external_services.istio.istio_sidecar_injector_config_map_name}'", kialiName, meshNamespace)
 		if sidecarInjectorConfigMapName != fmt.Sprintf("istio-sidecar-injector-%s", smcpName) {
 			t.Errorf("unexpected sidecar injecto config map name: got '%s', expected: 'istio-sidecar-injector-%s'", sidecarInjectorConfigMapName, smcpName)
 		}
