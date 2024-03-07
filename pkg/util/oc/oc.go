@@ -271,3 +271,8 @@ func GetProxy(t test.TestHelper) *Proxy {
 	t.T().Helper()
 	return DefaultOC.GetProxy(t)
 }
+
+func WaitUntilResourceExist(t test.TestHelper, ns string, kind string, name string) {
+	t.T().Helper()
+	DefaultOC.WaitUntilResourceExist(t, ns, kind, name)
+}
