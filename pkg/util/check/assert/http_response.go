@@ -61,6 +61,13 @@ func RequestFails(successMsg, failureMsg string) curl.HTTPResponseCheckFunc {
 func RequestFailsWithErrorMessage(expectedErrorMessage, successMsg, failureMsg string) curl.HTTPResponseCheckFunc {
 	return func(t test.TestHelper, resp *http.Response, responseBody []byte, responseErr error, duration time.Duration) {
 		t.T().Helper()
-		common.CheckRequestFailureMessage(t, responseErr, expectedErrorMessage, successMsg, failureMsg, assertFailure)
+		common.CheckRequestFailureMessagesAny(t, responseErr, []string{expectedErrorMessage}, successMsg, failureMsg, assertFailure)
+	}
+}
+
+func RequestFailsWithAnyErrorMessages(expectedErrorMessages []string, successMsg string, failureMsg string) curl.HTTPResponseCheckFunc {
+	return func(t test.TestHelper, resp *http.Response, responseBody []byte, responseErr error, duration time.Duration) {
+		t.T().Helper()
+		common.CheckRequestFailureMessagesAny(t, responseErr, expectedErrorMessages, successMsg, failureMsg, assertFailure)
 	}
 }
