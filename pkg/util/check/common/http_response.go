@@ -138,18 +138,22 @@ func CheckRequestFails(t test.TestHelper, resp *http.Response, responseBody []by
 	}
 }
 
-func CheckRequestFailureMessage(t test.TestHelper, requestError error, expectedErrorMessage string, successMsg, failureMsg string, failure FailureFunc) {
+func CheckRequestFailureMessagesAny(t test.TestHelper, requestError error, expectedErrorMessages []string, successMsg, failureMsg string, failure FailureFunc) {
 	t.T().Helper()
 	if requestError == nil {
 		failure(t, "expected request error, but it is nil", "")
-	} else if strings.Contains(requestError.Error(), expectedErrorMessage) {
-		if successMsg != "" {
-			logSuccess(t, successMsg)
-		}
-	} else {
-		detailMsg := fmt.Sprintf("\nexpected error message:'%s'\nactual error message:'%s'", expectedErrorMessage, requestError.Error())
-		failure(t, failureMsg, detailMsg)
 	}
+	for _, str := range expectedErrorMessages {
+		if strings.Contains(requestError.Error(), str) {
+			if successMsg != "" {
+				logSuccess(t, successMsg)
+			}
+			return
+		}
+	}
+	// none of the expected strings were found
+	detailMsg := fmt.Sprintf("\nexpected any of error messages:'%s'\nactual error message:'%s'", expectedErrorMessages, requestError.Error())
+	failure(t, failureMsg, detailMsg)
 }
 
 func requireNonNilResponse(t test.TestHelper, resp *http.Response) {

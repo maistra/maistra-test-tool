@@ -139,8 +139,10 @@ func TestSecureGateways(t *testing.T) {
 					assert.RequestFails(
 						"request failed as expected",
 						"expected request to fail because no client certificate was provided"),
-					assert.RequestFailsWithErrorMessage(
-						"Get \"https://httpbin.example.com:443/status/418\": remote error: tls: certificate require",
+					assert.RequestFailsWithAnyErrorMessages(
+						[]string{
+							"Get \"https://httpbin.example.com:443/status/418\": remote error: tls: certificate require",
+							"Get \"https://httpbin.example.com:443/status/418\": remote error: tls: handshake failure"}, //FIPS OCP
 						"request failed with expected error message",
 						"request failed but with different error message"))
 			})
@@ -178,8 +180,11 @@ func TestSecureGateways(t *testing.T) {
 					assert.RequestFails(
 						"request failed as expected",
 						"expected request to fail because no client certificate was provided"),
-					assert.RequestFailsWithErrorMessage(
-						"Get \"https://httpbin.example.com:443/status/418\": remote error: tls: certificate require",
+					assert.RequestFailsWithAnyErrorMessages(
+						// FIPS OCP has different message
+						[]string{
+							"Get \"https://httpbin.example.com:443/status/418\": remote error: tls: certificate require",
+							"Get \"https://httpbin.example.com:443/status/418\": remote error: tls: handshake failure"}, //FIPS OCP
 						"request failed with expected error message",
 						"request failed but with different error message"))
 			})
