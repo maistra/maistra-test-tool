@@ -23,6 +23,10 @@ spec:
     dataPlane:
       mtls: true
     manageNetworkPolicy: {{ .manageNetworkPolicy }}
+    {{ if .Rosa }}
+    identity:
+      type: ThirdParty
+    {{ end }}
   tracing:
     type: None
   version: {{ .Version }}

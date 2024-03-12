@@ -36,11 +36,12 @@ func TestOpenShiftMonitoring(t *testing.T) {
 		if smcpVer.LessThan(version.SMCP_2_4) {
 			t.Skip("integration with OpenShift Monitoring stack is not supported in OSSM older than v2.4.0")
 		}
-		meshValues := map[string]string{
+		meshValues := map[string]interface{}{
 			"Name":                smcpName,
 			"Version":             smcpVer.String(),
 			"Member":              ns.Foo,
 			"manageNetworkPolicy": "false",
+			"Rosa":                env.IsRosa(),
 		}
 		kialiValues := map[string]string{
 			"SmcpName":      smcpName,
