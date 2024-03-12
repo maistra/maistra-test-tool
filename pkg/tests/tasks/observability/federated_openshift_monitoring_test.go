@@ -21,10 +21,11 @@ import (
 // See the comment on TestOpenShiftMonitoring for help setting up on crc
 func TestFederatedOpenShiftMonitoring(t *testing.T) {
 	test.NewTest(t).Id("federated-openshift-monitoring-integration").Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
-		meshValues := map[string]string{
+		meshValues := map[string]interface{}{
 			"Name":    smcpName,
 			"Version": env.GetSMCPVersion().String(),
 			"Member":  ns.Foo,
+			"Rosa":    env.IsRosa(),
 		}
 
 		t.Cleanup(func() {

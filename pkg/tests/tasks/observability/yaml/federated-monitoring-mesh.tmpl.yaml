@@ -16,6 +16,10 @@ spec:
   security:
     dataPlane:
       mtls: true
+    {{ if .Rosa }}
+    identity:
+      type: ThirdParty
+    {{ end }}
   tracing:
     type: None
   version: {{ .Version }}
