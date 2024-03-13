@@ -111,9 +111,6 @@ func TestIOR(t *testing.T) {
 			if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
 				t.Skip("This test only applies for v2.3 to v2.4 upgrade")
 			}
-			if env.GetArch() == "arm" {
-				t.Skip("2.3 and 2.4 not availble for the ARM cluster")
-			}
 
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
