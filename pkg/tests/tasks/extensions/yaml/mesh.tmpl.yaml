@@ -23,14 +23,27 @@ spec:
     accessLogging:
       file:
         name: /dev/stdout
-  {{ if .ApplyWasmPluginsToInboundOnly }}
+    {{ if .ClusterWideProxy }}
+    runtime:
+      container:
+        env:
+          HTTP_PROXY: {{ .HttpProxy }}
+          HTTPS_PROXY: {{ .HttpsProxy }}
+          NO_PROXY: {{ .NoProxy }}
+    {{ end }}
   runtime:
     components:
       pilot:
         container:
           env:
+            {{ if .ApplyWasmPluginsToInboundOnly }}
             APPLY_WASM_PLUGINS_TO_INBOUND_ONLY: "true"
-  {{ end }}
+            {{ end }}
+            {{ if .ClusterWideProxy }}
+            HTTP_PROXY: {{ .HttpProxy }}
+            HTTPS_PROXY: {{ .HttpsProxy }}
+            NO_PROXY: {{ .NoProxy }}
+            {{ end }}
   tracing:
     type: None
   version: {{ .Version }}

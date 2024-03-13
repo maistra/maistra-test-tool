@@ -38,11 +38,23 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 		})
 
 		t.LogStep("Deploy SMCP")
-		oc.ApplyTemplate(t, meshNamespace, meshTmpl, map[string]string{
-			"Name":    smcpName,
-			"Version": env.GetSMCPVersion().String(),
-			"Member":  ns.Foo,
-		})
+		smcpValues := map[string]interface{}{
+			"Name":             smcpName,
+			"Version":          env.GetSMCPVersion().String(),
+			"Member":           ns.Foo,
+			"ClusterWideProxy": false,
+		}
+
+		//If there is a cluster-wide proxy in front of OCP, it needs to be set in istio-proxy to be able to download the 3scale plugin from Quay
+		clusterWideProxy := oc.GetProxy(t)
+		if clusterWideProxy != nil {
+			smcpValues["ClusterWideProxy"] = "true"
+			smcpValues["HttpProxy"] = clusterWideProxy.HTTPProxy
+			smcpValues["HttpsProxy"] = clusterWideProxy.HTTPSProxy
+			smcpValues["NoProxy"] = clusterWideProxy.NoProxy
+		}
+
+		oc.ApplyTemplate(t, meshNamespace, meshTmpl, smcpValues)
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Deploy 3scale mocks")
@@ -110,12 +122,9 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 
 		if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_3) {
 			t.LogStep("Set flag APPLY_WASM_PLUGINS_TO_INBOUND_ONLY in istiod and send a request again")
-			oc.ApplyTemplate(t, meshNamespace, meshTmpl, map[string]interface{}{
-				"Name":                          smcpName,
-				"Version":                       env.GetSMCPVersion().String(),
-				"Member":                        ns.Foo,
-				"ApplyWasmPluginsToInboundOnly": true,
-			})
+
+			smcpValues["ApplyWasmPluginsToInboundOnly"] = true
+			oc.ApplyTemplate(t, meshNamespace, meshTmpl, smcpValues)
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 			// SMCP v2.5 no longer supports APPLY_WASM_PLUGINS_TO_INBOUND_ONLY
 			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
@@ -130,12 +139,8 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 
 		if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
 			t.LogStep("Disable APPLY_WASM_PLUGINS_TO_INBOUND_ONLY and make sure that 403 is returned again")
-			oc.ApplyTemplate(t, meshNamespace, meshTmpl, map[string]interface{}{
-				"Name":                          smcpName,
-				"Version":                       env.GetSMCPVersion().String(),
-				"Member":                        ns.Foo,
-				"ApplyWasmPluginsToInboundOnly": false,
-			})
+			smcpValues["ApplyWasmPluginsToInboundOnly"] = false
+			oc.ApplyTemplate(t, meshNamespace, meshTmpl, smcpValues)
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 			t.LogStep("Verify that a request from sleep to httpbin returns 403")
