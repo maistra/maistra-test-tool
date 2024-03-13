@@ -77,14 +77,14 @@ func TestIOR(t *testing.T) {
 
 		DeployControlPlane(t)
 
-		t.NewSubTest("check IOR on by default v2.5").Run(func(t test.TestHelper) {
+		t.NewSubTest("check IOR off by default v2.5").Run(func(t test.TestHelper) {
 			if env.GetSMCPVersion().LessThan(version.SMCP_2_5) {
 				t.Skip("Skipping until 2.5")
 			} else {
-				if getIORSetting(t, meshNamespace, meshName) != "true" {
+				if getIORSetting(t, meshNamespace, meshName) != "false" {
 					t.Fatal("Expect to find IOR enabled by default in v2.5+, but it is currently disabled")
 				} else {
-					t.LogSuccess("Got the expected true for IOR setting")
+					t.LogSuccess("Got the expected false for IOR setting")
 				}
 			}
 		})
@@ -110,6 +110,9 @@ func TestIOR(t *testing.T) {
 		t.NewSubTest("check routes aren't deleted during v2.3 to v2.4 upgrade").Run(func(t test.TestHelper) {
 			if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
 				t.Skip("This test only applies for v2.3 to v2.4 upgrade")
+			}
+			if env.GetArch() == "arm" {
+				t.Skip("2.3 and 2.4 not availble for the ARM cluster")
 			}
 
 			t.Cleanup(func() {
