@@ -142,6 +142,7 @@ func CheckRequestFailureMessagesAny(t test.TestHelper, requestError error, expec
 	t.T().Helper()
 	if requestError == nil {
 		failure(t, "expected request error, but it is nil", "")
+		return
 	}
 	for _, str := range expectedErrorMessages {
 		if strings.Contains(requestError.Error(), str) {
