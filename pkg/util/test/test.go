@@ -14,7 +14,7 @@ import (
 type TestGroup string
 
 const (
-	ARM          TestGroup = "arm"
+	ARM          TestGroup = "arm64"
 	Full         TestGroup = "full"
 	Smoke        TestGroup = "smoke"
 	InterOp      TestGroup = "interop"
@@ -106,8 +106,8 @@ func captureMustGather(t *testing.T) {
 
 func (t *topLevelTest) skipIfNecessary() {
 	testGroup := TestGroup(env.GetTestGroup())
-	if env.GetArch() == "arm" {
-		testGroup = "arm"
+	if env.GetArch() == "arm64" {
+		testGroup = "arm64"
 	}
 
 	if !t.isPartOfGroup(testGroup) {

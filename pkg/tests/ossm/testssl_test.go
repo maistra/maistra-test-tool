@@ -71,7 +71,7 @@ spec:
 
 		t.LogStep("Check testssl.sh results")
 		command := "./testssl/testssl.sh -P -6 productpage:9080 || true"
-		if env.GetArch() == "arm" {
+		if env.GetArch() == "arm64" {
 			command = "./testssl.sh -P -6 productpage:9080 || true"
 		}
 		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(10), func(t TestHelper) {
