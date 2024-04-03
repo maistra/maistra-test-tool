@@ -124,7 +124,7 @@ OCP_ARCH=z make test
 
 For ARM-based clusters, run tests with: 
 ```
-OCP_ARCH=arm make test
+OCP_ARCH=arm64 make test
 ```
 
 

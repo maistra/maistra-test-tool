@@ -2,79 +2,79 @@
 
 bookinfo-mongodb:
   x86: quay.io/maistra/examples-bookinfo-mongodb:2.4.0
-  arm: quay.io/maistra/examples-bookinfo-mongodb:2.4.0
+  arm64: quay.io/maistra/examples-bookinfo-mongodb:2.4.0
   p: quay.io/maistra/examples-bookinfo-mongodb:2.5.0-ibm-p
   z: quay.io/maistra/examples-bookinfo-mongodb:2.4.0-z
 
 bookinfo-productpage-v1:
   x86: quay.io/maistra/examples-bookinfo-productpage-v1:2.4.0
-  arm: quay.io/maistra/examples-bookinfo-productpage-v1:2.4.0
+  arm64: quay.io/maistra/examples-bookinfo-productpage-v1:2.4.0
   p: quay.io/maistra/examples-bookinfo-productpage-v1:2.5.0-ibm-p
   z: quay.io/maistra/examples-bookinfo-productpage-v1:2.5.0-ibm-z	
 
 bookinfo-details-v1:
   x86: quay.io/maistra/examples-bookinfo-details-v1:2.4.0
-  arm: quay.io/maistra/examples-bookinfo-details-v1:2.4.0
+  arm64: quay.io/maistra/examples-bookinfo-details-v1:2.4.0
   p: quay.io/maistra/examples-bookinfo-details-v1:2.5.0-ibm-p
   z: quay.io/maistra/examples-bookinfo-details-v1:2.5.0-ibm-z	
 
 bookinfo-ratings-v1:
   x86: quay.io/maistra/examples-bookinfo-ratings-v1:2.4.0
-  arm: quay.io/maistra/examples-bookinfo-ratings-v1:2.4.0
+  arm64: quay.io/maistra/examples-bookinfo-ratings-v1:2.4.0
   p: quay.io/maistra/examples-bookinfo-ratings-v1:2.5.0-ibm-p
   z: quay.io/maistra/examples-bookinfo-ratings-v1:2.5.0-ibm-z	
 
 bookinfo-ratings-v2:
   x86: quay.io/maistra/examples-bookinfo-ratings-v2:2.4.0
-  arm: quay.io/maistra/examples-bookinfo-ratings-v2:2.4.0
+  arm64: quay.io/maistra/examples-bookinfo-ratings-v2:2.4.0
   p: quay.io/maistra/examples-bookinfo-ratings-v2:2.5.0-ibm-p
   z: quay.io/maistra/examples-bookinfo-ratings-v2:2.5.0-ibm-z	
 
 bookinfo-reviews-v1:
   x86: quay.io/maistra/examples-bookinfo-reviews-v1:2.4.0
-  arm: quay.io/maistra/examples-bookinfo-reviews-v1:2.4.0
+  arm64: quay.io/maistra/examples-bookinfo-reviews-v1:2.4.0
   p: quay.io/maistra/examples-bookinfo-reviews-v1:2.5.0-ibm-p
   z: quay.io/maistra/examples-bookinfo-reviews-v1:2.5.0-ibm-z	
 
 bookinfo-reviews-v2:
   x86: quay.io/maistra/examples-bookinfo-reviews-v2:2.4.0
-  arm: quay.io/maistra/examples-bookinfo-reviews-v2:2.4.0
+  arm64: quay.io/maistra/examples-bookinfo-reviews-v2:2.4.0
   p: quay.io/maistra/examples-bookinfo-reviews-v2:2.5.0-ibm-p
   z: quay.io/maistra/examples-bookinfo-reviews-v2:2.5.0-ibm-z	
 
 bookinfo-reviews-v3:
   x86: quay.io/maistra/examples-bookinfo-reviews-v3:2.4.0
-  arm: quay.io/maistra/examples-bookinfo-reviews-v3:2.4.0
+  arm64: quay.io/maistra/examples-bookinfo-reviews-v3:2.4.0
   p: quay.io/maistra/examples-bookinfo-reviews-v3:2.5.0-ibm-p
   z: quay.io/maistra/examples-bookinfo-reviews-v3:2.5.0-ibm-z	
 
 httpbin:
   x86: quay.io/openshifttest/httpbin:multiarch
-  arm: quay.io/openshifttest/httpbin:multiarch
+  arm64: quay.io/openshifttest/httpbin:multiarch
   p: quay.io/maistra/kennethreitz-httpbin:0.0-ibm-p
   z: quay.io/maistra/httpbin:0.0-ibm-z
 
 sleep:
   x86: quay.io/openshifttest/sleep:multiarch
-  arm: quay.io/openshifttest/sleep:multiarch
+  arm64: quay.io/openshifttest/sleep:multiarch
   p: quay.io/maistra/governmentpaas-curl-ssl:0.0-ibm-p
   z: quay.io/maistra/governmentpaas-curl-ssl:0.0-ibm-z
 
 tcp-echo:
   x86: docker.io/istio/tcp-echo-server:1.2
-  arm: docker.io/h0tbird/tcp-echo-server:1.2
+  arm64: docker.io/h0tbird/tcp-echo-server:1.2
   p: quay.io/maistra/tcp-echo-server:0.0-ibm-p
   z: quay.io/maistra/tcp-echo-server:2.0-ibm-z
 
 fortio:
   x86: fortio/fortio:latest_release
-  arm: docker.io/fortio/fortio:latest
+  arm64: docker.io/fortio/fortio:latest
   p: quay.io/maistra/fortio.test:0.0-ibm-p
   z: quay.io/maistra/fortio:0.0-ibm-z
 
 testssl:
   x86: quay.io/maistra/testssl:latest
-  arm: quay.io/maistra/testssl:2.5
+  arm64: quay.io/maistra/testssl:2.5
   p: quay.io/maistra/testssl:0.0-ibm-p
   z: quay.io/maistra/testssl:0.0-ibm-z
 
@@ -82,10 +82,10 @@ helloworld:
   x86: quay.io/jewertow/examples-helloworld-v1
   p: quay.io/maistra/helloworld-v1:0.0-ibm-p
   z: quay.io/maistra/helloworld-v1:0.0-ibm-z
-  arm: docker.io/tanjunchen/helloworld-v1:latest-arm
+  arm64: docker.io/tanjunchen/helloworld-v1:latest-arm
 
 ext-authz:
   x86: gcr.io/istio-testing/ext-authz:latest
   p: quay.io/maistra/ext-authz:0.0-ibm-p
   z: quay.io/maistra/ext-authz:1.1-ibm-z
-  arm: docker.io/istio/ext-authz:1.21.0
+  arm64: docker.io/istio/ext-authz:1.21.0
