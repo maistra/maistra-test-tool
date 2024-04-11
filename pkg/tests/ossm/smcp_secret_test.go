@@ -21,15 +21,10 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
-func logSuccess(t test.TestHelper, msg string) {
-	t.T().Helper()
-	t.LogSuccess(msg)
-}
 func TestSMCPSecret(t *testing.T) {
 	NewTest(t).Id("T52").Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
 		// Created a subtest because we need to add more test related to Addons in the future.
@@ -45,7 +40,7 @@ func TestSMCPSecret(t *testing.T) {
 			str := "$2a$"
 
 			if strings.Contains(output, str) {
-				logSuccess(t, fmt.Sprintf("string '%s' found in response", str))
+				t.LogSuccess(fmt.Sprintf("string '%s' found in response", str))
 			} else {
 				t.Fatalf("expected to find the string '%s' in the response, but it wasn't found", str)
 			}
