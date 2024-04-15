@@ -30,7 +30,7 @@ spec:
     spec:
       containers:
       - name: my-nginx
-        image: docker.io/nginx
+        image: quay.io/maistra/nginx
         ports:
         - containerPort: 8443
         volumeMounts:
