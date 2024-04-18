@@ -8,11 +8,11 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
-	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/operator"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/prometheus"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -68,7 +68,8 @@ func TestCustomPrometheus(t *testing.T) {
 		enableAppMtlsMonitoring(t, customPrometheusNs, ns.Bookinfo)
 
 		t.LogStep("Waiting for installs to complete")
-		ocWaitOperatorInstall(t, customPrometheusNs, "rhods-prometheus-operator")
+		fullCsvName := operator.GetCsvName(t, customPrometheusNs, "rhods-prometheus")
+		operator.WaitForOperatorReady(t, customPrometheusNs, "k8s-app=prometheus-operator", fullCsvName)
 		oc.WaitPodReady(t, pod.MatchingSelector("prometheus=prometheus", customPrometheusNs))
 		bookinfoApp.WaitReady(t)
 
@@ -102,13 +103,6 @@ func shellArgf(format string, a ...any) string {
 	return shellArg(fmt.Sprintf(format, a...))
 }
 
-func ocGetJsonpath(t test.TestHelper, ns, kind, name, jsonpath string, checks ...common.CheckFunc) string {
-	t.T().Helper()
-	cmd := fmt.Sprintf(`oc -n %s get %s -o %s`,
-		shellArg(ns), shellArgf("%s/%s", kind, name), shellArgf("jsonpath=%s", jsonpath))
-	return oc.DefaultOC.Invoke(t, cmd, checks...)
-}
-
 func ocWaitJsonpath(t test.TestHelper, ns, kind, name, jsonpath, expected, successMessage, failureMsg string) {
 	t.T().Helper()
 	timeout := "1s"
@@ -117,15 +111,6 @@ func ocWaitJsonpath(t test.TestHelper, ns, kind, name, jsonpath, expected, succe
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		oc.DefaultOC.Invoke(t, cmd, assert.OutputContains(" condition met\n", successMessage, failureMsg))
 	})
-}
-
-func ocWaitOperatorInstall(t test.TestHelper, ns, subscriptionName string) {
-	t.T().Helper()
-	ocWaitJsonpath(t, ns, "subscription", subscriptionName,
-		"{.status.installPlanRef.kind}", "InstallPlan",
-		"Install plan was created.", "Wait for install plan failed.")
-	installPlanName := ocGetJsonpath(t, ns, "subscription", subscriptionName, "{.status.installPlanRef.name}")
-	oc.WaitCondition(t, ns, "installplan", installPlanName, "Installed")
 }
 
 func installPrometheusOperator(t test.TestHelper, ns string) {
