@@ -16,7 +16,7 @@ import (
 func TestSMCPMultiple(t *testing.T) {
 	NewTest(t).Id("T36").Groups(Full, ARM).Run(func(t TestHelper) {
 		t.Log("This test verifies whether the operator only reconciles one SMCP when two exist in a namespace")
-		t.Log("See https://issues.redhat.com/browse/OSSM-2189")
+		t.Log("See https://issues.redhat.com/browse/OSSM-2419")
 
 		smcp1 := ossm.DefaultSMCP().WithName("smcp1")
 		smcp2 := ossm.DefaultSMCP().WithName("smcp2")
