@@ -36,6 +36,7 @@ func TestRoutePreventAdditionalIngress(t *testing.T) {
 				"Ingress Route is created"))
 
 		t.NewSubTest("ingress gateway route creation").Run(func(t TestHelper) {
+			t.Log("Reference: https://issues.redhat.com/browse/OSSM-3909")
 
 			ER2 := "extra-routes22"
 
