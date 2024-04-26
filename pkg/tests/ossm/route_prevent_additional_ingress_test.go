@@ -26,8 +26,9 @@ func TestRoutePreventAdditionalIngress(t *testing.T) {
 
 		t.LogStep("Create SMCP on new Namespace")
 		oc.ApplyString(t, ER, smcp_additionalIngress)
+		oc.WaitSMCPReady(t, ER, "basic")
 
-		t.LogStep("Verify the Ingress Route")
+		t.LogStep("Verify that Route for additional ingress was not created")
 		shell.Execute(t,
 			fmt.Sprintf("oc get routes test-ingress -n %s || true", ER),
 			assert.OutputContains(
@@ -35,7 +36,8 @@ func TestRoutePreventAdditionalIngress(t *testing.T) {
 				"Ingress Route is not created",
 				"Ingress Route is created"))
 
-		t.NewSubTest("ingress gateway route creation").Run(func(t TestHelper) {
+		t.NewSubTest("additional ingress gateway route creation").Run(func(t TestHelper) {
+			t.Log("Verify that route for additional ingress was created")
 			t.Log("Reference: https://issues.redhat.com/browse/OSSM-3909")
 
 			ER2 := "extra-routes22"
@@ -49,13 +51,14 @@ func TestRoutePreventAdditionalIngress(t *testing.T) {
 
 			t.LogStep("Create IGW on new namespace")
 			oc.ApplyString(t, ER2, smcp_igw)
+			oc.WaitSMCPReady(t, ER2, "basic")
 
-			t.LogStep("Verify the IGW Route")
+			t.LogStep("Verify that Route for additional ingress was created")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				oc.Get(t,
 					ER2,
-					"routes", "",
-					assert.OutputContains("igw",
+					"route", "igw",
+					assert.OutputContains("igw-"+ER2,
 						"Route igw is created",
 						"Route igw is not created, need to check the additional ingress gateway"))
 			})
