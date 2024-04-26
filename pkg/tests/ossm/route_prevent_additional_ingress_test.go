@@ -6,6 +6,7 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
@@ -17,11 +18,8 @@ func TestRoutePreventAdditionalIngress(t *testing.T) {
 		ER := "extra-routes"
 
 		t.Cleanup(func() {
-			oc.DeleteFromString(t, ER, smcp_additionalIngress)
-			oc.DeleteNamespace(t, "extra-routes")
+			oc.DeleteNamespace(t, ER)
 		})
-
-		DeployControlPlane(t)
 
 		t.LogStep("Create namespace")
 		oc.CreateNamespace(t, ER)
@@ -37,10 +35,57 @@ func TestRoutePreventAdditionalIngress(t *testing.T) {
 				"Ingress Route is not created",
 				"Ingress Route is created"))
 
+		t.NewSubTest("ingress gateway route creation").Run(func(t TestHelper) {
+			t.Log("Reference: https://issues.redhat.com/browse/OSSM-3909")
+
+			ER2 := "extra-routes22"
+
+			t.Cleanup(func() {
+				oc.DeleteNamespace(t, ER2)
+			})
+
+			t.LogStep("Create namespace")
+			oc.CreateNamespace(t, ER2)
+
+			t.LogStep("Create IGW on new namespace")
+			oc.ApplyString(t, ER2, smcp_igw)
+
+			t.LogStep("Verify the IGW Route")
+			retry.UntilSuccess(t, func(t TestHelper) {
+				oc.Get(t,
+					ER2,
+					"routes", "",
+					assert.OutputContains("igw",
+						"Route igw is created",
+						"Route igw is not created, need to check the additional ingress gateway"))
+			})
+		})
 	})
 }
 
 var (
+	smcp_igw = `
+kind: ServiceMeshControlPlane
+apiVersion: maistra.io/v2
+metadata:
+  name: basic
+spec: 
+  version: v2.5
+  tracing:
+    type: Jaeger
+    sampling: 10000
+  policy:
+    type: Istiod
+  telemetry:
+    type: Istiod
+  gateways:
+    additionalIngress:
+      igw:
+        enabled: true
+        namespace: extra-routes22
+    ingress:
+      enabled: false 
+  `
 	smcp_additionalIngress = `
 kind: ServiceMeshControlPlane
 apiVersion: maistra.io/v2
