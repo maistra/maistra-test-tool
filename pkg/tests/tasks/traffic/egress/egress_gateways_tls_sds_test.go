@@ -31,7 +31,7 @@ func TestTLSOriginationSDS(t *testing.T) {
 
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns)
-			oc.RecreateNamespace(t, ns)
+			oc.RecreateNamespace(t, ns1)
 			oc.DeleteSecret(t, meshNamespace, "client-credential")
 			oc.DeleteFromTemplate(t, ns, nginxTlsIstioMutualGateway, smcp)
 			oc.DeleteFromString(t, meshNamespace, nginxServiceEntry, originateMtlsSdsSToNginx)
