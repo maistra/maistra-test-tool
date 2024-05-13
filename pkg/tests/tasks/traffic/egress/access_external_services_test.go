@@ -23,7 +23,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/istioctl"
-	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -32,8 +31,11 @@ import (
 func TestAccessExternalServices(t *testing.T) {
 	test.NewTest(t).Id("T11").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 		smcpName := env.GetDefaultSMCPName()
+		ns := "bookinfo"
+		ns1 := "mesh-external"
+
 		t.Cleanup(func() {
-			app.Uninstall(t, app.Sleep(ns.Bookinfo))
+			app.Uninstall(t, app.Sleep(ns))
 			oc.Patch(t,
 				meshNamespace,
 				"smcp", smcpName,
@@ -44,20 +46,20 @@ func TestAccessExternalServices(t *testing.T) {
 
 		ossm.DeployControlPlane(t)
 
-		t.LogStepf("Install sleep into %s", ns.Bookinfo)
-		app.InstallAndWaitReady(t, app.Sleep(ns.Bookinfo))
+		t.LogStepf("Install sleep into %s", ns)
+		app.InstallAndWaitReady(t, app.Sleep(ns))
 
-		t.LogStepf("Install httpbin in %s", ns.MeshExternal)
-		httpbin := app.HttpbinNoSidecar(ns.MeshExternal)
+		t.LogStepf("Install httpbin in %s", ns1)
+		httpbin := app.HttpbinNoSidecar(ns1)
 		app.InstallAndWaitReady(t, httpbin)
 
 		t.LogStep("Make request to external httpbin from sleep")
 		httpbinHeadersUrl := fmt.Sprintf("http://%s.%s:8000/headers", httpbin.Name(), httpbin.Namespace())
-		app.AssertSleepPodRequestSuccess(t, ns.Bookinfo, httpbinHeadersUrl)
+		app.AssertSleepPodRequestSuccess(t, ns, httpbinHeadersUrl)
 
 		t.LogStep("Make sure that external httpbin was not discovered by Istio") // - it would happen if mesh-external namespaces was added to the SMMR
 		istioctl.CheckClusters(t,
-			pod.MatchingSelector("app=sleep", ns.Bookinfo),
+			pod.MatchingSelector("app=sleep", ns),
 			assert.OutputDoesNotContain(
 				fmt.Sprintf("%s.%s.svc.cluster.local", httpbin.Name(), httpbin.Namespace()),
 				"Httpbin was not discovered",
@@ -78,18 +80,18 @@ func TestAccessExternalServices(t *testing.T) {
 		)
 
 		t.LogStep("Make request to external httpbin from sleep again, and expect it denied")
-		app.AssertSleepPodRequestFailure(t, ns.Bookinfo, httpbinHeadersUrl)
+		app.AssertSleepPodRequestFailure(t, ns, httpbinHeadersUrl)
 
 		t.NewSubTest("allow request to external httpbin after applying ServiceEntry").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
-				oc.DeleteFromString(t, ns.Bookinfo, httpbinServiceEntry)
+				oc.DeleteFromString(t, ns, httpbinServiceEntry)
 			})
 
 			t.LogStep("Apply a ServiceEntry for external httpbin")
-			oc.ApplyString(t, ns.Bookinfo, httpbinServiceEntry)
+			oc.ApplyString(t, ns, httpbinServiceEntry)
 
 			t.LogStep("Send a request to external httpbin")
-			app.AssertSleepPodRequestSuccess(t, ns.Bookinfo, httpbinHeadersUrl)
+			app.AssertSleepPodRequestSuccess(t, ns, httpbinHeadersUrl)
 		})
 	})
 }

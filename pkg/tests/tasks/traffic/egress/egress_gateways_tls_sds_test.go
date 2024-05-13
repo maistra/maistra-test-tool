@@ -19,18 +19,21 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
-	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestTLSOriginationSDS(t *testing.T) {
 	NewTest(t).Id("T15").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+
+		ns := "bookinfo"
+		ns1 := "mesh-external"
+
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns.Bookinfo)
-			oc.RecreateNamespace(t, ns.MeshExternal)
+			oc.RecreateNamespace(t, ns)
+			oc.RecreateNamespace(t, ns)
 			oc.DeleteSecret(t, meshNamespace, "client-credential")
-			oc.DeleteFromTemplate(t, ns.Bookinfo, nginxTlsIstioMutualGateway, smcp)
+			oc.DeleteFromTemplate(t, ns, nginxTlsIstioMutualGateway, smcp)
 			oc.DeleteFromString(t, meshNamespace, nginxServiceEntry, originateMtlsSdsSToNginx)
 		})
 
@@ -38,18 +41,18 @@ func TestTLSOriginationSDS(t *testing.T) {
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install sleep pod")
-		app.InstallAndWaitReady(t, app.Sleep(ns.Bookinfo))
+		app.InstallAndWaitReady(t, app.Sleep(ns))
 
 		t.LogStep("Deploy nginx mTLS server and create secrets in the mesh namespace")
-		app.InstallAndWaitReady(t, app.NginxExternalMTLS(ns.MeshExternal))
+		app.InstallAndWaitReady(t, app.NginxExternalMTLS(ns1))
 		oc.CreateGenericSecretFromFiles(t, meshNamespace, "client-credential",
 			"tls.key="+nginxClientCertKey,
 			"tls.crt="+nginxClientCert,
 			"ca.crt="+nginxServerCACert)
-		oc.ApplyTemplate(t, ns.Bookinfo, nginxTlsIstioMutualGateway, smcp)
+		oc.ApplyTemplate(t, ns, nginxTlsIstioMutualGateway, smcp)
 		oc.ApplyString(t, meshNamespace, nginxServiceEntry, originateMtlsSdsSToNginx)
 
 		t.Log("Send HTTP request to external nginx to verify mTLS origination")
-		app.AssertSleepPodRequestSuccess(t, ns.Bookinfo, "http://my-nginx.mesh-external.svc.cluster.local")
+		app.AssertSleepPodRequestSuccess(t, ns, "http://my-nginx.mesh-external.svc.cluster.local")
 	})
 }

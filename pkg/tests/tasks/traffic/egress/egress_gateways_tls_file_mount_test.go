@@ -22,7 +22,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/istioctl"
-	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -34,26 +33,29 @@ func TestTLSOrigination(t *testing.T) {
 		t.Log("  1) Egress gateway TLS Origination")
 		t.Log("  2) MTLS Origination with file mount (certificates mounted in egress gateway pod)")
 
+		ns := "bookinfo"
+		ns1 := "mesh-external"
+
 		t.Cleanup(func() {
-			app.Uninstall(t, app.Sleep(ns.Bookinfo))
+			app.Uninstall(t, app.Sleep(ns))
 		})
 
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install sleep pod")
-		app.InstallAndWaitReady(t, app.Sleep(ns.Bookinfo))
+		app.InstallAndWaitReady(t, app.Sleep(ns))
 
 		t.NewSubTest("Egress Gateway without file mount").Run(func(t TestHelper) {
 			t.Log("Perform TLS origination with an egress gateway")
 
 			t.LogStep("Install external nginx")
-			app.InstallAndWaitReady(t, app.NginxExternalTLS(ns.MeshExternal))
+			app.InstallAndWaitReady(t, app.NginxExternalTLS(ns1))
 
 			t.LogStep("Make sure that mesh external namespace is not discovered by Istio - it would happen if mesh-external namespaces was added to the SMMR")
 			istioctl.CheckClusters(t,
-				pod.MatchingSelector("app=sleep", ns.Bookinfo),
+				pod.MatchingSelector("app=sleep", ns),
 				assert.OutputDoesNotContain(
-					fmt.Sprintf("%s.svc.cluster.local", ns.MeshExternal),
+					fmt.Sprintf("%s.svc.cluster.local", ns1),
 					"mesh-external namespace was not discovered",
 					"Expected mesh-external to not be discovered, but it was."))
 
@@ -64,15 +66,15 @@ func TestTLSOrigination(t *testing.T) {
 			})
 
 			t.LogStep("Create a Gateway, DestinationRule, and VirtualService to route requests to external nginx through the egress gateway")
-			oc.ApplyTemplate(t, ns.Bookinfo, nginxTlsIstioMutualGateway, smcp)
+			oc.ApplyTemplate(t, ns, nginxTlsIstioMutualGateway, smcp)
 			oc.ApplyString(t, meshNamespace, originateTlsToNginx)
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns.Bookinfo, nginxTlsIstioMutualGateway, smcp)
+				oc.DeleteFromTemplate(t, ns, nginxTlsIstioMutualGateway, smcp)
 				oc.DeleteFromString(t, meshNamespace, originateTlsToNginx)
 			})
 
 			t.LogStep("Verify that request to external nginx is routed through the egress gateway (response 200 indicates that the TLS origination is done by the egress gateway)")
-			app.ExecInSleepPod(t, ns.Bookinfo,
+			app.ExecInSleepPod(t, ns,
 				`curl -sS http://my-nginx.mesh-external.svc.cluster.local`,
 				assert.OutputContains(
 					"Welcome to nginx",
@@ -83,9 +85,9 @@ func TestTLSOrigination(t *testing.T) {
 		t.NewSubTest("mTLS with file mount").Run(func(t TestHelper) {
 			t.Log("Perform mTLS origination with an egress gateway")
 			t.Cleanup(func() {
-				app.Uninstall(t, app.NginxExternalMTLS(ns.MeshExternal))
+				app.Uninstall(t, app.NginxExternalMTLS(ns1))
 				oc.DeleteSecret(t, meshNamespace, "nginx-client-certs", "nginx-ca-certs")
-				oc.DeleteFromTemplate(t, ns.Bookinfo, nginxTlsIstioMutualGateway, smcp)
+				oc.DeleteFromTemplate(t, ns, nginxTlsIstioMutualGateway, smcp)
 				oc.DeleteFromString(t, meshNamespace, nginxServiceEntry, originateMtlsToNginx)
 				// revert patch to istio-egressgateway
 				oc.TouchSMCP(t, meshNamespace, smcp.Name)
@@ -100,21 +102,21 @@ func TestTLSOrigination(t *testing.T) {
 			oc.CreateGenericSecretFromFiles(t, meshNamespace,
 				"nginx-ca-certs",
 				"example.com.crt="+nginxServerCACert)
-			app.Install(t, app.NginxExternalMTLS(ns.MeshExternal))
+			app.Install(t, app.NginxExternalMTLS(ns1))
 
 			t.LogStep("Patch egress gateway with File Mount configuration")
 			oc.Patch(t, meshNamespace, "deploy", "istio-egressgateway", "json", gatewayPatchAdd)
 
 			t.LogStep("Configure mTLS origination for egress traffic")
-			oc.ApplyTemplate(t, ns.Bookinfo, nginxTlsIstioMutualGateway, smcp)
+			oc.ApplyTemplate(t, ns, nginxTlsIstioMutualGateway, smcp)
 			oc.ApplyString(t, meshNamespace, nginxServiceEntry, originateMtlsToNginx)
 
 			t.LogStep("Wait for egress gateway and nginx to be ready")
 			oc.WaitDeploymentRolloutComplete(t, meshNamespace, "istio-egressgateway")
-			app.WaitReady(t, app.NginxExternalMTLS(ns.MeshExternal))
+			app.WaitReady(t, app.NginxExternalMTLS(ns1))
 
 			t.LogStep("Verify NGINX server")
-			app.ExecInSleepPod(t, ns.Bookinfo,
+			app.ExecInSleepPod(t, ns,
 				`curl -sS http://my-nginx.mesh-external.svc.cluster.local`,
 				assert.OutputContains(
 					"Welcome to nginx",
