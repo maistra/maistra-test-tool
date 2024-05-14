@@ -23,18 +23,18 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
-	. "github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestTrafficShifting(t *testing.T) {
-	NewTest(t).Id("T3").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T3").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Bookinfo)
@@ -53,13 +53,13 @@ func TestTrafficShifting(t *testing.T) {
 		expectedResponseFile := TestreviewV1(t, "productpage-normal-user-v1.html")
 		expectedResponseFile3 := TestreviewV3(t, "productpage-normal-user-v3.html")
 
-		t.NewSubTest("50 percent to v3").Run(func(t TestHelper) {
+		t.NewSubTest("50 percent to v3").Run(func(t test.TestHelper) {
 			t.LogStep("configure VirtualService to split traffic 50% to v1 and 50% to v3")
 			oc.ApplyString(t, ns.Bookinfo, splitReviews5050BetweenV1andV3)
 
 			t.LogStep("Make 100 requests and check if v1 and v3 get 50% of requests each (tolerance: 20%)")
 
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				tolerance := 0.20
 				checkTrafficRatio(t, productpageURL, 100, tolerance, map[string]float64{
 					expectedResponseFile:  0.5,
@@ -68,12 +68,12 @@ func TestTrafficShifting(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("100 percent to v3").Run(func(t TestHelper) {
+		t.NewSubTest("100 percent to v3").Run(func(t test.TestHelper) {
 			t.LogStep("configure VirtualService to send all traffic to v3")
 			oc.ApplyString(t, ns.Bookinfo, allReviewsToV3)
 
 			t.LogStep("Make 100 requests and check if all of them go to v3 (tolerance: 0%)")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				tolerance := 0.0
 				checkTrafficRatio(t, productpageURL, 100, tolerance, map[string]float64{
 					expectedResponseFile:  0.0,
@@ -84,17 +84,17 @@ func TestTrafficShifting(t *testing.T) {
 	})
 }
 
-func checkTrafficRatio(t TestHelper, url string, numberOfRequests int, tolerance float64, ratios map[string]float64) {
+func checkTrafficRatio(t test.TestHelper, url string, numberOfRequests int, tolerance float64, ratios map[string]float64) {
 	counts := map[string]int{}
 	for i := 0; i < numberOfRequests; i++ {
 		curl.Request(t,
 			url, nil,
 			require.ResponseStatus(http.StatusOK),
-			func(t TestHelper, response *http.Response, responseBody []byte, responseErr error, duration time.Duration) {
+			func(t test.TestHelper, response *http.Response, responseBody []byte, responseErr error, duration time.Duration) {
 				comparisonErrors := map[string]error{}
 				matched := false
 				for file := range ratios {
-					err := CompareHTTPResponse(responseBody, file)
+					err := util.CompareHTTPResponse(responseBody, file)
 					if err == nil {
 						matched = true
 						counts[file]++
@@ -120,7 +120,7 @@ func checkTrafficRatio(t TestHelper, url string, numberOfRequests int, tolerance
 	for file, count := range counts {
 		expectedRate := ratios[file]
 		actualRate := float64(count) / float64(numberOfRequests)
-		if IsWithinPercentage(count, numberOfRequests, expectedRate, tolerance) {
+		if util.IsWithinPercentage(count, numberOfRequests, expectedRate, tolerance) {
 			t.LogSuccessf("%d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, numberOfRequests, file, actualRate, expectedRate, tolerance)
 		} else {
 			t.Errorf("%d/%d responses matched %s (actual rate %f, expected %f, tolerance %f)", count, numberOfRequests, file, actualRate, expectedRate, tolerance)

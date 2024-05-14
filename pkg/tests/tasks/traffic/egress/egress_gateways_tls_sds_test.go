@@ -21,11 +21,11 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestTLSOriginationSDS(t *testing.T) {
-	NewTest(t).Id("T15").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T15").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Bookinfo)
 			oc.RecreateNamespace(t, ns.MeshExternal)

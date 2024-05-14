@@ -21,11 +21,11 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestEgressGateways(t *testing.T) {
-	NewTest(t).Id("T13").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T13").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Bookinfo)
 		})
@@ -35,7 +35,7 @@ func TestEgressGateways(t *testing.T) {
 		t.LogStep("Install sleep pod")
 		app.InstallAndWaitReady(t, app.Sleep(ns.Bookinfo))
 
-		t.NewSubTest("HTTP").Run(func(t TestHelper) {
+		t.NewSubTest("HTTP").Run(func(t test.TestHelper) {
 			t.LogStepf("Install external httpbin")
 			httpbin := app.HttpbinNoSidecar(ns.MeshExternal)
 			app.InstallAndWaitReady(t, httpbin)
@@ -55,7 +55,7 @@ func TestEgressGateways(t *testing.T) {
 			app.AssertSleepPodRequestSuccess(t, ns.Bookinfo, "http://httpbin.mesh-external:8000/headers")
 		})
 
-		t.NewSubTest("HTTPS").Run(func(t TestHelper) {
+		t.NewSubTest("HTTPS").Run(func(t test.TestHelper) {
 			t.LogStep("Install external nginx")
 			app.InstallAndWaitReady(t, app.NginxExternalTLS(ns.MeshExternal))
 

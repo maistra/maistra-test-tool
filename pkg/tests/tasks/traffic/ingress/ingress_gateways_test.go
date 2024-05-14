@@ -29,12 +29,12 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/request"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 func TestIngressGateways(t *testing.T) {
-	NewTest(t).Id("T8").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T8").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Bookinfo)
@@ -47,7 +47,7 @@ func TestIngressGateways(t *testing.T) {
 
 		gatewayHTTP := istio.GetIngressGatewayHost(t, meshNamespace)
 
-		t.NewSubTest("TrafficManagement_ingress_status_200_test").Run(func(t TestHelper) {
+		t.NewSubTest("TrafficManagement_ingress_status_200_test").Run(func(t test.TestHelper) {
 			t.LogStep("Create httpbin Gateway and VirtualService with host set to httpbin.example.com")
 			oc.ApplyString(t, ns.Bookinfo, httpbinGateway1)
 
@@ -56,7 +56,7 @@ func TestIngressGateways(t *testing.T) {
 			}
 
 			t.LogStep("Check if httpbin service is reachable through istio-ingressgateway")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				curl.Request(t,
 					fmt.Sprintf("http://%s/status/200", gatewayHTTP),
 					request.WithHost("httpbin.example.com"),
@@ -64,12 +64,12 @@ func TestIngressGateways(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("TrafficManagement_ingress_headers_test").Run(func(t TestHelper) {
+		t.NewSubTest("TrafficManagement_ingress_headers_test").Run(func(t test.TestHelper) {
 			t.LogStep("Create httpbin Gateway and VirtualService with host set to *")
 			oc.ApplyString(t, ns.Bookinfo, httpbinGateway2)
 
 			t.LogStep("Check if httpbin service is reachable through istio-ingressgateway")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				curl.Request(t,
 					fmt.Sprintf("http://%s/headers", gatewayHTTP),
 					nil,

@@ -29,13 +29,13 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 // use the following command to monitor the test: watch "kubecolor get smcp -n west-mesh-system;echo;kubecolor get pods -n west-mesh-system;echo;kubecolor get pods -n west-mesh-bookinfo; echo; echo '========================================================================='; echo; kubecolor get smcp -n east-mesh-system;echo;kubecolor get pods -n east-mesh-system;echo;kubecolor get pods -n east-mesh-bookinfo"
 
 func TestMultiClusterFederationFailover(t *testing.T) {
-	NewTest(t).Groups(Full).Run(func(t TestHelper) {
+	test.NewTest(t).Groups(test.Full).Run(func(t test.TestHelper) {
 		kubeconfig2 := env.GetKubeconfig2()
 		if kubeconfig2 == "" {
 			t.Skip("this test only runs when the KUBECONFIG2 environment variable points to the kubeconfig of the second cluster")
@@ -68,11 +68,11 @@ func TestMultiClusterFederationFailover(t *testing.T) {
 				region:            eastRegion,
 				zone:              eastZone,
 			},
-			controlPlaneInstaller: func(t TestHelper, ft federationTest, ingressServiceType string) {
+			controlPlaneInstaller: func(t test.TestHelper, ft federationTest, ingressServiceType string) {
 				installSMCPandSMMR(t, ft.west, ft.testdataPath+"/west-mesh/smcp.yaml", ft.testdataPath+"/west-mesh/smmr.yaml", ingressServiceType)
 				installSMCPandSMMR(t, ft.east, ft.testdataPath+"/east-mesh/smcp.yaml", ft.testdataPath+"/east-mesh/smmr.yaml", ingressServiceType)
 			},
-			bookinfoInstaller: func(t TestHelper, ft federationTest) {
+			bookinfoInstaller: func(t test.TestHelper, ft federationTest) {
 				t.LogStep("Install bookinfo in west-mesh")
 				ft.west.oc.ApplyTemplateString(t, ft.west.bookinfoNamespace, app.BookinfoTemplate, nil)
 				ft.west.oc.ApplyString(t, ft.west.bookinfoNamespace, app.BookinfoRuleAll)
@@ -89,9 +89,9 @@ func TestMultiClusterFederationFailover(t *testing.T) {
 					"WestMeshRegion": westRegion,
 				})
 			},
-			checker: func(t TestHelper, ft federationTest) {
+			checker: func(t test.TestHelper, ft federationTest) {
 				t.LogStep("Check if east-mesh can see services from west-mesh")
-				retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(300), func(t TestHelper) {
+				retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(300), func(t test.TestHelper) {
 					ft.east.oc.Invoke(t,
 						`oc -n east-mesh-system get importedservicesets west-mesh -o json`,
 						assert.OutputContains("ratings.bookinfo.svc.east-mesh-exports.local",
@@ -120,14 +120,14 @@ func TestMultiClusterFederationFailover(t *testing.T) {
 	})
 }
 
-func getRegionAndZone(t TestHelper, oc *oc.OC) (string, string) {
+func getRegionAndZone(t test.TestHelper, oc *oc.OC) (string, string) {
 	output := oc.Invoke(t, "oc get nodes -o jsonpath='{.items[0].metadata.labels.topology\\.kubernetes\\.io/region} {.items[0].metadata.labels.topology\\.kubernetes\\.io/region}'")
 	arr := strings.Split(output, " ")
 	return arr[0], arr[1]
 }
 
-func assertRatingsInEastMeshReceivesRequest(t TestHelper, eastMeshBookinfoURL string, ft federationTest) {
-	retry.UntilSuccess(t, func(t TestHelper) {
+func assertRatingsInEastMeshReceivesRequest(t test.TestHelper, eastMeshBookinfoURL string, ft federationTest) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
 		eastCount0 := getRatingsV1RequestCount(t, ft.east.oc)
 		westCount0 := getRatingsV1RequestCount(t, ft.west.oc)
 		for i := 0; i < 10; i++ {
@@ -150,8 +150,8 @@ func assertRatingsInEastMeshReceivesRequest(t TestHelper, eastMeshBookinfoURL st
 	})
 }
 
-func assertRatingsInWestMeshReceivesRequest(t TestHelper, eastMeshBookinfoURL string, ft federationTest) {
-	retry.UntilSuccess(t, func(t TestHelper) {
+func assertRatingsInWestMeshReceivesRequest(t test.TestHelper, eastMeshBookinfoURL string, ft federationTest) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
 		westCount0 := getRatingsV1RequestCount(t, ft.west.oc)
 		for i := 0; i < 10; i++ {
 			curl.Request(t, eastMeshBookinfoURL, nil)
@@ -166,7 +166,7 @@ func assertRatingsInWestMeshReceivesRequest(t TestHelper, eastMeshBookinfoURL st
 	})
 }
 
-func getRatingsV1RequestCount(t TestHelper, oc *oc.OC) int {
+func getRatingsV1RequestCount(t test.TestHelper, oc *oc.OC) int {
 	metrics := istio.GetProxyMetrics(t, oc,
 		pod.MatchingSelector("app=ratings,version=v1", "bookinfo-ha"),
 		"istio_requests_total",

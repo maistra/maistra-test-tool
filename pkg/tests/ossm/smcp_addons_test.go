@@ -21,13 +21,13 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestSMCPAddons(t *testing.T) {
-	NewTest(t).Id("T34").Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T34").Groups(test.Full, test.Disconnected, test.ARM).Run(func(t test.TestHelper) {
 		// Created a subtest because we need to add more test related to Addons in the future.
-		t.NewSubTest("3scale_addon").Run(func(t TestHelper) {
+		t.NewSubTest("3scale_addon").Run(func(t test.TestHelper) {
 			t.LogStep("Enable 3scale in a SMCP expecting to get validation error.")
 			t.Cleanup(func() {
 				shell.Execute(t, fmt.Sprintf(`oc patch -n %s smcp/%s --type merge -p '{"spec":{"addons":{"3scale":{"enabled":false}}}}' || true`, meshNamespace, smcpName))

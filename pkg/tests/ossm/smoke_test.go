@@ -26,7 +26,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
@@ -42,7 +41,7 @@ var (
 )
 
 func TestSmoke(t *testing.T) {
-	NewTest(t).Groups(ARM, Full, Smoke, InterOp, Disconnected).Run(func(t TestHelper) {
+	test.NewTest(t).Groups(test.ARM, test.Full, test.Smoke, test.InterOp, test.Disconnected).Run(func(t test.TestHelper) {
 		t.Log("Smoke Test for SMCP: deploy, upgrade, bookinfo and uninstall")
 		ns := "bookinfo"
 
@@ -55,7 +54,7 @@ func TestSmoke(t *testing.T) {
 
 		oc.RecreateNamespace(t, meshNamespace)
 
-		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
+		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t test.TestHelper) {
 			t.Logf("This test checks whether SMCP becomes ready after it's upgraded from %s to %s and bookinfo is still working after the upgrade and also test a clean installation of the target SMCP", fromVersion, toVersion)
 			t.Cleanup(func() {
 				app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
@@ -83,7 +82,7 @@ func TestSmoke(t *testing.T) {
 			checkSMCP(t, ns)
 		})
 
-		t.NewSubTest(fmt.Sprintf("install smcp %s", toVersion)).Run(func(t TestHelper) {
+		t.NewSubTest(fmt.Sprintf("install smcp %s", toVersion)).Run(func(t test.TestHelper) {
 			t.Logf("This test checks whether SMCP %s install the SMCP version", env.GetSMCPVersion())
 			t.Cleanup(func() {
 				app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
@@ -98,7 +97,7 @@ func TestSmoke(t *testing.T) {
 			checkSMCP(t, ns)
 		})
 
-		t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t TestHelper) {
+		t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t test.TestHelper) {
 			t.Logf("This test checks whether SMCP %s deletion deletes all the resources", env.GetSMCPVersion())
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
@@ -108,7 +107,7 @@ func TestSmoke(t *testing.T) {
 			oc.DeleteFromString(t, meshNamespace, GetSMMRTemplate())
 			DeleteSMCPVersion(t, meshNamespace, env.GetSMCPVersion())
 			t.LogStep("verify SMCP resources are deleted")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				oc.Get(t,
 					meshNamespace,
 					"smcp,pods,services", "",
@@ -121,7 +120,7 @@ func TestSmoke(t *testing.T) {
 	})
 }
 
-func checkSMCP(t TestHelper, ns string) {
+func checkSMCP(t test.TestHelper, ns string) {
 	t.LogStep("Verify if all the routes are created")
 	assertRoutesExist(t)
 
@@ -133,7 +132,7 @@ func checkSMCP(t TestHelper, ns string) {
 	assertProxiesReadyInLessThan10Seconds(t, ns)
 }
 
-func assertTrafficFlowsThroughProxy(t TestHelper, ns string) {
+func assertTrafficFlowsThroughProxy(t test.TestHelper, ns string) {
 	app.ExecInSleepPod(t, ns, "curl -sI http://productpage:9080",
 		assert.OutputContains(
 			"HTTP/1.1 200 OK",
@@ -149,7 +148,7 @@ func assertTrafficFlowsThroughProxy(t TestHelper, ns string) {
 			"HTTP header 'x-envoy-decorator-operation' is missing from the response"))
 }
 
-func assertProxiesReadyInLessThan10Seconds(t TestHelper, ns string) {
+func assertProxiesReadyInLessThan10Seconds(t test.TestHelper, ns string) {
 	t.Log("Extracting proxy startup time and last transition time for all the pods in the namespace")
 	podsList := oc.GetJson(t, ns, "pods", "", `{.items[*].metadata.name}`)
 
@@ -190,7 +189,7 @@ func assertSMCPDeploysAndIsReady(t test.TestHelper, ver version.Version) {
 
 func assertRoutesExist(t test.TestHelper) {
 	t.Log("Related issue: https://issues.redhat.com/browse/OSSM-4069")
-	retry.UntilSuccess(t, func(t TestHelper) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
 		oc.Get(t,
 			meshNamespace,
 			"routes", "",

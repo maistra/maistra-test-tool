@@ -25,11 +25,11 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestTLSOrigination(t *testing.T) {
-	NewTest(t).Id("T14").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T14").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 		t.Log("This test verifies that TLS origination works in 2 scenarios:")
 		t.Log("  1) Egress gateway TLS Origination")
 		t.Log("  2) MTLS Origination with file mount (certificates mounted in egress gateway pod)")
@@ -43,7 +43,7 @@ func TestTLSOrigination(t *testing.T) {
 		t.LogStep("Install sleep pod")
 		app.InstallAndWaitReady(t, app.Sleep(ns.Bookinfo))
 
-		t.NewSubTest("Egress Gateway without file mount").Run(func(t TestHelper) {
+		t.NewSubTest("Egress Gateway without file mount").Run(func(t test.TestHelper) {
 			t.Log("Perform TLS origination with an egress gateway")
 
 			t.LogStep("Install external nginx")
@@ -80,7 +80,7 @@ func TestTLSOrigination(t *testing.T) {
 					"Expected Welcome to nginx; Got unexpected response"))
 		})
 
-		t.NewSubTest("mTLS with file mount").Run(func(t TestHelper) {
+		t.NewSubTest("mTLS with file mount").Run(func(t test.TestHelper) {
 			t.Log("Perform mTLS origination with an egress gateway")
 			t.Cleanup(func() {
 				app.Uninstall(t, app.NginxExternalMTLS(ns.MeshExternal))

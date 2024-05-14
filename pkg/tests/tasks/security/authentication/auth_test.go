@@ -30,11 +30,11 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/request"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestAuthPolicy(t *testing.T) {
-	NewTest(t).Id("T18").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T18").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 		meshNamespace := env.GetDefaultMeshNamespace()
 
 		t.Log("This test validates authentication policies.")
@@ -59,7 +59,7 @@ func TestAuthPolicy(t *testing.T) {
 		toNamespaces := []string{"foo", "bar"}
 
 		t.LogStep("Check connectivity from namespaces foo, bar, and legacy to namespaces foo and bar")
-		retry.UntilSuccess(t, func(t TestHelper) {
+		retry.UntilSuccess(t, func(t test.TestHelper) {
 			for _, from := range fromNamespaces {
 				for _, to := range toNamespaces {
 					app.AssertSleepPodRequestSuccess(t, from, fmt.Sprintf("http://httpbin.%s:8000/ip", to))
@@ -67,7 +67,7 @@ func TestAuthPolicy(t *testing.T) {
 			}
 		})
 
-		t.NewSubTest("enable auto mTLS").Run(func(t TestHelper) {
+		t.NewSubTest("enable auto mTLS").Run(func(t test.TestHelper) {
 			t.LogStep("Check if mTLS is enabled in foo")
 			app.ExecInSleepPod(t, "foo", "curl http://httpbin.foo:8000/headers -s",
 				assert.OutputContains("X-Forwarded-Client-Cert",
@@ -81,14 +81,14 @@ func TestAuthPolicy(t *testing.T) {
 					"mTLS is enabled in namespace legacy, but shouldn't be (X-Forwarded-Client-Cert header is present when it shouldn't be)"))
 		})
 
-		t.NewSubTest("enable global mTLS STRICT mode").Run(func(t TestHelper) {
+		t.NewSubTest("enable global mTLS STRICT mode").Run(func(t test.TestHelper) {
 			t.LogStep("Enable mTLS STRICT mode globally")
 			oc.ApplyString(t, meshNamespace, PeerAuthenticationMTLSStrict)
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, meshNamespace, PeerAuthenticationMTLSStrict)
 			})
 			t.LogStep("Check whether requests from legacy namespace to foo and bar namespace return 000 placeholder")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				from := "legacy"
 				for _, to := range []string{"foo", "bar"} {
 					app.AssertSleepPodZeroesPlaceholder(t, from, fmt.Sprintf("http://httpbin.%s:8000/ip", to))
@@ -96,7 +96,7 @@ func TestAuthPolicy(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("namespace policy mtls").Run(func(t TestHelper) {
+		t.NewSubTest("namespace policy mtls").Run(func(t test.TestHelper) {
 			t.LogStep("Enable mutual TLS per namespace")
 			oc.ApplyString(t, "foo", PeerAuthenticationMTLSStrict)
 			t.Cleanup(func() {
@@ -104,7 +104,7 @@ func TestAuthPolicy(t *testing.T) {
 			})
 
 			t.LogStep("Check whether requests succeed except from sleep namespace to foo namespace")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				for _, from := range []string{"foo", "bar", "legacy"} {
 					for _, to := range []string{"foo", "bar"} {
 						url := fmt.Sprintf("http://httpbin.%s:8000/ip", to)
@@ -118,7 +118,7 @@ func TestAuthPolicy(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("workload policy mtls").Run(func(t TestHelper) {
+		t.NewSubTest("workload policy mtls").Run(func(t test.TestHelper) {
 			t.LogStep("Enable mutual TLS per workload")
 			oc.ApplyString(t, "bar", WorkloadPolicyStrict)
 			t.Cleanup(func() {
@@ -126,7 +126,7 @@ func TestAuthPolicy(t *testing.T) {
 			})
 
 			t.LogStep("Check whether request failed from legacy namespace to bar namespace")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				app.AssertSleepPodRequestFailure(t, "legacy", "http://httpbin.bar:8000/ip")
 			})
 
@@ -134,12 +134,12 @@ func TestAuthPolicy(t *testing.T) {
 			oc.ApplyString(t, "bar", PortPolicy)
 
 			t.LogStep("Check whether request succeed from legacy namespace to bar namespace")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				app.AssertSleepPodRequestSuccess(t, "legacy", "http://httpbin.bar:8000/ip")
 			})
 		})
 
-		t.NewSubTest("policy precedence mtls").Run(func(t TestHelper) {
+		t.NewSubTest("policy precedence mtls").Run(func(t test.TestHelper) {
 			t.LogStep("Overwrite foo namespace policy by a workload policy")
 			oc.ApplyString(t, "foo", OverwritePolicy)
 			t.Cleanup(func() {
@@ -147,7 +147,7 @@ func TestAuthPolicy(t *testing.T) {
 			})
 
 			t.LogStep("Check whether request succeed legacy namespace to foo namespace")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				app.AssertSleepPodRequestSuccess(t, "legacy", "http://httpbin.foo:8000/ip")
 			})
 		})
@@ -155,14 +155,14 @@ func TestAuthPolicy(t *testing.T) {
 		ingressGatewayHost := istio.GetIngressGatewayHost(t, meshNamespace)
 		headersURL := fmt.Sprintf("http://%s/headers", ingressGatewayHost)
 
-		t.NewSubTest("end-user JWT").Run(func(t TestHelper) {
+		t.NewSubTest("end-user JWT").Run(func(t test.TestHelper) {
 			t.Log("End-user authentication")
 
 			t.LogStep("Apply httpbin gateway")
 			oc.ApplyString(t, "foo", HttpbinGateway)
 
 			t.LogStep("Check httpbin request is successful")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				requireResponseStatus(t, headersURL, nil, http.StatusOK)
 			})
 
@@ -173,45 +173,45 @@ func TestAuthPolicy(t *testing.T) {
 			})
 
 			t.LogStep("Check whether request without token returns 200")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				requireResponseStatus(t, headersURL, nil, http.StatusOK)
 			})
 
 			t.LogStep("Check whether request with an invalid token returns 401")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				requireResponseStatus(t, headersURL, request.WithHeader("Authorization", "Bearer deadbeef"), http.StatusUnauthorized)
 			})
 
 			t.LogStep("Check whether request with a valid token returns 200")
 			token := string(curl.Request(t, "https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/demo.jwt", nil))
 			token = strings.Trim(token, "\n")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				requireResponseStatus(t, headersURL, request.WithHeader("Authorization", "Bearer "+token), http.StatusOK)
 			})
 
 			// skip gen-jwt.py and test JWT expires
 		})
 
-		t.NewSubTest("end-user require JWT").Run(func(t TestHelper) {
+		t.NewSubTest("end-user require JWT").Run(func(t test.TestHelper) {
 			t.Log("Require a valid token")
 			oc.ApplyString(t, meshNamespace, RequireTokenPolicy)
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, meshNamespace, RequireTokenPolicy)
 			})
 
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				requireResponseStatus(t, headersURL, nil, http.StatusForbidden)
 			})
 		})
 
-		t.NewSubTest("end-user require JWT per path").Run(func(t TestHelper) {
+		t.NewSubTest("end-user require JWT per path").Run(func(t test.TestHelper) {
 			t.Log("Require valid tokens per-path")
 			oc.ApplyString(t, meshNamespace, RequireTokenPathPolicy)
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, meshNamespace, RequireTokenPathPolicy)
 			})
 
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				requireResponseStatus(t, headersURL, nil, http.StatusForbidden)
 
 				ipURL := fmt.Sprintf("http://%s/ip", ingressGatewayHost)
@@ -221,7 +221,7 @@ func TestAuthPolicy(t *testing.T) {
 	})
 }
 
-func requireResponseStatus(t TestHelper, url string, requestOption curl.RequestOption, statusCode int) {
+func requireResponseStatus(t test.TestHelper, url string, requestOption curl.RequestOption, statusCode int) {
 	curl.Request(t, url, requestOption, require.ResponseStatus(statusCode))
 }
 

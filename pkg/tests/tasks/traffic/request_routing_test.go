@@ -26,11 +26,11 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestRequestRouting(t *testing.T) {
-	NewTest(t).Id("T1").Groups(Smoke, Full, InterOp, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T1").Groups(test.Smoke, test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Bookinfo)
@@ -46,13 +46,13 @@ func TestRequestRouting(t *testing.T) {
 		productpageURL := app.BookinfoProductPageURL(t, meshNamespace)
 		testUserCookieJar := app.BookinfoLogin(t, meshNamespace)
 
-		t.NewSubTest("not-logged-in").Run(func(t TestHelper) {
+		t.NewSubTest("not-logged-in").Run(func(t test.TestHelper) {
 			oc.ApplyString(t, ns.Bookinfo, app.BookinfoVirtualServicesAllV1)
 
 			expectedResponseFile := TestreviewV1(t, "productpage-normal-user-v1.html")
 
 			t.LogStep("get productpage without logging in; expect to get reviews-v1 (5x)")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				for i := 0; i < 5; i++ {
 					curl.Request(t,
 						productpageURL, nil,
@@ -65,13 +65,13 @@ func TestRequestRouting(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("logged-in").Run(func(t TestHelper) {
+		t.NewSubTest("logged-in").Run(func(t test.TestHelper) {
 			oc.ApplyString(t, ns.Bookinfo, app.BookinfoVirtualServiceReviewsV2)
 
 			expectedResponseFile2 := TestreviewV2(t, "productpage-test-user-v2.html")
 
 			t.LogStep("get productpage as logged-in user; expect to get reviews-v2 (5x)")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				for i := 0; i < 5; i++ {
 					curl.Request(t,
 						productpageURL,

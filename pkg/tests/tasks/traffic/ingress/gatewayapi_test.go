@@ -15,12 +15,11 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 func TestGatewayApi(t *testing.T) {
-	NewTest(t).Id("T41").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T41").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_3) {
 			t.Skip("TestGatewayApi was added in v2.3")
 		}
@@ -88,7 +87,7 @@ func TestGatewayApi(t *testing.T) {
 			oc.WaitCondition(t, ns.Foo, "Gateway", "gateway", gatewayapi.GetWaitingCondition(env.GetSMCPVersion()))
 
 			t.LogStep("Verfiy the GatewayApi access the httpbin service using curl")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				oc.Exec(t,
 					pod.MatchingSelector("app=istio-ingressgateway", meshNamespace),
 					"istio-proxy",
@@ -134,7 +133,7 @@ func TestGatewayApi(t *testing.T) {
 			oc.WaitCondition(t, ns.Foo, "Gateway", "gateway", gatewayapi.GetWaitingCondition(env.GetSMCPVersion()))
 
 			t.LogStep("Verify the Gateway-Controller Profile access the httpbin service using curl")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				oc.Exec(t,
 					pod.MatchingSelector("app=istiod", meshNamespace),
 					"discovery",

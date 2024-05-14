@@ -22,7 +22,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 type config struct {
@@ -40,12 +40,12 @@ type federationTest struct {
 	west config
 	east config
 
-	controlPlaneInstaller func(t TestHelper, ft federationTest, ingressServiceType string)
-	bookinfoInstaller     func(t TestHelper, ft federationTest)
-	checker               func(t TestHelper, ft federationTest)
+	controlPlaneInstaller func(t test.TestHelper, ft federationTest, ingressServiceType string)
+	bookinfoInstaller     func(t test.TestHelper, ft federationTest)
+	checker               func(t test.TestHelper, ft federationTest)
 }
 
-func (ft federationTest) run(t TestHelper) {
+func (ft federationTest) run(t test.TestHelper) {
 	ocWest := ft.west.oc
 	ocEast := ft.east.oc
 	singleCluster := ocWest == ocEast
@@ -114,7 +114,7 @@ func (ft federationTest) run(t TestHelper) {
 	ocEast.WaitAllPodsReady(t, ft.east.bookinfoNamespace)
 
 	t.LogStep("Check if west-mesh and east-mesh are connected to each other")
-	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(10*time.Second), func(t TestHelper) { // this typically takes 5 minutes on AWS
+	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(10*time.Second), func(t test.TestHelper) { // this typically takes 5 minutes on AWS
 		ocWest.Invoke(t,
 			`oc -n west-mesh-system get servicemeshpeer east-mesh -o json`,
 			assert.OutputContains(`"connected": true`, // TODO: must also check for lastSyncTime, since the peer might be connected, but not synced
@@ -130,10 +130,10 @@ func (ft federationTest) run(t TestHelper) {
 	ft.checker(t, ft)
 }
 
-func getLoadBalancerIngressAddress(t TestHelper, c config, serviceName string) string {
+func getLoadBalancerIngressAddress(t test.TestHelper, c config, serviceName string) string {
 	var address string
 	retryFor10Minutes := retry.Options().MaxAttempts(6 * 10).DelayBetweenAttempts(10 * time.Second)
-	retry.UntilSuccessWithOptions(t, retryFor10Minutes, func(t TestHelper) {
+	retry.UntilSuccessWithOptions(t, retryFor10Minutes, func(t test.TestHelper) {
 		// try to get the load balancer ip
 		address = c.oc.Invokef(t, `oc -n %s get svc %s -o jsonpath="{.status.loadBalancer.ingress[].ip}"`, c.smcpNamespace, serviceName)
 		if address != "" {
@@ -151,7 +151,7 @@ func getLoadBalancerIngressAddress(t TestHelper, c config, serviceName string) s
 	return address
 }
 
-func getRootCertificate(t TestHelper, c config) string {
+func getRootCertificate(t test.TestHelper, c config) string {
 	configMap := "istio-ca-root-cert"
 	key := "root-cert.pem"
 
@@ -160,7 +160,7 @@ func getRootCertificate(t TestHelper, c config) string {
 	return data[key]
 }
 
-func installSMCPandSMMR(t TestHelper, c config, smcpFile, smmrFile string, ingressServiceType string) {
+func installSMCPandSMMR(t test.TestHelper, c config, smcpFile, smmrFile string, ingressServiceType string) {
 	t.Logf("Install ServiceMeshControlPlane %s in namespace %s", c.smcpName, c.smcpNamespace)
 	c.oc.ApplyTemplateFile(t, c.smcpNamespace, smcpFile, map[string]string{
 		"Version":            env.GetSMCPVersion().String(),

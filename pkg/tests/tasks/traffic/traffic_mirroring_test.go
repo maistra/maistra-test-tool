@@ -19,17 +19,17 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
-	. "github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestMirroring(t *testing.T) {
-	NewTest(t).Id("T7").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T7").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Bookinfo)
@@ -43,12 +43,12 @@ func TestMirroring(t *testing.T) {
 			app.HttpbinV2(ns.Bookinfo),
 			app.Sleep(ns.Bookinfo))
 
-		t.NewSubTest("no mirroring").Run(func(t TestHelper) {
+		t.NewSubTest("no mirroring").Run(func(t test.TestHelper) {
 			oc.ApplyString(t, ns.Bookinfo, httpbinAllv1)
 
 			t.LogStep("sending HTTP request from sleep to httpbin-v1, not expecting mirroring to v2")
-			retry.UntilSuccess(t, func(t TestHelper) {
-				nonce := NewNonce()
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				nonce := util.NewNonce()
 
 				oc.Exec(t,
 					pod.MatchingSelector("app=sleep", ns.Bookinfo),
@@ -73,12 +73,12 @@ func TestMirroring(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("mirroring to httpbin-v2").Run(func(t TestHelper) {
+		t.NewSubTest("mirroring to httpbin-v2").Run(func(t test.TestHelper) {
 			oc.ApplyString(t, ns.Bookinfo, httpbinMirrorv2)
 
 			t.LogStep("sending HTTP request from sleep to httpbin-v1, expecting mirroring to v2")
-			retry.UntilSuccess(t, func(t TestHelper) {
-				nonce := NewNonce()
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				nonce := util.NewNonce()
 
 				oc.Exec(t,
 					pod.MatchingSelector("app=sleep", ns.Bookinfo),

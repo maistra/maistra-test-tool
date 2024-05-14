@@ -28,11 +28,11 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestFederation(t *testing.T) {
-	NewTest(t).Id("T31").Groups(Full, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T31").Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
 		//This test will be executed in multicluster only if two kubeconfigs are provided and those cluster are not in ROSA
 		//To ROSA test of federation we have this testcase: TestMultiClusterFederationFailover
 		t.Log("Both OC clusters are set respectively to cluster west and east if they are provided with two kubeconfig files, if not, both are set from the same file")
@@ -52,7 +52,7 @@ func TestFederation(t *testing.T) {
 				smcpNamespace:     "east-mesh-system",
 				bookinfoNamespace: "east-mesh-bookinfo",
 			},
-			controlPlaneInstaller: func(t TestHelper, ft federationTest, ingressServiceType string) {
+			controlPlaneInstaller: func(t test.TestHelper, ft federationTest, ingressServiceType string) {
 				installSMCPandSMMR(t, ft.west, ft.testdataPath+"/west-mesh/smcp.yaml", ft.testdataPath+"/west-mesh/smmr.yaml", ingressServiceType)
 				installSMCPandSMMR(t, ft.east, ft.testdataPath+"/east-mesh/smcp.yaml", ft.testdataPath+"/east-mesh/smmr.yaml", ingressServiceType)
 			},
@@ -63,7 +63,7 @@ func TestFederation(t *testing.T) {
 }
 
 func TestFederationDifferentCerts(t *testing.T) {
-	NewTest(t).Id("T32").Groups(Full).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T32").Groups(test.Full).Run(func(t test.TestHelper) {
 
 		ocWest, ocEast := setKubeconfig()
 		federationTest{
@@ -80,7 +80,7 @@ func TestFederationDifferentCerts(t *testing.T) {
 				smcpNamespace:     "east-mesh-system",
 				bookinfoNamespace: "east-mesh-bookinfo",
 			},
-			controlPlaneInstaller: func(t TestHelper, ft federationTest, ingressServiceType string) {
+			controlPlaneInstaller: func(t test.TestHelper, ft federationTest, ingressServiceType string) {
 				t.Log("Create Secret 'cacerts' for custom CA certs in west-mesh")
 				ft.west.oc.CreateGenericSecretFromFiles(t, ft.west.smcpNamespace, "cacerts",
 					"testdata/cacerts/ca-cert.pem",
@@ -107,7 +107,7 @@ func setKubeconfig() (*oc.OC, *oc.OC) {
 	return ocWest, ocEast
 }
 
-func defaultBookinfoInstaller(t TestHelper, ft federationTest) {
+func defaultBookinfoInstaller(t test.TestHelper, ft federationTest) {
 	t.LogStep("Install ratings-v2 and mongodb in west-mesh")
 	ft.west.oc.ApplyFile(t, ft.west.bookinfoNamespace, ft.testdataPath+"/west-mesh/bookinfo-ratings-service.yaml")
 	ft.west.oc.ApplyTemplateString(t, ft.west.bookinfoNamespace, app.BookinfoRatingsV2Template, nil)
@@ -125,11 +125,11 @@ func defaultBookinfoInstaller(t TestHelper, ft federationTest) {
 	ft.east.oc.ApplyFile(t, ft.east.bookinfoNamespace, ft.testdataPath+"/east-mesh/ratings-split-virtualservice.yaml")  // 50-50 split between local ratings and ratings in west-mesh
 }
 
-func defaultChecker(t TestHelper, ft federationTest) {
+func defaultChecker(t test.TestHelper, ft federationTest) {
 	t.LogStep("Check if traffic is split between ratings-v1 in east-mesh and west-mesh")
-	retry.UntilSuccess(t, func(t TestHelper) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
 		t.LogStep("Check if east-mesh can see services from west-mesh")
-		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(300), func(t TestHelper) {
+		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(300), func(t test.TestHelper) {
 			ft.east.oc.Invoke(t,
 				`oc -n east-mesh-system get importedservicesets west-mesh -o json`,
 				assert.OutputContains("mongodb.bookinfo.svc.east-mesh-exports.local",
@@ -166,7 +166,7 @@ func defaultChecker(t TestHelper, ft federationTest) {
 	// TODO: check that the number of connections received by mongodb matches the number of requests
 }
 
-func getRatingsV2RequestCount(t TestHelper, c config) int {
+func getRatingsV2RequestCount(t test.TestHelper, c config) int {
 	t.T().Helper()
 	metrics := istio.GetProxyMetrics(t, c.oc,
 		pod.MatchingSelector("app=ratings,version=v2", c.bookinfoNamespace),

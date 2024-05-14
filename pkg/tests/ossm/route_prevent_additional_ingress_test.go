@@ -8,12 +8,12 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 func TestRoutePreventAdditionalIngress(t *testing.T) {
-	NewTest(t).Id("T48").Groups(Full, ARM).MaxVersion(version.SMCP_2_5).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T48").Groups(test.Full, test.ARM).MaxVersion(version.SMCP_2_5).Run(func(t test.TestHelper) {
 
 		ER := "extra-routes"
 
@@ -36,7 +36,7 @@ func TestRoutePreventAdditionalIngress(t *testing.T) {
 				"Ingress Route is not created",
 				"Ingress Route is created"))
 
-		t.NewSubTest("additional ingress gateway route creation").Run(func(t TestHelper) {
+		t.NewSubTest("additional ingress gateway route creation").Run(func(t test.TestHelper) {
 			t.Log("Verify that route for additional ingress was created")
 			t.Log("Reference: https://issues.redhat.com/browse/OSSM-3909")
 
@@ -54,7 +54,7 @@ func TestRoutePreventAdditionalIngress(t *testing.T) {
 			oc.WaitSMCPReady(t, ER2, "basic")
 
 			t.LogStep("Verify that Route for additional ingress was created")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				oc.Get(t,
 					ER2,
 					"route", "igw",

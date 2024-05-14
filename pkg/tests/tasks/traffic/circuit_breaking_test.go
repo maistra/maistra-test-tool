@@ -30,12 +30,10 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
-
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestCircuitBreaking(t *testing.T) {
-	NewTest(t).Id("T6").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T6").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 		t.Log("This test checks whether the circuit breaker functions correctly. Check documentation: https://istio.io/latest/docs/tasks/traffic-management/circuit-breaking/")
 
 		t.Cleanup(func() {

@@ -28,11 +28,10 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestMustGather(t *testing.T) {
-	NewTest(t).Id("T30").Groups(Full, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T30").Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
 		t.Log("This test verifies must-gather log collection")
 
 		ns := "bookinfo"
@@ -79,7 +78,7 @@ func TestMustGather(t *testing.T) {
 			}
 		})
 
-		t.NewSubTest("version file").Run(func(t TestHelper) {
+		t.NewSubTest("version file").Run(func(t test.TestHelper) {
 			t.LogStep("verify file version exists")
 			assertFilesExist(t, dir,
 				"**/version")
@@ -94,7 +93,7 @@ func TestMustGather(t *testing.T) {
 					"Expected must gather version was not found"))
 		})
 
-		t.NewSubTest("resources cluster scoped").Run(func(t TestHelper) {
+		t.NewSubTest("resources cluster scoped").Run(func(t test.TestHelper) {
 			t.LogStep("Get nodes of the cluster")
 			nodeOutput := shell.Execute(t, "oc get nodes | awk 'NR>1 { print $1 }'")
 			nodeSlice := strings.Split(nodeOutput, "\n")
@@ -116,7 +115,7 @@ func TestMustGather(t *testing.T) {
 				"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterroles/istiod-clusterrole-basic-istio-system.yaml")
 		})
 
-		t.NewSubTest("resource for namespaces exist").Run(func(t TestHelper) {
+		t.NewSubTest("resource for namespaces exist").Run(func(t test.TestHelper) {
 			t.LogStep("verify that resources for namespaces are created including bookinfo and istio-system folders")
 			assertFilesExist(t,
 				dir,
@@ -127,7 +126,7 @@ func TestMustGather(t *testing.T) {
 				"**/namespaces/*/rbac.authorization.k8s.io/rolebindings/mesh-users.yaml")
 		})
 
-		t.NewSubTest("cluster service version files validation").Run(func(t TestHelper) {
+		t.NewSubTest("cluster service version files validation").Run(func(t test.TestHelper) {
 			t.LogStep("Get service current service version from the cluster")
 			csvList := shell.Execute(t, "oc get csv -n openshift-operators | awk 'NR>1 { print $1 }'")
 
@@ -144,7 +143,7 @@ func TestMustGather(t *testing.T) {
 	})
 }
 
-func assertFilesExist(t TestHelper, dir string, files ...string) {
+func assertFilesExist(t test.TestHelper, dir string, files ...string) {
 	for _, file := range files {
 		filePath := filepath.Join(dir, file)
 		pathSplit := strings.Split(filePath, "/")

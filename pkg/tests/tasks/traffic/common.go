@@ -8,11 +8,10 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/template"
-
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func TestreviewV1(t TestHelper, file string) string {
+func TestreviewV1(t test.TestHelper, file string) string {
 
 	ns := "bookinfo"
 
@@ -30,7 +29,7 @@ func TestreviewV1(t TestHelper, file string) string {
 
 }
 
-func TestreviewV2(t TestHelper, file string) string {
+func TestreviewV2(t test.TestHelper, file string) string {
 
 	ns := "bookinfo"
 
@@ -46,7 +45,7 @@ func TestreviewV2(t TestHelper, file string) string {
 
 }
 
-func TestreviewV3(t TestHelper, file string) string {
+func TestreviewV3(t test.TestHelper, file string) string {
 
 	ns := "bookinfo"
 

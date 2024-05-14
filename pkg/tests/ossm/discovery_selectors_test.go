@@ -25,12 +25,12 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/template"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 func TestDiscoverySelectors(t *testing.T) {
-	NewTest(t).Groups(Full, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
 		t.Log("This test checks if discoverySelectors are being honored")
 		t.Log("See https://issues.redhat.com/browse/OSSM-3802")
 		t.Log("Test case is based on https://istio.io/latest/blog/2021/discovery-selectors/")

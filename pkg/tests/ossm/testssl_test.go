@@ -23,11 +23,11 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestSSL(t *testing.T) {
-	NewTest(t).Id("T27").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T27").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 		ns := "bookinfo"
 		t.Cleanup(func() {
 			oc.Patch(t, meshNamespace, "smcp", smcpName, "json", `[{"op": "remove", "path": "/spec/security/controlPlane/tls"}]`)
@@ -74,7 +74,7 @@ spec:
 		if env.GetArch() == "arm64" {
 			command = "./testssl.sh -P -6 productpage:9080 || true"
 		}
-		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(10), func(t TestHelper) {
+		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(10), func(t test.TestHelper) {
 			oc.Exec(t,
 				pod.MatchingSelector("app=testssl", ns),
 				"testssl",

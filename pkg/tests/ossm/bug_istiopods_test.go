@@ -26,11 +26,11 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/template"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestIstiodPodFailsAfterRestarts(t *testing.T) {
-	NewTest(t).Id("T35").Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T35").Groups(test.Full, test.Disconnected, test.ARM).Run(func(t test.TestHelper) {
 		t.Log("Verify that Istio pod not get stuck with probes failure after restart")
 		t.Log("Reference: https://issues.redhat.com/browse/OSSM-2434")
 		namespaces := util.GenerateStrings("test-", 50)
@@ -57,7 +57,7 @@ func TestIstiodPodFailsAfterRestarts(t *testing.T) {
 }
 
 func TestIstiodPodFailsWithValidationMessages(t *testing.T) {
-	NewTest(t).Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Groups(test.Full, test.Disconnected, test.ARM).Run(func(t test.TestHelper) {
 		t.Log("Verify that Istio pod is not failing when validationMessages was enabled")
 
 		oc.RecreateNamespace(t, meshNamespace)
@@ -68,7 +68,7 @@ func TestIstiodPodFailsWithValidationMessages(t *testing.T) {
 
 		istiodPod := pod.MatchingSelector("app=istiod", meshNamespace)
 		oc.WaitPodRunning(t, istiodPod)
-		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(10), func(t TestHelper) {
+		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(10), func(t test.TestHelper) {
 			oc.LogsFromPods(t, meshNamespace, "app=istiod", assert.OutputContains(
 				"successfully acquired lease istio-system/istio-analyze-leader",
 				"Successfully acquired lease for analyzer in istiod pod",

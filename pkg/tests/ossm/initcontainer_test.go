@@ -20,7 +20,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestInitContainerNotRemovedDuringInjection(t *testing.T) {
@@ -28,7 +28,7 @@ func TestInitContainerNotRemovedDuringInjection(t *testing.T) {
 	const goldString = "[init worked]"
 	const podSelector = "app=sleep-init"
 
-	NewTest(t).Id("T33").Groups(Full, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T33").Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
 		t.Log("Checking init container not removed during sidecar injection.")
 
 		t.Cleanup(func() {

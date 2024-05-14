@@ -11,11 +11,10 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestSMMRAutoCreationAndDeletion(t *testing.T) {
-	NewTest(t).Id("T39").Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T39").Groups(test.Full, test.Disconnected, test.ARM).Run(func(t test.TestHelper) {
 		t.Log("This test verifies what happens to the SMMR when SMM is created and deleted")
 		foo := "foo"
 		bar := "bar"
@@ -31,7 +30,7 @@ func TestSMMRAutoCreationAndDeletion(t *testing.T) {
 		t.LogStep("Create two namespaces")
 		oc.CreateNamespace(t, foo, bar)
 
-		t.NewSubTest("create first SMM").Run(func(t TestHelper) {
+		t.NewSubTest("create first SMM").Run(func(t test.TestHelper) {
 			t.Log("This test checks if the SMMR is created when you create a ServiceMeshMember")
 
 			t.LogStep("Create ServiceMeshMembers in namespaces foo and bar")
@@ -50,7 +49,7 @@ func TestSMMRAutoCreationAndDeletion(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("delete non-terminal SMM").Run(func(t TestHelper) {
+		t.NewSubTest("delete non-terminal SMM").Run(func(t test.TestHelper) {
 			t.Log("This test verifies that the SMMR isn't deleted when one SMM is deleted, but other SMMs still exist")
 			t.Log("See https://issues.redhat.com/browse/OSSM-2374 (implementation)")
 			t.Log("See https://issues.redhat.com/browse/OSSM-3450 (test)")
@@ -64,7 +63,7 @@ func TestSMMRAutoCreationAndDeletion(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("delete terminal SMM").Run(func(t TestHelper) {
+		t.NewSubTest("delete terminal SMM").Run(func(t test.TestHelper) {
 			t.Log("This test verifies tht the SMMR is deleted when the last SMM is deleted")
 			t.Log("See https://issues.redhat.com/browse/OSSM-2374 (implementation)")
 			t.Log("See https://issues.redhat.com/browse/OSSM-3450 (test)")
@@ -86,7 +85,7 @@ func TestSMMRAutoCreationAndDeletion(t *testing.T) {
 }
 
 func TestSMMReconciliation(t *testing.T) {
-	NewTest(t).Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Groups(test.Full, test.Disconnected, test.ARM).Run(func(t test.TestHelper) {
 		t.Log("This test verifies whether the member-of label is added back to the namespace")
 		t.Log("See https://issues.redhat.com/browse/OSSM-1397")
 

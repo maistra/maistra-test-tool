@@ -29,7 +29,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/request"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
@@ -48,7 +48,7 @@ var (
 )
 
 func TestSecureGateways(t *testing.T) {
-	NewTest(t).Id("T9").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T9").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 
 		t.Log("This test verifies secure gateways.")
 		t.Log("Doc reference: https://istio.io/latest/docs/tasks/traffic-management/ingress/secure-ingress/")
@@ -75,7 +75,7 @@ func TestSecureGateways(t *testing.T) {
 		helloWorldURL := "https://helloworld-v1.example.com:" + gatewayPort + "/hello"
 		teapotURL := "https://httpbin.example.com:" + gatewayPort + "/status/418"
 
-		t.NewSubTest("tls_single_host").Run(func(t TestHelper) {
+		t.NewSubTest("tls_single_host").Run(func(t test.TestHelper) {
 			t.LogStep("Configure a TLS ingress gateway for a single host")
 			oc.ApplyString(t, ns.Bookinfo, httpbinTLSGatewayHTTPS)
 
@@ -84,7 +84,7 @@ func TestSecureGateways(t *testing.T) {
 			}
 
 			t.LogStep("check if httpbin responds with teapot")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				curl.Request(t,
 					teapotURL,
 					request.WithTLS(httpbinSampleCACert, "httpbin.example.com", gatewayHost, gatewayPort),
@@ -93,7 +93,7 @@ func TestSecureGateways(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("tls_multiple_hosts").Run(func(t TestHelper) {
+		t.NewSubTest("tls_multiple_hosts").Run(func(t test.TestHelper) {
 			t.LogStep("configure Gateway with multiple TLS hosts")
 			oc.ApplyString(t, ns.Bookinfo, gatewayMultipleHosts)
 
@@ -103,7 +103,7 @@ func TestSecureGateways(t *testing.T) {
 			}
 
 			t.LogStep("check if helloworld-v1 responds with 200 OK")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				curl.Request(t,
 					helloWorldURL,
 					request.WithTLS(httpbinSampleCACert, "helloworld-v1.example.com", gatewayHost, gatewayPort),
@@ -111,7 +111,7 @@ func TestSecureGateways(t *testing.T) {
 			})
 
 			t.LogStep("check if httpbin responds with teapot")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				curl.Request(t,
 					teapotURL,
 					request.WithTLS(httpbinSampleCACert, "httpbin.example.com", gatewayHost, gatewayPort),
@@ -119,7 +119,7 @@ func TestSecureGateways(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("mutual_tls").Run(func(t TestHelper) {
+		t.NewSubTest("mutual_tls").Run(func(t test.TestHelper) {
 			t.LogStep("configure Gateway with tls.mode=Mutual")
 			oc.CreateGenericSecretFromFiles(t, meshNamespace, "httpbin-credential",
 				"tls.key="+httpbinSampleServerCertKey,
@@ -132,7 +132,7 @@ func TestSecureGateways(t *testing.T) {
 			}
 
 			t.LogStep("check if SSL handshake fails when no client certificate is given")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				curl.Request(t,
 					teapotURL,
 					request.WithTLS(httpbinSampleCACert, "httpbin.example.com", gatewayHost, gatewayPort),
@@ -148,7 +148,7 @@ func TestSecureGateways(t *testing.T) {
 			})
 
 			t.LogStep("check if SSL handshake succeeds when client certificate is given")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				curl.Request(t,
 					teapotURL,
 					request.
@@ -158,7 +158,7 @@ func TestSecureGateways(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("mutual_tls_with_crl").Run(func(t TestHelper) {
+		t.NewSubTest("mutual_tls_with_crl").Run(func(t test.TestHelper) {
 			t.Log("Reference: https://issues.redhat.com/browse/OSSM-414")
 			if env.GetSMCPVersion().LessThan(version.SMCP_2_5) {
 				t.Skip("Skipping until 2.5")
@@ -173,7 +173,7 @@ func TestSecureGateways(t *testing.T) {
 
 			createRouteWithTLS(t, meshNamespace, "httpbin.example.com", "https", "istio-ingressgateway", "passthrough")
 			t.LogStep("check if SSL handshake fails when no client certificate is given")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				curl.Request(t,
 					teapotURL,
 					request.WithTLS(httpbinSampleCACert, "httpbin.example.com", gatewayHost, gatewayPort),
@@ -190,7 +190,7 @@ func TestSecureGateways(t *testing.T) {
 			})
 
 			t.LogStep("check if SSL handshake succeeds when client certificate is given")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				curl.Request(t,
 					teapotURL,
 					request.
@@ -200,7 +200,7 @@ func TestSecureGateways(t *testing.T) {
 			})
 
 			t.LogStep("check if SSL handshake fails when revoked client certificate is given")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				curl.Request(t,
 					teapotURL,
 					request.

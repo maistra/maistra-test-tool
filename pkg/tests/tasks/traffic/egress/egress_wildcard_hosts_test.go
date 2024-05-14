@@ -22,12 +22,11 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestEgressWildcard(t *testing.T) {
-	NewTest(t).Id("T16").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T16").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 		t.Log("This test checks if the wildcard in the ServiceEntry and Gateway works as expected for Egress traffic.")
 
 		ossm.DeployControlPlane(t)
@@ -38,7 +37,7 @@ func TestEgressWildcard(t *testing.T) {
 			app.Uninstall(t, app.Sleep(ns.Bookinfo))
 		})
 
-		t.NewSubTest("ServiceEntry").Run(func(t TestHelper) {
+		t.NewSubTest("ServiceEntry").Run(func(t test.TestHelper) {
 			t.LogStep("Configure ServiceEntry with wildcard host *.wikipedia.org")
 			oc.ApplyString(t, ns.Bookinfo, EgressWildcardServiceEntry)
 			t.Cleanup(func() {
@@ -48,7 +47,7 @@ func TestEgressWildcard(t *testing.T) {
 			assertExternalRequestSuccess(t, ns.Bookinfo)
 		})
 
-		t.NewSubTest("Gateway").Run(func(t TestHelper) {
+		t.NewSubTest("Gateway").Run(func(t test.TestHelper) {
 			t.LogStep("Configure egress Gateway with wildcard host *.wikipedia.org")
 			oc.ApplyTemplate(t, ns.Bookinfo, EgressWildcardGatewayTemplate, smcp)
 			t.Cleanup(func() {
@@ -60,7 +59,7 @@ func TestEgressWildcard(t *testing.T) {
 	})
 }
 
-func assertExternalRequestSuccess(t TestHelper, ns string) {
+func assertExternalRequestSuccess(t test.TestHelper, ns string) {
 	t.LogStep("Check external request to en.wikipedia.org and de.wikipedia.org")
 	app.ExecInSleepPod(t,
 		ns,

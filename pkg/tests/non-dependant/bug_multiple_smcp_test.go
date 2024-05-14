@@ -10,11 +10,11 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestSMCPMultiple(t *testing.T) {
-	NewTest(t).Id("T36").Groups(Full, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T36").Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
 		t.Log("This test verifies whether the operator only reconciles one SMCP when two exist in a namespace")
 		t.Log("See https://issues.redhat.com/browse/OSSM-2419")
 
@@ -32,7 +32,7 @@ func TestSMCPMultiple(t *testing.T) {
 			oc.WaitPodReady(t, pod.MatchingSelector("name=istio-operator", env.GetOperatorNamespace()))
 
 			t.LogStep("Check whether ValidatingWebhookConfiguration exists")
-			retry.UntilSuccess(t, func(t TestHelper) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
 				oc.Get(t, "", "validatingwebhookconfiguration", "openshift-operators.servicemesh-resources.maistra.io")
 				t.LogSuccess("ValidatingWebhookConfiguration was recreated by the operator")
 			})
@@ -55,7 +55,7 @@ func TestSMCPMultiple(t *testing.T) {
 		ossm.InstallSMCPCustom(t, meshNamespace, smcp2)
 
 		t.LogStep("Check whether the second SMCP shows ErrMultipleSMCPs")
-		retry.UntilSuccess(t, func(t TestHelper) {
+		retry.UntilSuccess(t, func(t test.TestHelper) {
 			oc.Get(t, meshNamespace,
 				"smcp", smcp2.Name,
 				assert.OutputContains("ErrMultipleSMCPs",

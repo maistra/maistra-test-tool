@@ -22,12 +22,12 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 func TestTrustDomainMigration(t *testing.T) {
-	NewTest(t).Id("T24").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T24").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 		foo := "foo"
 		bar := "bar"
 		httpbinUrl := "http://httpbin.foo:8000/ip"
@@ -59,13 +59,13 @@ func TestTrustDomainMigration(t *testing.T) {
 		t.LogStep("Apply trust domain policy to foo namespace")
 		oc.ApplyString(t, foo, TrustDomainPolicy)
 
-		t.NewSubTest("Case 1: Verifying policy works").Run(func(t TestHelper) {
+		t.NewSubTest("Case 1: Verifying policy works").Run(func(t test.TestHelper) {
 			t.LogStep("Check whether requests to foo namespace return 403 to foo namespace and 200 to bar namespace")
 			app.AssertSleepPodRequestForbidden(t, foo, httpbinUrl)
 			app.AssertSleepPodRequestSuccess(t, bar, httpbinUrl)
 		})
 
-		t.NewSubTest("Case 2: Migrate trust domain without trust domain aliases").Run(func(t TestHelper) {
+		t.NewSubTest("Case 2: Migrate trust domain without trust domain aliases").Run(func(t test.TestHelper) {
 			t.LogStep("Apply new-td trust domain")
 			applyTrustDomain(t, "new-td", "", true)
 			oc.RestartAllPodsAndWaitReady(t, foo, bar)
@@ -75,7 +75,7 @@ func TestTrustDomainMigration(t *testing.T) {
 			app.AssertSleepPodRequestForbidden(t, bar, httpbinUrl)
 		})
 
-		t.NewSubTest("Case 3: Migrate trust domain with trust domain aliases").Run(func(t TestHelper) {
+		t.NewSubTest("Case 3: Migrate trust domain with trust domain aliases").Run(func(t test.TestHelper) {
 			t.LogStep("Apply new-td trust domain with alias old-td")
 			applyTrustDomain(t, "new-td", "old-td", true)
 			oc.RestartAllPodsAndWaitReady(t, foo, bar)
@@ -87,7 +87,7 @@ func TestTrustDomainMigration(t *testing.T) {
 	})
 }
 
-func applyTrustDomain(t TestHelper, domain, alias string, mtls bool) {
+func applyTrustDomain(t test.TestHelper, domain, alias string, mtls bool) {
 	t.Logf("Configure spec.security.trust.domain to %q and alias %q", domain, alias)
 
 	if alias != "" {

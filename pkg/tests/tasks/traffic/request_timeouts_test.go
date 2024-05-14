@@ -28,14 +28,14 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
+	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 //go:embed yaml/virtualservice-reviews-ratings-timeout.yaml
 var reviewTimeout string
 
 func TestRequestTimeouts(t *testing.T) {
-	NewTest(t).Id("T5").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	test.NewTest(t).Id("T5").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
 
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Bookinfo)
@@ -55,7 +55,7 @@ func TestRequestTimeouts(t *testing.T) {
 
 		expectedResponseFile := TestreviewV1(t, "productpage-normal-user-v1.html")
 
-		retry.UntilSuccess(t, func(t TestHelper) {
+		retry.UntilSuccess(t, func(t test.TestHelper) {
 			curl.Request(t,
 				productpageURL, nil,
 				assert.ResponseMatchesFile(
@@ -69,7 +69,7 @@ func TestRequestTimeouts(t *testing.T) {
 		oc.ApplyString(t, ns.Bookinfo, reviewTimeout)
 
 		t.LogStep("check if productpage shows 'error fetching product reviews' due to delay and timeout injection")
-		retry.UntilSuccess(t, func(t TestHelper) {
+		retry.UntilSuccess(t, func(t test.TestHelper) {
 			for i := 0; i <= 5; i++ {
 				curl.Request(t,
 					productpageURL, nil,
