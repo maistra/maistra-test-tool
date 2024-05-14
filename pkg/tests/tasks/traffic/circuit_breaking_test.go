@@ -25,10 +25,12 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
+
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -36,24 +38,23 @@ func TestCircuitBreaking(t *testing.T) {
 	NewTest(t).Id("T6").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
 		t.Log("This test checks whether the circuit breaker functions correctly. Check documentation: https://istio.io/latest/docs/tasks/traffic-management/circuit-breaking/")
 
-		ns := "bookinfo"
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns)
+			oc.RecreateNamespace(t, ns.Bookinfo)
 		})
 
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install httpbin and fortio")
-		app.InstallAndWaitReady(t, app.Httpbin(ns), app.Fortio(ns))
+		app.InstallAndWaitReady(t, app.Httpbin(ns.Bookinfo), app.Fortio(ns.Bookinfo))
 
 		t.LogStep("Configure circuit breaker destination rule")
-		oc.ApplyString(t, ns, httpbinCircuitBreaker)
+		oc.ApplyString(t, ns.Bookinfo, httpbinCircuitBreaker)
 
 		t.LogStep("Verify connection with curl: expect 200 OK")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
-			httpbinIP := oc.GetServiceClusterIP(t, ns, "httpbin")
+			httpbinIP := oc.GetServiceClusterIP(t, ns.Bookinfo, "httpbin")
 			oc.Exec(t,
-				pod.MatchingSelector("app=fortio", ns),
+				pod.MatchingSelector("app=fortio", ns.Bookinfo),
 				"fortio",
 				fmt.Sprintf(`/usr/bin/fortio curl -quiet -resolve %s http://httpbin:8000/get`, httpbinIP),
 				assert.OutputContains("200",
@@ -66,9 +67,9 @@ func TestCircuitBreaking(t *testing.T) {
 		t.LogStep("Trip the circuit breaker by sending 50 requests to httpbin with 2 connections")
 		t.Log("We expect request with response code 503")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
-			httpbinIP := oc.GetServiceClusterIP(t, ns, "httpbin")
+			httpbinIP := oc.GetServiceClusterIP(t, ns.Bookinfo, "httpbin")
 			msg := oc.Exec(t,
-				pod.MatchingSelector("app=fortio", ns),
+				pod.MatchingSelector("app=fortio", ns.Bookinfo),
 				"fortio",
 				fmt.Sprintf("/usr/bin/fortio load -c %d -qps 0 -n %d -loglevel Warning -resolve %s http://httpbin:8000/get", connection, reqCount, httpbinIP))
 
@@ -85,7 +86,7 @@ func TestCircuitBreaking(t *testing.T) {
 			t.LogStep("Validate the circuit breaker is tripped by checking the istio-proxy log")
 			t.Log("Verify istio-proxy pilot-agent stats, expected upstream_rq_pending_overflow value to be more than zero")
 			oc.Exec(t,
-				pod.MatchingSelector("app=fortio", ns),
+				pod.MatchingSelector("app=fortio", ns.Bookinfo),
 				"istio-proxy",
 				"pilot-agent request GET stats | grep httpbin | grep pending",
 				assertProxyContainsUpstreamRqPendingOverflow)

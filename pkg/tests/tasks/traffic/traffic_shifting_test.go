@@ -27,6 +27,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -34,10 +35,9 @@ import (
 
 func TestTrafficShifting(t *testing.T) {
 	NewTest(t).Id("T3").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
-		ns := "bookinfo"
 
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns)
+			oc.RecreateNamespace(t, ns.Bookinfo)
 			os.Remove(env.GetRootDir() + `/testdata/resources/html/modified-productpage-normal-user-v3.html`)
 			os.Remove(env.GetRootDir() + `/testdata/resources/html/modified-productpage-normal-user-v1.html`)
 		})
@@ -45,17 +45,17 @@ func TestTrafficShifting(t *testing.T) {
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install Bookinfo")
-		app.InstallAndWaitReady(t, app.Bookinfo(ns))
+		app.InstallAndWaitReady(t, app.Bookinfo(ns.Bookinfo))
 		productpageURL := app.BookinfoProductPageURL(t, meshNamespace)
 
-		oc.ApplyString(t, ns, app.BookinfoVirtualServicesAllV1)
+		oc.ApplyString(t, ns.Bookinfo, app.BookinfoVirtualServicesAllV1)
 
 		expectedResponseFile := TestreviewV1(t, "productpage-normal-user-v1.html")
 		expectedResponseFile3 := TestreviewV3(t, "productpage-normal-user-v3.html")
 
 		t.NewSubTest("50 percent to v3").Run(func(t TestHelper) {
 			t.LogStep("configure VirtualService to split traffic 50% to v1 and 50% to v3")
-			oc.ApplyString(t, ns, splitReviews5050BetweenV1andV3)
+			oc.ApplyString(t, ns.Bookinfo, splitReviews5050BetweenV1andV3)
 
 			t.LogStep("Make 100 requests and check if v1 and v3 get 50% of requests each (tolerance: 20%)")
 
@@ -70,7 +70,7 @@ func TestTrafficShifting(t *testing.T) {
 
 		t.NewSubTest("100 percent to v3").Run(func(t TestHelper) {
 			t.LogStep("configure VirtualService to send all traffic to v3")
-			oc.ApplyString(t, ns, allReviewsToV3)
+			oc.ApplyString(t, ns.Bookinfo, allReviewsToV3)
 
 			t.LogStep("Make 100 requests and check if all of them go to v3 (tolerance: 0%)")
 			retry.UntilSuccess(t, func(t TestHelper) {
