@@ -25,6 +25,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/request"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -34,21 +35,21 @@ import (
 
 func TestIngressGateways(t *testing.T) {
 	NewTest(t).Id("T8").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
-		ns := "bookinfo"
+
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns)
+			oc.RecreateNamespace(t, ns.Bookinfo)
 		})
 
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install httpbin")
-		app.InstallAndWaitReady(t, app.Httpbin(ns))
+		app.InstallAndWaitReady(t, app.Httpbin(ns.Bookinfo))
 
 		gatewayHTTP := istio.GetIngressGatewayHost(t, meshNamespace)
 
 		t.NewSubTest("TrafficManagement_ingress_status_200_test").Run(func(t TestHelper) {
 			t.LogStep("Create httpbin Gateway and VirtualService with host set to httpbin.example.com")
-			oc.ApplyString(t, ns, httpbinGateway1)
+			oc.ApplyString(t, ns.Bookinfo, httpbinGateway1)
 
 			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 				createRoute(t, meshNamespace, "httpbin.example.com", "http2", "istio-ingressgateway")
@@ -65,7 +66,7 @@ func TestIngressGateways(t *testing.T) {
 
 		t.NewSubTest("TrafficManagement_ingress_headers_test").Run(func(t TestHelper) {
 			t.LogStep("Create httpbin Gateway and VirtualService with host set to *")
-			oc.ApplyString(t, ns, httpbinGateway2)
+			oc.ApplyString(t, ns.Bookinfo, httpbinGateway2)
 
 			t.LogStep("Check if httpbin service is reachable through istio-ingressgateway")
 			retry.UntilSuccess(t, func(t TestHelper) {

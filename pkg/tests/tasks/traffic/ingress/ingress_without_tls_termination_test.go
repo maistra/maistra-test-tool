@@ -23,6 +23,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/request"
@@ -36,22 +37,20 @@ func TestIngressWithoutTlsTermination(t *testing.T) {
 		t.Log("This test validates configuring an Gateway with TLS PassThrough")
 		t.Log("Doc reference: https://istio.io/v1.14/docs/tasks/traffic-management/ingress/ingress-sni-passthrough/")
 
-		ns := "bookinfo"
-
 		t.Cleanup(func() {
-			oc.DeleteFromString(t, ns, nginxIngressGateway)
-			app.Uninstall(t, app.Nginx(ns))
+			oc.DeleteFromString(t, ns.Bookinfo, nginxIngressGateway)
+			app.Uninstall(t, app.Nginx(ns.Bookinfo))
 		})
 
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Create NGINX Deployment")
-		app.InstallAndWaitReady(t, app.Nginx(ns))
+		app.InstallAndWaitReady(t, app.Nginx(ns.Bookinfo))
 
 		t.LogStep("Verify NGINX server is running by connecting to it via loopback")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			oc.Exec(t,
-				pod.MatchingSelector("run=my-nginx", ns),
+				pod.MatchingSelector("run=my-nginx", ns.Bookinfo),
 				"istio-proxy",
 				"curl -sS -v -k --resolve nginx.example.com:8443:127.0.0.1 https://nginx.example.com:8443",
 				assert.OutputContains(
@@ -61,7 +60,7 @@ func TestIngressWithoutTlsTermination(t *testing.T) {
 		})
 
 		t.LogStep("Configure Gateway resource with TLS passthrough for host nginx.example.com")
-		oc.ApplyString(t, ns, nginxIngressGateway)
+		oc.ApplyString(t, ns.Bookinfo, nginxIngressGateway)
 
 		if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 			createRouteWithTLS(t, meshNamespace, "nginx.example.com", "https", "istio-ingressgateway", "passthrough")

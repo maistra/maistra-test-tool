@@ -25,6 +25,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -35,21 +36,20 @@ var reviewTimeout string
 
 func TestRequestTimeouts(t *testing.T) {
 	NewTest(t).Id("T5").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
-		ns := "bookinfo"
 
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns)
+			oc.RecreateNamespace(t, ns.Bookinfo)
 			os.Remove(env.GetRootDir() + `/testdata/resources/html/modified-productpage-normal-user-v1.html`)
 		})
 
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install Bookinfo")
-		app.InstallAndWaitReady(t, app.Bookinfo(ns))
+		app.InstallAndWaitReady(t, app.Bookinfo(ns.Bookinfo))
 
 		productpageURL := app.BookinfoProductPageURL(t, meshNamespace)
 
-		oc.ApplyString(t, ns, app.BookinfoVirtualServicesAllV1)
+		oc.ApplyString(t, ns.Bookinfo, app.BookinfoVirtualServicesAllV1)
 
 		t.LogStep("make sure there is no timeout before applying delay and timeout in VirtualServices")
 
@@ -66,7 +66,7 @@ func TestRequestTimeouts(t *testing.T) {
 		})
 
 		t.LogStep("apply delay and timeout in VirtualServices")
-		oc.ApplyString(t, ns, reviewTimeout)
+		oc.ApplyString(t, ns.Bookinfo, reviewTimeout)
 
 		t.LogStep("check if productpage shows 'error fetching product reviews' due to delay and timeout injection")
 		retry.UntilSuccess(t, func(t TestHelper) {

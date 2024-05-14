@@ -20,7 +20,9 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -28,34 +30,32 @@ func TestEgressWildcard(t *testing.T) {
 	NewTest(t).Id("T16").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
 		t.Log("This test checks if the wildcard in the ServiceEntry and Gateway works as expected for Egress traffic.")
 
-		ns := "bookinfo"
-
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install the sleep pod")
-		app.InstallAndWaitReady(t, app.Sleep(ns))
+		app.InstallAndWaitReady(t, app.Sleep(ns.Bookinfo))
 		t.Cleanup(func() {
-			app.Uninstall(t, app.Sleep(ns))
+			app.Uninstall(t, app.Sleep(ns.Bookinfo))
 		})
 
 		t.NewSubTest("ServiceEntry").Run(func(t TestHelper) {
 			t.LogStep("Configure ServiceEntry with wildcard host *.wikipedia.org")
-			oc.ApplyString(t, ns, EgressWildcardServiceEntry)
+			oc.ApplyString(t, ns.Bookinfo, EgressWildcardServiceEntry)
 			t.Cleanup(func() {
-				oc.DeleteFromString(t, ns, EgressWildcardServiceEntry)
+				oc.DeleteFromString(t, ns.Bookinfo, EgressWildcardServiceEntry)
 			})
 
-			assertExternalRequestSuccess(t, ns)
+			assertExternalRequestSuccess(t, ns.Bookinfo)
 		})
 
 		t.NewSubTest("Gateway").Run(func(t TestHelper) {
 			t.LogStep("Configure egress Gateway with wildcard host *.wikipedia.org")
-			oc.ApplyTemplate(t, ns, EgressWildcardGatewayTemplate, smcp)
+			oc.ApplyTemplate(t, ns.Bookinfo, EgressWildcardGatewayTemplate, smcp)
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns, EgressWildcardGatewayTemplate, smcp)
+				oc.DeleteFromTemplate(t, ns.Bookinfo, EgressWildcardGatewayTemplate, smcp)
 			})
 
-			assertExternalRequestSuccess(t, ns)
+			assertExternalRequestSuccess(t, ns.Bookinfo)
 		})
 	})
 }

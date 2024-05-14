@@ -9,6 +9,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/gatewayapi"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -23,7 +24,6 @@ func TestGatewayApi(t *testing.T) {
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_3) {
 			t.Skip("TestGatewayApi was added in v2.3")
 		}
-		ns := "foo"
 
 		smcpName := env.GetDefaultSMCPName()
 
@@ -33,17 +33,17 @@ func TestGatewayApi(t *testing.T) {
 		shell.Executef(t, "kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null && echo 'Gateway API CRDs already installed' || kubectl apply -k github.com/kubernetes-sigs/gateway-api/config/crd/experimental?ref=%s",
 			gatewayapi.GetSupportedVersion(env.GetSMCPVersion()))
 
-		oc.CreateNamespace(t, ns)
+		oc.CreateNamespace(t, ns.Foo)
 
 		t.NewSubTest("Deploy the Kubernetes Gateway API").Run(func(t test.TestHelper) {
 
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
-				oc.RecreateNamespace(t, ns)
+				oc.RecreateNamespace(t, ns.Foo)
 			})
 
 			t.LogStep("Install httpbin")
-			app.InstallAndWaitReady(t, app.Httpbin(ns))
+			app.InstallAndWaitReady(t, app.Httpbin(ns.Foo))
 
 			t.LogStep("Deploy the Gateway SMCP")
 
@@ -79,13 +79,13 @@ func TestGatewayApi(t *testing.T) {
 			}
 
 			t.LogStep("Deploy the Gateway API configuration including a single exposed route (i.e., /get)")
-			oc.ApplyTemplate(t, ns, gatewayAndRouteYAML, map[string]string{"GatewayClassName": "istio"})
+			oc.ApplyTemplate(t, ns.Foo, gatewayAndRouteYAML, map[string]string{"GatewayClassName": "istio"})
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns, gatewayAndRouteYAML, map[string]string{"GatewayClassName": "istio"})
+				oc.DeleteFromTemplate(t, ns.Foo, gatewayAndRouteYAML, map[string]string{"GatewayClassName": "istio"})
 			})
 
 			t.LogStep("Wait for Gateway to be ready")
-			oc.WaitCondition(t, ns, "Gateway", "gateway", gatewayapi.GetWaitingCondition(env.GetSMCPVersion()))
+			oc.WaitCondition(t, ns.Foo, "Gateway", "gateway", gatewayapi.GetWaitingCondition(env.GetSMCPVersion()))
 
 			t.LogStep("Verfiy the GatewayApi access the httpbin service using curl")
 			retry.UntilSuccess(t, func(t TestHelper) {
@@ -106,11 +106,11 @@ func TestGatewayApi(t *testing.T) {
 
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
-				oc.RecreateNamespace(t, ns)
+				oc.RecreateNamespace(t, ns.Foo)
 			})
 
 			t.LogStep("Install httpbin")
-			app.InstallAndWaitReady(t, app.Httpbin(ns))
+			app.InstallAndWaitReady(t, app.Httpbin(ns.Foo))
 
 			t.LogStep("Deploy SMCP with the profile")
 			oc.ApplyTemplate(t,
@@ -121,17 +121,17 @@ func TestGatewayApi(t *testing.T) {
 
 			t.LogStep("delete default SMMR and create custom SMMR")
 			oc.DeleteFromString(t, meshNamespace, defaultSMMR)
-			oc.ApplyTemplate(t, meshNamespace, createSMMR, map[string]string{"Member": ns})
+			oc.ApplyTemplate(t, meshNamespace, createSMMR, map[string]string{"Member": ns.Foo})
 			oc.WaitSMMRReady(t, meshNamespace)
 
 			t.LogStep("Deploy the Gateway API configuration including a single exposed route (i.e., /get)")
-			oc.ApplyTemplate(t, ns, gatewayAndRouteYAML, map[string]string{"GatewayClassName": "ocp"})
+			oc.ApplyTemplate(t, ns.Foo, gatewayAndRouteYAML, map[string]string{"GatewayClassName": "ocp"})
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns, gatewayAndRouteYAML, map[string]string{"GatewayClassName": "ocp"})
+				oc.DeleteFromTemplate(t, ns.Foo, gatewayAndRouteYAML, map[string]string{"GatewayClassName": "ocp"})
 			})
 
 			t.LogStep("Wait for Gateway to be ready")
-			oc.WaitCondition(t, ns, "Gateway", "gateway", gatewayapi.GetWaitingCondition(env.GetSMCPVersion()))
+			oc.WaitCondition(t, ns.Foo, "Gateway", "gateway", gatewayapi.GetWaitingCondition(env.GetSMCPVersion()))
 
 			t.LogStep("Verify the Gateway-Controller Profile access the httpbin service using curl")
 			retry.UntilSuccess(t, func(t TestHelper) {

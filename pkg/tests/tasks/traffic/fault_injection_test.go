@@ -25,6 +25,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -40,25 +41,24 @@ var (
 
 func TestFaultInjection(t *testing.T) {
 	NewTest(t).Id("T2").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
-		ns := "bookinfo"
 
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns)
+			oc.RecreateNamespace(t, ns.Bookinfo)
 			os.Remove(env.GetRootDir() + `/testdata/resources/html/modified-productpage-test-user-v2-rating-unavailable.html`)
 		})
 
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install Bookinfo")
-		app.InstallAndWaitReady(t, app.Bookinfo(ns))
+		app.InstallAndWaitReady(t, app.Bookinfo(ns.Bookinfo))
 
 		testUserCookieJar := app.BookinfoLogin(t, meshNamespace)
 
-		oc.ApplyString(t, ns, app.BookinfoVirtualServicesAllV1)
-		oc.ApplyString(t, ns, app.BookinfoVirtualServiceReviewsV2)
+		oc.ApplyString(t, ns.Bookinfo, app.BookinfoVirtualServicesAllV1)
+		oc.ApplyString(t, ns.Bookinfo, app.BookinfoVirtualServiceReviewsV2)
 
 		t.NewSubTest("ratings-fault-delay").Run(func(t TestHelper) {
-			oc.ApplyString(t, ns, ratingsVirtualServiceWithFixedDelay)
+			oc.ApplyString(t, ns.Bookinfo, ratingsVirtualServiceWithFixedDelay)
 
 			t.LogStep("check if productpage shows 'error fetching product reviews' due to delay injection")
 			retry.UntilSuccess(t, func(t TestHelper) {
@@ -75,7 +75,7 @@ func TestFaultInjection(t *testing.T) {
 		})
 
 		t.NewSubTest("ratings-fault-abort").Run(func(t TestHelper) {
-			oc.ApplyString(t, ns, ratingsVirtualServiceWithHttpStatus500)
+			oc.ApplyString(t, ns.Bookinfo, ratingsVirtualServiceWithHttpStatus500)
 
 			expectedResponseFile := TestreviewV2(t, "productpage-test-user-v2-rating-unavailable.html")
 

@@ -23,6 +23,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -32,10 +33,9 @@ import (
 // TestTcpTrafficShifting validates TCP traffic shifting feature.
 func TestTcpTrafficShifting(t *testing.T) {
 	test.NewTest(t).Id("T4").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
-		ns := "foo"
 
 		t.Cleanup(func() {
-			app.Uninstall(t, app.Sleep(ns), app.EchoV1(ns), app.EchoV2(ns))
+			app.Uninstall(t, app.Sleep(ns.Foo), app.EchoV1(ns.Foo), app.EchoV2(ns.Foo))
 		})
 
 		t.Log("This test validates traffic shifting for TCP traffic.")
@@ -44,20 +44,20 @@ func TestTcpTrafficShifting(t *testing.T) {
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install sleep, echoV1 and echoV2")
-		app.InstallAndWaitReady(t, app.Sleep(ns), app.EchoV1(ns), app.EchoV2(ns))
+		app.InstallAndWaitReady(t, app.Sleep(ns.Foo), app.EchoV1(ns.Foo), app.EchoV2(ns.Foo))
 
 		t.NewSubTest("tcp shift 100 percent to v1").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
-				oc.DeleteFromString(t, ns, EchoAllv1Yaml)
+				oc.DeleteFromString(t, ns.Foo, EchoAllv1Yaml)
 			})
 
 			t.LogStep("Shifting all TCP traffic to v1")
-			oc.ApplyString(t, ns, EchoAllv1Yaml)
+			oc.ApplyString(t, ns.Foo, EchoAllv1Yaml)
 
 			t.LogStep("make 20 requests and checking if all of them go to v1 (tolerance: 0%)")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				tolerance := 0.0
-				checkTcpTrafficRatio(t, ns, "tcp-echo", "9000", 20, tolerance, map[string]float64{
+				checkTcpTrafficRatio(t, ns.Foo, "tcp-echo", "9000", 20, tolerance, map[string]float64{
 					"one": 1.0,
 					"two": 0.0,
 				})
@@ -66,16 +66,16 @@ func TestTcpTrafficShifting(t *testing.T) {
 
 		t.NewSubTest("tcp shift 20 percent to v2").Run(func(t test.TestHelper) {
 			t.Cleanup(func() {
-				oc.DeleteFromString(t, ns, Echo20v2Yaml)
+				oc.DeleteFromString(t, ns.Foo, Echo20v2Yaml)
 			})
 
 			t.LogStep("Shifting 20 percent TCP traffic to v2")
-			oc.ApplyString(t, ns, Echo20v2Yaml)
+			oc.ApplyString(t, ns.Foo, Echo20v2Yaml)
 
 			t.LogStep("make 100 requests and checking if 20 percent of them go to v2 (tolerance: 10%)")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
 				tolerance := 0.10
-				checkTcpTrafficRatio(t, ns, "tcp-echo", "9000", 100, tolerance, map[string]float64{
+				checkTcpTrafficRatio(t, ns.Foo, "tcp-echo", "9000", 100, tolerance, map[string]float64{
 					"one": 0.8,
 					"two": 0.2,
 				})

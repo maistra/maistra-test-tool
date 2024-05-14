@@ -23,6 +23,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -30,10 +31,9 @@ import (
 
 func TestRequestRouting(t *testing.T) {
 	NewTest(t).Id("T1").Groups(Smoke, Full, InterOp, ARM).Run(func(t TestHelper) {
-		ns := "bookinfo"
 
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns)
+			oc.RecreateNamespace(t, ns.Bookinfo)
 			os.Remove(env.GetRootDir() + `/testdata/resources/html/modified-productpage-test-user-v2.html`)
 			os.Remove(env.GetRootDir() + `/testdata/resources/html/modified-productpage-normal-user-v1.html`)
 		})
@@ -41,13 +41,13 @@ func TestRequestRouting(t *testing.T) {
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install Bookinfo")
-		app.InstallAndWaitReady(t, app.Bookinfo(ns))
+		app.InstallAndWaitReady(t, app.Bookinfo(ns.Bookinfo))
 
 		productpageURL := app.BookinfoProductPageURL(t, meshNamespace)
 		testUserCookieJar := app.BookinfoLogin(t, meshNamespace)
 
 		t.NewSubTest("not-logged-in").Run(func(t TestHelper) {
-			oc.ApplyString(t, ns, app.BookinfoVirtualServicesAllV1)
+			oc.ApplyString(t, ns.Bookinfo, app.BookinfoVirtualServicesAllV1)
 
 			expectedResponseFile := TestreviewV1(t, "productpage-normal-user-v1.html")
 
@@ -66,7 +66,7 @@ func TestRequestRouting(t *testing.T) {
 		})
 
 		t.NewSubTest("logged-in").Run(func(t TestHelper) {
-			oc.ApplyString(t, ns, app.BookinfoVirtualServiceReviewsV2)
+			oc.ApplyString(t, ns.Bookinfo, app.BookinfoVirtualServiceReviewsV2)
 
 			expectedResponseFile2 := TestreviewV2(t, "productpage-test-user-v2.html")
 

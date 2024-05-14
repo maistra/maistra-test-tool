@@ -25,6 +25,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/request"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -48,7 +49,6 @@ var (
 
 func TestSecureGateways(t *testing.T) {
 	NewTest(t).Id("T9").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
-		ns := "bookinfo"
 
 		t.Log("This test verifies secure gateways.")
 		t.Log("Doc reference: https://istio.io/latest/docs/tasks/traffic-management/ingress/secure-ingress/")
@@ -56,15 +56,15 @@ func TestSecureGateways(t *testing.T) {
 		t.Cleanup(func() {
 			oc.DeleteSecret(t, meshNamespace, "httpbin-credential")
 			oc.DeleteSecret(t, meshNamespace, "helloworld-credential")
-			oc.RecreateNamespace(t, ns)
+			oc.RecreateNamespace(t, ns.Bookinfo)
 		})
 
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install httpbin")
-		app.InstallAndWaitReady(t, app.Httpbin(ns))
-		oc.ApplyTemplate(t, ns, helloWorldTemplate, nil)
-		oc.WaitDeploymentRolloutComplete(t, ns, "helloworld-v1")
+		app.InstallAndWaitReady(t, app.Httpbin(ns.Bookinfo))
+		oc.ApplyTemplate(t, ns.Bookinfo, helloWorldTemplate, nil)
+		oc.WaitDeploymentRolloutComplete(t, ns.Bookinfo, "helloworld-v1")
 
 		t.LogStep("Create TLS secrets")
 		oc.CreateTLSSecret(t, meshNamespace, "httpbin-credential", httpbinSampleServerCertKey, httpbinSampleServerCert)
@@ -77,7 +77,7 @@ func TestSecureGateways(t *testing.T) {
 
 		t.NewSubTest("tls_single_host").Run(func(t TestHelper) {
 			t.LogStep("Configure a TLS ingress gateway for a single host")
-			oc.ApplyString(t, ns, httpbinTLSGatewayHTTPS)
+			oc.ApplyString(t, ns.Bookinfo, httpbinTLSGatewayHTTPS)
 
 			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 				createRouteWithTLS(t, meshNamespace, "httpbin.example.com", "https", "istio-ingressgateway", "passthrough")
@@ -95,7 +95,7 @@ func TestSecureGateways(t *testing.T) {
 
 		t.NewSubTest("tls_multiple_hosts").Run(func(t TestHelper) {
 			t.LogStep("configure Gateway with multiple TLS hosts")
-			oc.ApplyString(t, ns, gatewayMultipleHosts)
+			oc.ApplyString(t, ns.Bookinfo, gatewayMultipleHosts)
 
 			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 				createRouteWithTLS(t, meshNamespace, "helloworld-v1.example.com", "https", "istio-ingressgateway", "passthrough")
@@ -125,7 +125,7 @@ func TestSecureGateways(t *testing.T) {
 				"tls.key="+httpbinSampleServerCertKey,
 				"tls.crt="+httpbinSampleServerCert,
 				"ca.crt="+httpbinSampleCACert)
-			oc.ApplyString(t, ns, gatewayHttpbinMTLSYaml)
+			oc.ApplyString(t, ns.Bookinfo, gatewayHttpbinMTLSYaml)
 
 			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 				createRouteWithTLS(t, meshNamespace, "httpbin.example.com", "https", "istio-ingressgateway", "passthrough")
@@ -169,7 +169,7 @@ func TestSecureGateways(t *testing.T) {
 				"tls.crt="+httpbinSampleServerCert,
 				"ca.crt="+httpbinSampleCACert,
 				"ca.crl="+httpbinSampleCACrl)
-			oc.ApplyString(t, ns, gatewayHttpbinMTLSYaml)
+			oc.ApplyString(t, ns.Bookinfo, gatewayHttpbinMTLSYaml)
 
 			createRouteWithTLS(t, meshNamespace, "httpbin.example.com", "https", "istio-ingressgateway", "passthrough")
 			t.LogStep("check if SSL handshake fails when no client certificate is given")
