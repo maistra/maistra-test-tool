@@ -29,7 +29,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
 
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
@@ -51,7 +50,7 @@ func TestCircuitBreaking(t *testing.T) {
 		oc.ApplyString(t, ns.Bookinfo, httpbinCircuitBreaker)
 
 		t.LogStep("Verify connection with curl: expect 200 OK")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
+		retry.UntilSuccess(t, func(t TestHelper) {
 			httpbinIP := oc.GetServiceClusterIP(t, ns.Bookinfo, "httpbin")
 			oc.Exec(t,
 				pod.MatchingSelector("app=fortio", ns.Bookinfo),
@@ -66,7 +65,7 @@ func TestCircuitBreaking(t *testing.T) {
 		reqCount := 50
 		t.LogStep("Trip the circuit breaker by sending 50 requests to httpbin with 2 connections")
 		t.Log("We expect request with response code 503")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
+		retry.UntilSuccess(t, func(t TestHelper) {
 			httpbinIP := oc.GetServiceClusterIP(t, ns.Bookinfo, "httpbin")
 			msg := oc.Exec(t,
 				pod.MatchingSelector("app=fortio", ns.Bookinfo),
@@ -94,7 +93,7 @@ func TestCircuitBreaking(t *testing.T) {
 	})
 }
 
-func getNumberOfResponses(t test.TestHelper, msg string, codeText string) int {
+func getNumberOfResponses(t TestHelper, msg string, codeText string) int {
 	re := regexp.MustCompile(codeText)
 	line := re.FindStringSubmatch(msg)[0]
 	re = regexp.MustCompile(`: [\d]+`)
@@ -107,7 +106,7 @@ func getNumberOfResponses(t test.TestHelper, msg string, codeText string) int {
 	return count
 }
 
-func assertProxyContainsUpstreamRqPendingOverflow(t test.TestHelper, output string) {
+func assertProxyContainsUpstreamRqPendingOverflow(t TestHelper, output string) {
 	var v int
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {

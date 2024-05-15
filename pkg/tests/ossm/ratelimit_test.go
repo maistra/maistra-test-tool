@@ -26,9 +26,9 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
+
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 var (
@@ -76,7 +76,7 @@ func TestRateLimiting(t *testing.T) {
 
 		productPageURL := app.BookinfoProductPageURL(t, meshNamespace)
 		t.LogStep("Make 3 request to validate rate limit: first should work, second should fail with 429, third should work again after wait more than 1 seconds")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
+		retry.UntilSuccess(t, func(t TestHelper) {
 			curl.Request(t, productPageURL, nil, assert.ResponseStatus(200))
 			curl.Request(t, productPageURL, nil, assert.ResponseStatus(429))
 			time.Sleep(time.Second * 5) // wait 5 seconds to make sure the rate limit is reset

@@ -10,7 +10,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
+
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -42,7 +42,7 @@ func TestSMMRAutoCreationAndDeletion(t *testing.T) {
 			oc.WaitSMMRReady(t, meshNamespace)
 
 			t.LogStep("Check both namespaces are shown as members in SMMR")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				shell.Execute(t,
 					fmt.Sprintf(`oc get smmr default -n %s -o=jsonpath='{.status.members[*]}{"\n"}'`, meshNamespace),
 					assert.OutputContains(foo, "SMMR has the member foo", "SMMR does not have the namespaces foo and bar"),
@@ -59,7 +59,7 @@ func TestSMMRAutoCreationAndDeletion(t *testing.T) {
 			oc.DeleteFromString(t, bar, smm)
 
 			t.LogStep("Check if SMMR becomes ready (it won't be if it gets deleted)")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				oc.WaitSMMRReady(t, meshNamespace)
 			})
 		})
@@ -73,7 +73,7 @@ func TestSMMRAutoCreationAndDeletion(t *testing.T) {
 			oc.DeleteFromString(t, foo, smm)
 
 			t.LogStep("Check that SMMR is deleted")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				shell.Execute(t,
 					fmt.Sprintf("oc get smmr -n %s default || true", meshNamespace),
 					assert.OutputContains("not found",
@@ -104,7 +104,7 @@ func TestSMMReconciliation(t *testing.T) {
 		oc.RemoveLabel(t, "", "Namespace", ns.Bookinfo, "maistra.io/member-of")
 
 		t.LogStep("Check if label was added back by the operator")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
+		retry.UntilSuccess(t, func(t TestHelper) {
 			oc.GetYaml(t,
 				"", "namespace", ns.Bookinfo,
 				assert.OutputContains(
