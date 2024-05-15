@@ -52,7 +52,7 @@ httpbin:
   x86: quay.io/openshifttest/httpbin:multiarch
   arm64: quay.io/openshifttest/httpbin:multiarch
   p: quay.io/maistra/kennethreitz-httpbin:0.0-ibm-p
-  z: quay.io/maistra/httpbin:0.0-ibm-z
+  z: quay.io/maistra/httpbin:0.1-ibm-Z
 
 sleep:
   x86: quay.io/openshifttest/sleep:multiarch
