@@ -14,9 +14,9 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
+
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestGatewayApi(t *testing.T) {
@@ -35,7 +35,7 @@ func TestGatewayApi(t *testing.T) {
 
 		oc.CreateNamespace(t, ns.Foo)
 
-		t.NewSubTest("Deploy the Kubernetes Gateway API").Run(func(t test.TestHelper) {
+		t.NewSubTest("Deploy the Kubernetes Gateway API").Run(func(t TestHelper) {
 
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
@@ -99,7 +99,7 @@ func TestGatewayApi(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("Deploy the Gateway-Controller Profile").Run(func(t test.TestHelper) {
+		t.NewSubTest("Deploy the Gateway-Controller Profile").Run(func(t TestHelper) {
 			if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
 				t.Skip("Gateway-Controller Profile was added in v2.4")
 			}

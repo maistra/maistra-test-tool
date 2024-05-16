@@ -25,9 +25,9 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
+
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 var (
@@ -179,7 +179,7 @@ func assertProxiesReadyInLessThan10Seconds(t TestHelper, ns string) {
 	}
 }
 
-func assertSMCPDeploysAndIsReady(t test.TestHelper, ver version.Version) {
+func assertSMCPDeploysAndIsReady(t TestHelper, ver version.Version) {
 	t.LogStep("Install SMCP")
 	InstallSMCPVersion(t, meshNamespace, ver)
 	oc.WaitSMCPReady(t, meshNamespace, smcpName)
@@ -188,7 +188,7 @@ func assertSMCPDeploysAndIsReady(t test.TestHelper, ver version.Version) {
 	oc.WaitSMCPReady(t, meshNamespace, smcpName)
 }
 
-func assertRoutesExist(t test.TestHelper) {
+func assertRoutesExist(t TestHelper) {
 	t.Log("Related issue: https://issues.redhat.com/browse/OSSM-4069")
 	retry.UntilSuccess(t, func(t TestHelper) {
 		oc.Get(t,

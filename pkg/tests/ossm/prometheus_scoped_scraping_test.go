@@ -12,7 +12,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
-	namespaces "github.com/maistra/maistra-test-tool/pkg/util/ns"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -168,10 +168,10 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			oc.DeleteFromString(t, meshNamespace, smmr)
 
 			testPrometheusConfigWithAsserts(t,
-				assertConfigMapDoesNotContainNamespace(namespaces.Bar),
-				assertConfigMapDoesNotContainNamespace(namespaces.Bookinfo),
-				assertConfigMapDoesNotContainNamespace(namespaces.Foo),
-				assertConfigMapDoesNotContainNamespace(namespaces.Legacy),
+				assertConfigMapDoesNotContainNamespace(ns.Bar),
+				assertConfigMapDoesNotContainNamespace(ns.Bookinfo),
+				assertConfigMapDoesNotContainNamespace(ns.Foo),
+				assertConfigMapDoesNotContainNamespace(ns.Legacy),
 			)
 			checkConfigurationReloadingTriggered(t, start)
 			checkPermissionError(t)

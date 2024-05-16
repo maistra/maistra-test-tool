@@ -27,7 +27,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
+
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -56,7 +56,7 @@ func TestMustGather(t *testing.T) {
 				"Must gather completed successfully",
 				"Must gather failed"))
 
-		t.NewSubTest("dump files and proxy stats files exist for pods").Run(func(t test.TestHelper) {
+		t.NewSubTest("dump files and proxy stats files exist for pods").Run(func(t TestHelper) {
 			t.LogStep("Check dump files exist under the directory of namespace directory")
 			t.Log("Verify these files:")
 			t.Log("config_dump_istiod.json, config_dump_proxy.json, proxy_stats")
@@ -159,7 +159,7 @@ func assertFilesExist(t TestHelper, dir string, files ...string) {
 	}
 }
 
-func checkFileContents(t test.TestHelper, dir string, file string, checks ...common.CheckFunc) {
+func checkFileContents(t TestHelper, dir string, file string, checks ...common.CheckFunc) {
 	path := filepath.Join(dir, file)
 	filePath := shell.Execute(t, fmt.Sprintf("find %s", path))
 	data, err := os.ReadFile(filePath[:len(filePath)-1])

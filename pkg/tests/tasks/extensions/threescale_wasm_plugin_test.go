@@ -157,5 +157,3 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 		}
 	})
 }
-
-//fmt.Sprintf(`curl http://httpbin:8000/headers -H "Authorization: Bearer %s" -s -o /dev/null -w "%%{http_code}"`, token),
