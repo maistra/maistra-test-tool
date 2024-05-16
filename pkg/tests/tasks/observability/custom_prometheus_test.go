@@ -53,6 +53,10 @@ func TestCustomPrometheus(t *testing.T) {
 
 		t.LogStep("Installing custom Prometheus")
 		installPrometheus(t, customPrometheusNs, meshNamespace, ns.Bookinfo)
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			prometheusPod := pod.MatchingSelector("app.kubernetes.io/name=prometheus-operator", customPrometheusNs)
+			oc.WaitPodRunning(t, prometheusPod)
+		})
 
 		t.LogStep("Intalling Bookinfo app")
 		oc.WaitSMCPReady(t, meshNamespace, "basic")
