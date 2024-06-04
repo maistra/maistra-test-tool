@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
@@ -14,6 +15,11 @@ import (
 
 func TestRoutePreventAdditionalIngress(t *testing.T) {
 	NewTest(t).Id("T48").Groups(Full, ARM).MaxVersion(version.SMCP_2_5).Run(func(t TestHelper) {
+
+		meshValues := map[string]interface{}{
+			"Version": env.GetSMCPVersion().String(),
+			"Rosa":    env.IsRosa(),
+		}
 
 		ER := "extra-routes"
 
@@ -25,7 +31,7 @@ func TestRoutePreventAdditionalIngress(t *testing.T) {
 		oc.CreateNamespace(t, ER)
 
 		t.LogStep("Create SMCP on new Namespace")
-		oc.ApplyString(t, ER, smcp_additionalIngress)
+		oc.ApplyTemplate(t, ER, smcp_additionalIngress, meshValues)
 		oc.WaitSMCPReady(t, ER, "basic")
 
 		t.LogStep("Verify that Route for additional ingress was not created")
@@ -50,7 +56,7 @@ func TestRoutePreventAdditionalIngress(t *testing.T) {
 			oc.CreateNamespace(t, ER2)
 
 			t.LogStep("Create IGW on new namespace")
-			oc.ApplyString(t, ER2, smcp_igw)
+			oc.ApplyTemplate(t, ER2, smcp_igw, meshValues)
 			oc.WaitSMCPReady(t, ER2, "basic")
 
 			t.LogStep("Verify that Route for additional ingress was created")
@@ -73,7 +79,7 @@ apiVersion: maistra.io/v2
 metadata:
   name: basic
 spec: 
-  version: v2.5
+  version: {{ .Version }}
   tracing:
     type: Jaeger
     sampling: 10000
@@ -87,14 +93,20 @@ spec:
         enabled: true
         namespace: extra-routes22
     ingress:
-      enabled: false 
+      enabled: false
+  {{ if .Rosa }} 
+  security:
+    identity:
+      type: ThirdParty
+  {{ end }}
   `
 	smcp_additionalIngress = `
 kind: ServiceMeshControlPlane
 apiVersion: maistra.io/v2
 metadata:
   name: basic
-spec: 
+spec:
+  version: {{ .Version }}
   gateways: 
     additionalIngress: 
       test-ingress: 
@@ -116,6 +128,11 @@ spec:
       routeConfig: 
         enabled: false
     openshiftRoute: 
-      enabled: false 
+      enabled: false
+  {{ if .Rosa }} 
+  security:
+    identity:
+      type: ThirdParty
+  {{ end }}
   `
 )
