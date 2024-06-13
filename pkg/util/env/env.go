@@ -50,11 +50,11 @@ func GetDefaultMeshNamespace() string {
 }
 
 func GetSMCPVersion() version.Version {
-	return version.ParseVersion(getenv("SMCP_VERSION", "v2.5"))
+	return version.ParseVersion(getenv("SMCP_VERSION", "v2.6"))
 }
 
 func GetOperatorVersion() version.Version {
-	return version.ParseVersion(getenv("OPERATOR_VERSION", "v2.5"))
+	return version.ParseVersion(getenv("OPERATOR_VERSION", "v2.6"))
 }
 
 func GetArch() string {

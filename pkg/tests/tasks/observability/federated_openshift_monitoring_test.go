@@ -49,7 +49,7 @@ func TestFederatedOpenShiftMonitoring(t *testing.T) {
 		oc.WaitAllPodsReady(t, ns.Foo)
 
 		t.LogStep("Generate some ingress traffic")
-		oc.ApplyFile(t, ns.Foo, "https://raw.githubusercontent.com/maistra/istio/maistra-2.5/samples/httpbin/httpbin-gateway.yaml")
+		oc.ApplyFile(t, ns.Foo, "https://raw.githubusercontent.com/maistra/istio/maistra-2.6/samples/httpbin/httpbin-gateway.yaml")
 		httpbinURL := fmt.Sprintf("http://%s/headers", istio.GetIngressGatewayHost(t, meshNamespace))
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			curl.Request(t, httpbinURL, nil, assert.ResponseStatus(http.StatusOK))

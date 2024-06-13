@@ -76,7 +76,7 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 
 		t.LogStep("Deploy httpbin and configure its gateway and routing")
 		app.InstallAndWaitReady(t, app.Httpbin(ns.Foo))
-		oc.ApplyFile(t, ns.Foo, "https://raw.githubusercontent.com/maistra/istio/maistra-2.4/samples/httpbin/httpbin-gateway.yaml")
+		oc.ApplyFile(t, ns.Foo, "https://raw.githubusercontent.com/maistra/istio/maistra-2.6/samples/httpbin/httpbin-gateway.yaml")
 
 		t.LogStep("Verify that a request to the ingress gateway with token returns 200")
 		ingressGatewayHost := istio.GetIngressGatewayHost(t, meshNamespace)
