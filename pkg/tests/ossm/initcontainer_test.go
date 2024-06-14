@@ -18,13 +18,13 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestInitContainerNotRemovedDuringInjection(t *testing.T) {
-	const ns = "bookinfo"
 	const goldString = "[init worked]"
 	const podSelector = "app=sleep-init"
 
@@ -32,20 +32,20 @@ func TestInitContainerNotRemovedDuringInjection(t *testing.T) {
 		t.Log("Checking init container not removed during sidecar injection.")
 
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns)
+			oc.RecreateNamespace(t, ns.Bookinfo)
 		})
 
 		DeployControlPlane(t)
 
-		oc.RecreateNamespace(t, ns)
+		oc.RecreateNamespace(t, ns.Bookinfo)
 
 		t.LogStep("Deploying test pod.")
-		oc.ApplyString(t, ns, testInitContainerYAML)
-		oc.WaitDeploymentRolloutComplete(t, ns, "sleep-init")
+		oc.ApplyString(t, ns.Bookinfo, testInitContainerYAML)
+		oc.WaitDeploymentRolloutComplete(t, ns.Bookinfo, "sleep-init")
 
 		t.LogStep("Checking pod logs for init message.")
 		oc.Logs(t,
-			pod.MatchingSelector(podSelector, ns),
+			pod.MatchingSelector(podSelector, ns.Bookinfo),
 			"init",
 			assert.OutputContains(goldString,
 				"Init container executed successfully.",

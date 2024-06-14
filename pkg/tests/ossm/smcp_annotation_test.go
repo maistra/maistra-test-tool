@@ -20,6 +20,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -34,26 +35,24 @@ func TestSMCPAnnotations(t *testing.T) {
 
 		t.NewSubTest("proxyEnvoy").Run(func(t test.TestHelper) {
 			t.Parallel()
-			ns := "foo"
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns, testSSLDeploymentWithAnnotation, nil)
+				oc.DeleteFromTemplate(t, ns.Foo, testSSLDeploymentWithAnnotation, nil)
 			})
 			t.LogStep("Deploy TestSSL pod with annotations sidecar.maistra.io/proxyEnv")
-			oc.ApplyTemplate(t, ns, testSSLDeploymentWithAnnotation, nil)
-			oc.WaitDeploymentRolloutComplete(t, ns, "testenv")
+			oc.ApplyTemplate(t, ns.Foo, testSSLDeploymentWithAnnotation, nil)
+			oc.WaitDeploymentRolloutComplete(t, ns.Foo, "testenv")
 
 			t.LogStep("Get annotations and verify that the pod has the expected: sidecar.maistra.io/proxyEnv : { \"maistra_test_env\": \"env_value\", \"maistra_test_env_2\": \"env_value_2\" }")
-			annotations := VerifyAndGetPodAnnotation(t, pod.MatchingSelector("app=env", ns))
+			annotations := VerifyAndGetPodAnnotation(t, pod.MatchingSelector("app=env", ns.Foo))
 			assertAnnotationIsPresent(t, annotations, "sidecar.maistra.io/proxyEnv", `{ "maistra_test_env": "env_value", "maistra_test_env_2": "env_value_2" }`)
 		})
 
 		// Test that the SMCP automatic injection with quotes works
 		t.NewSubTest("quote_injection").Run(func(t test.TestHelper) {
 			t.Parallel()
-			ns := "bar"
 			t.Cleanup(func() {
 				oc.Patch(t, meshNamespace, "smcp", smcpName, "json", `[{"op": "remove", "path": "/spec/proxy"}]`)
-				oc.DeleteFromTemplate(t, ns, testSSLDeploymentWithAnnotation, nil)
+				oc.DeleteFromTemplate(t, ns.Bar, testSSLDeploymentWithAnnotation, nil)
 			})
 			t.LogStep("Enable annotation auto injection in SMCP")
 			oc.Patch(t,
@@ -64,12 +63,12 @@ func TestSMCPAnnotations(t *testing.T) {
 			oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 			t.LogStep("Deploy TestSSL pod with annotations sidecar.maistra.io/proxyEnv")
-			oc.ApplyTemplate(t, ns, testSSLDeploymentWithAnnotation, nil)
-			oc.WaitDeploymentRolloutComplete(t, ns, "testenv")
+			oc.ApplyTemplate(t, ns.Bar, testSSLDeploymentWithAnnotation, nil)
+			oc.WaitDeploymentRolloutComplete(t, ns.Bar, "testenv")
 
 			t.LogStep("Get annotations and verify that the pod has the expected: test1.annotation-from-smcp : test1, test2.annotation-from-smcp : [\"test2\"], test3.annotation-from-smcp : {test3}")
 			retry.UntilSuccess(t, func(t test.TestHelper) {
-				annotations := VerifyAndGetPodAnnotation(t, pod.MatchingSelector("app=env", ns))
+				annotations := VerifyAndGetPodAnnotation(t, pod.MatchingSelector("app=env", ns.Bar))
 				assertAnnotationIsPresent(t, annotations, "test1.annotation-from-smcp", "test1")
 				assertAnnotationIsPresent(t, annotations, "test2.annotation-from-smcp", `["test2"]`)
 				assertAnnotationIsPresent(t, annotations, "test3.annotation-from-smcp", "{test3}")

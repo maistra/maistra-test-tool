@@ -21,6 +21,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -31,21 +32,21 @@ func TestMTlsMigration(t *testing.T) {
 		meshNamespace := env.GetDefaultMeshNamespace()
 
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, "foo", "bar", "legacy") // TODO: recreate all three namespaces with a single call to RecreateNamespace
+			oc.RecreateNamespace(t, ns.Foo, ns.Bar, ns.Legacy) // TODO: recreate all three namespaces with a single call to RecreateNamespace
 		})
 
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install httpbin and sleep in multiple namespaces")
 		app.InstallAndWaitReady(t,
-			app.Httpbin("foo"),
-			app.Httpbin("bar"),
-			app.Sleep("foo"),
-			app.Sleep("bar"),
-			app.SleepNoSidecar("legacy"))
+			app.Httpbin(ns.Foo),
+			app.Httpbin(ns.Bar),
+			app.Sleep(ns.Foo),
+			app.Sleep(ns.Bar),
+			app.SleepNoSidecar(ns.Legacy))
 
-		fromNamespaces := []string{"foo", "bar", "legacy"}
-		toNamespaces := []string{"foo", "bar"}
+		fromNamespaces := []string{ns.Foo, ns.Bar, ns.Legacy}
+		toNamespaces := []string{ns.Foo, ns.Bar}
 
 		t.LogStep("Check connectivity from namespaces foo, bar, and legacy to namespace foo and bar")
 		retry.UntilSuccess(t, func(t test.TestHelper) {

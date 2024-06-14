@@ -20,6 +20,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -28,7 +29,6 @@ import (
 
 func TestSSL(t *testing.T) {
 	NewTest(t).Id("T27").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
-		ns := "bookinfo"
 		t.Cleanup(func() {
 			oc.Patch(t, meshNamespace, "smcp", smcpName, "json", `[{"op": "remove", "path": "/spec/security/controlPlane/tls"}]`)
 			oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
@@ -39,8 +39,8 @@ spec:
     controlPlane:
       mtls: false
 `)
-			app.Uninstall(t, app.BookinfoWithMTLS(ns))
-			oc.DeleteFromTemplate(t, ns, testSSLDeployment, nil)
+			app.Uninstall(t, app.BookinfoWithMTLS(ns.Bookinfo))
+			oc.DeleteFromTemplate(t, ns.Bookinfo, testSSLDeployment, nil)
 		})
 
 		DeployControlPlane(t) // TODO: integrate below patch here
@@ -65,9 +65,9 @@ spec:
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Install bookinfo with mTLS and testssl pod")
-		oc.ApplyTemplate(t, ns, testSSLDeployment, nil)
-		app.InstallAndWaitReady(t, app.BookinfoWithMTLS(ns))
-		oc.WaitDeploymentRolloutComplete(t, ns, "testssl")
+		oc.ApplyTemplate(t, ns.Bookinfo, testSSLDeployment, nil)
+		app.InstallAndWaitReady(t, app.BookinfoWithMTLS(ns.Bookinfo))
+		oc.WaitDeploymentRolloutComplete(t, ns.Bookinfo, "testssl")
 
 		t.LogStep("Check testssl.sh results")
 		command := "./testssl/testssl.sh -P -6 productpage:9080 || true"
@@ -76,7 +76,7 @@ spec:
 		}
 		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(10), func(t TestHelper) {
 			oc.Exec(t,
-				pod.MatchingSelector("app=testssl", ns),
+				pod.MatchingSelector("app=testssl", ns.Bookinfo),
 				"testssl",
 				command,
 				assert.OutputContains(

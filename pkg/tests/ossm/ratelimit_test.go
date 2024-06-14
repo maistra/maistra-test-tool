@@ -23,6 +23,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
@@ -41,15 +42,14 @@ var (
 
 func TestRateLimiting(t *testing.T) {
 	NewTest(t).Id("T28").Groups(Full, ARM).MaxVersion(version.SMCP_2_2).Run(func(t TestHelper) {
-		ns := "bookinfo"
 		nsRedis := "redis"
 
 		DeployControlPlane(t)
 
 		t.LogStep("Install Bookinfo and Redis")
-		app.InstallAndWaitReady(t, app.Bookinfo(ns), app.Redis(nsRedis))
+		app.InstallAndWaitReady(t, app.Bookinfo(ns.Bookinfo), app.Redis(nsRedis))
 		t.Cleanup(func() {
-			app.Uninstall(t, app.Bookinfo(ns), app.Redis(nsRedis))
+			app.Uninstall(t, app.Bookinfo(ns.Bookinfo), app.Redis(nsRedis))
 			oc.DeleteNamespace(t, nsRedis) // namespace redis is only used in this test, so delete it after test
 		})
 
