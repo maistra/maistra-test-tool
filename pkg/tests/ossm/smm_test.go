@@ -17,8 +17,7 @@ import (
 func TestSMMRAutoCreationAndDeletion(t *testing.T) {
 	NewTest(t).Id("T39").Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
 		t.Log("This test verifies what happens to the SMMR when SMM is created and deleted")
-		foo := "foo"
-		bar := "bar"
+
 		t.Cleanup(func() {
 			oc.ApplyString(t, meshNamespace, smmr) // revert SMMR to original state
 		})
@@ -29,14 +28,14 @@ func TestSMMRAutoCreationAndDeletion(t *testing.T) {
 		oc.DeleteResource(t, meshNamespace, "smmr", "default")
 
 		t.LogStep("Create two namespaces")
-		oc.CreateNamespace(t, foo, bar)
+		oc.CreateNamespace(t, ns.Foo, ns.Bar)
 
 		t.NewSubTest("create first SMM").Run(func(t TestHelper) {
 			t.Log("This test checks if the SMMR is created when you create a ServiceMeshMember")
 
 			t.LogStep("Create ServiceMeshMembers in namespaces foo and bar")
-			oc.ApplyString(t, foo, smm)
-			oc.ApplyString(t, bar, smm)
+			oc.ApplyString(t, ns.Foo, smm)
+			oc.ApplyString(t, ns.Bar, smm)
 
 			t.LogStep("Wait for SMMR to be ready")
 			oc.WaitSMMRReady(t, meshNamespace)
@@ -45,8 +44,8 @@ func TestSMMRAutoCreationAndDeletion(t *testing.T) {
 			retry.UntilSuccess(t, func(t TestHelper) {
 				shell.Execute(t,
 					fmt.Sprintf(`oc get smmr default -n %s -o=jsonpath='{.status.members[*]}{"\n"}'`, meshNamespace),
-					assert.OutputContains(foo, "SMMR has the member foo", "SMMR does not have the namespaces foo and bar"),
-					assert.OutputContains(bar, "SMMR has the member bar", "SMMR does not have the namespaces foo and bar"))
+					assert.OutputContains(ns.Foo, "SMMR has the member foo", "SMMR does not have the namespaces foo and bar"),
+					assert.OutputContains(ns.Bar, "SMMR has the member bar", "SMMR does not have the namespaces foo and bar"))
 			})
 		})
 
@@ -56,7 +55,7 @@ func TestSMMRAutoCreationAndDeletion(t *testing.T) {
 			t.Log("See https://issues.redhat.com/browse/OSSM-3450 (test)")
 
 			t.LogStep("Delete one SMM, but keep the other")
-			oc.DeleteFromString(t, bar, smm)
+			oc.DeleteFromString(t, ns.Bar, smm)
 
 			t.LogStep("Check if SMMR becomes ready (it won't be if it gets deleted)")
 			retry.UntilSuccess(t, func(t TestHelper) {
@@ -70,7 +69,7 @@ func TestSMMRAutoCreationAndDeletion(t *testing.T) {
 			t.Log("See https://issues.redhat.com/browse/OSSM-3450 (test)")
 
 			t.LogStep("Delete last SMM")
-			oc.DeleteFromString(t, foo, smm)
+			oc.DeleteFromString(t, ns.Foo, smm)
 
 			t.LogStep("Check that SMMR is deleted")
 			retry.UntilSuccess(t, func(t TestHelper) {

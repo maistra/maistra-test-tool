@@ -25,6 +25,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 
@@ -35,15 +36,14 @@ func TestMustGather(t *testing.T) {
 	NewTest(t).Id("T30").Groups(Full, ARM).Run(func(t TestHelper) {
 		t.Log("This test verifies must-gather log collection")
 
-		ns := "bookinfo"
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, ns)
+			oc.RecreateNamespace(t, ns.Bookinfo)
 		})
 
 		DeployControlPlane(t)
 
 		t.LogStep("Deploy bookinfo in bookinfo ns")
-		app.InstallAndWaitReady(t, app.Bookinfo(ns))
+		app.InstallAndWaitReady(t, app.Bookinfo(ns.Bookinfo))
 
 		image := env.GetMustGatherImage()
 		dir := shell.CreateTempDir(t, "must-gather-")

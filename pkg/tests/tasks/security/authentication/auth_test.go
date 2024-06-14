@@ -27,6 +27,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/istio"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/request"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -41,22 +42,22 @@ func TestAuthPolicy(t *testing.T) {
 		t.Log("Doc reference: https://istio.io/latest/docs/tasks/security/authentication/authn-policy/")
 
 		t.Cleanup(func() {
-			oc.RecreateNamespace(t, "foo", "bar", "legacy")
+			oc.RecreateNamespace(t, ns.Foo, ns.Bar, ns.Legacy)
 		})
 
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install httpbin and sleep in multiple namespaces")
 		app.InstallAndWaitReady(t,
-			app.Httpbin("foo"),
-			app.Httpbin("bar"),
-			app.HttpbinNoSidecar("legacy"),
-			app.Sleep("foo"),
-			app.Sleep("bar"),
-			app.SleepNoSidecar("legacy"))
+			app.Httpbin(ns.Foo),
+			app.Httpbin(ns.Bar),
+			app.HttpbinNoSidecar(ns.Legacy),
+			app.Sleep(ns.Foo),
+			app.Sleep(ns.Bar),
+			app.SleepNoSidecar(ns.Legacy))
 
-		fromNamespaces := []string{"foo", "bar", "legacy"}
-		toNamespaces := []string{"foo", "bar"}
+		fromNamespaces := []string{ns.Foo, ns.Bar, ns.Legacy}
+		toNamespaces := []string{ns.Foo, ns.Bar}
 
 		t.LogStep("Check connectivity from namespaces foo, bar, and legacy to namespaces foo and bar")
 		retry.UntilSuccess(t, func(t TestHelper) {
