@@ -13,7 +13,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -30,8 +29,7 @@ func TestGatewayApi(t *testing.T) {
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install Gateway API CRD's")
-		shell.Executef(t, "kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null && echo 'Gateway API CRDs already installed' || kubectl apply -k github.com/kubernetes-sigs/gateway-api/config/crd/experimental?ref=%s",
-			gatewayapi.GetSupportedVersion(env.GetSMCPVersion()))
+		gatewayapi.InstallSupportedVersion(t, env.GetSMCPVersion())
 
 		oc.CreateNamespace(t, ns.Foo)
 
