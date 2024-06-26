@@ -81,7 +81,6 @@ metadata:
 spec: 
   version: {{ .Version }}
   tracing:
-    type: Jaeger
     sampling: 10000
   policy:
     type: Istiod
