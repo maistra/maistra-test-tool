@@ -201,9 +201,6 @@ func assertRoutesExist(t TestHelper) {
 			assert.OutputContains("istio-ingressgateway",
 				"Route istio-ingressgateway is created",
 				"Still waiting for route istio-ingressgateway to be created in namespace"),
-			assert.OutputContains("jaeger",
-				"Route jaeger is created",
-				"Still waiting for route jaeger to be created in namespace"),
 			assert.OutputContains("kiali",
 				"Route kiali is created",
 				"Still waiting for route kiali to be created in namespace"),
@@ -211,6 +208,18 @@ func assertRoutesExist(t TestHelper) {
 				"Route prometheus is created",
 				"Still waiting for route prometheus to be created in namespace"))
 	})
+
+	if env.GetSMCPVersion().LessThanOrEqual(version.SMCP_2_5) {
+		retry.UntilSuccess(t, func(t TestHelper) {
+			oc.Get(t,
+				meshNamespace,
+				"routes", "",
+				assert.OutputContains("jaeger",
+					"Route jaeger is created",
+					"Still waiting for route jaeger to be created in namespace"),
+			)
+		})
+	}
 }
 
 func getPreviousVersion(ver version.Version) version.Version {

@@ -554,17 +554,12 @@ spec:
       componentLevels:
         default: info
   tracing:
-    type: Jaeger
     sampling: 10000
   policy:
     type: Istiod
   addons:
     grafana:
       enabled: true
-    jaeger:
-      install:
-        storage:
-          type: Memory
     kiali:
       enabled: true
     prometheus:

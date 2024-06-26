@@ -130,7 +130,10 @@ spec:
 			})
 
 			t.LogStep("Verify that the following control plane pods are running on the infra node: istiod, istio-ingressgateway, istio-egressgateway, jaeger, grafana, prometheus")
-			istioPodLabelSelectors := []string{"app=istiod", "app=istio-ingressgateway", "app=istio-egressgateway", "app=grafana", "app=prometheus", "app=jaeger"}
+			istioPodLabelSelectors := []string{"app=istiod", "app=istio-ingressgateway", "app=istio-egressgateway", "app=grafana", "app=prometheus"}
+			if env.GetSMCPVersion().LessThanOrEqual(version.SMCP_2_5) {
+				istioPodLabelSelectors = append(istioPodLabelSelectors, "app=jaeger")
+			}
 			for _, pLabel := range istioPodLabelSelectors {
 				assertPodScheduledToNode(t, pLabel)
 			}
