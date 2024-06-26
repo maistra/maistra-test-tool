@@ -38,6 +38,7 @@ var (
 		&version.SMCP_2_3,
 		&version.SMCP_2_4,
 		&version.SMCP_2_5,
+		&version.SMCP_2_6,
 	}
 )
 
