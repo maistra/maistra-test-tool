@@ -66,12 +66,22 @@ func TestPluginCaCert(t *testing.T) {
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.LogStep("Verify that cacerts secret was detected")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			oc.Logs(t, pod.MatchingSelector("app=istiod", meshNamespace), "discovery", assert.OutputContains(
-				"Use plugged-in cert at etc/cacerts/tls.key",
-				"Istiod detected cacerts secret correctly",
-				"Istiod did not detect cacerts secret"))
-		})
+
+		if env.GetSMCPVersion().LessThan(version.SMCP_2_6) {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				oc.Logs(t, pod.MatchingSelector("app=istiod", meshNamespace), "discovery", assert.OutputContains(
+					"Use plugged-in cert at etc/cacerts/tls.key",
+					"Istiod detected cacerts secret correctly",
+					"Istiod did not detect cacerts secret"))
+			})
+		} else {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				oc.Logs(t, pod.MatchingSelector("app=istiod", meshNamespace), "discovery", assert.OutputContains(
+					"DNS certs use plugged-in cert at etc/cacerts/tls.key",
+					"Istiod detected cacerts secret correctly",
+					"Istiod did not detect cacerts secret"))
+			})
+		}
 
 		t.LogStep("Deploy httpbin and sleep")
 		app.InstallAndWaitReady(t, app.Httpbin(ns.Foo), app.Sleep(ns.Foo))
