@@ -21,7 +21,9 @@ import (
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/cni"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -82,6 +84,10 @@ func TestSmoke(t *testing.T) {
 			oc.RestartAllPodsAndWaitReady(t, ns)
 
 			checkSMCP(t, ns)
+
+			t.LogStep("Check that previous version CNI resources were pruned and needed resources were preserved")
+			t.Log("Related issue: https://issues.redhat.com/browse/OSSM-2101")
+			assertResourcesPruneUpgrade(t, fromVersion, toVersion)
 		})
 
 		t.NewSubTest(fmt.Sprintf("install smcp %s", toVersion)).Run(func(t TestHelper) {
@@ -117,6 +123,10 @@ func TestSmoke(t *testing.T) {
 						"SMCP resources are deleted",
 						"Still waiting for resources to be deleted from namespace"))
 			})
+
+			t.LogStep("Check that CNI resources were pruned")
+			t.Log("Related issue: https://issues.redhat.com/browse/OSSM-2101")
+			assertResourcePruneDelete(t, toVersion)
 		})
 
 	})
@@ -234,4 +244,44 @@ func getPreviousVersion(ver version.Version) version.Version {
 		prevVersion = v
 	}
 	panic(fmt.Sprintf("version %s not found in VERSIONS", ver))
+}
+
+func assertResourcesPruneUpgrade(t TestHelper, fromVersion version.Version, toVersion version.Version) {
+	for _, res := range cni.CniResources {
+		if util.Contains(res.UsedInVersions, toVersion) {
+			oc.Get(t,
+				"openshift-operators",
+				res.Obj,
+				res.Name,
+				assert.OutputContains(res.Name,
+					"Resource "+res.Obj+"/"+res.Name+" was preserved",
+					"Resource "+res.Obj+"/"+res.Name+" was not preserved"),
+			)
+		} else if util.Contains(res.UsedInVersions, fromVersion) {
+			oc.Get(t,
+				"openshift-operators",
+				res.Obj,
+				res.Name+" --ignore-not-found",
+				assert.OutputDoesNotContain(res.Name,
+					"Resource "+res.Obj+"/"+res.Name+" was pruned",
+					"Resource "+res.Obj+"/"+res.Name+" was not pruned"),
+			)
+		}
+
+	}
+}
+
+func assertResourcePruneDelete(t TestHelper, ver version.Version) {
+	for _, res := range cni.CniResources {
+		if util.Contains(res.UsedInVersions, ver) {
+			oc.Get(t,
+				"",
+				res.Obj,
+				res.Name+" --ignore-not-found",
+				assert.OutputDoesNotContain(res.Name,
+					"Resource "+res.Obj+"/"+res.Name+" was pruned",
+					"Resource "+res.Obj+"/"+res.Name+" was not pruned"),
+			)
+		}
+	}
 }
