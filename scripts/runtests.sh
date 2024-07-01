@@ -169,7 +169,7 @@ main() {
 
     if [ -z "$SMCP_VERSION" ]; then
         for ver in "${SUPPORTED_VERSIONS[@]}"; do
-            export OPERATOR_VERSION="$ver"
+            export OPERATOR_VERSION="$OPERATOR_VERSION"
             export SMCP_VERSION="$ver"
             export OUTPUT_DIR="${OUTPUT_DIR_BASE}/${SMCP_VERSION}"  # also used in env.GetOutputDir(), so must be exported
             export LOG_FILE="$OUTPUT_DIR/output.log"
