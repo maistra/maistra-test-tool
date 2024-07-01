@@ -89,8 +89,8 @@ func TestSMMReconciliation(t *testing.T) {
 		t.Log("This test verifies whether the member-of label is added back to the namespace")
 		t.Log("See https://issues.redhat.com/browse/OSSM-1397")
 
-		if !env.GetSMCPVersion().Equals(env.GetOperatorVersion()) {
-			t.Skip("Skipped because This test case is only needed to be tested when the SMCP version is the latest version available in the Operator")
+		if !(env.GetSMCPVersion().Equals(env.GetOperatorVersion())) {
+			t.Skipf("Skipped because This test case is only needed to be tested when the SMCP version is the latest version available in the Operator. Operator version: %s SMCP version: %s", env.GetOperatorVersion(), env.GetSMCPVersion())
 		}
 
 		t.Cleanup(func() {

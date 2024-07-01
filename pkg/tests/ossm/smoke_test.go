@@ -84,10 +84,11 @@ func TestSmoke(t *testing.T) {
 			oc.RestartAllPodsAndWaitReady(t, ns)
 
 			checkSMCP(t, ns)
-
-			t.LogStep("Check that previous version CNI resources were pruned and needed resources were preserved")
-			t.Log("Related issue: https://issues.redhat.com/browse/OSSM-2101")
-			assertResourcesPruneUpgrade(t, fromVersion, toVersion)
+			if env.GetOperatorVersion().GreaterThanOrEqual(version.OPERATOR_2_6_0) {
+				t.LogStep("Check that previous version CNI resources were pruned and needed resources were preserved")
+				t.Log("Related issue: https://issues.redhat.com/browse/OSSM-2101")
+				assertResourcesPruneUpgrade(t, fromVersion, toVersion)
+			}
 		})
 
 		t.NewSubTest(fmt.Sprintf("install smcp %s", toVersion)).Run(func(t TestHelper) {
@@ -123,10 +124,11 @@ func TestSmoke(t *testing.T) {
 						"SMCP resources are deleted",
 						"Still waiting for resources to be deleted from namespace"))
 			})
-
-			t.LogStep("Check that CNI resources were pruned")
-			t.Log("Related issue: https://issues.redhat.com/browse/OSSM-2101")
-			assertResourcePruneDelete(t, toVersion)
+			if env.GetOperatorVersion().GreaterThanOrEqual(version.OPERATOR_2_6_0) {
+				t.LogStep("Check that CNI resources were pruned")
+				t.Log("Related issue: https://issues.redhat.com/browse/OSSM-2101")
+				assertResourcePruneDelete(t, toVersion)
+			}
 		})
 
 	})

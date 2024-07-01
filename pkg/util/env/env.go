@@ -54,7 +54,7 @@ func GetSMCPVersion() version.Version {
 }
 
 func GetOperatorVersion() version.Version {
-	return version.ParseVersion(getenv("OPERATOR_VERSION", "v2.6"))
+	return version.ParseVersion(getenv("OPERATOR_VERSION", "2.6.0"))
 }
 
 func GetArch() string {
