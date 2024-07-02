@@ -434,16 +434,16 @@ func (o OC) GetYaml(t test.TestHelper, ns, kind, name string, checks ...common.C
 	return val
 }
 
-func (o OC) GetJson(t test.TestHelper, ns, kind, name, jsonPath string) string {
+func (o OC) GetJson(t test.TestHelper, ns, kind, name, jsonPath string, checks ...common.CheckFunc) string {
 	t.T().Helper()
 	var jsonString string
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
 		if jsonPath == "" {
-			jsonString = shell.Execute(t, fmt.Sprintf(`oc %s get %s %s -o json`, nsFlag(ns), kind, name))
+			jsonString = shell.Execute(t, fmt.Sprintf(`oc %s get %s %s -o json`, nsFlag(ns), kind, name), checks...)
 		} else {
 			jsonPath = strings.ReplaceAll(jsonPath, "'", `'"'"'`)
-			jsonString = shell.Execute(t, fmt.Sprintf(`oc %s get %s %s -o jsonpath='%s'`, nsFlag(ns), kind, name, jsonPath))
+			jsonString = shell.Execute(t, fmt.Sprintf(`oc %s get %s %s -o jsonpath='%s'`, nsFlag(ns), kind, name, jsonPath), checks...)
 		}
 	})
 	return jsonString

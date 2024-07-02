@@ -25,6 +25,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/cni"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
@@ -47,7 +48,6 @@ var (
 func TestSmoke(t *testing.T) {
 	NewTest(t).Groups(ARM, Full, Smoke, InterOp, Disconnected).Run(func(t TestHelper) {
 		t.Log("Smoke Test for SMCP: deploy, upgrade, bookinfo and uninstall")
-		ns := "bookinfo"
 
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, meshNamespace)
@@ -61,7 +61,7 @@ func TestSmoke(t *testing.T) {
 		t.NewSubTest(fmt.Sprintf("upgrade %s to %s", fromVersion, toVersion)).Run(func(t TestHelper) {
 			t.Logf("This test checks whether SMCP becomes ready after it's upgraded from %s to %s and bookinfo is still working after the upgrade and also test a clean installation of the target SMCP", fromVersion, toVersion)
 			t.Cleanup(func() {
-				app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+				app.Uninstall(t, app.Bookinfo(ns.Bookinfo), app.SleepNoSidecar(ns.Bookinfo))
 				oc.RecreateNamespace(t, meshNamespace)
 			})
 
@@ -69,21 +69,21 @@ func TestSmoke(t *testing.T) {
 			assertSMCPDeploysAndIsReady(t, fromVersion)
 
 			t.LogStep("Install bookinfo pods and sleep pod")
-			app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+			app.InstallAndWaitReady(t, app.Bookinfo(ns.Bookinfo), app.SleepNoSidecar(ns.Bookinfo))
 
 			t.LogStep("Check if bookinfo traffic flows through the Proxy")
-			assertTrafficFlowsThroughProxy(t, ns)
+			assertTrafficFlowsThroughProxy(t, ns.Bookinfo)
 
 			t.LogStepf("Upgrade SMCP from %s to %s", fromVersion, toVersion)
 			assertSMCPDeploysAndIsReady(t, toVersion)
 
 			t.LogStep("Check if bookinfo productpage is running through the Proxy after the upgrade")
-			assertTrafficFlowsThroughProxy(t, ns)
+			assertTrafficFlowsThroughProxy(t, ns.Bookinfo)
 
 			t.LogStep("Delete Bookinfo pods to force the update of the sidecar")
-			oc.RestartAllPodsAndWaitReady(t, ns)
+			oc.RestartAllPodsAndWaitReady(t, ns.Bookinfo)
 
-			checkSMCP(t, ns)
+			checkSMCP(t, ns.Bookinfo)
 			if env.GetOperatorVersion().GreaterThanOrEqual(version.OPERATOR_2_6_0) {
 				t.LogStep("Check that previous version CNI resources were pruned and needed resources were preserved")
 				t.Log("Related issue: https://issues.redhat.com/browse/OSSM-2101")
@@ -94,16 +94,20 @@ func TestSmoke(t *testing.T) {
 		t.NewSubTest(fmt.Sprintf("install smcp %s", toVersion)).Run(func(t TestHelper) {
 			t.Logf("This test checks whether SMCP %s install the SMCP version", env.GetSMCPVersion())
 			t.Cleanup(func() {
-				app.Uninstall(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+				app.Uninstall(t, app.Bookinfo(ns.Bookinfo), app.SleepNoSidecar(ns.Bookinfo))
 			})
 
 			t.LogStepf("Install SMCP %s", toVersion)
 			assertSMCPDeploysAndIsReady(t, toVersion)
 
 			t.LogStep("Install bookinfo pods and sleep pod")
-			app.InstallAndWaitReady(t, app.Bookinfo(ns), app.SleepNoSidecar(ns))
+			app.InstallAndWaitReady(t, app.Bookinfo(ns.Bookinfo), app.SleepNoSidecar(ns.Bookinfo))
 
-			checkSMCP(t, ns)
+			checkSMCP(t, ns.Bookinfo)
+
+			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_6) {
+				assertJaegerAndTracingSettings(t)
+			}
 		})
 
 		t.NewSubTest(fmt.Sprintf("delete smcp %s", toVersion)).Run(func(t TestHelper) {
@@ -144,6 +148,40 @@ func checkSMCP(t TestHelper, ns string) {
 	t.LogStep("verify proxy startup time. Expected to be less than 10 seconds")
 	t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
 	assertProxiesReadyInLessThan10Seconds(t, ns)
+}
+
+func assertJaegerAndTracingSettings(t TestHelper) {
+	t.LogStep("Verify Jaeger and SMCP tracing settings")
+	t.Log("Related issue: https://issues.redhat.com/browse/OSSM-6391")
+
+	t.Log("Verify SMCP tracing settings")
+	oc.GetJson(t,
+		meshNamespace,
+		"smcp",
+		smcpName,
+		`{.status.appliedValues.istio.tracing.enabled}`,
+		assert.OutputContains("false",
+			"smcp .status.appliedValues.istio.tracing.enabled is false",
+			"smcp .status.appliedValues.istio.tracing.enabled is not set false, but should be"),
+	)
+	oc.GetJson(t,
+		meshNamespace,
+		"smcp",
+		smcpName,
+		`{.status.appliedValues.istio.tracing.provider}`,
+		assert.OutputContains("none",
+			"smcp .status.appliedValues.istio.tracing.provider is none",
+			"smcp .status.appliedValues.istio.tracing.provider is not set none, but should be"),
+	)
+
+	t.Log("Verify that Jaeger resources (Route, Deployment, and Pod) were not created")
+	oc.Get(t,
+		meshNamespace,
+		"routes,deployments,pods", "",
+		assert.OutputDoesNotContain("jaeger",
+			"Jaeger resources (pod, deployment, route) were not found",
+			"Expected no Jaeger resources to be created, but some were found"),
+	)
 }
 
 func assertTrafficFlowsThroughProxy(t TestHelper, ns string) {
