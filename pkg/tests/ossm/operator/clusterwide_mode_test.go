@@ -105,6 +105,10 @@ func TestClusterWideMode(t *testing.T) {
 		})
 
 		t.NewSubTest("Deploy the Kubernetes Gateway API in ClusterWide mode").Run(func(t TestHelper) {
+			if env.GetSMCPVersion().LessThanOrEqual(version.SMCP_2_4) {
+				t.Skip("Deploy the Gateway API in ClusterWide mode failed for SMCP 2.4, https://issues.redhat.com/browse/OSSM-6765")
+			}
+
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, ns.Foo)
 			})
