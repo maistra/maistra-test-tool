@@ -1,6 +1,7 @@
 package ingress
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -18,6 +19,11 @@ import (
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
+type EnvVar struct {
+	Name  string `json:"name"`
+	Value string `json:"value,omitempty"`
+}
+
 func TestGatewayApi(t *testing.T) {
 	NewTest(t).Id("T41").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_3) {
@@ -25,13 +31,50 @@ func TestGatewayApi(t *testing.T) {
 		}
 
 		smcpName := env.GetDefaultSMCPName()
+		istiodDeployment := fmt.Sprintf("istiod-%s", smcpName)
 
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install Gateway API CRD's")
 		gatewayapi.InstallSupportedVersion(t, env.GetSMCPVersion())
+		t.Cleanup(func() {
+			gatewayapi.UninstallSupportedVersion(t, env.GetSMCPVersion())
+		})
 
 		oc.CreateNamespace(t, ns.Foo)
+
+		t.NewSubTest("Check default Gateway API settings").Run(func(t TestHelper) {
+			t.Log("Check Gateway API is disabled by default")
+
+			t.LogStep("Check istiod deployment environment variables")
+			expectedValue := "false"
+			istiodEnvs := oc.GetJson(t, meshNamespace, "deployment", istiodDeployment, `{.spec.template.spec.containers[0].env}`)
+			var istiodEnvVars []EnvVar
+			if err := json.Unmarshal([]byte(istiodEnvs), &istiodEnvVars); err != nil {
+				t.Fatalf("Failed to unmarshal JSON: %v", err)
+			}
+
+			checkedVars := 0
+			for _, envVar := range istiodEnvVars {
+				if envVar.Name == "PILOT_ENABLE_GATEWAY_API" ||
+					envVar.Name == "PILOT_ENABLE_GATEWAY_API_STATUS" ||
+					envVar.Name == "PILOT_ENABLE_GATEWAY_API_DEPLOYMENT_CONTROLLER" {
+					checkedVars++
+					if envVar.Value != expectedValue {
+						t.Errorf("Expected %s to be %s, got %s", envVar.Name, expectedValue, envVar.Value)
+					} else {
+						t.Logf("Env %s is set to %s", envVar.Name, envVar.Value)
+					}
+					if checkedVars == 3 {
+						break
+					}
+				}
+			}
+
+			if checkedVars != 3 {
+				t.Errorf("Expected 3 PILOT_ENABLE_GATEWAY_API vars to be checked, got %d", checkedVars)
+			}
+		})
 
 		t.NewSubTest("Deploy the Kubernetes Gateway API").Run(func(t TestHelper) {
 
@@ -77,9 +120,9 @@ func TestGatewayApi(t *testing.T) {
 			}
 
 			t.LogStep("Deploy the Gateway API configuration including a single exposed route (i.e., /get)")
-			oc.ApplyTemplate(t, ns.Foo, gatewayAndRouteYAML, map[string]string{"GatewayClassName": "istio"})
+			oc.ApplyTemplate(t, ns.Foo, gatewayapi.GatewayAndRouteYAML, map[string]string{"GatewayClassName": "istio"})
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns.Foo, gatewayAndRouteYAML, map[string]string{"GatewayClassName": "istio"})
+				oc.DeleteFromTemplate(t, ns.Foo, gatewayapi.GatewayAndRouteYAML, map[string]string{"GatewayClassName": "istio"})
 			})
 
 			t.LogStep("Wait for Gateway to be ready")
@@ -123,9 +166,9 @@ func TestGatewayApi(t *testing.T) {
 			oc.WaitSMMRReady(t, meshNamespace)
 
 			t.LogStep("Deploy the Gateway API configuration including a single exposed route (i.e., /get)")
-			oc.ApplyTemplate(t, ns.Foo, gatewayAndRouteYAML, map[string]string{"GatewayClassName": "ocp"})
+			oc.ApplyTemplate(t, ns.Foo, gatewayapi.GatewayAndRouteYAML, map[string]string{"GatewayClassName": "ocp"})
 			t.Cleanup(func() {
-				oc.DeleteFromTemplate(t, ns.Foo, gatewayAndRouteYAML, map[string]string{"GatewayClassName": "ocp"})
+				oc.DeleteFromTemplate(t, ns.Foo, gatewayapi.GatewayAndRouteYAML, map[string]string{"GatewayClassName": "ocp"})
 			})
 
 			t.LogStep("Wait for Gateway to be ready")
@@ -145,42 +188,6 @@ func TestGatewayApi(t *testing.T) {
 
 	})
 }
-
-const gatewayAndRouteYAML = `
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: Gateway
-metadata:
-  annotations:
-    networking.istio.io/service-type: "ClusterIP"
-  name: gateway
-spec:
-  gatewayClassName: {{ .GatewayClassName }}
-  listeners:
-  - name: default
-    hostname: "*.example.com"
-    port: 8080
-    protocol: HTTP
-    allowedRoutes:
-      namespaces:
-        from: All
----
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: HTTPRoute
-metadata:
-  name: http
-spec:
-  parentRefs:
-  - name: gateway
-    namespace: foo
-  hostnames: ["httpbin.example.com"]
-  rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /get
-    backendRefs:
-    - name: httpbin
-      port: 8000`
 
 const gatewayControllerProfile = `
 apiVersion: maistra.io/v2

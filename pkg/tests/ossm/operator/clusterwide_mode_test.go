@@ -2,6 +2,7 @@ package operator
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -15,12 +16,15 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/gatewayapi"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
-	test "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
+
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 type ServiceMeshMemberRoll struct {
@@ -29,8 +33,13 @@ type ServiceMeshMemberRoll struct {
 	} `yaml:"status"`
 }
 
+type EnvVar struct {
+	Name  string `json:"name"`
+	Value string `json:"value,omitempty"`
+}
+
 func TestClusterWideMode(t *testing.T) {
-	test.NewTest(t).Groups(test.Full, test.Disconnected, test.ARM).MinVersion(version.SMCP_2_4).Run(func(t test.TestHelper) {
+	NewTest(t).Groups(Full, Disconnected, ARM).MinVersion(version.SMCP_2_4).Run(func(t TestHelper) {
 		t.Log("This test verifies the behavior of SMCP.spec.mode: ClusterWide")
 
 		smcpName := env.GetDefaultSMCPName()
@@ -49,9 +58,104 @@ func TestClusterWideMode(t *testing.T) {
 		oc.ApplyTemplate(t, meshNamespace, clusterWideSMCP, ossm.DefaultSMCP())
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
-		t.NewSubTest("SMMR auto-creation").Run(func(t test.TestHelper) {
+		t.NewSubTest("check Gateway API settings").Run(func(t TestHelper) {
+			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_6) {
+				t.Log("Check Gateway API is enabled by default for SMCP >= 2.6")
+			} else {
+				t.Log("Check Gateway API is disabled by default")
+			}
+			t.Log("Related issue: https://issues.redhat.com/browse/OSSM-6693")
+
+			t.LogStep("Check istiod deployment environment variables")
+			expectedValue := "false"
+			istiodEnvs := oc.GetJson(t, meshNamespace, "deployment", istiodDeployment, `{.spec.template.spec.containers[0].env}`)
+			var istiodEnvVars []EnvVar
+			if err := json.Unmarshal([]byte(istiodEnvs), &istiodEnvVars); err != nil {
+				t.Fatalf("Failed to unmarshal JSON: %v", err)
+			}
+
+			checkedVars := 0
+			for _, envVar := range istiodEnvVars {
+				if envVar.Name == "PILOT_ENABLE_GATEWAY_API" ||
+					envVar.Name == "PILOT_ENABLE_GATEWAY_API_STATUS" ||
+					envVar.Name == "PILOT_ENABLE_GATEWAY_API_DEPLOYMENT_CONTROLLER" {
+					checkedVars++
+					if envVar.Value != expectedValue {
+						t.Errorf("Expected %s to be %s, got %s", envVar.Name, expectedValue, envVar.Value)
+					} else {
+						t.Logf("Env %s is set to %s", envVar.Name, envVar.Value)
+					}
+					if checkedVars == 3 {
+						break
+					}
+				}
+			}
+
+			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_6) {
+				if checkedVars != 0 {
+					t.Errorf("Expected 0 PILOT_ENABLE_GATEWAY_API variables to be checked, got %d", checkedVars)
+				} else {
+					t.Log("All variables were checked, PILOT_ENABLE_GATEWAY_API variables were not detected")
+				}
+			} else {
+				if checkedVars != 3 {
+					t.Errorf("Expected 3 PILOT_ENABLE_GATEWAY_API vars to be checked, got %d", checkedVars)
+				}
+			}
+		})
+
+		t.NewSubTest("Deploy the Kubernetes Gateway API in ClusterWide mode").Run(func(t TestHelper) {
+			t.Cleanup(func() {
+				oc.RecreateNamespace(t, ns.Foo)
+			})
+
+			t.LogStep("Install Gateway API CRD's")
+			gatewayapi.InstallSupportedVersion(t, env.GetSMCPVersion())
+			t.Cleanup(func() {
+				gatewayapi.UninstallSupportedVersion(t, env.GetSMCPVersion())
+			})
+
+			t.LogStep("Install httpbin")
+			app.InstallAndWaitReady(t, app.Httpbin(ns.Foo))
+
+			if env.GetSMCPVersion().LessThan(version.SMCP_2_6) {
+				t.LogStep("Enable the Gateway for SMCP < 2.6")
+				oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
+        spec:
+          techPreview:
+            gatewayAPI:
+              enabled: true`)
+
+				t.Cleanup(func() {
+					oc.Patch(t, meshNamespace, "smcp", smcpName, "json",
+						`[{"op": "remove", "path": "/spec/techPreview"}]`)
+				})
+			}
+
+			t.LogStep("Deploy the Gateway API configuration including a single exposed route (i.e., /get)")
+			oc.ApplyTemplate(t, ns.Foo, gatewayapi.GatewayAndRouteYAML, map[string]string{"GatewayClassName": "istio"})
+			t.Cleanup(func() {
+				oc.DeleteFromTemplate(t, ns.Foo, gatewayapi.GatewayAndRouteYAML, map[string]string{"GatewayClassName": "istio"})
+			})
+
+			t.LogStep("Wait for Gateway to be ready")
+			oc.WaitCondition(t, ns.Foo, "Gateway", "gateway", gatewayapi.GetWaitingCondition(env.GetSMCPVersion()))
+
+			t.LogStep("Verfiy the GatewayApi access the httpbin service using curl")
+			retry.UntilSuccess(t, func(t TestHelper) {
+				oc.Exec(t,
+					pod.MatchingSelector("app=istio-ingressgateway", meshNamespace),
+					"istio-proxy",
+					fmt.Sprintf("curl http://%s.foo.svc.cluster.local:8080/get -H Host:httpbin.example.com -s -o /dev/null -w %%{http_code}", gatewayapi.GetDefaultServiceName(env.GetSMCPVersion(), "gateway", "istio")),
+					assert.OutputContains("200",
+						"Access the httpbin service with GatewayApi",
+						"Unable to access the httpbin service with GatewayApi"))
+			})
+		})
+
+		t.NewSubTest("SMMR auto-creation").Run(func(t TestHelper) {
 			t.LogStep("Check whether SMMR is created automatically")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				oc.Get(t, meshNamespace, "servicemeshmemberroll", "default",
 					assert.OutputContains("default",
 						"The SMMR was created immediately after the SMCP was created",
@@ -59,7 +163,7 @@ func TestClusterWideMode(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("default namespace selector").Run(func(t test.TestHelper) {
+		t.NewSubTest("default namespace selector").Run(func(t TestHelper) {
 			t.Log("Check whether namespaces with the label istio-injection=enabled become members automatically")
 
 			t.LogStep("Create 5 member namespaces")
@@ -74,10 +178,10 @@ func TestClusterWideMode(t *testing.T) {
 
 		})
 
-		t.NewSubTest("RoleBindings verification").Run(func(t test.TestHelper) {
+		t.NewSubTest("RoleBindings verification").Run(func(t TestHelper) {
 			t.Log("Related to OSSM-3468")
 			t.LogStep("Check that Rolebindings are not created in the member namespaces")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				oc.Get(t, "member-0", "rolebindings", "",
 					assert.OutputDoesNotContain("istiod-clusterrole-basic-istio-system",
 						"The Rolebings does not contains istiod-clusterrole-basic-istio-system RoleBinding",
@@ -88,7 +192,7 @@ func TestClusterWideMode(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("validate privileges for SMMR case 1").Run(func(t test.TestHelper) {
+		t.NewSubTest("validate privileges for SMMR case 1").Run(func(t TestHelper) {
 			t.Log("Case 1: user has admin role only in mesh namespace. Expectation: user can't edit SMMR with member-0 and member-1 namespaces")
 
 			t.Cleanup(func() {
@@ -116,7 +220,7 @@ spec:
 
 		})
 
-		t.NewSubTest("validate privileges for SMMR case 2").Run(func(t test.TestHelper) {
+		t.NewSubTest("validate privileges for SMMR case 2").Run(func(t TestHelper) {
 			t.Log("Case 2: user has admin role only in mesh namespace. Expectation: user can't edit SMMR with * wildcard")
 
 			t.Cleanup(func() {
@@ -144,7 +248,7 @@ spec:
 
 		})
 
-		t.NewSubTest("validate privileges for SMMR case 3").Run(func(t test.TestHelper) {
+		t.NewSubTest("validate privileges for SMMR case 3").Run(func(t TestHelper) {
 			t.Log("Case 3: user has admin role in mesh, member-0 and member-1 namespaces. Expectation: user can edit SMMR")
 
 			t.Cleanup(func() {
@@ -171,7 +275,7 @@ spec:
 					"User is not allowed to update SMMR at the cluster scope"))
 		})
 
-		t.NewSubTest("validate privileges for SMMR case 4").Run(func(t test.TestHelper) {
+		t.NewSubTest("validate privileges for SMMR case 4").Run(func(t TestHelper) {
 			t.Log("Case 4: user has admin role in member-0 and member-1 namespaces. Expectation: user can't edit SMMR")
 
 			t.Cleanup(func() {
@@ -198,7 +302,7 @@ spec:
 					"User is allowed to update SMMR"))
 		})
 
-		t.NewSubTest("customize SMMR").Run(func(t test.TestHelper) {
+		t.NewSubTest("customize SMMR").Run(func(t TestHelper) {
 			t.Log("Check whether the SMMR can be modified")
 
 			t.LogStep("Configure static members member-0 and member-1 in SMMR")
@@ -212,7 +316,7 @@ spec:
 			assertNonMembers(t, meshNamespace, notInMembersList)
 		})
 
-		t.NewSubTest("verify memberselector operator IN").Run(func(t test.TestHelper) {
+		t.NewSubTest("verify memberselector operator IN").Run(func(t TestHelper) {
 			t.Log("Check the use of IN in memberselector")
 
 			t.LogStep("Check the use of IN operator in member selector matchExpressions")
@@ -226,7 +330,7 @@ spec:
 			assertNonMembers(t, meshNamespace, notInMembersList)
 		})
 
-		t.NewSubTest("verify multiple memberselector").Run(func(t test.TestHelper) {
+		t.NewSubTest("verify multiple memberselector").Run(func(t TestHelper) {
 			t.Log("Check if is possible to use multiple memberselector at the same time")
 
 			t.LogStep("Check the use of multiple selector at the same time")
@@ -240,7 +344,7 @@ spec:
 			assertNonMembers(t, meshNamespace, notInMembersList)
 		})
 
-		t.NewSubTest("verify memberselector operator NOTIN").Run(func(t test.TestHelper) {
+		t.NewSubTest("verify memberselector operator NOTIN").Run(func(t TestHelper) {
 			t.Log("Check the use of NOTIN in memberselector")
 
 			t.LogStep("Check the use of NotIn operator in member selector matchExpressions")
@@ -262,7 +366,7 @@ spec:
 			assertMembers(t, meshNamespace, membersList)
 		})
 
-		t.NewSubTest("verify sidecar injection").Run(func(t test.TestHelper) {
+		t.NewSubTest("verify sidecar injection").Run(func(t TestHelper) {
 			t.Log("Check if sidecar injeection works properly in clustewide mode")
 
 			t.Cleanup(func() {
@@ -282,7 +386,7 @@ spec:
 					"Expected 2 pods with sidecar injected, but that wasn't the case"))
 		})
 
-		t.NewSubTest("cluster-scoped watches in istiod").Run(func(t test.TestHelper) {
+		t.NewSubTest("cluster-scoped watches in istiod").Run(func(t TestHelper) {
 			t.Log("Check whether istiod watches API resources at the cluster scope")
 
 			t.LogStep("Enable Kubernetes API request logging in istiod Deployment")
@@ -295,7 +399,7 @@ spec:
 			oc.WaitDeploymentRolloutComplete(t, meshNamespace, istiodDeployment)
 
 			t.LogStep("Check whether the number of API requests on istiod startup is in the expected range for cluster-wide mode")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				oc.Logs(t,
 					pod.MatchingSelector("app=istiod", meshNamespace),
 					"discovery",
@@ -303,7 +407,7 @@ spec:
 			})
 		})
 
-		t.NewSubTest("verify that namespaces without istio-enable label are not included to the SMMR list").Run(func(t test.TestHelper) {
+		t.NewSubTest("verify that namespaces without istio-enable label are not included to the SMMR list").Run(func(t TestHelper) {
 			membersList := []string{"member-1", "member-3"}
 			notInMembersList := []string{"member-0", "member-2", "member-4"}
 
@@ -344,12 +448,12 @@ spec:
 			assertNonMembers(t, meshNamespace, notInMembersList)
 		})
 
-		t.NewSubTest("verify strict mTLS across service mesh members and not members").Run(func(t test.TestHelper) {
+		t.NewSubTest("verify strict mTLS across service mesh members and not members").Run(func(t TestHelper) {
 			t.Log("Test strict mTLS across service mesh members")
 			t.Log("Doc: https://docs.openshift.com/container-platform/4.14/service_mesh/v2x/ossm-security.html#ossm-security-enabling-strict-mtls_ossm-security")
 
 			t.Cleanup(func() {
-				oc.RecreateNamespace(t, "foo", "legacy")
+				oc.RecreateNamespace(t, ns.Foo, ns.Legacy)
 				oc.Patch(t,
 					meshNamespace, "smcp", smcpName, "merge",
 					`{"spec":{"security":{"dataPlane":{"mtls":false}}}}`,
@@ -363,9 +467,9 @@ spec:
 
 			t.LogStep("Install sleep in foo and legacy namespaces")
 			app.InstallAndWaitReady(t,
-				app.Sleep("foo"),
-				app.Httpbin("foo"),
-				app.HttpbinNoSidecar("legacy"))
+				app.Sleep(ns.Foo),
+				app.Httpbin(ns.Foo),
+				app.HttpbinNoSidecar(ns.Legacy))
 
 			t.LogStep("Apply SMCP with STRICT mTLS true")
 			oc.Patch(t,
@@ -376,7 +480,7 @@ spec:
 
 			t.LogStep("Check if mTLS is enabled in foo")
 			app.ExecInSleepPod(t,
-				"foo",
+				ns.Foo,
 				"curl http://httpbin.foo:8000/headers -s",
 				assert.OutputContains("X-Forwarded-Client-Cert",
 					"mTLS is enabled in namespace foo (X-Forwarded-Client-Cert header is present)",
@@ -384,14 +488,14 @@ spec:
 
 			t.LogStep("Check that mTLS is NOT enabled in legacy")
 			app.ExecInSleepPod(t,
-				"foo",
+				ns.Foo,
 				"curl http://httpbin.legacy:8000/headers -s",
 				assert.OutputDoesNotContain("X-Forwarded-Client-Cert",
 					"mTLS is not enabled in namespace legacy (X-Forwarded-Client-Cert header is not present)",
 					"mTLS is enabled in namespace legacy, but shouldn't be (X-Forwarded-Client-Cert header is present when it shouldn't be)"))
 		})
 
-		t.NewSubTest("cluster wide works with profiles").Run(func(t test.TestHelper) {
+		t.NewSubTest("cluster wide works with profiles").Run(func(t TestHelper) {
 			t.Log("Check whether the cluster wide feature works with profiles")
 
 			t.LogStep("Delete SMCP and SMMR")
@@ -406,7 +510,7 @@ spec:
 			oc.WaitSMCPReady(t, meshNamespace, "cluster-wide")
 
 			t.LogStep("Check whether SMMR is created automatically")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				oc.Get(t, meshNamespace, "servicemeshmemberroll", "default",
 					assert.OutputContains("default",
 						"The SMMR was created immediately after the SMCP was created",
@@ -425,20 +529,20 @@ spec:
 	})
 }
 
-func assertMembers(t test.TestHelper, meshNamespace string, membersList []string) {
-	retry.UntilSuccess(t, func(t test.TestHelper) {
+func assertMembers(t TestHelper, meshNamespace string, membersList []string) {
+	retry.UntilSuccess(t, func(t TestHelper) {
 		verifyMembersInSMMR(t, meshNamespace, membersList, true)
 	})
 }
 
-func assertNonMembers(t test.TestHelper, meshNamespace string, membersList []string) {
-	retry.UntilSuccess(t, func(t test.TestHelper) {
+func assertNonMembers(t TestHelper, meshNamespace string, membersList []string) {
+	retry.UntilSuccess(t, func(t TestHelper) {
 		verifyMembersInSMMR(t, meshNamespace, membersList, false)
 	})
 }
 
 // verifyMembersInSMMR verifies whether the SMMR has or not have the members provided in the members list
-func verifyMembersInSMMR(t test.TestHelper, meshNamespace string, membersList []string, shouldExist bool) {
+func verifyMembersInSMMR(t TestHelper, meshNamespace string, membersList []string, shouldExist bool) {
 	smmrYaml := oc.GetYaml(t, meshNamespace, "smmr", "default")
 	var smmr ServiceMeshMemberRoll
 	err := yaml.Unmarshal([]byte(smmrYaml), &smmr)
@@ -471,11 +575,11 @@ func verifyMembersInSMMR(t test.TestHelper, meshNamespace string, membersList []
 	}
 }
 
-func deleteMemberNamespaces(t test.TestHelper, count int) {
+func deleteMemberNamespaces(t TestHelper, count int) {
 	oc.DeleteNamespace(t, util.GenerateStrings("member-", count)...)
 }
 
-func createMemberNamespaces(t test.TestHelper, count int) {
+func createMemberNamespaces(t TestHelper, count int) {
 	var namespaces []string
 	yaml := ""
 	for i := 0; i < count; i++ {
@@ -495,7 +599,7 @@ metadata:
 }
 
 func assertNumberOfAPIRequestsBetween(min, max int) common.CheckFunc {
-	return func(t test.TestHelper, output string) {
+	return func(t TestHelper, output string) {
 		numberOfRequests := 0
 		scanner := bufio.NewScanner(strings.NewReader(output))
 		for scanner.Scan() {
@@ -512,7 +616,7 @@ func assertNumberOfAPIRequestsBetween(min, max int) common.CheckFunc {
 	}
 }
 
-func createUserAndAddAdminRole(t test.TestHelper, namespaces ...string) {
+func createUserAndAddAdminRole(t TestHelper, namespaces ...string) {
 	t.LogStep("Create user user1")
 	shell.Execute(t,
 		"oc create user user1",
@@ -526,7 +630,7 @@ func createUserAndAddAdminRole(t test.TestHelper, namespaces ...string) {
 	}
 }
 
-func deleteUserAndAdminRole(t test.TestHelper, namespaces ...string) {
+func deleteUserAndAdminRole(t TestHelper, namespaces ...string) {
 	t.LogStep("Delete user user1")
 	shell.Execute(t,
 		"oc delete user user1",
