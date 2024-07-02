@@ -10,6 +10,10 @@ func InstallSupportedVersion(t test.TestHelper, smcp version.Version) {
 	shell.Executef(t, "kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null && echo 'Gateway API CRDs already installed' || kubectl apply -k %s", getSupportedVersion(smcp))
 }
 
+func UninstallSupportedVersion(t test.TestHelper, smcp version.Version) {
+	shell.Executef(t, "kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null && kubectl delete -k %s || echo 'Gateway API CRDs not found, nothing to delete'", getSupportedVersion(smcp))
+}
+
 func getSupportedVersion(smcp version.Version) string {
 	switch smcp {
 	case version.SMCP_2_3:
@@ -54,3 +58,39 @@ func GetWaitingCondition(smcp version.Version) string {
 		return "Programmed"
 	}
 }
+
+const GatewayAndRouteYAML = `
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  annotations:
+    networking.istio.io/service-type: "ClusterIP"
+  name: gateway
+spec:
+  gatewayClassName: {{ .GatewayClassName }}
+  listeners:
+  - name: default
+    hostname: "*.example.com"
+    port: 8080
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: http
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: foo
+  hostnames: ["httpbin.example.com"]
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /get
+    backendRefs:
+    - name: httpbin
+      port: 8000`
