@@ -19,12 +19,13 @@ var (
 	rootCA string
 
 	certManagerOperatorNs = "cert-manager-operator"
+	certManagerCSVName    = "cert-manager-operator"
 	certManagerNs         = "cert-manager"
-	certmanagerVersion    = "cert-manager-operator.v1.13.0"
+	certmanagerMinVersion = certManagerCSVName + ".v1.13.0"
 )
 
 func InstallIfNotExist(t test.TestHelper) {
-	if operator.OperatorExists(t, certmanagerVersion) {
+	if operator.OperatorExists(t, certmanagerMinVersion) {
 		t.Log("cert-manager-operator is already installed")
 	} else {
 		t.Log("cert-manager-operator is not installed, starting installation")
@@ -34,7 +35,7 @@ func InstallIfNotExist(t test.TestHelper) {
 
 func install(t test.TestHelper) {
 	installOperator(t)
-	waitOperatorSucceded(t, certManagerOperatorNs)
+	waitOperatorSucceded(t)
 
 	t.LogStep("Create root ca")
 	oc.ApplyString(t, certManagerNs, rootCA)
@@ -43,7 +44,8 @@ func install(t test.TestHelper) {
 
 func Uninstall(t test.TestHelper) {
 	oc.DeleteFromString(t, certManagerNs, rootCA)
-	oc.DeleteFromTemplate(t, certManagerOperatorNs, certManagerOperator, map[string]string{"Version": certmanagerVersion})
+	exactOperatorVersion := operator.GetCsvName(t, certManagerOperatorNs, certManagerCSVName)
+	oc.DeleteFromTemplate(t, certManagerOperatorNs, certManagerOperator, map[string]string{"Version": exactOperatorVersion})
 	oc.DeleteNamespace(t, certManagerOperatorNs)
 	oc.DeleteNamespace(t, certManagerNs)
 }
@@ -53,10 +55,12 @@ func installOperator(t test.TestHelper) {
 	oc.CreateNamespace(t, certManagerOperatorNs)
 
 	t.LogStep("Install cert-manager-operator")
-	oc.ApplyTemplate(t, certManagerOperatorNs, certManagerOperator, map[string]string{"Version": certmanagerVersion})
+	oc.ApplyTemplate(t, certManagerOperatorNs, certManagerOperator, map[string]string{"Version": certmanagerMinVersion})
+	operator.WaitForCsvReady(t, certManagerCSVName)
 }
 
-func waitOperatorSucceded(t test.TestHelper, certManagerOperatorNs string) {
-	operator.WaitForOperatorReady(t, certManagerOperatorNs, "name=cert-manager-operator", certmanagerVersion)
+func waitOperatorSucceded(t test.TestHelper) {
+	fullCsvName := operator.GetCsvName(t, certManagerOperatorNs, certManagerCSVName)
+	operator.WaitForOperatorReady(t, certManagerOperatorNs, "name="+certManagerCSVName, fullCsvName)
 	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(70).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector("app=cert-manager", certManagerNs))
 }
