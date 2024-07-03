@@ -155,8 +155,10 @@ func TestExcludeCniFromNode(t *testing.T) {
 		}
 		t.Cleanup(func() {
 			oc.RemoveLabel(t, "", "node", workername, "maistra.io/exclude-cni")
+			oc.RecreateNamespace(t, meshNamespace)
 		})
-
+		// CNI pods are created after the control plane
+		DeployControlPlane(t)
 		workername = pickWorkerNode(t)
 		cniPodApp := fmt.Sprintf("istio-cni-node-v%d-%d", env.GetSMCPVersion().Major, env.GetSMCPVersion().Minor)
 

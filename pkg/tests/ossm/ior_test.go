@@ -75,14 +75,17 @@ func TestIOR(t *testing.T) {
 			})
 		}
 
+		// workaround for OSSM-6767, make sure that SMCP doesn't exist from previous test run
+		oc.RecreateNamespace(t, meshNamespace)
+
 		DeployControlPlane(t)
 
-		t.NewSubTest("check IOR off by default v2.5").Run(func(t test.TestHelper) {
+		t.NewSubTest("check IOR off by default from v2.5").Run(func(t test.TestHelper) {
 			if env.GetSMCPVersion().LessThan(version.SMCP_2_5) {
 				t.Skip("Skipping until 2.5")
 			} else {
 				if getIORSetting(t, meshNamespace, meshName) != "false" {
-					t.Fatal("Expect to find IOR enabled by default in v2.5+, but it is currently disabled")
+					t.Fatal("Expect to find IOR disabled by default in v2.5+, but it is currently enabled")
 				} else {
 					t.LogSuccess("Got the expected false for IOR setting")
 				}
