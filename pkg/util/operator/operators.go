@@ -17,6 +17,16 @@ func GetCsvName(t test.TestHelper, operatorNamespace string, partialName string)
 	return strings.TrimSpace(output)
 }
 
+func WaitForCsvReady(t test.TestHelper, partialName string) {
+	t.Logf("Waiting for csv %s is ready", partialName)
+	retry.UntilSuccessWithOptions(t, retry.Options().DelayBetweenAttempts(1*time.Second).MaxAttempts(20), func(t test.TestHelper) {
+		output := shell.Execute(t, fmt.Sprintf(`oc get csv -A -o custom-columns="NAME:.metadata.name" |grep %s ||true`, partialName))
+		if output == "" {
+			t.Errorf("CSV %s is not ready yet", partialName)
+		}
+	})
+}
+
 func OperatorExists(t test.TestHelper, csvVersion string) bool {
 	output := shell.Execute(t, fmt.Sprintf(`oc get csv -A -o custom-columns="NAME:.metadata.name,REPLACES:.spec.replaces" |grep %s ||true`, csvVersion))
 	return strings.Contains(output, csvVersion)
