@@ -33,6 +33,7 @@ func TestInitContainerNotRemovedDuringInjection(t *testing.T) {
 
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Bookinfo)
+			oc.RecreateNamespace(t, meshNamespace)
 		})
 
 		DeployControlPlane(t)
