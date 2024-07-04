@@ -60,7 +60,8 @@ func installOperator(t test.TestHelper) {
 }
 
 func waitOperatorSucceded(t test.TestHelper) {
-	fullCsvName := operator.GetCsvName(t, certManagerOperatorNs, certManagerCSVName)
-	operator.WaitForOperatorReady(t, certManagerOperatorNs, "name="+certManagerCSVName, fullCsvName)
+	// waiting for operator
+	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(70).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector("name="+certManagerCSVName, certManagerOperatorNs))
+	// waiting for control plane
 	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(70).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector("app=cert-manager", certManagerNs))
 }
