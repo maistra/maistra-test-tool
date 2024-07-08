@@ -3,6 +3,8 @@ kind: ServiceMeshControlPlane
 metadata:
   name: {{ .Name }}
 spec:
+  policy:
+    type: Istiod
   addons:
     grafana:
       enabled: false
