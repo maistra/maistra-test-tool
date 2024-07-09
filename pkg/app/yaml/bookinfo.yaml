@@ -124,7 +124,6 @@ spec:
         version: v1
     spec:
       serviceAccountName: bookinfo-ratings
-      terminationGracePeriodSeconds: 0  # TODO: remove when ratings honors SIGINT
       containers:
       - name: ratings
         image: {{ image "bookinfo-ratings-v1" }}
@@ -318,6 +317,9 @@ spec:
   template:
     metadata:
       annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9080"
+        prometheus.io/path: "/metrics"
         sidecar.istio.io/inject: "true"
       labels:
         app: productpage
