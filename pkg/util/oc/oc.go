@@ -85,6 +85,16 @@ func DeleteResource(t test.TestHelper, ns string, kind string, name ...string) {
 	DefaultOC.DeleteResource(t, ns, kind, name...)
 }
 
+func GetResouceNameByLabel(t test.TestHelper, ns string, kind string, label string) string {
+	t.T().Helper()
+	return DefaultOC.GetResouceNameByLabel(t, ns, kind, label)
+}
+
+func ResourceByLabelExists(t test.TestHelper, ns string, kind string, label string) bool {
+	t.T().Helper()
+	return DefaultOC.ResourceByLabelExists(t, ns, kind, label)
+}
+
 func DeleteNamespace(t test.TestHelper, namespaces ...string) {
 	t.T().Helper()
 	DefaultOC.DeleteNamespace(t, namespaces...)
