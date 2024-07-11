@@ -90,3 +90,16 @@ ext-authz:
   p: quay.io/maistra/ext-authz:0.0-ibm-p
   z: quay.io/maistra/ext-authz:1.1-ibm-z
   arm64: quay.io/maistra/ext-authz:arm64
+
+minio:
+  x86: quay.io/minio/minio:latest
+  p: quay.io/minio/minio:latest
+  z: quay.io/minio/minio:latest
+  arm64: quay.io/minio/minio:latest
+
+busybox:
+  x86: quay.io/maistra/busybox:1.28
+  p: quay.io/maistra/busybox:1.28
+  z: quay.io/maistra/busybox:1.28
+  arm64: quay.io/maistra/busybox:1.28
+

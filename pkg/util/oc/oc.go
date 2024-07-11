@@ -95,6 +95,11 @@ func ResourceByLabelExists(t test.TestHelper, ns string, kind string, label stri
 	return DefaultOC.ResourceByLabelExists(t, ns, kind, label)
 }
 
+func AnyResourceExist(t test.TestHelper, ns string, kind string) bool {
+	t.T().Helper()
+	return DefaultOC.AnyResourceExist(t, ns, kind)
+}
+
 func DeleteNamespace(t test.TestHelper, namespaces ...string) {
 	t.T().Helper()
 	DefaultOC.DeleteNamespace(t, namespaces...)

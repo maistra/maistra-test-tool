@@ -72,8 +72,8 @@ func TestCustomPrometheus(t *testing.T) {
 		enableAppMtlsMonitoring(t, customPrometheusNs, ns.Bookinfo)
 
 		t.LogStep("Waiting for installs to complete")
-		fullCsvName := operator.GetCsvName(t, customPrometheusNs, "rhods-prometheus")
-		operator.WaitForOperatorReady(t, customPrometheusNs, "k8s-app=prometheus-operator", fullCsvName)
+		fullCsvName := operator.GetFullCsvName(t, customPrometheusNs, "rhods-prometheus")
+		operator.WaitForOperatorInNamespaceReady(t, customPrometheusNs, "k8s-app=prometheus-operator", fullCsvName)
 		oc.WaitPodReady(t, pod.MatchingSelector("prometheus=prometheus", customPrometheusNs))
 		bookinfoApp.WaitReady(t)
 

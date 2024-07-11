@@ -49,14 +49,14 @@ func TestDeployOnInfraNodes(t *testing.T) {
 		}
 
 		t.Cleanup(func() {
-			csvName := operator.GetCsvName(t, env.GetOperatorNamespace(), "servicemeshoperator")
+			csvName := operator.GetFullCsvName(t, env.GetOperatorNamespace(), "servicemeshoperator")
 			oc.Patch(t, env.GetOperatorNamespace(), "subscription", "servicemeshoperator", "json", `[{"op": "remove", "path": "/spec/config"}]`)
 			oc.TaintNode(t, "-l node-role.kubernetes.io/infra",
 				"node-role.kubernetes.io/infra=reserved:NoSchedule-",
 				"node-role.kubernetes.io/infra=reserved:NoExecute-")
 			oc.RemoveLabel(t, "", "node", workername, "node-role.kubernetes.io/infra")
 			oc.RemoveLabel(t, "", "node", workername, "node-role.kubernetes.io")
-			operator.WaitForOperatorReady(t, env.GetOperatorNamespace(), "name=istio-operator", csvName)
+			operator.WaitForOperatorInNamespaceReady(t, env.GetOperatorNamespace(), "name=istio-operator", csvName)
 		})
 
 		t.LogStep("Setup: Get a worker node from the cluster that does not have the istio operator installed and label it as infra")

@@ -12,35 +12,50 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
-func GetCsvName(t test.TestHelper, operatorNamespace string, partialName string) string {
-	output := shell.Execute(t, fmt.Sprintf(`oc get csv -n %s -o custom-columns="NAME:.metadata.name" |grep %s ||true`, operatorNamespace, partialName))
+func GetFullCsvName(t test.TestHelper, namespace string, partialCsvName string) string {
+	output := shell.Execute(t, fmt.Sprintf(`oc get csv -n %s -o custom-columns="NAME:.metadata.name" |grep %s ||true`, namespace, partialCsvName))
 	return strings.TrimSpace(output)
 }
 
-func WaitForCsvReady(t test.TestHelper, partialName string) {
-	t.Logf("Waiting for csv %s is ready", partialName)
-	retry.UntilSuccessWithOptions(t, retry.Options().DelayBetweenAttempts(1*time.Second).MaxAttempts(20), func(t test.TestHelper) {
-		output := shell.Execute(t, fmt.Sprintf(`oc get csv -A -o custom-columns="NAME:.metadata.name" |grep %s ||true`, partialName))
-		if output == "" {
-			t.Errorf("CSV %s is not ready yet", partialName)
-		}
-	})
-}
-
-func OperatorExists(t test.TestHelper, csvVersion string) bool {
-	output := shell.Execute(t, fmt.Sprintf(`oc get csv -A -o custom-columns="NAME:.metadata.name,REPLACES:.spec.replaces" |grep %s ||true`, csvVersion))
-	return strings.Contains(output, csvVersion)
-}
-
-func WaitForOperatorReady(t test.TestHelper, operatorNamespace string, operatorSelector string, csvName string) {
-	t.Logf("Waiting for operator csv %s to succeed", csvName)
+func WaitForOperatorInNamespaceReady(t test.TestHelper, namespace string, operatorSelector string, partialCsvName string) {
+	t.Logf("Waiting for operator csv %s to succeed", partialCsvName)
 	// When the operator is installed, the CSV take some time to be created, need to wait until is created to validate the phase
 	retry.UntilSuccessWithOptions(t, retry.Options().DelayBetweenAttempts(5*time.Second).MaxAttempts(70), func(t test.TestHelper) {
-		if !OperatorExists(t, csvName) {
-			t.Errorf("Operator csv %s is not yet installed", csvName)
+		if !operatorCsvExistsGlobally(t, partialCsvName) {
+			t.Errorf("Operator csv %s is not yet installed", partialCsvName)
 		}
 	})
 
-	oc.WaitForPhase(t, operatorNamespace, "csv", csvName, "Succeeded")
-	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(70).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector(operatorSelector, operatorNamespace))
+	csvFullName := GetFullCsvName(t, namespace, partialCsvName)
+	oc.WaitForPhase(t, namespace, "csv", csvFullName, "Succeeded")
+	t.Logf("Waiting for operator pod with the selector %s", operatorSelector)
+	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(70).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector(operatorSelector, namespace))
+}
+
+func CreateOperatorViaOlm(t test.TestHelper, namespace string, partialCsvName string, subscriptionYaml string, operatorPodSelector string, input interface{}) {
+	oc.ApplyTemplate(t, namespace, subscriptionYaml, input)
+	WaitForOperatorInNamespaceReady(t, namespace, operatorPodSelector, partialCsvName)
+}
+
+func DeleteOperatorViaOlm(t test.TestHelper, namespace string, partialCsvName string, subscriptionYaml string) {
+	csvFullName := GetFullCsvName(t, namespace, partialCsvName)
+	t.Logf("Deleting subscription for %s", csvFullName)
+	oc.DeleteFromTemplate(t, namespace, subscriptionYaml, nil)
+	t.Logf("Deleting csv %s", csvFullName)
+	oc.DeleteResource(t, namespace, "csv", csvFullName)
+}
+
+// func waitForCsvReady(t test.TestHelper, partialName string) {
+// 	t.Logf("Waiting for csv %s is ready", partialName)
+// 	retry.UntilSuccessWithOptions(t, retry.Options().DelayBetweenAttempts(1*time.Second).MaxAttempts(20), func(t test.TestHelper) {
+// 		output := shell.Execute(t, fmt.Sprintf(`oc get csv -A -o custom-columns="NAME:.metadata.name" |grep %s ||true`, partialName))
+// 		if output == "" {
+// 			t.Errorf("CSV %s is not ready yet", partialName)
+// 		}
+// 	})
+// }
+
+func operatorCsvExistsGlobally(t test.TestHelper, csvVersion string) bool {
+	output := shell.Execute(t, fmt.Sprintf(`oc get csv -A -o custom-columns="NAME:.metadata.name" |grep %s ||true`, csvVersion))
+	return strings.Contains(output, csvVersion)
 }

@@ -238,7 +238,7 @@ func (o OC) DeleteNamespace(t test.TestHelper, namespaces ...string) {
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
 		t.Logf("Deleting namespaces: %v", namespaces)
-		o.Invokef(t, "kubectl delete ns %s", strings.Join(namespaces, " "))
+		o.Invokef(t, "kubectl delete ns --ignore-not-found %s", strings.Join(namespaces, " "))
 	})
 }
 
@@ -505,6 +505,17 @@ func (o OC) ResourceByLabelExists(t test.TestHelper, ns, kind, label string) boo
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
 		output := shell.Execute(t, fmt.Sprintf("oc %s get %s -l %s || true", nsFlag(ns), kind, label))
+		exists = !(strings.Contains(output, "Error from server (NotFound)") || strings.Contains(output, "No resources found"))
+	})
+	return exists
+}
+
+func (o OC) AnyResourceExist(t test.TestHelper, ns string, kind string) bool {
+	t.T().Helper()
+	var exists bool
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		output := shell.Execute(t, fmt.Sprintf("oc %s get %s || true", nsFlag(ns), kind))
 		exists = !(strings.Contains(output, "Error from server (NotFound)") || strings.Contains(output, "No resources found"))
 	})
 	return exists
