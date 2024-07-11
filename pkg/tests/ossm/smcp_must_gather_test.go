@@ -28,6 +28,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
+	"github.com/maistra/maistra-test-tool/pkg/util/version"
 
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
@@ -109,11 +110,29 @@ func TestMustGather(t *testing.T) {
 			}
 
 			t.LogStep("Verify cluster-scoped-resources files exist in cluster-scoped-resources folder")
-			assertFilesExist(t,
-				dir,
-				"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterrolebindings/istiod-internal-basic-istio-system.yaml",
-				"**/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/openshift-operators.servicemesh-resources.maistra.io.yaml",
-				"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterroles/istiod-clusterrole-basic-istio-system.yaml")
+			if env.GetOperatorVersion().LessThan(version.OPERATOR_2_6_0) {
+				assertFilesExist(t,
+					dir,
+					"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterrolebindings/istiod-internal-basic-istio-system.yaml",
+					"**/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/openshift-operators.servicemesh-resources.maistra.io.yaml",
+					"**/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/istiod-basic-istio-system.yaml",
+					"**/cluster-scoped-resources/admissionregistration.k8s.io/validatingwebhookconfigurations/openshift-operators.servicemesh-resources.maistra.io.yaml",
+					"**/cluster-scoped-resources/admissionregistration.k8s.io/validatingwebhookconfigurations/istio-validator-basic-istio-system.yaml",
+					"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterroles/istiod-clusterrole-basic-istio-system.yaml")
+			} else {
+				assertFilesExist(t,
+					dir,
+					"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterrolebindings/istiod-internal-basic-istio-system.yaml",
+					//TODO uncomment when we resolve whether the olm created resources must be in must-gather imaga
+					// "**/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/smcp.validation.maistra.io-*.yaml",
+					// "**/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/smmr.validation.maistra.io-*.yaml",
+					"**/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/istiod-basic-istio-system.yaml",
+					// "**/cluster-scoped-resources/admissionregistration.k8s.io/validatingwebhookconfigurations/smcp.validation.maistra.io-*.yaml",
+					// "**/cluster-scoped-resources/admissionregistration.k8s.io/validatingwebhookconfigurations/smmr.validation.maistra.io-*.yaml",
+					// "**/cluster-scoped-resources/admissionregistration.k8s.io/validatingwebhookconfigurations/smm.validation.maistra.io-*.yaml",
+					"**/cluster-scoped-resources/admissionregistration.k8s.io/validatingwebhookconfigurations/istio-validator-basic-istio-system.yaml",
+					"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterroles/istiod-clusterrole-basic-istio-system.yaml")
+			}
 		})
 
 		t.NewSubTest("resource for namespaces exist").Run(func(t TestHelper) {

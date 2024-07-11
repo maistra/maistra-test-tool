@@ -485,6 +485,31 @@ func (o OC) ResourceExists(t test.TestHelper, ns, kind, name string) bool {
 	return exists
 }
 
+func (o OC) GetResouceNameByLabel(t test.TestHelper, ns, kind, label string) string {
+	t.T().Helper()
+	var value string
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		value = shell.Execute(t, fmt.Sprintf("oc %s get %s -l %s -o custom-columns=NAME:.metadata.name --no-headers || true", nsFlag(ns), kind, label))
+		value = strings.TrimSpace(value)
+		if value == "" {
+			t.Fatalf("Could not find resource %s with label %s in namespace %s", kind, label, ns)
+		}
+	})
+	return value
+}
+
+func (o OC) ResourceByLabelExists(t test.TestHelper, ns, kind, label string) bool {
+	t.T().Helper()
+	var exists bool
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		output := shell.Execute(t, fmt.Sprintf("oc %s get %s -l %s || true", nsFlag(ns), kind, label))
+		exists = !(strings.Contains(output, "Error from server (NotFound)") || strings.Contains(output, "No resources found"))
+	})
+	return exists
+}
+
 func setEnv(t test.TestHelper, key string, value string) {
 	if err := os.Setenv(key, value); err != nil {
 		t.Fatalf("could not set %s: %v", key, err)
