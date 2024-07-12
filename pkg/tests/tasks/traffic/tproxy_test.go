@@ -48,7 +48,7 @@ func TestTproxy(t *testing.T) {
 		t.NewSubTest("HTTP request from tproxy sleep to tproxy httpbin").Run(func(t TestHelper) {
 			app.ExecInSleepPod(t, ns.Foo,
 				"curl http://httpbin.foo:8000/headers -s -o /dev/null -w %{http_code}",
-				assert.OutputContains("200", "Request suceeded", "Unexpected response"))
+				assert.OutputContains("200", "Request succeeded", "Unexpected response"))
 		})
 	})
 }
