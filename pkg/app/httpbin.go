@@ -10,6 +10,7 @@ type httpbin struct {
 	injectSidecar  bool
 	deploymentName string
 	versionLabel   string
+	tproxy         bool
 }
 
 var _ App = &httpbin{}
@@ -47,6 +48,16 @@ func HttpbinV2(ns string) App {
 		injectSidecar:  true,
 		deploymentName: "httpbin-v2",
 		versionLabel:   "v2",
+	}
+}
+
+func HttpbinTproxy(ns string) App {
+	return &httpbin{
+		ns:             ns,
+		injectSidecar:  true,
+		deploymentName: "httpbin",
+		versionLabel:   "v1",
+		tproxy:         true,
 	}
 }
 
@@ -116,6 +127,9 @@ spec:
     metadata:
       annotations:
         sidecar.istio.io/inject: "{{ .InjectSidecar }}"
+      {{ if .Tproxy }}
+        sidecar.istio.io/interceptionMode: TPROXY
+      {{ end }}
       labels:
         app: httpbin
         version: {{ .Version }}
