@@ -66,11 +66,19 @@ func GetTestGroup() string {
 }
 
 func GetMustGatherImage() string {
-	return "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel8:" + GetMustGatherTag()
+	operatorVersion := GetOperatorVersion()
+	if operatorVersion.LessThan(version.OPERATOR_2_6_0) {
+		return "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel8:" + GetMustGatherTag()
+	} else {
+		// https://issues.redhat.com/browse/OSSM-6818
+		// TODO: Potentially can be updated with brew registries or after release with redhat registries
+		// Now using quay image built with https://github.com/maistra/istio-must-gather/pull/29
+		return "quay.io/maistra/istio-must-gather:2.6.0"
+	}
 }
 
 func GetMustGatherTag() string {
-	return getenv("MUST_GATHER_TAG", "2.4")
+	return getenv("MUST_GATHER_TAG", fmt.Sprintf("%d.%d", GetOperatorVersion().Major, GetOperatorVersion().Minor))
 }
 
 func IsMustGatherEnabled() bool {

@@ -123,15 +123,25 @@ func TestMustGather(t *testing.T) {
 				assertFilesExist(t,
 					dir,
 					"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterrolebindings/istiod-internal-basic-istio-system.yaml",
-					//TODO uncomment when we resolve whether the olm created resources must be in must-gather imaga
-					// "**/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/smcp.validation.maistra.io-*.yaml",
-					// "**/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/smmr.validation.maistra.io-*.yaml",
 					"**/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/istiod-basic-istio-system.yaml",
-					// "**/cluster-scoped-resources/admissionregistration.k8s.io/validatingwebhookconfigurations/smcp.validation.maistra.io-*.yaml",
-					// "**/cluster-scoped-resources/admissionregistration.k8s.io/validatingwebhookconfigurations/smmr.validation.maistra.io-*.yaml",
-					// "**/cluster-scoped-resources/admissionregistration.k8s.io/validatingwebhookconfigurations/smm.validation.maistra.io-*.yaml",
 					"**/cluster-scoped-resources/admissionregistration.k8s.io/validatingwebhookconfigurations/istio-validator-basic-istio-system.yaml",
 					"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterroles/istiod-clusterrole-basic-istio-system.yaml")
+
+				webhookMap := map[string]string{
+					"smcp.mutation.maistra.io":   "mutatingwebhookconfigurations",
+					"smmr.mutation.maistra.io":   "mutatingwebhookconfigurations",
+					"smcp.validation.maistra.io": "validatingwebhookconfigurations",
+					"smmr.validation.maistra.io": "validatingwebhookconfigurations",
+					"smm.validation.maistra.io":  "validatingwebhookconfigurations",
+				}
+
+				for webhook, kind := range webhookMap {
+					name := oc.GetResouceNameByLabel(t, "", kind, fmt.Sprintf("olm.webhook-description-generate-name=%s", webhook))
+					filename := fmt.Sprintf("%s.yaml", name)
+					assertFilesExist(t,
+						dir,
+						fmt.Sprintf("**/cluster-scoped-resources/admissionregistration.k8s.io/%s/%s", kind, filename))
+				}
 			}
 		})
 
