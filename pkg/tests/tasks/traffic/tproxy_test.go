@@ -20,7 +20,7 @@ import (
 )
 
 func TestTproxy(t *testing.T) {
-	NewTest(t).Id("T7").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	NewTest(t).Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_5) {
 			t.Skip("TPROXY is only supported in 2.5.3 and newer versions")
 		}
