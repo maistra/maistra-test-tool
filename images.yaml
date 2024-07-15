@@ -68,13 +68,13 @@ tcp-echo:
 
 fortio:
   x86: fortio/fortio:latest_release
-  arm64: quay.io/maistra/fortio.test:arm64
+  arm64: quay.io/maistra/fortio:arm64
   p: quay.io/maistra/fortio.test:0.0-ibm-p
   z: quay.io/maistra/fortio:0.0-ibm-z
 
 testssl:
   x86: quay.io/maistra/testssl:latest
-  arm64: quay.io/maistra/testssl:2.5
+  arm64: quay.io/maistra/testssl:arm64
   p: quay.io/maistra/testssl:0.0-ibm-p
   z: quay.io/maistra/testssl:0.0-ibm-z
 
@@ -88,4 +88,4 @@ ext-authz:
   x86: gcr.io/istio-testing/ext-authz:latest
   p: quay.io/maistra/ext-authz:0.0-ibm-p
   z: quay.io/maistra/ext-authz:1.1-ibm-z
-  arm64: quay.io/maistra/ext-authz:arm
+  arm64: quay.io/maistra/ext-authz:arm64
