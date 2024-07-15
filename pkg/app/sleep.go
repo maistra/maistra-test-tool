@@ -14,6 +14,7 @@ import (
 type sleep struct {
 	ns            string
 	injectSidecar bool
+	tproxy        bool
 }
 
 var _ App = &sleep{}
@@ -24,6 +25,10 @@ func Sleep(ns string) App {
 
 func SleepNoSidecar(ns string) App {
 	return &sleep{ns: ns, injectSidecar: false}
+}
+
+func SleepTroxy(ns string) App {
+	return &sleep{ns: ns, injectSidecar: true, tproxy: true}
 }
 
 func (a *sleep) Name() string {
@@ -163,6 +168,9 @@ spec:
     metadata:
       annotations:
         sidecar.istio.io/inject: "{{ .InjectSidecar }}"
+      {{ if .Tproxy }}
+        sidecar.istio.io/interceptionMode: TPROXY
+      {{ end }}
       labels:
         app: sleep
     spec:
