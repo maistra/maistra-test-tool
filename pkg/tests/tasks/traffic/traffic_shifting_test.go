@@ -18,6 +18,7 @@ import (
 	_ "embed"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -108,6 +109,9 @@ func checkTrafficRatio(t TestHelper, url string, numberOfRequests int, tolerance
 					// }
 					matchedFile := app.FindBookinfoProductPageResponseFile(responseBody)
 					if matchedFile == "" {
+						if strings.Contains(string(responseBody), "Error fetching product details!") {
+							t.Fatal("The product page doesn't have information about product details. It can indicate a problem with the connection between product-details pod!")
+						}
 						t.Fatal("Response did not match any expected value and also didn't match any standard bookinfo productpage responses")
 					} else {
 						t.Fatalf("Response did not match any expected value, but matched file %q", matchedFile)
