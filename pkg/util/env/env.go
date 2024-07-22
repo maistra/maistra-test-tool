@@ -71,9 +71,8 @@ func GetMustGatherImage() string {
 		return "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel8:" + GetMustGatherTag()
 	} else {
 		// https://issues.redhat.com/browse/OSSM-6818
-		// TODO: Potentially can be updated with brew registries or after release with redhat registries
-		// Now using quay image built with https://github.com/maistra/istio-must-gather/pull/29
-		return "quay.io/maistra/istio-must-gather:2.6.0"
+		// TODO: Else conditional should be errased after 2.6.0 release
+		return "brew.registry.redhat.io/rh-osbs/openshift-service-mesh-istio-must-gather-rhel8:2.6.0"
 	}
 }
 
