@@ -13,19 +13,20 @@ import (
 
 var (
 	//go:embed yaml/cert-manager-operator.yaml
-	certManagerOperator string
+	certManagerSubscriptionYaml string
 
 	//go:embed yaml/root-ca.yaml
 	rootCA string
 
 	certManagerOperatorNs = "cert-manager-operator"
-	certManagerCSVName    = "cert-manager-operator"
 	certManagerNs         = "cert-manager"
-	certmanagerMinVersion = certManagerCSVName + ".v1.13.0"
+
+	certManagerCSVName          = "cert-manager-operator"
+	certManagerOperatorSelector = "name=cert-manager-operator"
 )
 
 func InstallIfNotExist(t test.TestHelper) {
-	if operator.OperatorExists(t, certmanagerMinVersion) {
+	if oc.ResourceByLabelExists(t, certManagerOperatorNs, "pod", "name=cert-manager-operator") {
 		t.Log("cert-manager-operator is already installed")
 	} else {
 		t.Log("cert-manager-operator is not installed, starting installation")
@@ -34,34 +35,24 @@ func InstallIfNotExist(t test.TestHelper) {
 }
 
 func install(t test.TestHelper) {
-	installOperator(t)
-	waitOperatorSucceded(t)
-
-	t.LogStep("Create root ca")
-	oc.ApplyString(t, certManagerNs, rootCA)
-
-}
-
-func Uninstall(t test.TestHelper) {
-	oc.DeleteFromString(t, certManagerNs, rootCA)
-	exactOperatorVersion := operator.GetCsvName(t, certManagerOperatorNs, certManagerCSVName)
-	oc.DeleteFromTemplate(t, certManagerOperatorNs, certManagerOperator, map[string]string{"Version": exactOperatorVersion})
-	oc.DeleteNamespace(t, certManagerOperatorNs)
-	oc.DeleteNamespace(t, certManagerNs)
-}
-
-func installOperator(t test.TestHelper) {
 	t.LogStep("Create namespace for cert-manager-operator")
 	oc.CreateNamespace(t, certManagerOperatorNs)
 
 	t.LogStep("Install cert-manager-operator")
-	oc.ApplyTemplate(t, certManagerOperatorNs, certManagerOperator, map[string]string{"Version": certmanagerMinVersion})
-	operator.WaitForCsvReady(t, certManagerCSVName)
+	operator.CreateOperatorViaOlm(t, certManagerOperatorNs, certManagerCSVName, certManagerSubscriptionYaml, certManagerOperatorSelector, nil)
+
+	t.LogStep("Wait for cert manager control plane")
+	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(70).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector("app=cert-manager", certManagerNs))
+	// oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(70).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector("app=cainjector", certManagerNs))
+	// oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(70).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector("app=webhook", certManagerNs))
+
+	t.LogStep("Create root ca")
+	oc.ApplyString(t, certManagerNs, rootCA)
 }
 
-func waitOperatorSucceded(t test.TestHelper) {
-	// waiting for operator
-	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(70).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector("name="+certManagerCSVName, certManagerOperatorNs))
-	// waiting for control plane
-	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(70).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector("app=cert-manager", certManagerNs))
+func Uninstall(t test.TestHelper) {
+	oc.DeleteFromString(t, certManagerNs, rootCA)
+	operator.DeleteOperatorViaOlm(t, certManagerOperatorNs, certManagerCSVName, certManagerSubscriptionYaml)
+	oc.DeleteNamespace(t, certManagerOperatorNs)
+	oc.DeleteNamespace(t, certManagerNs)
 }
