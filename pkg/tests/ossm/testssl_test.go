@@ -19,7 +19,6 @@ import (
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -70,10 +69,8 @@ spec:
 		oc.WaitDeploymentRolloutComplete(t, ns.Bookinfo, "testssl")
 
 		t.LogStep("Check testssl.sh results")
-		command := "./testssl/testssl.sh -P -6 productpage:9080 || true"
-		if env.GetArch() == "arm64" {
-			command = "./testssl.sh -P -6 productpage:9080 || true"
-		}
+		command := "testssl.sh -P -6 --ssl-native productpage:9080 || true"
+
 		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(10), func(t TestHelper) {
 			oc.Exec(t,
 				pod.MatchingSelector("app=testssl", ns.Bookinfo),
@@ -88,9 +85,9 @@ spec:
 					"Results received the correct SHA256",
 					"Results not include: ECDHE-RSA-AES128-GCM-SHA256"),
 				assert.OutputContains(
-					"P-256",
-					"Results included: P-256",
-					"Results not include: P-256"))
+					"prime256v1",
+					"Results included: prime256v1",
+					"Results not include:prime256v1"))
 		})
 	})
 }

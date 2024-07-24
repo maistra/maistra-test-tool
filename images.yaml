@@ -72,11 +72,12 @@ fortio:
   p: quay.io/maistra/fortio.test:0.0-ibm-p
   z: quay.io/maistra/fortio:0.0-ibm-z
 
+# Dockerfile: https://gitlab.cee.redhat.com/-/snippets/8438
 testssl:
-  x86: quay.io/maistra/testssl:latest
-  arm64: quay.io/maistra/testssl:arm64
-  p: quay.io/maistra/testssl:0.0-ibm-p
-  z: quay.io/maistra/testssl:0.0-ibm-z
+  x86: quay.io/maistra/testssl:openssl3
+  arm64: quay.io/maistra/testssl:openssl3
+  p: quay.io/maistra/testssl:openssl3
+  z: quay.io/maistra/testssl:openssl3
 
 helloworld:
   x86: quay.io/jewertow/examples-helloworld-v1
