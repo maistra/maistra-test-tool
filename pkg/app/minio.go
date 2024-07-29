@@ -29,6 +29,9 @@ func (a *minio) Install(t test.TestHelper) {
 		t.Fatal("Your cluster doesn't contain any storageclass. Minio cannot be installed due to the required dynamic provisioning storage unavailable!")
 	}
 	oc.ApplyTemplate(t, a.ns, minioTemplate, nil)
+	oc.WaitDeploymentRolloutComplete(t, a.ns, "minio")
+	minioRoute := oc.DefaultOC.GetRouteURL(t, a.ns, "minio-route")
+	oc.ApplyTemplate(t, a.ns, minioSecretTemplate, map[string]string{"minioRoute": minioRoute})
 }
 
 func (a *minio) Uninstall(t test.TestHelper) {
@@ -130,13 +133,26 @@ spec:
  selector:
    app: minio
 ---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: minio-route
+spec:
+  to:
+    kind: Service
+    name: minio
+  port:
+    targetPort: api
+`
+
+const minioSecretTemplate = `
 apiVersion: v1
 kind: Secret
 metadata:
   name: my-storage-secret
 type: Opaque
 stringData:
-  endpoint: http://minio:9000
+  endpoint: http://{{ .minioRoute }}
   bucket: tempo-data
   access_key_id: minio
   access_key_secret: minio123
