@@ -114,6 +114,9 @@ func TestIOR(t *testing.T) {
 			if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
 				t.Skip("This test only applies for v2.3 to v2.4 upgrade")
 			}
+			if env.GetArch() == "arm64" {
+				t.Skip("2.3 & 2.4 is not supported in arm, from 2.5 GA in arm")
+			}
 
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, meshNamespace)
@@ -152,6 +155,10 @@ func TestIOR(t *testing.T) {
 			total := 3
 			nsNames := []string{}
 			gateways := []string{}
+
+			if env.GetArch() == "arm64" {
+				t.Skip("2.3 & 2.4 is not supported in arm, from 2.5 GA in arm")
+			}
 
 			t.Cleanup(func() {
 				if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
