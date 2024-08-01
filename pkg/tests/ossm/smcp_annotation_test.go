@@ -131,4 +131,5 @@ spec:
       containers:
       - name: testenv
         image: {{ image "testssl" }}
+        command: ["tail", "-f", "/dev/null"]
 `
