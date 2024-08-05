@@ -1,0 +1,36 @@
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: basic
+spec:
+  addons:
+    grafana:
+      enabled: false
+    kiali:
+      enabled: false
+    prometheus:
+      enabled: false
+  {{ if .NativeSidecarsEnabled }}
+  runtime:
+    components:
+      pilot:
+        container:
+          env:
+            ENABLE_NATIVE_SIDECARS: "true"
+  {{ end }}
+  security:
+    {{ if .Rosa }}
+    identity:
+      type: ThirdParty
+    {{ end }}
+  tracing:
+    type: None
+  version: {{ .Version }}
+---
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  members:
+  - {{ .Member }}
