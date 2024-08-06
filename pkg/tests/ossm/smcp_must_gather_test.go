@@ -113,19 +113,19 @@ func TestMustGather(t *testing.T) {
 			if env.GetOperatorVersion().LessThan(version.OPERATOR_2_6_0) {
 				assertFilesExist(t,
 					dir,
-					"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterrolebindings/istiod-internal-basic-istio-system.yaml",
+					"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterrolebindings/istiod-internal-basic-"+meshNamespace+".yaml",
 					"**/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/openshift-operators.servicemesh-resources.maistra.io.yaml",
-					"**/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/istiod-basic-istio-system.yaml",
+					"**/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/istiod-basic-"+meshNamespace+".yaml",
 					"**/cluster-scoped-resources/admissionregistration.k8s.io/validatingwebhookconfigurations/openshift-operators.servicemesh-resources.maistra.io.yaml",
-					"**/cluster-scoped-resources/admissionregistration.k8s.io/validatingwebhookconfigurations/istio-validator-basic-istio-system.yaml",
-					"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterroles/istiod-clusterrole-basic-istio-system.yaml")
+					"**/cluster-scoped-resources/admissionregistration.k8s.io/validatingwebhookconfigurations/istio-validator-basic-"+meshNamespace+".yaml",
+					"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterroles/istiod-clusterrole-basic-"+meshNamespace+".yaml")
 			} else {
 				assertFilesExist(t,
 					dir,
-					"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterrolebindings/istiod-internal-basic-istio-system.yaml",
-					"**/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/istiod-basic-istio-system.yaml",
-					"**/cluster-scoped-resources/admissionregistration.k8s.io/validatingwebhookconfigurations/istio-validator-basic-istio-system.yaml",
-					"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterroles/istiod-clusterrole-basic-istio-system.yaml")
+					"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterrolebindings/istiod-internal-basic-"+meshNamespace+".yaml",
+					"**/cluster-scoped-resources/admissionregistration.k8s.io/mutatingwebhookconfigurations/istiod-basic-"+meshNamespace+".yaml",
+					"**/cluster-scoped-resources/admissionregistration.k8s.io/validatingwebhookconfigurations/istio-validator-basic-"+meshNamespace+".yaml",
+					"**/cluster-scoped-resources/rbac.authorization.k8s.io/clusterroles/istiod-clusterrole-basic-"+meshNamespace+".yaml")
 
 				webhookMap := map[string]string{
 					"smcp.mutation.maistra.io":   "mutatingwebhookconfigurations",
@@ -146,11 +146,11 @@ func TestMustGather(t *testing.T) {
 		})
 
 		t.NewSubTest("resource for namespaces exist").Run(func(t TestHelper) {
-			t.LogStep("verify that resources for namespaces are created including bookinfo and istio-system folders")
+			t.LogStep("verify that resources for namespaces are created including bookinfo and " + meshNamespace + " folders")
 			assertFilesExist(t,
 				dir,
-				"**/namespaces/istio-system/debug-syncz.json",
-				"**/namespaces/istio-system/istio-system.yaml",
+				"**/namespaces/"+meshNamespace+"/debug-syncz.json",
+				"**/namespaces/"+meshNamespace+"/"+meshNamespace+".yaml",
 				"**/namespaces/bookinfo/bookinfo.yaml",
 				"**/namespaces/openshift-operators/openshift-operators.yaml",
 				"**/namespaces/*/rbac.authorization.k8s.io/rolebindings/mesh-users.yaml")

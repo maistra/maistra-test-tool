@@ -123,6 +123,5 @@ metadata:
 spec:
   controlPlaneRef:
     name: basic
-    namespace: istio-system
-  `
+    namespace: ` + meshNamespace
 )

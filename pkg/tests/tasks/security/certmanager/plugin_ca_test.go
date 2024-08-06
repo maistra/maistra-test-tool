@@ -47,7 +47,7 @@ func TestPluginCaCert(t *testing.T) {
 
 		t.Cleanup(func() {
 			oc.DeleteFromTemplate(t, meshNamespace, serviceMeshCacertsTmpl, meshValues)
-			oc.DeleteFromString(t, meshNamespace, cacerts)
+			oc.DeleteFromTemplate(t, meshNamespace, cacerts, map[string]interface{}{"MeshNs": meshNamespace})
 			oc.DeleteSecret(t, meshNamespace, "cacerts")
 			oc.RecreateNamespace(t, ns.Foo)
 			certmanageroperator.Uninstall(t)
@@ -59,7 +59,7 @@ func TestPluginCaCert(t *testing.T) {
 		oc.RecreateNamespace(t, meshNamespace)
 
 		t.LogStep("Create intermediate CA certificate for Istio")
-		oc.ApplyString(t, meshNamespace, cacerts)
+		oc.ApplyTemplate(t, meshNamespace, cacerts, map[string]interface{}{"MeshNs": meshNamespace})
 
 		t.LogStep("Deploy SMCP " + smcpVer.String() + " and SMMR")
 		oc.ApplyTemplate(t, meshNamespace, serviceMeshCacertsTmpl, meshValues)

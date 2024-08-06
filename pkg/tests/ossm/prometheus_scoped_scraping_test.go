@@ -21,7 +21,7 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
-var prometheusPodSelector oc.PodLocatorFunc = pod.MatchingSelector("app=prometheus,maistra-control-plane=istio-system", meshNamespace)
+var prometheusPodSelector oc.PodLocatorFunc = pod.MatchingSelector("app=prometheus,maistra-control-plane="+meshNamespace, meshNamespace)
 
 func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 	test.NewTest(t).Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {

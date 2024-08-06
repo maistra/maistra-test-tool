@@ -28,7 +28,7 @@ func TestAlpnFilterDisabledForNonIstioMtls(t *testing.T) {
 		ossm.DeployControlPlane(t)
 
 		// We need the cluster IP of the ingress gateway service to override DNS resolution during the connection test
-		ingressGwServIP := oc.DefaultOC.Invoke(t, `oc get service/istio-ingressgateway -o=jsonpath='{.spec.clusterIP}' -n istio-system`)
+		ingressGwServIP := oc.DefaultOC.Invoke(t, `oc get service/istio-ingressgateway -o=jsonpath='{.spec.clusterIP}' -n `+meshNamespace)
 
 		t.Log("Deploying nginx app")
 		app.InstallAndWaitReady(t, app.Nginx(ns.Foo))

@@ -70,7 +70,7 @@ func TestIstiodPodFailsWithValidationMessages(t *testing.T) {
 		oc.WaitPodRunning(t, istiodPod)
 		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(10), func(t TestHelper) {
 			oc.LogsFromPods(t, meshNamespace, "app=istiod", assert.OutputContains(
-				"successfully acquired lease istio-system/istio-analyze-leader",
+				"successfully acquired lease "+meshNamespace+"/istio-analyze-leader",
 				"Successfully acquired lease for analyzer in istiod pod",
 				"Expected to acquire lease for analyzer in istiod pod, but was not",
 			),

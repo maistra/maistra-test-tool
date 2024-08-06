@@ -36,7 +36,7 @@ func TestSMCPSecret(t *testing.T) {
 
 			DeployControlPlane(t)
 
-			output := shell.Execute(t, `oc get secret -n istio-system htpasswd -o json | jq .data.auth | tr -d \" | base64 -d | sed 's/}.*/}REDACTED\n/'`)
+			output := shell.Execute(t, fmt.Sprintf(`oc get secret -n %s htpasswd -o json | jq .data.auth | tr -d \" | base64 -d | sed 's/}.*/}REDACTED\n/'`, meshNamespace))
 			str := "$2a$"
 
 			if strings.Contains(output, str) {
