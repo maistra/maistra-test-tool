@@ -18,11 +18,11 @@ spec:
           env:
             ENABLE_NATIVE_SIDECARS: "true"
   {{ end }}
+  {{ if .Rosa }}
   security:
-    {{ if .Rosa }}
     identity:
       type: ThirdParty
-    {{ end }}
+  {{ end }}
   tracing:
     type: None
   version: {{ .Version }}

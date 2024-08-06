@@ -46,6 +46,11 @@ spec:
             {{ end }}
   tracing:
     type: None
+  {{ if .Rosa }} 
+  security:
+    identity:
+      type: ThirdParty
+  {{ end }}
   version: {{ .Version }}
 ---
 apiVersion: maistra.io/v1

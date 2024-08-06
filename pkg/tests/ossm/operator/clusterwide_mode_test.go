@@ -510,7 +510,11 @@ spec:
 			oc.ApplyTemplate(t,
 				meshNamespace,
 				clusterWideSMCPWithProfile,
-				map[string]string{"Name": "cluster-wide", "Version": env.GetSMCPVersion().String()})
+				map[string]interface{}{
+					"Name":    "cluster-wide",
+					"Version": env.GetSMCPVersion().String(),
+					"Rosa":    env.IsRosa(),
+				})
 			oc.WaitSMCPReady(t, meshNamespace, "cluster-wide")
 
 			t.LogStep("Check whether SMMR is created automatically")
@@ -688,7 +692,12 @@ metadata:
 spec:
   version: {{ .Version }}
   profiles:
-  - gateway-controller`
+  - gateway-controller
+  {{ if .Rosa }} 
+  security:
+    identity:
+      type: ThirdParty
+  {{ end }}`
 
 	customSMMR = `
 apiVersion: maistra.io/v1

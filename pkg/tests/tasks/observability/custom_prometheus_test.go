@@ -143,7 +143,7 @@ spec:
 
 func createSmcpWithPrometheusExtensionProvider(t test.TestHelper, smcpNs, prometheusNs, additionalSmmrNs string) {
 	t.T().Helper()
-	oc.ApplyString(t, smcpNs, `
+	oc.ApplyTemplate(t, smcpNs, `
 apiVersion: maistra.io/v2
 kind: ServiceMeshControlPlane
 metadata:
@@ -171,9 +171,14 @@ spec:
   security:
     dataPlane:
       mtls: true
+    {{ if .Rosa }}
+    identity:
+      type: ThirdParty
+    {{ end }}
   tracing:
-    type: None`,
-		fmt.Sprintf(`
+    type: None`, map[string]interface{}{"Rosa": env.IsRosa()})
+
+	oc.ApplyString(t, smcpNs, fmt.Sprintf(`
 apiVersion: maistra.io/v1
 kind: ServiceMeshMemberRoll
 metadata:
@@ -182,8 +187,8 @@ spec:
   members:
   - %s
   - %s`,
-			prometheusNs,
-			additionalSmmrNs))
+		prometheusNs,
+		additionalSmmrNs))
 }
 
 func installPrometheus(t test.TestHelper, ns string, permittedNs ...string) {
