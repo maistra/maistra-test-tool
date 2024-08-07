@@ -187,12 +187,12 @@ func TestClusterWideMode(t *testing.T) {
 			t.LogStep("Check that Rolebindings are not created in the member namespaces")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				oc.Get(t, "member-0", "rolebindings", "",
-					assert.OutputDoesNotContain("istiod-clusterrole-basic-istio-system",
-						"The Rolebings does not contains istiod-clusterrole-basic-istio-system RoleBinding",
-						"The Rolebings contains istiod-clusterrole-basic-istio-system RoleBinding"),
-					assert.OutputDoesNotContain("istiod-gateway-controller-basic-istio-system",
-						"The Rolebings does not contains istiod-gateway-controller-basic-istio-system",
-						"The Rolebings contains istiod-gateway-controller-basic-istio-system"))
+					assert.OutputDoesNotContain("istiod-clusterrole-basic-"+meshNamespace,
+						"The Rolebings does not contains istiod-clusterrole-basic-"+meshNamespace+" RoleBinding",
+						"The Rolebings contains istiod-clusterrole-basic-"+meshNamespace+" RoleBinding"),
+					assert.OutputDoesNotContain("istiod-gateway-controller-basic-"+meshNamespace,
+						"The Rolebings does not contains istiod-gateway-controller-basic-"+meshNamespace,
+						"The Rolebings contains istiod-gateway-controller-basic-"+meshNamespace))
 			})
 		})
 
@@ -510,7 +510,11 @@ spec:
 			oc.ApplyTemplate(t,
 				meshNamespace,
 				clusterWideSMCPWithProfile,
-				map[string]string{"Name": "cluster-wide", "Version": env.GetSMCPVersion().String()})
+				map[string]interface{}{
+					"Name":    "cluster-wide",
+					"Version": env.GetSMCPVersion().String(),
+					"Rosa":    env.IsRosa(),
+				})
 			oc.WaitSMCPReady(t, meshNamespace, "cluster-wide")
 
 			t.LogStep("Check whether SMMR is created automatically")
@@ -688,7 +692,12 @@ metadata:
 spec:
   version: {{ .Version }}
   profiles:
-  - gateway-controller`
+  - gateway-controller
+  {{ if .Rosa }} 
+  security:
+    identity:
+      type: ThirdParty
+  {{ end }}`
 
 	customSMMR = `
 apiVersion: maistra.io/v1

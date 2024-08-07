@@ -43,6 +43,7 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 			"Version":          env.GetSMCPVersion().String(),
 			"Member":           ns.Foo,
 			"ClusterWideProxy": false,
+			"Rosa":             env.IsRosa(),
 		}
 
 		//If there is a cluster-wide proxy in front of OCP, it needs to be set in istio-proxy to be able to download the 3scale plugin from Quay

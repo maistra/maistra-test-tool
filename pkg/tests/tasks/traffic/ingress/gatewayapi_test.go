@@ -157,7 +157,11 @@ func TestGatewayApi(t *testing.T) {
 			oc.ApplyTemplate(t,
 				meshNamespace,
 				gatewayControllerProfile,
-				map[string]string{"Name": "basic", "Version": env.GetSMCPVersion().String()})
+				map[string]interface{}{
+					"Name":    "basic",
+					"Version": env.GetSMCPVersion().String(),
+					"Rosa":    env.IsRosa(),
+				})
 			oc.WaitSMCPReady(t, meshNamespace, "basic")
 
 			t.LogStep("delete default SMMR and create custom SMMR")
@@ -197,7 +201,12 @@ metadata:
 spec:
   version: {{ .Version }}
   profiles:
-  - gateway-controller`
+  - gateway-controller
+  {{ if .Rosa }}
+  security:
+    identity:
+      type: ThirdParty
+  {{ end }}`
 
 const createSMMR = `
 apiVersion: maistra.io/v1
