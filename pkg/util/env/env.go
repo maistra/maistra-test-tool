@@ -66,14 +66,7 @@ func GetTestGroup() string {
 }
 
 func GetMustGatherImage() string {
-	operatorVersion := GetOperatorVersion()
-	if operatorVersion.LessThan(version.OPERATOR_2_6_0) {
-		return "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel8:" + GetMustGatherTag()
-	} else {
-		// https://issues.redhat.com/browse/OSSM-6818
-		// TODO: Else conditional should be errased after 2.6.0 release
-		return "brew.registry.redhat.io/rh-osbs/openshift-service-mesh-istio-must-gather-rhel8:2.6.0"
-	}
+	return getenv("MUST_GATHER_IMAGE", "registry.redhat.io/openshift-service-mesh/istio-must-gather-rhel8:"+GetMustGatherTag())
 }
 
 func GetMustGatherTag() string {
