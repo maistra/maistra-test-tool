@@ -2,8 +2,7 @@ replicaCount: 2
 
 image:
   repository: quay.io/jetstack/cert-manager-istio-csr
-  tag: v0.6.0
-  pullSecretName: ""
+  tag: v0.10.0
 
 app:
   certmanager:
