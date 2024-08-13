@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"time"
 
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/operator"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -43,8 +44,19 @@ func install(t test.TestHelper) {
 
 	t.LogStep("Wait for cert manager control plane")
 	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(70).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector("app=cert-manager", certManagerNs))
-	// oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(70).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector("app=cainjector", certManagerNs))
-	// oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(70).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector("app=webhook", certManagerNs))
+	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(70).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector("app=cainjector", certManagerNs))
+	oc.WaitPodReadyWithOptions(t, retry.Options().MaxAttempts(70).DelayBetweenAttempts(5*time.Second), pod.MatchingSelector("app=webhook", certManagerNs))
+
+	t.LogStep("Wait for cert-manager-webhook service available")
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		oc.Get(t,
+			certManagerNs,
+			"service",
+			"cert-manager-webhook",
+			assert.OutputDoesNotContain("NotFound",
+				"Service \"cert-manager-webhook\" found",
+				"Service \"cert-manager-webhook\" not found"))
+	})
 
 	t.LogStep("Create root ca")
 	oc.ApplyString(t, certManagerNs, rootCA)

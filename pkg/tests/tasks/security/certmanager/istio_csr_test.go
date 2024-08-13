@@ -33,9 +33,6 @@ func TestIstioCsr(t *testing.T) {
 		if ocpVersion.LessThan(version.OCP_4_12) {
 			t.Skip("istio-csr is not supported in OCP older than v4.12")
 		}
-		if env.GetArch() == "z" || env.GetArch() == "p" {
-			t.Skip("istio-csr is not supported for IBM Z&P")
-		}
 
 		meshValues := map[string]string{
 			"Name":    smcpName,
@@ -73,7 +70,7 @@ func TestIstioCsr(t *testing.T) {
 		helm.Namespace(meshNamespace).
 			Chart("jetstack/cert-manager-istio-csr").
 			Release("istio-csr").
-			Version("v0.6.0").
+			Version("v0.10.0").
 			ValuesString(template.Run(t, istioCsrTmpl, istioCsrValues)).
 			Install(t)
 		oc.WaitDeploymentRolloutComplete(t, meshNamespace, "cert-manager-istio-csr")
@@ -92,7 +89,7 @@ func TestIstioCsr(t *testing.T) {
 		t.LogStep("Verify that istio-ca-root-cert not created in non-member namespaces")
 		oc.LogsFromPods(t, meshNamespace, "app=cert-manager-istio-csr",
 			assert.OutputDoesNotContain(
-				fmt.Sprintf(`"msg"="creating configmap with root CA data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, ns.Bar),
+				fmt.Sprintf(`creating configmap with root CA data	logger=controller.configmap namespace=%s configmap=istio-ca-root-cert`, ns.Bar),
 				fmt.Sprintf("istio-ca-root-cert not created in %s", ns.Bar),
 				fmt.Sprintf("istio-ca-root-cert created in %s", ns.Bar)))
 
@@ -114,8 +111,8 @@ func TestIstioCsr(t *testing.T) {
 func assertIstioCARootCertCreatedOrUpdated(ns string) common.CheckFunc {
 	return assert.OutputContainsAny(
 		[]string{
-			fmt.Sprintf(`"msg"="creating configmap with root CA data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, ns),
-			fmt.Sprintf(`"msg"="updating ConfigMap data" "configmap"="istio-ca-root-cert" "namespace"="%s"`, ns),
+			fmt.Sprintf(`creating configmap with root CA data	logger=controller.configmap namespace=%s configmap=istio-ca-root-cert`, ns),
+			fmt.Sprintf(`updating ConfigMap data	logger=controller.configmap namespace=%s configmap=istio-ca-root-cert`, ns),
 		},
 		fmt.Sprintf("istio-ca-root-cert created or updated in %s", ns),
 		fmt.Sprintf("istio-ca-root-cert neither created nor updated in %s", ns))
