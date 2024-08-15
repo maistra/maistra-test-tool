@@ -61,7 +61,7 @@ func TestIstiodPodFailsWithValidationMessages(t *testing.T) {
 		t.Log("Verify that Istio pod is not failing when validationMessages was enabled")
 
 		oc.RecreateNamespace(t, meshNamespace)
-		oc.ReplaceOrApplyString(t, meshNamespace, template.Run(t, validationMessagesSMCP, DefaultSMCP()))
+		oc.ApplyString(t, meshNamespace, template.Run(t, validationMessagesSMCP, DefaultSMCP()))
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, meshNamespace)
 		})

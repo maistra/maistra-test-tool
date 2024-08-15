@@ -41,7 +41,7 @@ func TestDiscoverySelectors(t *testing.T) {
 		t.LogStep("Apply cluster-wide SMCP and standard SMMR")
 		oc.RecreateNamespace(t, meshNamespace)
 		oc.ApplyString(t, meshNamespace, smmr)
-		oc.ReplaceOrApplyString(t, meshNamespace, template.Run(t, clusterWideSMCP, DefaultSMCP()))
+		oc.ApplyString(t, meshNamespace, template.Run(t, clusterWideSMCP, DefaultSMCP()))
 		oc.WaitSMCPReady(t, meshNamespace, DefaultSMCP().Name)
 		oc.WaitSMMRReady(t, meshNamespace)
 

@@ -60,7 +60,7 @@ func TestTempoTracing(t *testing.T) {
 		oc.RecreateNamespace(t, meshNamespace)
 
 		t.LogStep("Install SMCP with otel extensionProviders")
-		oc.ReplaceOrApplyString(t, meshNamespace, template.Run(t, externalTracingSMCP, meshValues))
+		oc.ApplyString(t, meshNamespace, template.Run(t, externalTracingSMCP, meshValues))
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 		oc.ApplyString(t, meshNamespace, GetSMMRTemplate())
 		oc.WaitSMMRReady(t, meshNamespace)
@@ -69,14 +69,14 @@ func TestTempoTracing(t *testing.T) {
 		app.InstallAndWaitReady(t, app.Bookinfo(ns.Bookinfo))
 
 		t.LogStep("Create open telemetry collector in bookinfo namespace")
-		oc.ReplaceOrApplyString(t, ns.Bookinfo, template.Run(t, otel, map[string]interface{}{"TracingNamespace": tempo.GetTracingNamespace()}))
+		oc.ApplyString(t, ns.Bookinfo, template.Run(t, otel, map[string]interface{}{"TracingNamespace": tempo.GetTracingNamespace()}))
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			t.T().Helper()
 			oc.WaitPodReady(t, pod.MatchingSelector("app.kubernetes.io/component=opentelemetry-collector", ns.Bookinfo))
 		})
 
 		t.LogStep("Create telemetry cr in SMCP namespace")
-		oc.ReplaceOrApplyString(t, meshNamespace, template.Run(t, telemetry, nil))
+		oc.ApplyString(t, meshNamespace, template.Run(t, telemetry, nil))
 
 		t.LogStep("Generate request to product page")
 		curl.Request(t, app.BookinfoProductPageURL(t, meshNamespace), nil)
