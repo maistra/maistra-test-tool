@@ -9,8 +9,11 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util"
+	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -156,7 +159,7 @@ func TestIOR(t *testing.T) {
 			nsNames := []string{}
 			gateways := []string{}
 
-			if env.GetArch() == "arm64" {
+			if env.GetArch() == "arm64" && env.GetSMCPVersion().LessThan(version.SMCP_2_5) {
 				t.Skip("2.3 & 2.4 is not supported in arm, from 2.5 GA in arm")
 			}
 
@@ -170,8 +173,8 @@ func TestIOR(t *testing.T) {
 				oc.WaitSMMRReady(t, meshNamespace)
 			})
 
-			t.LogStep("Ensure the IOR enabled")
 			if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_4) {
+				t.LogStep("Ensure the IOR enabled")
 				enableIOR(t, meshNamespace, meshName)
 			}
 
@@ -247,6 +250,50 @@ func TestIOR(t *testing.T) {
 			t.LogStepf("Check weather the Routes changes when adding new IngressGateway")
 			addAdditionalIngressGateway(t, meshName, meshNamespace, "additional-test-ior-ingress-gateway")
 			detectRouteChanges(t)
+		})
+
+		t.NewSubTest("Check Headless service in istio namespace does not break IOR").Run(func(t test.TestHelper) {
+			if env.GetSMCPVersion().LessThan(version.SMCP_2_5) {
+				t.Skip("Issue fixed from SMCP 2.5")
+			}
+
+			t.Log("Reference: https://issues.redhat.com/browse/OSSM-6615")
+
+			t.Cleanup(func() {
+				removeIORCustomSetting(t, meshNamespace, meshName)
+				app.Uninstall(t, app.Bookinfo(ns.Bookinfo))
+			})
+
+			t.LogStep("Ensure the IOR enabled")
+			enableIOR(t, meshNamespace, meshName)
+
+			t.LogStepf("Deploy a headless service without selectors in the %s namespace", meshNamespace)
+			oc.ApplyString(t, meshNamespace, `
+apiVersion: v1
+kind: Service
+metadata: 
+  name: test-headless
+spec: 
+  clusterIP: None # headless
+  type: ClusterIP
+  # no selectors in spec`)
+
+			t.LogStep("Install bookinfo")
+			app.InstallAndWaitReady(t, app.Bookinfo(ns.Bookinfo))
+
+			testAttempts := 5
+			t.LogStepf("Try to delete istiod pod and check the bookinfo route few times (%d)", testAttempts)
+			for i := 0; i < testAttempts; i++ {
+				shell.Execute(t,
+					fmt.Sprintf(`
+oc delete pod -l app=istiod -n %[1]s;
+oc rollout status deployment -l app=istiod -n %[1]s;
+sleep 5;
+oc get route -l maistra.io/gateway-name=bookinfo-gateway -n %[1]s -o jsonpath='{.items[].spec.to.name}'`, meshNamespace),
+					assert.OutputContains("istio-ingressgateway",
+						fmt.Sprintf("%d: Headless service in istio namespace did not broke IOR", i+1),
+						fmt.Sprintf("%d: Headless service in istio namespace broke IOR", i+1)))
+			}
 		})
 	})
 }
