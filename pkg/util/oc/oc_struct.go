@@ -64,25 +64,6 @@ func (o OC) GetOCPVersion(t test.TestHelper) string {
 	return ""
 }
 
-func (o OC) ReplaceOrApplyString(t test.TestHelper, ns string, yaml string) {
-	t.T().Helper()
-	o.withKubeconfig(t, func() {
-		t.T().Helper()
-		output := shell.ExecuteWithInput(t, fmt.Sprintf("oc %s replace -f - || echo 'error captured'", nsFlag(ns)), yaml)
-		if strings.Contains(output, "NotFound") {
-			shell.ExecuteWithInput(t, fmt.Sprintf("oc %s apply -f -", nsFlag(ns)), yaml)
-		}
-	})
-}
-
-func (o OC) ReplaceOrApplyTemplate(t test.TestHelper, ns string, tmpl string, input interface{}) {
-	t.T().Helper()
-	o.withKubeconfig(t, func() {
-		t.T().Helper()
-		o.ReplaceOrApplyString(t, ns, template.Run(t, tmpl, input))
-	})
-}
-
 func (o OC) DeleteFromTemplate(t test.TestHelper, ns string, tmpl string, input interface{}) {
 	t.T().Helper()
 	o.DeleteFromString(t, ns, template.Run(t, tmpl, input))

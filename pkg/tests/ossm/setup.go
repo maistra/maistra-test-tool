@@ -111,7 +111,7 @@ func InstallSMCPVersion(t test.TestHelper, ns string, ver version.Version) {
 }
 
 func InstallSMCPCustom(t test.TestHelper, ns string, smcp SMCP) {
-	oc.ReplaceOrApplyString(t, ns, getSMCPManifestCustom(t, smcp))
+	oc.ApplyString(t, ns, getSMCPManifestCustom(t, smcp))
 }
 
 func DeleteSMCPVersion(t test.TestHelper, ns string, ver version.Version) {
