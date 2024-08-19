@@ -31,6 +31,13 @@ runTestsAgainstVersion() {
         exit 1
     fi
 
+    EXPECTED_VERSIONS=""
+    for version in "$EXPECTED_VERSIONS[@]"; do
+        if[[ "$version" == "$SMCP_VERSION"* ]]; then
+            export EXPECTED_VERSION="$version"
+        fi
+    done
+
     echo "Output dir: $OUTPUT_DIR"
     mkdir -p "$OUTPUT_DIR"
 
