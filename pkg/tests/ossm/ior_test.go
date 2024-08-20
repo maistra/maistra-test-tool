@@ -51,15 +51,16 @@ func TestIOR(t *testing.T) {
 		})
 
 		host := "www.test.ocp"
+		gatewayName := "gw"
 
 		createSimpleGateway := func(t test.TestHelper) {
 			t.Logf("Creating Gateway for %s host", host)
-			oc.ApplyString(t, "", generateGateway("gw", meshNamespace, host))
+			oc.ApplyString(t, "", generateGateway(gatewayName, meshNamespace, host))
 		}
 
 		deleteSimpleGateway := func(t test.TestHelper) {
 			t.Logf("Deleting Gateway for %s host", host)
-			oc.DeleteFromString(t, "", generateGateway("gw", meshNamespace, host))
+			oc.DeleteFromString(t, "", generateGateway(gatewayName, meshNamespace, host))
 		}
 
 		checkSimpleGateway := func(t test.TestHelper) {
@@ -252,6 +253,58 @@ func TestIOR(t *testing.T) {
 			detectRouteChanges(t)
 		})
 
+		t.NewSubTest("Check argocd.argoproj.io labels from Gateways to Routes except argocd.argoproj.io/instance").Run(func(t test.TestHelper) {
+			if env.GetArch() == "arm64" && env.GetSMCPVersion().LessThan(version.SMCP_2_5) {
+				t.Skip("2.4 is not supported in arm, from 2.5 GA in arm")
+			}
+
+			t.Log("Reference: https://issues.redhat.com/browse/OSSM-6295")
+
+			t.Cleanup(func() {
+				removeIORCustomSetting(t, meshNamespace, meshName)
+				deleteSimpleGateway(t)
+			})
+
+			t.LogStep("Ensure the IOR enabled")
+			enableIOR(t, meshNamespace, meshName)
+
+			t.LogStep("Create simple gateway")
+			createSimpleGateway(t)
+
+			t.LogStep("Add labels argocd.argoproj.io/instance and argocd.argoproj.io/secret-type=cluster to the existing Gateway")
+			oc.Label(t, meshNamespace, "gateway", gatewayName, "argocd.argoproj.io/instance=app argocd.argoproj.io/secret-type=cluster")
+
+			t.LogStep("Add annotations argocd.argoproj.io/instance and argocd.argoproj.io/secret-type=cluster to the existing Gateway")
+			oc.Patch(t, meshNamespace, "gateway", gatewayName, "merge", `
+metadata:
+  annotations:
+    argocd.argoproj.io/instance: app
+    argocd.argoproj.io/secret-type: cluster
+`)
+
+			t.LogStep("Check the argocd.argoproj.io/secret label was copied to the Route")
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				if oc.ResourceByLabelExists(t, "istio-system", "route", "argocd.argoproj.io/secret-type=cluster") {
+					t.LogSuccess("argocd.argoproj.io/secret-type=cluster label was copied to the Route")
+				} else {
+					t.Fatalf("argocd.argoproj.io/secret-type=cluster label was not copied to the Route")
+				}
+			})
+
+			t.LogStep("Check the argocd.argoproj.io/instance label was not copied to the Route")
+			if oc.ResourceByLabelExists(t, "istio-system", "route", "argocd.argoproj.io/instance=app") {
+				t.Fatalf("argocd.argoproj.io/instance=app label was copied to the Route")
+			} else {
+				t.LogSuccess("argocd.argoproj.io/instance=app label was not copied to the Route")
+			}
+
+			t.LogStep("Check the argocd.argoproj.io/secret annotation was copied to the Route")
+			checkAnnotationCopiedToRoute(t, meshNamespace, "argocd.argoproj.io/secret-type", "cluster", gatewayName)
+
+			t.LogStep("Check the argocd.argoproj.io/instance annotation was copied to the Route")
+			checkAnnotationCopiedToRoute(t, meshNamespace, "argocd.argoproj.io/instance", "app", gatewayName)
+		})
+
 		t.NewSubTest("Check Headless service in istio namespace does not break IOR").Run(func(t test.TestHelper) {
 			if env.GetSMCPVersion().LessThan(version.SMCP_2_5) {
 				t.Skip("Issue fixed from SMCP 2.5")
@@ -271,9 +324,9 @@ func TestIOR(t *testing.T) {
 			oc.ApplyString(t, meshNamespace, `
 apiVersion: v1
 kind: Service
-metadata: 
+metadata:
   name: test-headless
-spec: 
+spec:
   clusterIP: None # headless
   type: ClusterIP
   # no selectors in spec`)
@@ -419,4 +472,14 @@ spec:
 ---`,
 		name, ns, host,
 	)
+}
+
+func checkAnnotationCopiedToRoute(t test.TestHelper, meshNamespace, annotationKey, annotationValue, expectedOutput string) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		shell.Execute(t,
+			fmt.Sprintf(`oc get route -n %s -o json | jq -r '.items[] | select(.metadata.annotations["%s"] == "%s") | .metadata.name'`, meshNamespace, annotationKey, annotationValue),
+			assert.OutputContains(expectedOutput,
+				fmt.Sprintf("%s=%s annotation was copied to the Route", annotationKey, annotationValue),
+				fmt.Sprintf("%s=%s annotation was not copied to the Route", annotationKey, annotationValue)))
+	})
 }
