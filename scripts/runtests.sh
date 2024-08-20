@@ -30,13 +30,17 @@ runTestsAgainstVersion() {
         echo "ERROR: must specify version in SMCP_VERSION env var"
         exit 1
     fi
+    
+    unset EXPECTED_VERSION
 
-    EXPECTED_VERSIONS=""
-    for version in "$EXPECTED_VERSIONS[@]"; do
-        if[[ "$version" == "$SMCP_VERSION"* ]]; then
-            export EXPECTED_VERSION="$version"
-        fi
-    done
+    if [ -n "$EXPECTED_VERSIONS" ]; then 
+        for version in "${EXPECTED_VERSIONS[@]}"; do
+            if [[ "$version" == "$SMCP_VERSION"* ]]; then
+                export EXPECTED_VERSION="$version"
+                break
+            fi
+        done
+    fi
 
     echo "Output dir: $OUTPUT_DIR"
     mkdir -p "$OUTPUT_DIR"
