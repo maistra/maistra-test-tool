@@ -3,6 +3,7 @@ FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 ARG HELM_VERSION="v3.11.3"
 ARG GO_VERSION="1.20.3"
 ARG OCP_VERSION="stable"
+ARG TARGETARCH
 
 ENV GOPATH=/go
 ENV PATH=/usr/local/go/bin:$GOPATH/bin:$PATH
@@ -10,16 +11,16 @@ ENV PATH=/usr/local/go/bin:$GOPATH/bin:$PATH
 ENV HOME=$GOPATH/src/maistra-test-tool
 
 RUN microdnf install -y --nodocs tar gzip openssl findutils make git && \
-    curl -Lo ./oc.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OCP_VERSION}/openshift-client-linux.tar.gz && \
+    curl -Lo ./oc.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OCP_VERSION}/openshift-client-linux-${TARGETARCH}-rhel9.tar.gz && \
     tar -xf oc.tar.gz -C /usr/bin && \
     rm -f oc.tar.gz && \
-    curl -Lo ./golang.tar.gz https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
+    curl -Lo ./golang.tar.gz https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz && \
     tar -xf golang.tar.gz -C /usr/local && \
     rm -f golang.tar.gz && \
-    curl -LOk https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz && \
-    tar -xzf helm-${HELM_VERSION}-linux-amd64.tar.gz && \
-    mv linux-amd64/helm /usr/bin/ && \
-    rm -rf helm-${HELM_VERSION}-linux-amd64.tar.gz linux-amd64 && \
+    curl -LOk https://get.helm.sh/helm-${HELM_VERSION}-linux-${TARGETARCH}.tar.gz && \
+    tar -xzf helm-${HELM_VERSION}-linux-${TARGETARCH}.tar.gz && \
+    mv linux-${TARGETARCH}/helm /usr/bin/ && \
+    rm -rf helm-${HELM_VERSION}-linux-${TARGETARCH}.tar.gz linux-${TARGETARCH} && \
     microdnf update -y && \
     microdnf clean all -y && \
     mkdir -p "$GOPATH/src/maistra-test-tool" "$GOPATH/bin"
