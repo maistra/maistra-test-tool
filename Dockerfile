@@ -20,8 +20,8 @@ RUN microdnf install -y --nodocs tar gzip openssl findutils make git && \
     tar -xzf helm-${HELM_VERSION}-linux-amd64.tar.gz && \
     mv linux-amd64/helm /usr/bin/ && \
     rm -rf helm-${HELM_VERSION}-linux-amd64.tar.gz linux-amd64 && \
-    microdnf update && \
-    microdnf clean all && \
+    microdnf update -y && \
+    microdnf clean all -y && \
     mkdir -p "$GOPATH/src/maistra-test-tool" "$GOPATH/bin"
 
 COPY . $HOME
