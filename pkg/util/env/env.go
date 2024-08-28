@@ -107,3 +107,7 @@ func GetOutputDir() string {
 func IsMetalLBInternalIPEnabled() bool {
 	return getenv("METALLB_INTERNAL_IP_ENABLED", "false") == "true"
 }
+
+func GetExpectedVersion() string {
+	return getenv("EXPECTED_VERSION", "")
+}
