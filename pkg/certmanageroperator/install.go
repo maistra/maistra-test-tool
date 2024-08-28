@@ -59,7 +59,9 @@ func install(t test.TestHelper) {
 	})
 
 	t.LogStep("Create root ca")
-	oc.ApplyString(t, certManagerNs, rootCA)
+	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(20).DelayBetweenAttempts(5*time.Second), func(t test.TestHelper) {
+		oc.ApplyString(t, certManagerNs, rootCA)
+	})
 }
 
 func Uninstall(t test.TestHelper) {
