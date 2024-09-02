@@ -286,10 +286,10 @@ func TestIOR(t *testing.T) {
 			createSimpleGateway(t)
 
 			t.LogStep("Add labels argocd.argoproj.io/instance and argocd.argoproj.io/secret-type=cluster to the existing Gateway")
-			oc.Label(t, meshNamespace, "gateway", gatewayName, "argocd.argoproj.io/instance=app argocd.argoproj.io/secret-type=cluster")
+			oc.Label(t, meshNamespace, "gateway.networking.istio.io", gatewayName, "argocd.argoproj.io/instance=app argocd.argoproj.io/secret-type=cluster")
 
 			t.LogStep("Add annotations argocd.argoproj.io/instance and argocd.argoproj.io/secret-type=cluster to the existing Gateway")
-			oc.Patch(t, meshNamespace, "gateway", gatewayName, "merge", `
+			oc.Patch(t, meshNamespace, "gateway.networking.istio.io", gatewayName, "merge", `
 metadata:
   annotations:
     argocd.argoproj.io/instance: app
