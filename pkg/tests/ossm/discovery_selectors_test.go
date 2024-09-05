@@ -49,6 +49,9 @@ func TestDiscoverySelectors(t *testing.T) {
 		app.InstallAndWaitReady(t, app.Sleep(ns.Foo), app.Httpbin(ns.MeshExternal))
 		t.Cleanup(func() {
 			app.Uninstall(t, app.Sleep(ns.Foo), app.Httpbin(ns.MeshExternal))
+			// since the smcp clusterwide mode was used, clean the namespace
+			t.LogStepf("Delete namespace %s", meshNamespace)
+			oc.RecreateNamespace(t, meshNamespace)
 		})
 
 		t.LogStep("Confirm that the httpbin and sleep services have been discovered")
