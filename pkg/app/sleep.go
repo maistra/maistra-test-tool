@@ -26,9 +26,12 @@ import (
 )
 
 type sleep struct {
-	ns            string
-	injectSidecar bool
-	tproxy        bool
+	ns              string
+	injectSidecar   bool
+	tproxy          bool
+	securityContext bool
+	runAsUser       int
+	runAsGroup      int
 }
 
 var _ App = &sleep{}
@@ -43,6 +46,16 @@ func SleepNoSidecar(ns string) App {
 
 func SleepTroxy(ns string) App {
 	return &sleep{ns: ns, injectSidecar: true, tproxy: true}
+}
+
+func SleepSecurityContext(ns string, uid, gid int) App {
+	return &sleep{
+		ns:              ns,
+		injectSidecar:   true,
+		securityContext: true,
+		runAsUser:       uid,
+		runAsGroup:      gid,
+	}
 }
 
 func (a *sleep) Name() string {
@@ -66,10 +79,14 @@ func (a *sleep) Uninstall(t test.TestHelper) {
 func (a *sleep) values(t test.TestHelper) map[string]interface{} {
 	proxy := oc.GetProxy(t)
 	return map[string]interface{}{
-		"InjectSidecar": a.injectSidecar,
-		"HttpProxy":     proxy.HTTPProxy,
-		"HttpsProxy":    proxy.HTTPSProxy,
-		"NoProxy":       proxy.NoProxy,
+		"InjectSidecar":   a.injectSidecar,
+		"HttpProxy":       proxy.HTTPProxy,
+		"HttpsProxy":      proxy.HTTPSProxy,
+		"NoProxy":         proxy.NoProxy,
+		"Tproxy":          a.tproxy,
+		"securityContext": a.securityContext,
+		"runAsUser":       a.runAsUser,
+		"runAsGroup":      a.runAsGroup,
 	}
 }
 
@@ -204,6 +221,11 @@ spec:
         volumeMounts:
         - mountPath: /etc/sleep/tls
           name: secret-volume
+        {{ if .securityContext }}
+        securityContext:
+          runAsUser: {{ .runAsUser }}
+          runAsGroup: {{ .runAsGroup }}
+        {{ end }}
       volumes:
       - name: secret-volume
         secret:
