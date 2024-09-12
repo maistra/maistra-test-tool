@@ -60,7 +60,8 @@ func (pi *prometheus_struct) Query(t test.TestHelper, ns string, query string) P
 
 	output := oc.Exec(t,
 		pod.MatchingSelectorFirst(pi.selector, ns), pi.containerName,
-		fmt.Sprintf("curl -sS -X GET '%s'", urlShellEscaped))
+		// comunity prometheus image doesn't have `curl`, use wget instead
+		fmt.Sprintf("wget -qO- '%s'", urlShellEscaped))
 
 	return parsePrometheusResponse(t, output)
 }
