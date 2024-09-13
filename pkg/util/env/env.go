@@ -114,3 +114,18 @@ func GetOutputDir() string {
 func IsMetalLBInternalIPEnabled() bool {
 	return getenv("METALLB_INTERNAL_IP_ENABLED", "false") == "true"
 }
+
+func GetKialiVersion() string {
+	switch GetSMCPVersion() {
+	case version.SMCP_2_3:
+		return "v1.57"
+	case version.SMCP_2_4:
+		return "v1.65"
+	case version.SMCP_2_5:
+		return "v1.73"
+	case version.SMCP_2_6:
+		return "v1.73"
+	default:
+		return "v1.73"
+	}
+}
