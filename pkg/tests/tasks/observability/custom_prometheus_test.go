@@ -21,12 +21,12 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
+	"github.com/maistra/maistra-test-tool/pkg/prometheusoperator"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/operator"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/prometheus"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
@@ -35,7 +35,7 @@ import (
 )
 
 func TestCustomPrometheus(t *testing.T) {
-	const customPrometheusNs = "custom-prometheus"
+	const customPrometheusNs = "custom-prometheus-operator"
 
 	test.NewTest(t).Id("custom-prometheus").Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
 		smcpVer := env.GetSMCPVersion()
@@ -59,18 +59,13 @@ func TestCustomPrometheus(t *testing.T) {
 		})
 
 		t.LogStep("Installing Prometheus operator")
-		oc.CreateNamespace(t, customPrometheusNs)
-		installPrometheusOperator(t, customPrometheusNs)
+		prometheusoperator.Install(t)
 
 		t.LogStep("Creating SMCP with Prometheus extension provider")
 		createSmcpWithPrometheusExtensionProvider(t, meshNamespace, customPrometheusNs, ns.Bookinfo)
 
 		t.LogStep("Installing custom Prometheus")
-		installPrometheus(t, customPrometheusNs, meshNamespace, ns.Bookinfo)
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			prometheusPod := pod.MatchingSelector("app.kubernetes.io/name=prometheus-operator", customPrometheusNs)
-			oc.WaitPodRunning(t, prometheusPod)
-		})
+		prometheusoperator.InstalPrometheusInstance(t, meshNamespace, ns.Bookinfo)
 
 		t.LogStep("Intalling Bookinfo app")
 		oc.WaitSMCPReady(t, meshNamespace, "basic")
@@ -86,9 +81,6 @@ func TestCustomPrometheus(t *testing.T) {
 		enableAppMtlsMonitoring(t, customPrometheusNs, ns.Bookinfo)
 
 		t.LogStep("Waiting for installs to complete")
-		fullCsvName := operator.GetFullCsvName(t, customPrometheusNs, "rhods-prometheus")
-		operator.WaitForOperatorInNamespaceReady(t, customPrometheusNs, "k8s-app=prometheus-operator", fullCsvName)
-		oc.WaitPodReady(t, pod.MatchingSelector("prometheus=prometheus", customPrometheusNs))
 		bookinfoApp.WaitReady(t)
 
 		t.LogStep("Sending request to Bookinfo app")
@@ -129,30 +121,6 @@ func ocWaitJsonpath(t test.TestHelper, ns, kind, name, jsonpath, expected, succe
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		oc.DefaultOC.Invoke(t, cmd, assert.OutputContains(" condition met\n", successMessage, failureMsg))
 	})
-}
-
-func installPrometheusOperator(t test.TestHelper, ns string) {
-	t.T().Helper()
-	oc.ApplyString(t, ns,
-		fmt.Sprintf(`
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-  name: custom-prometheus-operators
-spec:
-  targetNamespaces:
-    - %s`,
-			ns),
-		`
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: rhods-prometheus-operator
-spec:
-  channel: beta
-  name: rhods-prometheus-operator
-  source: redhat-operators 
-  sourceNamespace: openshift-marketplace`)
 }
 
 func createSmcpWithPrometheusExtensionProvider(t test.TestHelper, smcpNs, prometheusNs, additionalSmmrNs string) {
@@ -203,79 +171,6 @@ spec:
   - %s`,
 		prometheusNs,
 		additionalSmmrNs))
-}
-
-func installPrometheus(t test.TestHelper, ns string, permittedNs ...string) {
-	t.T().Helper()
-	oc.ApplyString(t, ns,
-		fmt.Sprintf(`
-apiVersion: monitoring.coreos.com/v1
-kind: Prometheus
-metadata:
-  name: prometheus
-spec:
-  securityContext: {}
-  serviceAccountName: prometheus-k8s
-  podMonitorSelector: {}
-  podMonitorNamespaceSelector:
-    matchLabels:
-      kubernetes.io/metadata.name: %s
-  serviceMonitorSelector: {}
-  serviceMonitorNamespaceSelector:
-    matchLabels:
-      kubernetes.io/metadata.name: %s
-  podMetadata:
-    annotations:
-      sidecar.istio.io/inject: "true"
-      traffic.sidecar.istio.io/includeInboundPorts: ""
-      traffic.sidecar.istio.io/includeOutboundIPRanges: ""
-      proxy.istio.io/config: |
-        proxyMetadata:
-          OUTPUT_CERTS: /etc/istio-output-certs
-      sidecar.istio.io/userVolumeMount: '[{"name": "istio-certs", "mountPath": "/etc/istio-output-certs"}]'
-  volumes:
-  - name: istio-certs
-    emptyDir:
-      medium: Memory
-  volumeMounts:
-  - mountPath: /etc/prom-certs/
-    name: istio-certs`,
-			ns,
-			ns))
-
-	for _, permitNs := range permittedNs {
-		oc.ApplyString(t, permitNs,
-			`
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: custom-prometheus-permissions
-rules:
-- apiGroups: [""]
-  resources:
-  - services
-  - endpoints
-  - pods
-  verbs: ["get", "list", "watch"]
-- apiGroups: [""]
-  resources:
-  - configmaps
-  verbs: ["get"]`,
-			fmt.Sprintf(`
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: custom-prometheus-permissions
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: custom-prometheus-permissions
-subjects:
-- kind: ServiceAccount
-  name: prometheus-k8s
-  namespace: %s`,
-				ns))
-	}
 }
 
 func enablePrometheusTelemetry(t test.TestHelper, smcpNs string) {
