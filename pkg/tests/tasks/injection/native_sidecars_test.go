@@ -53,8 +53,8 @@ func TestNativeSidecars(t *testing.T) {
 		oc.ApplyTemplate(t, meshNamespace, meshTmpl, meshValues)
 		oc.WaitSMCPReady(t, meshNamespace, "basic")
 
-		t.LogStep("Install httpbin and sleep in mode")
-		app.InstallAndWaitReady(t, app.HttpbinTproxy(ns.Foo), app.SleepTroxy(ns.Foo))
+		t.LogStep("Install httpbin and sleep app")
+		app.InstallAndWaitReady(t, app.Httpbin(ns.Foo), app.Sleep(ns.Foo))
 
 		t.NewSubTest("HTTP request from ingress gateway to httpbin in mode").Run(func(t TestHelper) {
 			oc.ApplyFile(t, ns.Foo, "https://raw.githubusercontent.com/maistra/istio/maistra-2.6/samples/httpbin/httpbin-gateway.yaml")
