@@ -40,6 +40,8 @@ func TestTproxy(t *testing.T) {
 		}
 
 		t.Cleanup(func() {
+			t.LogStep("Remove privileged SCC from the app namespace")
+			shell.Executef(t, "oc adm policy remove-scc-from-group privileged system:serviceaccounts:%s", ns.Foo)
 			oc.RecreateNamespace(t, ns.Foo)
 		})
 

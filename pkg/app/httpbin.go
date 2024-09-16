@@ -98,6 +98,7 @@ func (a *httpbin) values() map[string]interface{} {
 		"InjectSidecar": a.injectSidecar,
 		"Name":          a.deploymentName,
 		"Version":       a.versionLabel,
+		"Tproxy":        a.tproxy,
 	}
 }
 
