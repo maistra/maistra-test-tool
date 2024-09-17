@@ -1,0 +1,33 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: grpc-gateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: grpc-credential
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: grpc
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - grpc-gateway
+  http:
+  - route:
+    - destination:
+        host: echo.echo-grpc.svc.cluster.local
+        port:
+          number: 7070
