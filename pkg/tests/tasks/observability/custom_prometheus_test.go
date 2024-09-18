@@ -27,7 +27,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/prometheus"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -50,12 +49,7 @@ func TestCustomPrometheus(t *testing.T) {
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Bookinfo)
 			oc.RecreateNamespace(t, meshNamespace)
-			oc.DeleteNamespace(t, customPrometheusNs)
-
-			// HACK: workaround for a bug with the OLM CSV cache (possibly OCPBUGS-5080)
-			// the bug is preventing re-installing prometheus again on the same cluster unless the cache is cleared
-			oc.DeletePod(t, pod.MatchingSelector("app=catalog-operator", "openshift-operator-lifecycle-manager"))
-			oc.DeletePod(t, pod.MatchingSelector("app=olm-operator", "openshift-operator-lifecycle-manager"))
+			prometheusoperator.Uninstall(t)
 		})
 
 		t.LogStep("Installing Prometheus operator")
