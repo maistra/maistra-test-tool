@@ -46,6 +46,7 @@ type Prometheus interface {
 	WithSelector(selector string) Prometheus
 	WithContainerName(containerName string) Prometheus
 	Query(t test.TestHelper, ns string, query string) PrometheusResponse
+	Targets(t test.TestHelper, ns string) string
 }
 
 func Query(t test.TestHelper, ns string, query string) PrometheusResponse {
@@ -56,6 +57,14 @@ func CustomPrometheusQuery(t test.TestHelper, ns string, query string) Prometheu
 	return DefaultCustomPrometheus.Query(t, ns, query)
 }
 
+func CustomPrometheusTargets(t test.TestHelper, ns string) string {
+	return DefaultCustomPrometheus.Targets(t, ns)
+}
+
 func ThanosQuery(t test.TestHelper, ns string, query string) PrometheusResponse {
 	return DefaultThanos.Query(t, ns, query)
+}
+
+func ThanosTargets(t test.TestHelper, ns string) string {
+	return DefaultThanos.Targets(t, ns)
 }

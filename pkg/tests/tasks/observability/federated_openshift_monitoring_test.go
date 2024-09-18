@@ -17,6 +17,7 @@ package observability
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
@@ -62,15 +63,23 @@ func TestFederatedOpenShiftMonitoring(t *testing.T) {
 		oc.WaitPodsExist(t, ns.Foo)
 		oc.WaitAllPodsReady(t, ns.Foo)
 
+		t.LogStep("Apply federated metrics monitor")
+		oc.ApplyString(t, meshNamespace, federatedMonitor)
+
+		t.LogStep("Wait until istio targets appear in the Prometheus")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			resp := prometheus.ThanosTargets(t, monitoringNs)
+			if !strings.Contains(resp, "serviceMonitor/istio-system/istio-federation") {
+				t.Error("Istio Prometheus target serviceMonitor/istio-system/istio-federation are not ready")
+			}
+		})
+
 		t.LogStep("Generate some ingress traffic")
 		oc.ApplyFile(t, ns.Foo, "https://raw.githubusercontent.com/maistra/istio/maistra-2.6/samples/httpbin/httpbin-gateway.yaml")
 		httpbinURL := fmt.Sprintf("http://%s/headers", istio.GetIngressGatewayHost(t, meshNamespace))
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			curl.Request(t, httpbinURL, nil, assert.ResponseStatus(http.StatusOK))
 		})
-
-		t.LogStep("Apply federated metrics monitor")
-		oc.ApplyString(t, meshNamespace, federatedMonitor)
 
 		t.LogStep("Check istiod metrics")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
