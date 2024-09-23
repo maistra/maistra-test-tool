@@ -55,15 +55,13 @@ func (pi *prometheus_struct) WithContainerName(containerName string) Prometheus 
 
 func (pi *prometheus_struct) Query(t test.TestHelper, ns string, query string) PrometheusResponse {
 	queryString := url.Values{"query": []string{query}}.Encode()
-	url := fmt.Sprintf(`http://localhost:9090/api/v1/query?%s`, queryString)
-	urlShellEscaped := strings.ReplaceAll(url, `'`, `'\\''`)
-
-	output := oc.Exec(t,
-		pod.MatchingSelectorFirst(pi.selector, ns), pi.containerName,
-		// comunity prometheus image doesn't have `curl`, use wget instead
-		fmt.Sprintf("wget -qO- '%s'", urlShellEscaped))
-
+	output := getPrometheusApi(t, pi, ns, fmt.Sprintf(`query?%s`, queryString))
 	return parsePrometheusResponse(t, output)
+}
+
+func (pi *prometheus_struct) Targets(t test.TestHelper, ns string) string {
+	output := getPrometheusApi(t, pi, ns, `targets?state=active`)
+	return output
 }
 
 func parsePrometheusResponse(t test.TestHelper, response string) PrometheusResponse {
@@ -75,4 +73,15 @@ func parsePrometheusResponse(t test.TestHelper, response string) PrometheusRespo
 	}
 
 	return *result
+}
+
+func getPrometheusApi(t test.TestHelper, pi *prometheus_struct, ns string, endpoint string) string {
+	url := fmt.Sprintf(`http://localhost:9090/api/v1/%s`, endpoint)
+	urlShellEscaped := strings.ReplaceAll(url, `'`, `'\\''`)
+
+	output := oc.Exec(t,
+		pod.MatchingSelectorFirst(pi.selector, ns), pi.containerName,
+		// comunity prometheus image doesn't have `curl`, use wget instead
+		fmt.Sprintf("wget -qO- '%s'", urlShellEscaped))
+	return output
 }

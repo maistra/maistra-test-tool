@@ -74,18 +74,28 @@ func TestCustomPrometheus(t *testing.T) {
 		enableIstioProxiesMonitoring(t, customPrometheusNs, meshNamespace, ns.Bookinfo)
 		enableAppMtlsMonitoring(t, customPrometheusNs, ns.Bookinfo)
 
+		t.LogStep("Testing if telemetry was enabled")
+		ocWaitJsonpath(t, meshNamespace, "smcp", "basic",
+			"{.status.appliedValues.istio.telemetry.enabled}", "true",
+			"Telemetry was enabled.", "Telemetry failed to enable.")
+
 		t.LogStep("Waiting for installs to complete")
 		bookinfoApp.WaitReady(t)
+
+		t.LogStep("Wait until istio targets appear in the Prometheus")
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			resp := prometheus.CustomPrometheusTargets(t, customPrometheusNs)
+			if !strings.Contains(resp, "istiod-monitor") ||
+				!strings.Contains(resp, "app-metrics-monitor-mtls") ||
+				!strings.Contains(resp, "istio-proxies-monitor") {
+				t.Error("Istio Prometheus targets istiod-monitor/app-metrics-monitor-mtls/istio-proxies-monitor are not ready")
+			}
+		})
 
 		t.LogStep("Sending request to Bookinfo app")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			curl.Request(t, app.BookinfoProductPageURL(t, meshNamespace), nil, assert.ResponseStatus(http.StatusOK))
 		})
-
-		t.LogStep("Testing if telemetry was enabled")
-		ocWaitJsonpath(t, meshNamespace, "smcp", "basic",
-			"{.status.appliedValues.istio.telemetry.enabled}", "true",
-			"Telemetry was enabled.", "Telemetry failed to enable.")
 
 		t.LogStep("Testing if 'istio_requests_total' metric is available through Prometheus API")
 		retry.UntilSuccess(t, func(t test.TestHelper) {
