@@ -60,6 +60,7 @@ func TestOpenShiftMonitoring(t *testing.T) {
 		kialiValues := map[string]string{
 			"SmcpName":      smcpName,
 			"SmcpNamespace": meshNamespace,
+			"KialiVersion":  env.GetKialiVersion(),
 		}
 
 		t.Cleanup(func() {
@@ -87,6 +88,8 @@ func TestOpenShiftMonitoring(t *testing.T) {
 				oc.DeleteFromString(t, meshNamespace, enableTrafficMetrics)
 				app.Uninstall(t, app.Httpbin(ns.Foo))
 				oc.DeleteFromTemplate(t, meshNamespace, meshTmpl, meshValues)
+				oc.RecreateNamespace(t, ns.Foo)
+				oc.RecreateNamespace(t, meshNamespace)
 			})
 
 			t.LogStep("Deploying SMCP")
@@ -113,6 +116,7 @@ func TestOpenShiftMonitoring(t *testing.T) {
 			oc.ApplyString(t, meshNamespace, istiodMonitor)
 			oc.ApplyString(t, ns.Foo, istioProxyMonitor)
 
+			waitUntilAllPrometheusTargetReady(t, kialiToken)
 			generateTrafficAndcheckMetrics(t, kialiToken)
 		})
 
@@ -124,6 +128,8 @@ func TestOpenShiftMonitoring(t *testing.T) {
 				app.Uninstall(t, app.Httpbin(ns.Foo))
 				oc.DeleteFromTemplate(t, meshNamespace, networkPolicy, map[string]string{"namespace": meshNamespace})
 				oc.DeleteFromTemplate(t, meshNamespace, meshTmpl, meshValues)
+				oc.RecreateNamespace(t, ns.Foo)
+				oc.RecreateNamespace(t, meshNamespace)
 			})
 
 			t.LogStep("Deploying SMCP")
@@ -155,6 +161,7 @@ func TestOpenShiftMonitoring(t *testing.T) {
 			oc.ApplyString(t, meshNamespace, istiodMonitor)
 			oc.ApplyString(t, ns.Foo, istioProxyMonitor)
 
+			waitUntilAllPrometheusTargetReady(t, kialiToken)
 			generateTrafficAndcheckMetrics(t, kialiToken)
 		})
 	})
@@ -193,9 +200,12 @@ func generateTrafficAndcheckMetrics(t test.TestHelper, thanosToken string) {
 	t.LogStep("Generate some ingress traffic")
 	oc.ApplyFile(t, ns.Foo, "https://raw.githubusercontent.com/maistra/istio/maistra-2.6/samples/httpbin/httpbin-gateway.yaml")
 	httpbinURL := fmt.Sprintf("http://%s/headers", istio.GetIngressGatewayHost(t, meshNamespace))
-	retry.UntilSuccess(t, func(t test.TestHelper) {
-		curl.Request(t, httpbinURL, nil, assert.ResponseStatus(http.StatusOK))
-	})
+
+	for i := 0; i < 5; i++ {
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			curl.Request(t, httpbinURL, nil, assert.ResponseStatus(http.StatusOK))
+		})
+	}
 
 	t.LogStep("Check istiod metrics")
 	checkMetricExists(t, meshNamespace, "pilot_info", thanosToken)
@@ -218,10 +228,34 @@ func checkMetricExists(t test.TestHelper, ns, metricName, token string) {
 	})
 }
 
+func waitUntilAllPrometheusTargetReady(t test.TestHelper, token string) {
+	waitUntilPrometheusTargetReady(t, "serviceMonitor", meshNamespace, "istiod-monitor", token)
+	waitUntilPrometheusTargetReady(t, "podMonitor", ns.Foo, "istio-proxies-monitor", token)
+}
+
+func waitUntilPrometheusTargetReady(t test.TestHelper, monitorType string, ns string, targetName string, token string) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		oc.Exec(t,
+			pod.MatchingSelectorFirst("app.kubernetes.io/instance=thanos-querier", monitoringNs),
+			"thanos-query",
+			prometheusActiveTargetQuery(token),
+			assert.OutputContains(
+				fmt.Sprintf(`"scrapePool":"%s/%s/%s`, monitorType, ns, targetName),
+				fmt.Sprintf("The %s %s prometheus target is ready in namespace %s", monitorType, targetName, ns),
+				fmt.Sprintf("The %s %s prometheus target is not ready yet in namespace %s", monitorType, targetName, ns)),
+		)
+	})
+}
+
 func prometheusQuery(ns, metricName, token string) string {
 	return fmt.Sprintf(
 		`curl -X GET -kG "https://localhost:9091/api/v1/query?namespace=%s&query=%s" --data-urlencode "query=up" -H "Authorization: Bearer %s"`,
 		ns, metricName, token)
+}
+
+func prometheusActiveTargetQuery(token string) string {
+	return fmt.Sprintf(
+		`curl -X GET -kG "https://localhost:9091/api/v1/targets?state=active" --data-urlencode "query=up" -H "Authorization: Bearer %s"`, token)
 }
 
 func fetchKialiToken(t test.TestHelper) string {

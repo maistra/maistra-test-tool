@@ -17,6 +17,10 @@ kind: Kiali
 metadata:
   name: kiali-user-workload-monitoring
 spec:
+  version: {{ .KialiVersion }}
+  # needed for v1.65 (https://github.com/kiali/kiali-operator/blob/v1.89/roles/v1.65/kiali-deploy/tasks/main.yml#L578), it will be overridden by istio operator so it is not important
+  deployment:
+    accessible_namespaces: ["**"]
   external_services:
     prometheus:
       auth:
