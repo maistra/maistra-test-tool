@@ -58,7 +58,7 @@ spec:
 		app.InstallAndWaitReady(t, app.Httpbin(ns.Foo))
 
 		t.NewSubTest("Check sleep with explicitly defined SecurityContext with same uid/gid (1001)").Run(func(t TestHelper) {
-			runSecurityContextTest(t, 1001, 1001, "uid=1002(1002) gid=1002 groups=1002")
+			runSecurityContextTest(t, 1001, 1001, "uid=1002(1002) gid=1002(1002) groups=1002(1002)")
 		})
 
 		t.NewSubTest("Check sleep with explicitly defined SecurityContext with root uid/gid").Run(func(t TestHelper) {
