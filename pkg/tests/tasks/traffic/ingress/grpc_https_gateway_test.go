@@ -32,6 +32,12 @@ var (
 	//go:embed yaml/grpc_https_gateway.yaml
 	grpcurlTLSGatewayHTTPS string
 
+	//go:embed yaml/grpc_passthrough_gateway.yaml
+	grpcurlPassthroughGatewayHTTPS string
+
+	//go:embed yaml/grpc_echo_server_tls.yaml
+	grpcEchoServerTlsTemplate string
+
 	//go:embed yaml/grpc_echo_server.yaml
 	grpcEchoServerTemplate string
 
@@ -84,5 +90,54 @@ func TestExposeGrpcWithHttpsGateway(t *testing.T) {
 				assert.OutputContains("EchoTestService", "rpc command worked successfully", "rpc error"))
 		})
 
+	})
+}
+
+func TestExposeGrpcWitPassthroughGateway(t *testing.T) {
+	test.NewTest(t).Id("T45").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
+
+		t.Log("This test verifies secure grpc traffic with passthrough gateway configuration.")
+
+		if env.GetArch() == "z" || env.GetArch() == "p" {
+			t.Skip("gcr.io/istio-testing/app:latest image is not supported on IBM Z&P")
+		}
+
+		t.Cleanup(func() {
+			app.Uninstall(t, app.GrpCurl(ns.Default))
+			oc.DeleteNamespace(t, ns.EchoGrpc)
+			oc.RecreateNamespace(t, meshNamespace)
+		})
+
+		t.LogStep("Create echo-grpc project")
+		oc.CreateNamespace(t, ns.EchoGrpc)
+
+		t.LogStep("Deploy Control Plane")
+		ossm.DeployControlPlane(t)
+		smcpName := env.GetDefaultSMCPName()
+
+		t.LogStep("Apply SMCP with mTLS true")
+		oc.Patch(t,
+			meshNamespace, "smcp", smcpName, "merge",
+			`{"spec":{"security":{"dataPlane":{"mtls":true}}}}`,
+		)
+
+		t.LogStep("Update SMMR to include EchoGrpc Namespaces")
+		oc.ApplyString(t, meshNamespace, ossm.AppendDefaultSMMR(ns.EchoGrpc))
+		oc.WaitSMMRReady(t, meshNamespace)
+
+		t.LogStep("Create Echo Grpc Server")
+		oc.ApplyTemplate(t, ns.EchoGrpc, grpcEchoServerTlsTemplate, nil)
+
+		t.LogStep("Configure a TLS ingress gateway for a single host")
+		oc.ApplyString(t, ns.EchoGrpc, grpcurlPassthroughGatewayHTTPS)
+
+		t.LogStep("Install grpcurl image")
+		app.Install(t, app.GrpCurl(ns.Default))
+		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(20), func(t test.TestHelper) {
+			oc.LogsFromPods(t,
+				ns.Default,
+				"app=grpcurl",
+				assert.OutputContains("EchoTestService", "rpc command worked successfully", "rpc error"))
+		})
 	})
 }
