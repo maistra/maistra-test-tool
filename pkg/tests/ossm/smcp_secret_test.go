@@ -19,20 +19,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
-	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 func TestSMCPSecret(t *testing.T) {
 	NewTest(t).Id("T52").Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
 		// Created a subtest because we need to add more test related to Addons in the future.
 		t.NewSubTest("secret_validation").Run(func(t TestHelper) {
-
-			if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
-				t.Skip("Secret is not valid in SMCP versions v2.3")
-			}
 
 			DeployControlPlane(t)
 
