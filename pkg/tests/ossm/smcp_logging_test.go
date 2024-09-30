@@ -39,9 +39,16 @@ func TestLogging(t *testing.T) {
 		t.LogStep("Try to patch SMCP with unsupported log levels (trace, critical), patch should fail")
 		shell.Execute(t,
 			fmt.Sprintf("oc patch smcp/%s -n %s --type merge --patch '%s' || true", smcpName, meshNamespace, errorLoggingComponentLevelsSMCP),
-			assert.OutputContains(`Error from server (BadRequest): admission webhook "smcp.validation.maistra.io" denied the request: [istiod doesn't support 'trace' log level, istiod doesn't support 'critical' log level]`,
+			assert.OutputContains(`Error from server (BadRequest): admission webhook "smcp.validation.maistra.io" denied the request:`,
 				"Patch failed as expected due to unsupported log levels",
-				"Patch succeeded unexpectedly, unsupported log levels were not rejected"))
+				"Patch succeeded unexpectedly, unsupported log levels were not rejected"),
+			assert.OutputContains(`istiod doesn't support 'trace' log level`,
+				"Patch failed as expected due to unsupported log levels",
+				"Patch succeeded unexpectedly, unsupported log levels were not rejected"),
+			assert.OutputContains(`istiod doesn't support 'critical' log level`,
+				"Patch failed as expected due to unsupported log levels",
+				"Patch succeeded unexpectedly, unsupported log levels were not rejected"),
+		)
 
 		t.LogStep("Wait SMCP ready")
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
