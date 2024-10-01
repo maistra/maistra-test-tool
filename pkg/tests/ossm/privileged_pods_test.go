@@ -58,16 +58,16 @@ spec:
 		app.InstallAndWaitReady(t, app.Httpbin(ns.Foo))
 
 		t.NewSubTest("Check sleep with explicitly defined SecurityContext with same uid/gid (1001)").Run(func(t TestHelper) {
-			runSecurityContextTest(t, 1001, 1001, "uid=1002(1002) gid=1002(1002) groups=1002(1002)")
+			runSecurityContextTest(t, 1001, 1001, "uid=1002", "gid=1002", "groups=1002")
 		})
 
 		t.NewSubTest("Check sleep with explicitly defined SecurityContext with root uid/gid").Run(func(t TestHelper) {
-			runSecurityContextTest(t, 0, 0, "uid=1(bin) gid=1(bin) groups=1(bin)")
+			runSecurityContextTest(t, 0, 0, "uid=1", "gid=1", "groups=1")
 		})
 	})
 }
 
-func runSecurityContextTest(t TestHelper, uid, gid int, expectedIDOutput string) {
+func runSecurityContextTest(t TestHelper, uid, gid int, expectedUid, expectedGid, expectedGroups string) {
 	t.Cleanup(func() {
 		app.Uninstall(t, app.SleepSecurityContext(ns.Foo, uid, gid))
 	})
@@ -80,13 +80,22 @@ func runSecurityContextTest(t TestHelper, uid, gid int, expectedIDOutput string)
 		app.SleepSecurityContext(ns.Foo, uid, gid),
 	)
 
-	t.LogStepf("Verify that UID, GID and Groups were changed to: %s", expectedIDOutput)
+	t.LogStepf("Verify that UID, GID and Groups were changed to: %s, %s, %s", expectedUid, expectedGid, expectedGroups)
 	oc.Exec(t, pod.MatchingSelector("app=sleep", ns.Foo), "istio-proxy",
 		"id",
 		assert.OutputContains(
-			expectedIDOutput,
-			"UID, GID and Groups were changed",
-			"UID, GID and Groups were not changed"))
+			expectedUid,
+			"UID was changed",
+			"UID was not changed"),
+		assert.OutputContains(
+			expectedGid,
+			"GID was changed",
+			"GID was not changed"),
+		assert.OutputContains(
+			expectedGroups,
+			"Groups were changed",
+			"Groups were not changed"),
+	)
 
 	t.LogStep("Verify that a request from sleep to httpbin returns 200")
 	app.AssertSleepPodRequestSuccess(t, ns.Foo, "http://httpbin:8000/ip")
