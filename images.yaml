@@ -117,3 +117,9 @@ busybox:
   z: quay.io/maistra/busybox:1.28
   arm64: quay.io/maistra/busybox:1.28
 
+grpcurl:
+  x86: quay.io/maistra/grpcurl:latest
+  p: quay.io/maistra/grpcurl:latest
+  z: quay.io/maistra/grpcurl:latest
+  arm64: quay.io/maistra/grpcurl:latest
+

@@ -21,4 +21,6 @@ const (
 	Legacy       = "legacy"
 	MeshExternal = "mesh-external"
 	MetalLB      = "metallb-system"
+	EchoGrpc     = "echo-grpc"
+	Default      = "default"
 )
