@@ -44,6 +44,10 @@ func TestExposeGrpcWithHttpsGateway(t *testing.T) {
 
 		t.Log("This test verifies tls decapsulation of grpc messages in gateway.")
 
+		if env.GetArch() == "z" || env.GetArch() == "p" {
+			t.Skip("gcr.io/istio-testing/app:latest image is not supported on IBM Z&P")
+		}
+
 		t.Cleanup(func() {
 			app.Uninstall(t, app.GrpCurl(ns.Default))
 			oc.DeleteNamespace(t, ns.EchoGrpc)
