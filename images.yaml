@@ -123,3 +123,7 @@ grpcurl:
   z: quay.io/maistra/grpcurl:latest
   arm64: quay.io/maistra/grpcurl:latest
 
+grpc-echo:
+  x86: gcr.io/istio-testing/app:latest
+  arm64: gcr.io/istio-testing/app:latest
+

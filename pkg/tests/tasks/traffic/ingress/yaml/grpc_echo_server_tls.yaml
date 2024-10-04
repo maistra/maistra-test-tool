@@ -13,7 +13,8 @@ spec:
   - name: http
     port: 80
     targetPort: 18080
-  - name: grpc
+  - name: tls-grpc
+    protocol: TCP
     port: 7070
     targetPort: 17070
   - name: tcp
@@ -48,6 +49,8 @@ spec:
           - "19090"
           - --grpc
           - "17070"
+          - '--tls'
+          - '17070'
           - --grpc
           - "17171"
           - --port
@@ -56,6 +59,8 @@ spec:
           - "8080"
           - --version
           - v1
+          - --crt=/cert.crt
+          - --key=/cert.key
           env:
           - name: INSTANCE_IP
             valueFrom:
@@ -129,6 +134,8 @@ spec:
           - "19090"
           - --grpc
           - "17070"
+          - '--tls'
+          - '17070'
           - --grpc
           - "17171"
           - --port
@@ -137,6 +144,8 @@ spec:
           - "8080"
           - --version
           - v2
+          - --crt=/cert.crt
+          - --key=/cert.key
           env:
           - name: INSTANCE_IP
             valueFrom:
