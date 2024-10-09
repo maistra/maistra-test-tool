@@ -36,7 +36,7 @@ func UntilSuccessWithOptions(t test.TestHelper, options RetryOptions, f func(t t
 		if lastAttempt {
 			attemptHelper = t
 			f(attemptHelper)
-			t.T().Fatalf(":(") //tmp
+			t.T().FailNow() //tmp
 		} else {
 			attemptHelper = attemptInternal(t, f, i, options.maxAttempts)
 		}

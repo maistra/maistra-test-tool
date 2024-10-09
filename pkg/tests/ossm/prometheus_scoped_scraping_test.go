@@ -321,7 +321,7 @@ func checkIstioRequestsTotalInPrometheus(t test.TestHelper, app string) {
 	query := "istio_requests_total"
 	expectedOutput := fmt.Sprintf(`"app":"%s"`, app)
 	t.LogStep(`Check if the "istio_request_total metric is in Prometheus"`)
-	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(10), func(t test.TestHelper) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
 		oc.Exec(t,
 			prometheusPodSelector,
 			"prometheus-proxy",
@@ -336,7 +336,7 @@ func checkIstioRequestsTotalInPrometheus(t test.TestHelper, app string) {
 
 func waitUntilPrometheusTargetReady(t test.TestHelper, app string) {
 	t.LogStep(`Wait till targets are available in Prometheus"`)
-	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(10), func(t test.TestHelper) {
+	retry.UntilSuccess(t, func(t test.TestHelper) {
 		oc.Exec(t,
 			prometheusPodSelector,
 			"prometheus-proxy",
