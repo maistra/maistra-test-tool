@@ -38,7 +38,7 @@ import (
 var prometheusPodSelector oc.PodLocatorFunc = pod.MatchingSelector("app=prometheus,maistra-control-plane="+meshNamespace, meshNamespace)
 
 func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
-	test.NewTest(t).Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
+	test.NewTest(t).Groups(test.Full, test.Disconnected).Run(func(t test.TestHelper) {
 		t.Log("This test checks if the operator can update Prometheus ConfigMap when the SMMR is updated")
 
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
@@ -167,7 +167,7 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 }
 
 func TestPrometheusScrapingAppDataWithMultitenantSmcp(t *testing.T) {
-	test.NewTest(t).Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
+	test.NewTest(t).Groups(test.Full, test.Disconnected).Run(func(t test.TestHelper) {
 		t.Log("This test checks if Prometheus is scraping data from mesh member application when SMCP is MultiTenant mode")
 
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
@@ -189,7 +189,7 @@ func TestPrometheusScrapingAppDataWithMultitenantSmcp(t *testing.T) {
 }
 
 func TestPrometheusScrapingAppDataWithClusterWideSmcp(t *testing.T) {
-	test.NewTest(t).Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
+	test.NewTest(t).Groups(test.Full, test.Disconnected).Run(func(t test.TestHelper) {
 		t.Log("This test checks if Prometheus is scraping data from mesh member application when SMCP is ClusterWide mode")
 		t.Log("Related issue: https://issues.redhat.com/browse/OSSM-8205")
 
