@@ -45,6 +45,7 @@ func UntilSuccessWithOptions(t test.TestHelper, options RetryOptions, f func(t t
 				if options.logAttempts && env.IsLogFailedRetryAttempts() {
 					t.Logf("Last attempt (%d/%d) failed.", i+1, options.maxAttempts)
 				}
+				t.T().FailNow()
 			} else {
 				if options.logAttempts && env.IsLogFailedRetryAttempts() {
 					if options.delayBetweenAttempts == defaultOptions.delayBetweenAttempts {
