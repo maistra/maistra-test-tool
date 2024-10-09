@@ -49,6 +49,8 @@ func TestDiscoverySelectors(t *testing.T) {
 		app.InstallAndWaitReady(t, app.Sleep(ns.Foo), app.Httpbin(ns.MeshExternal))
 		t.Cleanup(func() {
 			app.Uninstall(t, app.Sleep(ns.Foo), app.Httpbin(ns.MeshExternal))
+			oc.RecreateNamespace(t, ns.Foo)
+			oc.RecreateNamespace(t, ns.MeshExternal)
 			// since the smcp clusterwide mode was used, clean the namespace
 			t.LogStepf("Delete namespace %s", meshNamespace)
 			oc.RecreateNamespace(t, meshNamespace)
@@ -111,7 +113,7 @@ spec:
     kiali:
       enabled: false
     prometheus:
-      enabled: false
+      enabled: true
   {{ if .Rosa }} 
   security:
     identity:
