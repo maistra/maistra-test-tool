@@ -69,7 +69,14 @@ func TestClusterWideMode(t *testing.T) {
 		oc.RecreateNamespace(t, meshNamespace)
 
 		t.LogStep("Install cluster-wide SMCP")
-		oc.ApplyTemplate(t, meshNamespace, clusterWideSMCP, ossm.DefaultSMCP())
+		ossm.DeployClusterWideControlPlane(t)
+		oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", `
+spec:
+  general:
+    logging:
+      componentLevels:
+        default: info
+`)
 		oc.WaitSMCPReady(t, meshNamespace, smcpName)
 
 		t.NewSubTest("check Gateway API settings").Run(func(t TestHelper) {
@@ -517,8 +524,7 @@ spec:
 			t.Log("Check whether the cluster wide feature works with profiles")
 
 			t.LogStep("Delete SMCP and SMMR")
-			oc.DeleteFromTemplate(t, meshNamespace, clusterWideSMCP, ossm.DefaultSMCP())
-			oc.DeleteFromString(t, meshNamespace, defaultSMMR)
+			oc.RecreateNamespace(t, meshNamespace)
 
 			t.LogStep("Deploy SMCP with the profile")
 			oc.ApplyTemplate(t,
@@ -667,37 +673,6 @@ func deleteUserAndAdminRole(t TestHelper, namespaces ...string) {
 }
 
 const (
-	clusterWideSMCP = `
-apiVersion: maistra.io/v2
-kind: ServiceMeshControlPlane
-metadata:
-  name: {{ .Name }}
-spec:
-  version: {{ .Version }}
-  mode: ClusterWide
-  general:
-    logging:
-      componentLevels:
-        default: info
-  tracing:
-    sampling: 10000
-  policy:
-    type: Istiod
-  addons:
-    grafana:
-      enabled: true
-    kiali:
-      enabled: true
-    prometheus:
-      enabled: true
-  telemetry:
-    type: Istiod
-  {{ if .Rosa }} 
-  security:
-    identity:
-      type: ThirdParty
-  {{ end }}`
-
 	clusterWideSMCPWithProfile = `
 apiVersion: maistra.io/v2
 kind: ServiceMeshControlPlane

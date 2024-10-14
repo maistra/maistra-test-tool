@@ -24,7 +24,6 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
-	"github.com/maistra/maistra-test-tool/pkg/util/template"
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
@@ -41,8 +40,7 @@ func TestDiscoverySelectors(t *testing.T) {
 		t.LogStep("Apply cluster-wide SMCP and standard SMMR")
 		oc.RecreateNamespace(t, meshNamespace)
 		oc.ApplyString(t, meshNamespace, smmr)
-		oc.ApplyString(t, meshNamespace, template.Run(t, clusterWideSMCP, DefaultSMCP()))
-		oc.WaitSMCPReady(t, meshNamespace, DefaultSMCP().Name)
+		DeployClusterWideControlPlane(t)
 		oc.WaitSMMRReady(t, meshNamespace)
 
 		t.LogStep("Install httpbin and sleep pod")
@@ -95,28 +93,3 @@ spec:
 				"Expected Httpbin to not be discovered, but it was."))
 	})
 }
-
-const (
-	clusterWideSMCP = `
-apiVersion: maistra.io/v2
-kind: ServiceMeshControlPlane
-metadata:
-  name: {{ .Name }}
-spec:
-  version: {{ .Version }}
-  mode: ClusterWide
-  tracing:
-    type: None
-  addons:
-    grafana:
-      enabled: false
-    kiali:
-      enabled: false
-    prometheus:
-      enabled: true
-  {{ if .Rosa }} 
-  security:
-    identity:
-      type: ThirdParty
-  {{ end }}`
-)

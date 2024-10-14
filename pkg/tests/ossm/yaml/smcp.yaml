@@ -50,3 +50,6 @@ spec:
     identity:
       type: ThirdParty
   {{ end }}
+  {{ if .ClusterWideCp }} 
+  mode: ClusterWide
+  {{ end }}

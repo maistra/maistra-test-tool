@@ -28,10 +28,11 @@ import (
 )
 
 type SMCP struct {
-	Name      string
-	Namespace string
-	Version   version.Version
-	Rosa      bool
+	Name          string
+	Namespace     string
+	Version       version.Version
+	Rosa          bool
+	ClusterWideCp bool
 
 	ClusterWideProxy bool
 	HttpProxy        string
@@ -74,10 +75,21 @@ var (
 
 func DefaultSMCP() SMCP {
 	return SMCP{
-		Name:      env.GetDefaultSMCPName(),
-		Namespace: env.GetDefaultMeshNamespace(),
-		Version:   env.GetSMCPVersion(),
-		Rosa:      env.IsRosa(),
+		Name:          env.GetDefaultSMCPName(),
+		Namespace:     env.GetDefaultMeshNamespace(),
+		Version:       env.GetSMCPVersion(),
+		Rosa:          env.IsRosa(),
+		ClusterWideCp: false,
+	}
+}
+
+func DefaultClusterWideSMCP() SMCP {
+	return SMCP{
+		Name:          env.GetDefaultSMCPName(),
+		Namespace:     env.GetDefaultMeshNamespace(),
+		Version:       env.GetSMCPVersion(),
+		Rosa:          env.IsRosa(),
+		ClusterWideCp: true,
 	}
 }
 
@@ -114,6 +126,13 @@ func DeployControlPlane(t test.TestHelper) {
 	oc.ApplyString(t, meshNamespace, smmr)
 	oc.WaitSMCPReady(t, meshNamespace, DefaultSMCP().Name)
 	oc.WaitSMMRReady(t, meshNamespace)
+}
+
+func DeployClusterWideControlPlane(t test.TestHelper) {
+	t.T().Helper()
+	t.LogStep("Apply ClusterWide SMCP")
+	InstallSMCPCustom(t, meshNamespace, DefaultClusterWideSMCP())
+	oc.WaitSMCPReady(t, meshNamespace, DefaultClusterWideSMCP().Name)
 }
 
 func InstallSMCP(t test.TestHelper, ns string) {
