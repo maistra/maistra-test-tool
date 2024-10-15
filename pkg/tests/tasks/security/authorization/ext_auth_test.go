@@ -15,43 +15,45 @@
 package authorization
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
+	"github.com/maistra/maistra-test-tool/pkg/util/istio"
+	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
+
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestEnvoyExtAuthzHttpExtensionProvider(t *testing.T) {
-	test.NewTest(t).Id("T37").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
+	NewTest(t).Id("T37").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_3) {
 			t.Skip("extensionProviders.envoyExtAuthzHttp was added in v2.3")
 		}
 		t.Log("This test validates authorization policies with a JWT Token")
 
-		ns := "foo"
-
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install httpbin and sleep")
-		app.InstallAndWaitReady(t, app.Httpbin(ns), app.Sleep(ns))
+		app.InstallAndWaitReady(t, app.Httpbin(ns.Foo), app.Sleep(ns.Foo))
 		t.Cleanup(func() {
-			app.Uninstall(t, app.Httpbin(ns), app.Sleep(ns))
+			app.Uninstall(t, app.Httpbin(ns.Foo), app.Sleep(ns.Foo))
 		})
 
 		t.LogStep("Check if httpbin returns 200 OK when no authorization policies are in place")
-		app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/ip")
+		app.AssertSleepPodRequestSuccess(t, ns.Foo, "http://httpbin:8000/ip")
 
 		t.LogStep("Deploy the External Authorizer and Verify the sample external authorizer is up and running")
-		oc.ApplyTemplate(t, ns, ExternalAuthzService, nil)
+		oc.ApplyTemplate(t, ns.Foo, ExternalAuthzService, nil)
 		t.Cleanup(func() {
-			oc.DeleteFromTemplate(t, ns, ExternalAuthzService, nil)
+			oc.DeleteFromTemplate(t, ns.Foo, ExternalAuthzService, nil)
 		})
 
-		oc.WaitDeploymentRolloutComplete(t, ns, "ext-authz")
+		oc.WaitDeploymentRolloutComplete(t, ns.Foo, "ext-authz")
 
 		t.LogStep("Set envoyExtAuthzHttp extension provider in SMCP")
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
@@ -120,48 +122,46 @@ spec:
 
 		t.LogStep("Deploy the external authorization in the Authorization policy")
 		t.Cleanup(func() {
-			oc.DeleteFromString(t, ns, ExternalRoute)
+			oc.DeleteFromString(t, ns.Foo, ExternalRoute)
 		})
-		oc.ApplyString(t, ns, ExternalRoute)
+		oc.ApplyString(t, ns.Foo, ExternalRoute)
 
 		t.LogStep("Verify a request to path /headers with header x-ext-authz: deny is denied by the sample ext_authz server:")
-		app.AssertSleepPodRequestForbidden(t, ns, "http://httpbin:8000/headers", app.CurlOpts{Headers: []string{"x-ext-authz: deny"}})
+		app.AssertSleepPodRequestForbidden(t, ns.Foo, "http://httpbin:8000/headers", app.CurlOpts{Headers: []string{"x-ext-authz: deny"}})
 
 		t.LogStep("Verify a request to path /headers with header x-ext-authz: allow is allowed by the sample ext_authz server")
-		app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/headers", app.CurlOpts{Headers: []string{"x-ext-authz: allow"}})
+		app.AssertSleepPodRequestSuccess(t, ns.Foo, "http://httpbin:8000/headers", app.CurlOpts{Headers: []string{"x-ext-authz: allow"}})
 
 		t.LogStep("Verify a request to path /ip is allowed and does not trigger the external authorization")
-		app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/ip")
+		app.AssertSleepPodRequestSuccess(t, ns.Foo, "http://httpbin:8000/ip")
 	})
 }
 
 func TestEnvoyExtAuthzGrpcExtensionProvider(t *testing.T) {
-	test.NewTest(t).Id("T42").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
+	NewTest(t).Id("T42").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_3) {
 			t.Skip("extensionProviders.envoyExtAuthzGrpc is not supported in versions below v2.3")
 		}
 		t.Log("This test validates authorization policies with a JWT Token")
 
-		ns := "foo"
-
 		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install httpbin and sleep")
-		app.InstallAndWaitReady(t, app.Httpbin(ns), app.Sleep(ns))
+		app.InstallAndWaitReady(t, app.Httpbin(ns.Foo), app.Sleep(ns.Foo))
 		t.Cleanup(func() {
-			app.Uninstall(t, app.Httpbin(ns), app.Sleep(ns))
+			app.Uninstall(t, app.Httpbin(ns.Foo), app.Sleep(ns.Foo))
 		})
 
 		t.LogStep("Check if httpbin returns 200 OK when no authorization policies are in place")
-		app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/ip")
+		app.AssertSleepPodRequestSuccess(t, ns.Foo, "http://httpbin:8000/ip")
 
 		t.LogStep("Deploy the External Authorizer and Verify the sample external authorizer is up and running")
-		oc.ApplyTemplate(t, ns, ExternalAuthzService, nil)
+		oc.ApplyTemplate(t, ns.Foo, ExternalAuthzService, nil)
 		t.Cleanup(func() {
-			oc.DeleteFromTemplate(t, ns, ExternalAuthzService, nil)
+			oc.DeleteFromTemplate(t, ns.Foo, ExternalAuthzService, nil)
 		})
 
-		oc.WaitDeploymentRolloutComplete(t, ns, "ext-authz")
+		oc.WaitDeploymentRolloutComplete(t, ns.Foo, "ext-authz")
 
 		t.LogStep("Set envoyExtAuthzgRPC extension provider in SMCP")
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
@@ -202,19 +202,73 @@ spec:
 
 		t.LogStep("Deploy the external authorization in the Authorization policy")
 		t.Cleanup(func() {
-			oc.DeleteFromString(t, ns, ExternalRouteGrpc)
+			oc.DeleteFromString(t, ns.Foo, ExternalRouteGrpc)
 		})
-		oc.ApplyString(t, ns, ExternalRouteGrpc)
+		oc.ApplyString(t, ns.Foo, ExternalRouteGrpc)
 
 		t.LogStep("Verify a request to path /headers with header x-ext-authz: deny is denied by the sample ext_authz server:")
-		app.AssertSleepPodRequestForbidden(t, ns, "http://httpbin:8000/headers", app.CurlOpts{Headers: []string{"x-ext-authz: deny"}})
+		app.AssertSleepPodRequestForbidden(t, ns.Foo, "http://httpbin:8000/headers", app.CurlOpts{Headers: []string{"x-ext-authz: deny"}})
 
 		t.LogStep("Verify a request to path /headers with header x-ext-authz: allow is allowed by the sample ext_authz server")
-		app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/headers", app.CurlOpts{Headers: []string{"x-ext-authz: allow"}})
+		app.AssertSleepPodRequestSuccess(t, ns.Foo, "http://httpbin:8000/headers", app.CurlOpts{Headers: []string{"x-ext-authz: allow"}})
 
 		t.LogStep("Verify a request to path /ip is allowed and does not trigger the external authorization")
-		app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/ip")
+		app.AssertSleepPodRequestSuccess(t, ns.Foo, "http://httpbin:8000/ip")
 	})
+}
+
+func TestEnvoyExtAuthzRequestPayloadTooLarge(t *testing.T) {
+	NewTest(t).Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
+		t.Log("Verify that Istio proxt doesn't fail with 'Request payload too large' error")
+		t.Log("Reference: https://issues.redhat.com/browse/OSSM-5850")
+
+		t.Cleanup(func() {
+			app.Uninstall(t,
+				app.Httpbin(ns.Foo),
+				app.Sleep(ns.Foo))
+		})
+
+		ossm.DeployControlPlane(t)
+
+		t.LogStep("Install httpbin and sleep")
+		app.InstallAndWaitReady(t,
+			app.Httpbin(ns.Foo),
+			app.Sleep(ns.Foo))
+
+		gatewayHTTP := istio.GetIngressGatewayHost(t, meshNamespace)
+		assertFileUploadSuccess(t, gatewayHTTP)
+
+		t.LogStep("Patch SMCP to enable envoyExtAuthzHttp with allowPartialMessage and maxRequestBytes")
+		oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", uploadEnvoyExtSpec(1024))
+		assertFileUploadSuccess(t, gatewayHTTP)
+
+		t.LogStep("Patch SMCP to increase maxRequestBytes to 5MB")
+		oc.Patch(t, meshNamespace, "smcp", smcpName, "merge", uploadEnvoyExtSpec(5000000))
+		assertFileUploadSuccess(t, gatewayHTTP)
+	})
+}
+
+func assertFileUploadSuccess(t TestHelper, domain string) {
+	t.LogStep("Send a POST request with a large file (2MB) to IngressGateway")
+	app.AssertSleepPodRequestSuccess(t, ns.Foo, fmt.Sprintf("http://%s", domain), app.CurlOpts{
+		Method:  "POST",
+		Options: []string{"-F \"file=$(dd if=/dev/zero bs=200000 count=1);filename=fakefile_2MB.bin\""}})
+}
+
+func uploadEnvoyExtSpec(MaxRequestBytes int) string {
+	return fmt.Sprintf(`
+spec:
+  meshConfig:
+    extensionProviders:
+    - name: sample-ext-authz-http
+      envoyExtAuthzHttp:
+        service: ext-authz.foo.svc.cluster.local
+        port: 8000
+        includeRequestHeadersInCheck: ["x-ext-authz"]
+        includeRequestBodyInCheck:
+          allowPartialMessage: true
+          maxRequestBytes: %d
+          packAsBytes: true`, MaxRequestBytes)
 }
 
 const (
