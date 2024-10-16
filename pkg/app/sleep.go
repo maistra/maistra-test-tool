@@ -22,7 +22,8 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
+
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 type sleep struct {
@@ -66,17 +67,17 @@ func (a *sleep) Namespace() string {
 	return a.ns
 }
 
-func (a *sleep) Install(t test.TestHelper) {
+func (a *sleep) Install(t TestHelper) {
 	t.T().Helper()
 	oc.ApplyTemplate(t, a.ns, sleepTemplate, a.values(t))
 }
 
-func (a *sleep) Uninstall(t test.TestHelper) {
+func (a *sleep) Uninstall(t TestHelper) {
 	t.T().Helper()
 	oc.DeleteFromTemplate(t, a.ns, sleepTemplate, a.values(t))
 }
 
-func (a *sleep) values(t test.TestHelper) map[string]interface{} {
+func (a *sleep) values(t TestHelper) map[string]interface{} {
 	proxy := oc.GetProxy(t)
 	return map[string]interface{}{
 		"InjectSidecar":   a.injectSidecar,
@@ -90,7 +91,7 @@ func (a *sleep) values(t test.TestHelper) map[string]interface{} {
 	}
 }
 
-func (a *sleep) WaitReady(t test.TestHelper) {
+func (a *sleep) WaitReady(t TestHelper) {
 	t.T().Helper()
 	oc.WaitDeploymentRolloutComplete(t, a.ns, "sleep")
 }
@@ -101,35 +102,35 @@ type CurlOpts struct {
 	Options []string
 }
 
-func ExecInSleepPod(t test.TestHelper, ns string, command string, checks ...common.CheckFunc) {
+func ExecInSleepPod(t TestHelper, ns string, command string, checks ...common.CheckFunc) {
 	t.T().Helper()
-	retry.UntilSuccess(t, func(t test.TestHelper) {
+	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(10), func(t TestHelper) {
 		t.T().Helper()
 		oc.Exec(t, pod.MatchingSelector("app=sleep", ns), "sleep", command, checks...)
 	})
 }
 
-func AssertSleepPodRequestSuccess(t test.TestHelper, sleepNamespace string, url string, opts ...CurlOpts) {
+func AssertSleepPodRequestSuccess(t TestHelper, sleepNamespace string, url string, opts ...CurlOpts) {
 	assertSleepPodRequestResponse(t, sleepNamespace, url, "200", opts...)
 }
 
-func AssertSleepPodRequestFailure(t test.TestHelper, sleepNamespace string, url string, opts ...CurlOpts) {
+func AssertSleepPodRequestFailure(t TestHelper, sleepNamespace string, url string, opts ...CurlOpts) {
 	assertSleepPodRequestResponse(t, sleepNamespace, url, curlFailedMessage, opts...)
 }
 
-func AssertSleepPodRequestForbidden(t test.TestHelper, sleepNamespace string, url string, opts ...CurlOpts) {
+func AssertSleepPodRequestForbidden(t TestHelper, sleepNamespace string, url string, opts ...CurlOpts) {
 	assertSleepPodRequestResponse(t, sleepNamespace, url, "403", opts...)
 }
 
-func AssertSleepPodRequestUnauthorized(t test.TestHelper, sleepNamespace string, url string, opts ...CurlOpts) {
+func AssertSleepPodRequestUnauthorized(t TestHelper, sleepNamespace string, url string, opts ...CurlOpts) {
 	assertSleepPodRequestResponse(t, sleepNamespace, url, "401", opts...)
 }
 
-func AssertSleepPodZeroesPlaceholder(t test.TestHelper, sleepNamespace string, url string, opts ...CurlOpts) {
+func AssertSleepPodZeroesPlaceholder(t TestHelper, sleepNamespace string, url string, opts ...CurlOpts) {
 	assertSleepPodRequestResponse(t, sleepNamespace, url, "000", opts...)
 }
 
-func assertSleepPodRequestResponse(t test.TestHelper, sleepNamespace, url, expected string, opts ...CurlOpts) {
+func assertSleepPodRequestResponse(t TestHelper, sleepNamespace, url, expected string, opts ...CurlOpts) {
 	command := buildCurlCmd(url, opts...)
 	ExecInSleepPod(t, sleepNamespace, command,
 		assert.OutputContains(expected,
@@ -162,7 +163,7 @@ func buildCurlCmd(url string, opts ...CurlOpts) string {
 		}
 	}
 
-	return fmt.Sprintf(`curl -sS %s%s -X %s -o /dev/null -w "%%{http_code}" %s 2>/dev/null || echo %s`, options, headers, method, url, curlFailedMessage)
+	return fmt.Sprintf(`curl -sS%s%s -X %s -o /dev/null -w "%%{http_code}" %s 2>/dev/null || echo %s`, headers, options, method, url, curlFailedMessage)
 }
 
 const curlFailedMessage = "CURL_FAILED"
