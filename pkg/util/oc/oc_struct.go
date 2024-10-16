@@ -480,18 +480,21 @@ func (o OC) ResourceExists(t test.TestHelper, ns, kind, name string) bool {
 	return exists
 }
 
-func (o OC) GetResouceNameByLabel(t test.TestHelper, ns, kind, label string) string {
+// Function returns names of all resources (kind input) in the namespace (ns input) that match a particular label (label input).
+// Label input can be an empty string, and then all resources in the namespace are returned
+// When you are looking for a global scoped resource (e.g. nodes), ns can be empty
+func (o OC) GetAllResoucesNames(t test.TestHelper, ns, kind, label string) []string {
 	t.T().Helper()
-	var value string
+	var values []string
 	o.withKubeconfig(t, func() {
 		t.T().Helper()
-		value = shell.Execute(t, fmt.Sprintf("oc %s get %s -l %s -o custom-columns=NAME:.metadata.name --no-headers || true", nsFlag(ns), kind, label))
-		value = strings.TrimSpace(value)
-		if value == "" {
+		output := shell.Execute(t, fmt.Sprintf("oc %s get %s -l '%s' -o jsonpath='{.items[*].metadata.name}' || true", nsFlag(ns), kind, label))
+		if output == "" {
 			t.Fatalf("Could not find resource %s with label %s in namespace %s", kind, label, ns)
 		}
+		values = strings.Split(output, " ")
 	})
-	return value
+	return values
 }
 
 func (o OC) ResourceByLabelExists(t test.TestHelper, ns, kind, label string) bool {

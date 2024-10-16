@@ -20,6 +20,8 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/common"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
@@ -245,4 +247,22 @@ func (o OC) WaitUntilResourceExist(t test.TestHelper, ns string, kind string, na
 				))
 		})
 	})
+}
+
+func (o OC) GetPodAnnotations(t test.TestHelper, podLocator PodLocatorFunc) map[string]string {
+	var data struct {
+		Metadata struct {
+			Annotations map[string]string `yaml:"annotations"`
+		} `yaml:"metadata"`
+	}
+
+	po := podLocator(t, &o)
+	yamlString := o.GetYaml(t, po.Namespace, "pod", po.Name)
+	err := yaml.Unmarshal([]byte(yamlString), &data)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal YAML: %s", err)
+	}
+
+	annotations := data.Metadata.Annotations
+	return annotations
 }

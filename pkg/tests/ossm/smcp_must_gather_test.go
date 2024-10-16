@@ -136,7 +136,7 @@ func TestMustGather(t *testing.T) {
 				}
 
 				for webhook, kind := range webhookMap {
-					name := oc.GetResouceNameByLabel(t, "", kind, fmt.Sprintf("olm.webhook-description-generate-name=%s", webhook))
+					name := oc.GetAllResoucesNamesByLabel(t, "", kind, fmt.Sprintf("olm.webhook-description-generate-name=%s", webhook))[0]
 					filename := fmt.Sprintf("%s.yaml", name)
 					assertFilesExist(t,
 						dir,

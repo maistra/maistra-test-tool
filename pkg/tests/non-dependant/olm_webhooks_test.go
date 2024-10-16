@@ -125,6 +125,6 @@ func checkSmcpWebhooksDoesNotExist(t TestHelper, kind string, label string) {
 }
 
 func deleteGlobalWebhook(t TestHelper, kind string, label string) {
-	name := oc.GetResouceNameByLabel(t, "", kind, label)
+	name := oc.GetAllResoucesNamesByLabel(t, "", kind, label)[0]
 	oc.DeleteResource(t, "", kind, name)
 }

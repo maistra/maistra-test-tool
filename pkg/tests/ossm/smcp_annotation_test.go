@@ -18,8 +18,6 @@ import (
 	_ "embed"
 	"testing"
 
-	"gopkg.in/yaml.v2"
-
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
@@ -30,6 +28,7 @@ import (
 func TestSMCPAnnotations(t *testing.T) {
 	test.NewTest(t).Id("T29").Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
 		t.Log("Test annotations: verify deployment with sidecar.maistra.io/proxyEnv annotations and Enable automatic injection in SMCP to propagate the annotations to the sidecar")
+		t.Log("See https://issues.redhat.com/browse/OSSM-1074")
 
 		DeployControlPlane(t) // TODO: move this to individual subtests and integrate patch if one exists
 
@@ -78,26 +77,12 @@ func TestSMCPAnnotations(t *testing.T) {
 }
 
 func VerifyAndGetPodAnnotation(t test.TestHelper, podLocator oc.PodLocatorFunc) map[string]string {
-	var data struct {
-		Metadata struct {
-			Annotations map[string]string `yaml:"annotations"`
-		} `yaml:"metadata"`
-	}
-
-	po := podLocator(t, oc.DefaultOC)
-	yamlString := oc.GetYaml(t, po.Namespace, "pod", po.Name)
-	err := yaml.Unmarshal([]byte(yamlString), &data)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal YAML: %s", err)
-	}
-
-	annotations := data.Metadata.Annotations
+	annotations := oc.GetPodAnnotations(t, podLocator)
 	if len(annotations) == 0 {
 		oc.DeletePod(t, podLocator)
 		oc.WaitPodReady(t, podLocator)
-		t.Fatalf("Failed to get annotations from pod %s", po.Name)
+		t.Fatalf("Failed to get annotations from pod. The pod has 0 annotations")
 	}
-
 	return annotations
 }
 

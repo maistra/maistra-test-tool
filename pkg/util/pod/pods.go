@@ -15,19 +15,13 @@
 package pod
 
 import (
-	"strings"
-
 	ocpackage "github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func getPods(t test.TestHelper, oc *ocpackage.OC, selector string, ns string) []ocpackage.NamespacedName {
 	t.T().Helper()
-	output := oc.Invokef(t, "kubectl -n %s get pods -l %q -o jsonpath='{.items[*].metadata.name}'", ns, selector)
-	if output == "" {
-		t.Fatalf("no pods found using selector %s in namespace %s", selector, ns)
-	}
-	pods := strings.Split(output, " ")
+	pods := oc.GetAllResoucesNames(t, ns, "pods", selector)
 	var namespacedNames []ocpackage.NamespacedName
 	for _, pod := range pods {
 		namespacedNames = append(namespacedNames, ocpackage.NewNamespacedName(ns, pod))
@@ -54,5 +48,12 @@ func MatchingSelectorFirst(selector string, ns string) ocpackage.PodLocatorFunc 
 		t.T().Helper()
 		pods := getPods(t, oc, selector, ns)
 		return pods[0]
+	}
+}
+
+// "placeholder", when we know the name of the pod and the namespace but we want to use a different function which takes PodLocatorFunc as an input parameter
+func MatchingName(ns string, name string) ocpackage.PodLocatorFunc {
+	return func(t test.TestHelper, oc *ocpackage.OC) ocpackage.NamespacedName {
+		return ocpackage.NewNamespacedName(ns, name)
 	}
 }
