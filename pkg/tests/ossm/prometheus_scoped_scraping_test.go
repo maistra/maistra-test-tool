@@ -46,7 +46,7 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 		}
 
 		t.Cleanup(func() {
-			oc.ApplyString(t, meshNamespace, smmr)
+			oc.RecreateNamespace(t, meshNamespace)
 		})
 
 		DeployControlPlane(t)
@@ -142,34 +142,15 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 		})
 
 		t.NewSubTest("query istio_request_total").Run(func(t test.TestHelper) {
-			ns := "bookinfo"
+			t.Log("This test checks if Prometheus is scraping data from mesh member application when SMCP is MultiTenant mode")
 			t.Cleanup(func() {
-				oc.RecreateNamespace(t, ns)
+				oc.RecreateNamespace(t, ns.Bookinfo)
 			})
 
 			t.LogStep("Install bookinfo")
-			app.InstallAndWaitReady(t, app.Bookinfo(ns))
-
-			count := 10
-			t.LogStepf("Generate %d requests to product page", count)
-			productPageURL := app.BookinfoProductPageURL(t, meshNamespace)
-			for i := 0; i < count; i++ {
-				curl.Request(t, productPageURL, nil)
-			}
-
-			t.LogStep(`Check if the "istio_request_total metric is in Prometheus"`)
-			retry.UntilSuccess(t, func(t test.TestHelper) {
-				oc.Exec(t,
-					prometheusPodSelector,
-					"prometheus-proxy",
-					"curl localhost:9090/api/v1/query --data-urlencode 'query=istio_requests_total'",
-					assert.OutputContains(
-						`"__name__":"istio_requests_total"`,
-						`Found the "istio_request_total" metric`,
-						`Expected to find the "istio_request_total" metric, but found none`,
-					),
-				)
-			})
+			app.InstallAndWaitReady(t, app.Bookinfo(ns.Bookinfo))
+			waitUntilPrometheusTargetReady(t, "productpage")
+			testBookinfoAppReportIstioRequestsTotal(t)
 		})
 
 		t.NewSubTest("when removing SMMR").Run(func(t test.TestHelper) {
@@ -195,6 +176,40 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			t.Skip()
 		})
 	})
+}
+
+func TestPrometheusScrapingAppDataWithClusterWideSmcp(t *testing.T) {
+	test.NewTest(t).Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
+		t.Log("This test checks if Prometheus is scraping data from mesh member application when SMCP is ClusterWide mode")
+		t.Log("Related issue: https://issues.redhat.com/browse/OSSM-8205")
+
+		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
+			t.Skip("Test only valid in SMCP versions v2.4+")
+		}
+
+		t.Cleanup(func() {
+			oc.RecreateNamespace(t, meshNamespace)
+			oc.RecreateNamespace(t, ns.Bookinfo)
+		})
+
+		t.LogStep("Install SMCP in ClusterWide mode")
+		DeployClusterWideControlPlane(t)
+		oc.Label(t, "", "Namespace", ns.Bookinfo, "istio-injection=enabled")
+		oc.WaitSMMRReady(t, meshNamespace)
+		t.LogStep("Install bookinfo")
+		app.InstallAndWaitReady(t, app.Bookinfo(ns.Bookinfo))
+		waitUntilPrometheusTargetReady(t, "productpage")
+		testBookinfoAppReportIstioRequestsTotal(t)
+	})
+}
+
+func testBookinfoAppReportIstioRequestsTotal(t test.TestHelper) {
+	t.LogStep("Test that the `istio_requests_total` metric exist for bookinfo")
+	generateBookinfoTraffic(t)
+	checkIstioRequestsTotalInPrometheus(t, "productpage")
+	checkIstioRequestsTotalInPrometheus(t, "details")
+	checkIstioRequestsTotalInPrometheus(t, "reviews")
+	checkIstioRequestsTotalInPrometheus(t, "ratings")
 }
 
 func checkPermissionError(t test.TestHelper) {
@@ -280,4 +295,45 @@ func assertConfigMapDoesNotContainNamespace(ns string) common.CheckFunc {
 
 func generateNamespace() string {
 	return fmt.Sprintf("namespace-%d", rand.Int())
+}
+
+func generateBookinfoTraffic(t test.TestHelper) {
+	count := 10
+	t.LogStepf("Generate %d requests to product page", count)
+	productPageURL := app.BookinfoProductPageURL(t, meshNamespace)
+	for i := 0; i < count; i++ {
+		curl.Request(t, productPageURL, nil)
+	}
+}
+
+func checkIstioRequestsTotalInPrometheus(t test.TestHelper, app string) {
+	query := "istio_requests_total"
+	expectedOutput := fmt.Sprintf(`"app":"%s"`, app)
+	t.LogStep(`Check if the "istio_request_total metric is in Prometheus"`)
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		oc.Exec(t,
+			prometheusPodSelector,
+			"prometheus-proxy",
+			fmt.Sprintf("curl localhost:9090/api/v1/query --data-urlencode 'query=%s'", query),
+			assert.OutputContains(
+				expectedOutput,
+				fmt.Sprintf("Successfully fetched %s query with expected output", query),
+				fmt.Sprintf("Expected to find %s results after query %s, but found none", expectedOutput, query)),
+		)
+	})
+}
+
+func waitUntilPrometheusTargetReady(t test.TestHelper, app string) {
+	t.LogStep(`Wait till targets are available in Prometheus"`)
+	retry.UntilSuccess(t, func(t test.TestHelper) {
+		oc.Exec(t,
+			prometheusPodSelector,
+			"prometheus-proxy",
+			"curl localhost:9090/api/v1/targets?state=active",
+			assert.OutputContains(
+				fmt.Sprintf(`"app":"%s"`, app),
+				fmt.Sprintf("The %s prometheus target is ready", app),
+				fmt.Sprintf("The %s prometheus target is not ready", app)),
+		)
+	})
 }
