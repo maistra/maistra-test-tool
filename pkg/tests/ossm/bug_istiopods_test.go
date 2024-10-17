@@ -16,6 +16,7 @@ package ossm
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -25,7 +26,9 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
+	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/template"
+
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -52,6 +55,65 @@ func TestIstiodPodFailsAfterRestarts(t *testing.T) {
 			oc.DeletePod(t, istiodPod)
 			oc.WaitPodRunning(t, istiodPod)
 			oc.WaitPodReady(t, istiodPod)
+		}
+	})
+}
+
+func TestControllerFailsToUpdatePod(t *testing.T) {
+	NewTest(t).Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
+		t.Log("Verify that the controller does not fails to update the pod when the member controller couldn't add the member-of label")
+		t.Log("References: \n- https://issues.redhat.com/browse/OSSM-2169\n- https://issues.redhat.com/browse/OSSM-2420")
+
+		namespaces := util.GenerateStrings("test-", 100)
+
+		t.Cleanup(func() {
+			oc.DeleteNamespace(t, namespaces...)
+			oc.RecreateNamespace(t, meshNamespace)
+		})
+
+		DeployControlPlane(t)
+
+		t.LogStep("Add namespaces to the SMMR")
+		oc.ApplyString(t, meshNamespace, createSMMRManifest(namespaces...))
+
+		istioOperatorPodName := oc.GetResouceNameByLabel(t, "openshift-operators", "pod", "name=istio-operator")
+
+		// Initially assumed 1 iteration, however, as issue can be flaky it could be increased up to 5 iterations
+		count := 2
+		for i := 1; i < count; i++ {
+			t.LogStepf("Create/Recreate 100 Namespaces, attempt #%d", i)
+			oc.RecreateNamespace(t, namespaces...)
+
+			t.LogStepf("Check istio-operator logs for 'Error updating pod's labels', attempt #%d", i)
+			output := shell.Execute(t,
+				fmt.Sprintf("oc logs %s -n openshift-operators", istioOperatorPodName),
+				assert.OutputDoesNotContain(
+					"Error updating pod's labels",
+					"Found no updating pod's labels error",
+					"Expected to find no error updating pod's labels, but got",
+				))
+
+			t.LogStepf("Check istio-operator logs for 'error adding member-of label' errors, attempt #%d", i)
+			re := regexp.MustCompile(`error adding member-of label to namespace test-(\d+)`)
+			matches := re.FindStringSubmatch(output)
+			if len(matches) > 1 {
+				namespaceNumber := matches[1]
+				successMessage := fmt.Sprintf(`Added member-of label to namespace","ServiceMeshMember":"test-%s/default","namespace":"test-%s`, namespaceNumber, namespaceNumber)
+				if strings.Contains(output, successMessage) {
+					t.LogSuccessf("Found error and success message for namespace test-%s: %s", namespaceNumber, successMessage)
+					break
+				} else {
+					t.Log(output)
+					t.Fatalf("Was not found success message after error for namespace test-%s: %s", namespaceNumber, successMessage)
+				}
+			} else {
+				if count < 6 {
+					count++
+					t.Logf("Was not found any 'error adding member-of label' error, repeat (max 5), attempt #%d", i)
+				} else {
+					t.Logf("Was not found any 'error adding member-of label' error, stop test, attempt #%d", i)
+				}
+			}
 		}
 	})
 }
