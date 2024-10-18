@@ -85,7 +85,7 @@ func TestControllerFailsToUpdatePod(t *testing.T) {
 		t.LogStep("Add namespaces to the SMMR")
 		oc.ApplyString(t, meshNamespace, createSMMRManifest(namespaces...))
 
-		istioOperatorPodName := oc.GetResouceNameByLabel(t, "openshift-operators", "pod", "name=istio-operator")
+		istioOperatorPodName := oc.GetAllResoucesNamesByLabel(t, "openshift-operators", "pod", "name=istio-operator")[0]
 
 		// Initially assumed 1 iteration, however, as issue can be flaky it could be increased up to 5 iterations
 		count := 2
