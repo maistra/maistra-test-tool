@@ -16,16 +16,20 @@ package ossm
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/util"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
+	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
+	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/template"
+
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
@@ -52,6 +56,70 @@ func TestIstiodPodFailsAfterRestarts(t *testing.T) {
 			oc.DeletePod(t, istiodPod)
 			oc.WaitPodRunning(t, istiodPod)
 			oc.WaitPodReady(t, istiodPod)
+		}
+	})
+}
+
+func TestControllerFailsToUpdatePod(t *testing.T) {
+	NewTest(t).Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
+		t.Log("Verify that the controller does not fails to update the pod when the member controller couldn't add the member-of label")
+		t.Log("References: \n- https://issues.redhat.com/browse/OSSM-2169\n- https://issues.redhat.com/browse/OSSM-2420")
+
+		// Add timestamp to the namespaces to avoid conflicts during tests execution
+		ti := time.Now()
+		nameTemplate := fmt.Sprintf("test-smcp-%d%d-%02d%02d-",
+			env.GetSMCPVersion().Major,
+			env.GetSMCPVersion().Minor,
+			ti.Hour(), ti.Minute())
+
+		namespaces := util.GenerateStrings(nameTemplate, 50)
+		re := regexp.MustCompile(fmt.Sprintf(`error adding member-of label to namespace (%s\d+)`, nameTemplate))
+
+		t.Cleanup(func() {
+			oc.DeleteNamespace(t, namespaces...)
+			oc.ApplyString(t, meshNamespace, smmr)
+		})
+
+		DeployControlPlane(t)
+
+		t.LogStep("Add namespaces to the SMMR")
+		oc.ApplyString(t, meshNamespace, createSMMRManifest(namespaces...))
+
+		istioOperatorPodName := oc.GetAllResoucesNamesByLabel(t, "openshift-operators", "pod", "name=istio-operator")[0]
+
+		for i := 1; i < 11; i++ {
+			t.LogStepf("Create/Recreate 50 Namespaces, attempt #%d", i)
+			oc.RecreateNamespace(t, namespaces...)
+
+			t.LogStepf("Check istio-operator logs for 'Error updating pod's labels', attempt #%d", i)
+			output := shell.Execute(t,
+				fmt.Sprintf("oc logs %s -n openshift-operators", istioOperatorPodName),
+				assert.OutputDoesNotContain(
+					"Error updating pod's labels",
+					"Found no updating pod's labels error",
+					"Expected to find no error updating pod's labels, but got",
+				))
+
+			t.LogStepf("Check istio-operator logs for 'error adding member-of label' errors, attempt #%d", i)
+			matches := re.FindStringSubmatch(output)
+			if len(matches) > 1 {
+				namespaceName := matches[1]
+				successMessage := fmt.Sprintf(`Added member-of label to namespace","ServiceMeshMember":"%s/default","namespace":"%s`, namespaceName, namespaceName)
+				if strings.Contains(output, successMessage) {
+					t.LogSuccessf("Found error and success message for namespace %s: %s", namespaceName, successMessage)
+					break
+				} else {
+					t.Log(output)
+					t.Fatalf("Was not found success message after error for namespace %s: %s", namespaceName, successMessage)
+				}
+			} else {
+				if i == 10 {
+					t.Log(output)
+					t.Fatalf("Was not found any 'error adding member-of label' error, stop test, attempt #%d", i)
+				} else {
+					t.Logf("Was not found any 'error adding member-of label' error, repeat (max 10), attempt #%d", i)
+				}
+			}
 		}
 	})
 }
@@ -115,7 +183,8 @@ spec:
     - bookinfo
     - foo
     - bar
-    - legacy%s`, strings.Join(namespaces, "\n    - "))
+    - legacy
+    - %s`, strings.Join(namespaces, "\n    - "))
 }
 
 const (
