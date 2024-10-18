@@ -87,9 +87,7 @@ func TestControllerFailsToUpdatePod(t *testing.T) {
 
 		istioOperatorPodName := oc.GetAllResoucesNamesByLabel(t, "openshift-operators", "pod", "name=istio-operator")[0]
 
-		// Initially assumed 1 iteration, however, as issue can be flaky it could be increased up to 10 iterations
-		count := 2
-		for i := 1; i < count; i++ {
+		for i := 1; i < 11; i++ {
 			t.LogStepf("Create/Recreate 50 Namespaces, attempt #%d", i)
 			oc.RecreateNamespace(t, namespaces...)
 
@@ -115,11 +113,11 @@ func TestControllerFailsToUpdatePod(t *testing.T) {
 					t.Fatalf("Was not found success message after error for namespace %s: %s", namespaceName, successMessage)
 				}
 			} else {
-				if count < 11 {
-					count++
-					t.Logf("Was not found any 'error adding member-of label' error, repeat (max 10), attempt #%d", i)
+				if i == 10 {
+					t.Log(output)
+					t.Fatalf("Was not found any 'error adding member-of label' error, stop test, attempt #%d", i)
 				} else {
-					t.Logf("Was not found any 'error adding member-of label' error, stop test, attempt #%d", i)
+					t.Logf("Was not found any 'error adding member-of label' error, repeat (max 10), attempt #%d", i)
 				}
 			}
 		}
