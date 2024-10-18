@@ -72,7 +72,7 @@ func TestControllerFailsToUpdatePod(t *testing.T) {
 			env.GetSMCPVersion().Minor,
 			ti.Hour(), ti.Minute())
 
-		namespaces := util.GenerateStrings(nameTemplate, 100)
+		namespaces := util.GenerateStrings(nameTemplate, 50)
 		re := regexp.MustCompile(fmt.Sprintf(`error adding member-of label to namespace (%s\d+)`, nameTemplate))
 
 		t.Cleanup(func() {
@@ -87,10 +87,10 @@ func TestControllerFailsToUpdatePod(t *testing.T) {
 
 		istioOperatorPodName := oc.GetAllResoucesNamesByLabel(t, "openshift-operators", "pod", "name=istio-operator")[0]
 
-		// Initially assumed 1 iteration, however, as issue can be flaky it could be increased up to 5 iterations
+		// Initially assumed 1 iteration, however, as issue can be flaky it could be increased up to 10 iterations
 		count := 2
 		for i := 1; i < count; i++ {
-			t.LogStepf("Create/Recreate 100 Namespaces, attempt #%d", i)
+			t.LogStepf("Create/Recreate 50 Namespaces, attempt #%d", i)
 			oc.RecreateNamespace(t, namespaces...)
 
 			t.LogStepf("Check istio-operator logs for 'Error updating pod's labels', attempt #%d", i)
@@ -115,9 +115,9 @@ func TestControllerFailsToUpdatePod(t *testing.T) {
 					t.Fatalf("Was not found success message after error for namespace %s: %s", namespaceName, successMessage)
 				}
 			} else {
-				if count < 6 {
+				if count < 11 {
 					count++
-					t.Logf("Was not found any 'error adding member-of label' error, repeat (max 5), attempt #%d", i)
+					t.Logf("Was not found any 'error adding member-of label' error, repeat (max 10), attempt #%d", i)
 				} else {
 					t.Logf("Was not found any 'error adding member-of label' error, stop test, attempt #%d", i)
 				}
