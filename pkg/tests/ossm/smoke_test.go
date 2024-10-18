@@ -27,7 +27,9 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
+	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
+	"github.com/maistra/maistra-test-tool/pkg/util/shell"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
@@ -148,6 +150,28 @@ func checkSMCP(t TestHelper, ns string) {
 	t.LogStep("verify proxy startup time. Expected to be less than 10 seconds")
 	t.Log("Jira related: https://issues.redhat.com/browse/OSSM-3586")
 	assertProxiesReadyInLessThan10Seconds(t, ns)
+
+	t.LogStep("Check that CNI pods for each nodes have been created")
+	nodesNames := oc.GetAllResoucesNames(t, "", "nodes")
+	cniNames := oc.GetAllResoucesNamesByLabel(t, "openshift-operators", "pods", fmt.Sprintf("k8s-app=istio-cni-node-v%d-%d", env.GetSMCPVersion().Major, env.GetSMCPVersion().Minor))
+	if len(nodesNames) != len(cniNames) {
+		t.Errorf("Number of nodes and number of CNI is not the same! Nodes: %s CNI pods: %s", nodesNames, cniNames)
+	}
+	t.LogStep("Check that CNI pods have the correct priority class name and don't have unsupported annotation")
+	t.Log("Jira related: https://issues.redhat.com/browse/OSSM-1162")
+	for _, cniPodName := range cniNames {
+		annotations := oc.GetPodAnnotations(t, pod.MatchingName("openshift-operators", cniPodName))
+		_, exists := annotations["scheduler.alpha.kubernetes.io"]
+		if exists {
+			t.Errorf("The CNI pod %s contains unsupported annotation scheduler.alpha.kubernetes.io!")
+		}
+		shell.Execute(t,
+			fmt.Sprintf(`oc get pod -n openshift-operators %s -o jsonpath='{.spec.priorityClassName}'`, cniPodName),
+			assert.OutputContains(
+				"system-node-critical",
+				fmt.Sprintf("CNI pod %s contains spec.priorityClassName: system-node-critical", cniPodName),
+				fmt.Sprintf("CNI pod %s doesn't contain spec.priorityClassName: system-node-critical", cniPodName)))
+	}
 }
 
 func assertJaegerAndTracingSettings(t TestHelper) {
@@ -202,9 +226,9 @@ func assertTrafficFlowsThroughProxy(t TestHelper, ns string) {
 
 func assertProxiesReadyInLessThan10Seconds(t TestHelper, ns string) {
 	t.Log("Extracting proxy startup time and last transition time for all the pods in the namespace")
-	podsList := oc.GetJson(t, ns, "pods", "", `{.items[*].metadata.name}`)
+	podsNamesList := oc.GetAllResoucesNamesByLabel(t, ns, "pods", "")
 
-	for _, podName := range strings.Split(podsList, " ") {
+	for _, podName := range podsNamesList {
 		// skip sleep pod because it doesn't have a proxy
 		if strings.Contains(podName, "sleep") {
 			continue

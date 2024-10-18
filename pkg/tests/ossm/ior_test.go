@@ -394,11 +394,7 @@ func getRoutes(t test.TestHelper, ns string) []Route {
 }
 
 func getRouteNames(t test.TestHelper, ns string) []string {
-	return strings.Split(
-		shell.Executef(t,
-			"oc -n %s get --selector 'maistra.io/generated-by=ior' --output 'jsonpath={.items[*].metadata.name}' route",
-			ns),
-		" ")
+	return oc.GetAllResoucesNamesByLabel(t, ns, "route", "maistra.io/generated-by=ior")
 }
 
 func buildManagedRouteYamlDocument(t test.TestHelper, ns string) string {

@@ -200,9 +200,9 @@ func assertPodScheduledToNode(t test.TestHelper, pLabel string) {
 }
 
 func pickWorkerNode(t test.TestHelper) string {
-	workerNodes := shell.Execute(t, "oc get nodes -l node-role.kubernetes.io/worker= -o jsonpath='{.items[*].metadata.name}'")
+	workerNodes := oc.GetAllResoucesNamesByLabel(t, "", "nodes", "node-role.kubernetes.io/worker=")
 	operatorNode := shell.Execute(t, "oc get pods -n openshift-operators -l name=istio-operator -o jsonpath='{.items[0].spec.nodeName}'")
-	for _, node := range strings.Split(workerNodes, " ") {
+	for _, node := range workerNodes {
 		node = strings.TrimSpace(node)
 		if node != operatorNode {
 			return node
