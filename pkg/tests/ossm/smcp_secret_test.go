@@ -19,32 +19,25 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
+
 	. "github.com/maistra/maistra-test-tool/pkg/util/test"
-	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
 func TestSMCPSecret(t *testing.T) {
 	NewTest(t).Id("T52").Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
-		// Created a subtest because we need to add more test related to Addons in the future.
-		t.NewSubTest("secret_validation").Run(func(t TestHelper) {
+		t.Log("Verify that secret begins with $2a$, indicating it's been hashed with bcrypt")
+		t.Log("Reference: https://issues.redhat.com/browse/OSSM-1094")
 
-			if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
-				t.Skip("Secret is not valid in SMCP versions v2.3")
-			}
+		DeployControlPlane(t)
 
-			DeployControlPlane(t)
+		output := shell.Execute(t, fmt.Sprintf(`oc get secret -n %s htpasswd -o json | jq .data.auth | tr -d \" | base64 -d | sed 's/}.*/}REDACTED\n/'`, meshNamespace))
+		str := "$2a$"
 
-			output := shell.Execute(t, fmt.Sprintf(`oc get secret -n %s htpasswd -o json | jq .data.auth | tr -d \" | base64 -d | sed 's/}.*/}REDACTED\n/'`, meshNamespace))
-			str := "$2a$"
-
-			if strings.Contains(output, str) {
-				t.LogSuccess(fmt.Sprintf("string '%s' found in response", str))
-			} else {
-				t.Fatalf("expected to find the string '%s' in the response, but it wasn't found", str)
-			}
-
-		})
+		if strings.Contains(output, str) {
+			t.LogSuccess(fmt.Sprintf("string '%s' found in response", str))
+		} else {
+			t.Fatalf("expected to find the string '%s' in the response, but it wasn't found", str)
+		}
 	})
 }
