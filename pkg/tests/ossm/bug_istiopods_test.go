@@ -36,7 +36,7 @@ import (
 func TestIstiodPodFailsAfterRestarts(t *testing.T) {
 	NewTest(t).Id("T35").Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
 		t.Log("Verify that Istio pod not get stuck with probes failure after restart")
-		t.Log("Reference: https://issues.redhat.com/browse/OSSM-2434")
+		t.Log("References: \n- https://issues.redhat.com/browse/OSSM-2340\n- https://issues.redhat.com/browse/OSSM-2434")
 		namespaces := util.GenerateStrings("test-", 50)
 
 		t.Cleanup(func() {
