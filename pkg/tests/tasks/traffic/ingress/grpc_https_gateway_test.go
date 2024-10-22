@@ -81,7 +81,7 @@ func TestExposeGrpcWithHttpsGateway(t *testing.T) {
 		oc.ApplyString(t, meshNamespace, grpcurlTLSGatewayHTTPS)
 
 		t.LogStep("Install grpcurl image")
-		app.Install(t, app.GrpCurl(ns.Default))
+		app.InstallAndWaitReady(t, app.GrpCurl(ns.Default))
 
 		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(20), func(t test.TestHelper) {
 			oc.LogsFromPods(t,
@@ -132,7 +132,7 @@ func TestExposeGrpcWitPassthroughGateway(t *testing.T) {
 		oc.ApplyString(t, ns.EchoGrpc, grpcurlPassthroughGatewayHTTPS)
 
 		t.LogStep("Install grpcurl image")
-		app.Install(t, app.GrpCurl(ns.Default))
+		app.InstallAndWaitReady(t, app.GrpCurl(ns.Default))
 		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(20), func(t test.TestHelper) {
 			oc.LogsFromPods(t,
 				ns.Default,
