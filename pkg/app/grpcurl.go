@@ -52,9 +52,12 @@ func (a *grpcurl) Uninstall(t test.TestHelper) {
 
 func (a *grpcurl) WaitReady(t test.TestHelper) {
 	t.T().Helper()
-	oc.WaitDeploymentRolloutComplete(t, a.ns, "grpcurl")
+	oc.WaitCondition(t, a.ns, "Jobs", "grpcurl", "complete")
 }
 
+// TODO: if you want to use different `grpcurl` command as
+// grpcurl -insecure -authority grpc.example.com istio-ingressgateway.istio-system:443 list
+// refactor Job to Deployments and run command via `oc exec`
 const grpcCurlTemplate = `
 apiVersion: batch/v1
 kind: Job
