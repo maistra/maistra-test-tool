@@ -108,6 +108,11 @@ func ResourceByLabelExists(t test.TestHelper, ns string, kind string, label stri
 	return DefaultOC.ResourceByLabelExists(t, ns, kind, label)
 }
 
+func ResourceExists(t test.TestHelper, ns string, kind string, name string) bool {
+	t.T().Helper()
+	return DefaultOC.ResourceExists(t, ns, kind, name)
+}
+
 func AnyResourceExist(t test.TestHelper, ns string, kind string) bool {
 	t.T().Helper()
 	return DefaultOC.AnyResourceExist(t, ns, kind)
