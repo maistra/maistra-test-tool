@@ -63,10 +63,10 @@ bookinfo-reviews-v3:
   z: quay.io/maistra/examples-bookinfo-reviews-v3:2.6.0-ibm-z	
 
 httpbin:
-  x86: quay.io/openshifttest/httpbin:multiarch
-  arm64: quay.io/openshifttest/httpbin:multiarch
-  p: quay.io/maistra/kennethreitz-httpbin:0.0-ibm-p
-  z: quay.io/maistra/httpbin:0.1-ibm-Z
+  x86: quay.io/openshifttest/httpbin:1.2.2
+  arm64: quay.io/openshifttest/httpbin:1.2.2
+  p: quay.io/openshifttest/httpbin:1.2.2
+  z: quay.io/openshifttest/httpbin:1.2.2
 
 sleep:
   x86: quay.io/openshifttest/sleep:multiarch
@@ -75,16 +75,16 @@ sleep:
   z: quay.io/maistra/governmentpaas-curl-ssl:0.0-ibm-z
 
 tcp-echo:
-  x86: docker.io/istio/tcp-echo-server:1.2
-  arm64: docker.io/istio/tcp-echo-server:latest
+  x86: docker.io/istio/tcp-echo-server:1.3
+  arm64: docker.io/istio/tcp-echo-server:1.3
   p: quay.io/maistra/tcp-echo-server:0.0-ibm-p
   z: quay.io/maistra/tcp-echo-server:2.0-ibm-z
 
 fortio:
-  x86: fortio/fortio:latest_release
-  arm64: docker.io/fortio/fortio:latest
-  p: quay.io/maistra/fortio.test:0.0-ibm-p
-  z: quay.io/maistra/fortio:0.0-ibm-z
+  x86: docker.io/fortio/fortio:1.67.1
+  arm64: docker.io/fortio/fortio:1.67.1
+  p: quay.io/maistra/fortio:1.67.1
+  z: quay.io/maistra/fortio:1.67.1
 
 # Dockerfile: https://gitlab.cee.redhat.com/-/snippets/8438
 testssl:
@@ -99,11 +99,12 @@ helloworld:
   z: quay.io/maistra/helloworld-v1:0.0-ibm-z
   arm64: quay.io/maistra/helloworld-v1:arm64
 
+# We need 1.22 version since fix for OSSM-5850 was not backported to the older ext-authz versions
 ext-authz:
-  x86: gcr.io/istio-testing/ext-authz:latest
-  p: quay.io/maistra/ext-authz:0.0-ibm-p
-  z: quay.io/maistra/ext-authz:1.1-ibm-z
-  arm64: docker.io/istio/ext-authz:1.22.3-debug
+  x86: gcr.io/istio-testing/ext-authz:1.22-dev
+  p: quay.io/maistra/ext-authz:1.22.6-ibm-p
+  z: quay.io/maistra/ext-authz:1.22.6-ibm-z
+  arm64: gcr.io/istio-testing/ext-authz:1.22-dev
 
 minio:
   x86: quay.io/minio/minio:RELEASE.2024-10-02T17-50-41Z
@@ -124,6 +125,6 @@ grpcurl:
   arm64: quay.io/maistra/grpcurl:latest
 
 grpc-echo:
-  x86: gcr.io/istio-testing/app:latest
-  arm64: gcr.io/istio-testing/app:latest
+  x86: gcr.io/istio-testing/app:1.20-dev
+  arm64: gcr.io/istio-testing/app:1.20-dev
 
