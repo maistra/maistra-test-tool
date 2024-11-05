@@ -106,10 +106,10 @@ ext-authz:
   arm64: docker.io/istio/ext-authz:1.22.3-debug
 
 minio:
-  x86: quay.io/minio/minio:latest
-  p: quay.io/minio/minio:latest
-  z: quay.io/minio/minio:latest
-  arm64: quay.io/minio/minio:latest
+  x86: quay.io/minio/minio:RELEASE.2024-10-02T17-50-41Z
+  p: quay.io/minio/minio:RELEASE.2024-10-02T17-50-41Z
+  z: quay.io/minio/minio:RELEASE.2024-10-02T17-50-41Z
+  arm64: quay.io/minio/minio:RELEASE.2024-10-02T17-50-41Z
 
 busybox:
   x86: quay.io/maistra/busybox:1.28
