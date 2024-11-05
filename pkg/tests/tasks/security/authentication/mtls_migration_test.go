@@ -24,11 +24,12 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
+
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestMTlsMigration(t *testing.T) {
-	test.NewTest(t).Id("T19").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
+	NewTest(t).Id("T19").Groups(Full, InterOp, ARM, Disconnected).Run(func(t TestHelper) {
 		meshNamespace := env.GetDefaultMeshNamespace()
 
 		t.Cleanup(func() {
@@ -49,7 +50,7 @@ func TestMTlsMigration(t *testing.T) {
 		toNamespaces := []string{ns.Foo, ns.Bar}
 
 		t.LogStep("Check connectivity from namespaces foo, bar, and legacy to namespace foo and bar")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
+		retry.UntilSuccess(t, func(t TestHelper) {
 			for _, from := range fromNamespaces {
 				for _, to := range toNamespaces {
 					app.AssertSleepPodRequestSuccess(t, from, fmt.Sprintf("http://httpbin.%s:8000/ip", to))
@@ -57,12 +58,12 @@ func TestMTlsMigration(t *testing.T) {
 			}
 		})
 
-		t.NewSubTest("mTLS enabled in foo").Run(func(t test.TestHelper) {
+		t.NewSubTest("mTLS enabled in foo").Run(func(t TestHelper) {
 			t.LogStep("Apply strict mTLS in namespace foo")
 			oc.ApplyString(t, "foo", PeerAuthenticationMTLSStrict)
 
 			t.LogStep("Check connectivity from namespaces foo, bar, and legacy to namespace foo and bar (expect failure only from legacy to foo)")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				for _, from := range fromNamespaces {
 					for _, to := range toNamespaces {
 						url := fmt.Sprintf("http://httpbin.%s:8000/ip", to)
@@ -76,7 +77,7 @@ func TestMTlsMigration(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("mTLS enabled globally").Run(func(t test.TestHelper) {
+		t.NewSubTest("mTLS enabled globally").Run(func(t TestHelper) {
 			t.LogStep("Apply strict mTLS for the entire mesh")
 			oc.ApplyString(t, meshNamespace, PeerAuthenticationMTLSStrict)
 			t.Cleanup(func() {
@@ -84,7 +85,7 @@ func TestMTlsMigration(t *testing.T) {
 			})
 
 			t.LogStep("Check connectivity from namespaces foo, bar, and legacy to namespace foo and bar (expect failure from legacy)")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				for _, from := range fromNamespaces {
 					for _, to := range toNamespaces {
 						url := fmt.Sprintf("http://httpbin.%s:8000/ip", to)

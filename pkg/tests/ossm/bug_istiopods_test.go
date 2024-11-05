@@ -61,7 +61,7 @@ func TestIstiodPodFailsAfterRestarts(t *testing.T) {
 }
 
 func TestControllerFailsToUpdatePod(t *testing.T) {
-	NewTest(t).Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
+	NewTest(t).Groups(Full, ARM).Run(func(t TestHelper) {
 		t.Log("Verify that the controller does not fails to update the pod when the member controller couldn't add the member-of label")
 		t.Log("References: \n- https://issues.redhat.com/browse/OSSM-2169\n- https://issues.redhat.com/browse/OSSM-2420")
 
