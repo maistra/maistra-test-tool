@@ -26,11 +26,12 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
+
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestAccessExternalServices(t *testing.T) {
-	test.NewTest(t).Id("T11").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
+	NewTest(t).Id("T11").Groups(Full, InterOp, ARM, Disconnected).Run(func(t TestHelper) {
 		smcpName := env.GetDefaultSMCPName()
 		t.Cleanup(func() {
 			app.Uninstall(t, app.Sleep(ns.Bookinfo))
@@ -80,7 +81,7 @@ func TestAccessExternalServices(t *testing.T) {
 		t.LogStep("Make request to external httpbin from sleep again, and expect it denied")
 		app.AssertSleepPodRequestFailure(t, ns.Bookinfo, httpbinHeadersUrl)
 
-		t.NewSubTest("allow request to external httpbin after applying ServiceEntry").Run(func(t test.TestHelper) {
+		t.NewSubTest("allow request to external httpbin after applying ServiceEntry").Run(func(t TestHelper) {
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, ns.Bookinfo, httpbinServiceEntry)
 			})

@@ -217,7 +217,7 @@ spec:
 }
 
 func TestEnvoyExtAuthzRequestPayloadTooLarge(t *testing.T) {
-	NewTest(t).Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
+	NewTest(t).Groups(Full, ARM).Run(func(t TestHelper) {
 		t.Log("Verify that Istio proxy doesn't fail with 'Request payload too large' error")
 		t.Log("Reference: https://issues.redhat.com/browse/OSSM-5850")
 

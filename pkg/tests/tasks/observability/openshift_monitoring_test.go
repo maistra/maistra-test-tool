@@ -30,8 +30,9 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
+
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 const (
@@ -45,7 +46,7 @@ const (
 // crc config set memory 20480
 // crc config set cpus 8
 func TestOpenShiftMonitoring(t *testing.T) {
-	test.NewTest(t).Id("openshift-monitoring-integration").Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
+	NewTest(t).Id("openshift-monitoring-integration").Groups(Full, ARM, Disconnected).Run(func(t TestHelper) {
 		smcpVer := env.GetSMCPVersion()
 		if smcpVer.LessThan(version.SMCP_2_4) {
 			t.Skip("integration with OpenShift Monitoring stack is not supported in OSSM older than v2.4.0")
@@ -81,7 +82,7 @@ func TestOpenShiftMonitoring(t *testing.T) {
 		t.LogStep("Grant cluster-monitoring-view to Kiali")
 		oc.ApplyTemplate(t, meshNamespace, kialiClusterMonitoringView, kialiValues)
 
-		t.NewSubTest("SMCP manageNetworkPolicy false").Run(func(t test.TestHelper) {
+		t.NewSubTest("SMCP manageNetworkPolicy false").Run(func(t TestHelper) {
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, meshNamespace, istiodMonitor)
 				oc.DeleteFromString(t, ns.Foo, istioProxyMonitor)
@@ -120,7 +121,7 @@ func TestOpenShiftMonitoring(t *testing.T) {
 			generateTrafficAndcheckMetrics(t, kialiToken)
 		})
 
-		t.NewSubTest("SMCP manageNetworkPolicy true").Run(func(t test.TestHelper) {
+		t.NewSubTest("SMCP manageNetworkPolicy true").Run(func(t TestHelper) {
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, meshNamespace, istiodMonitor)
 				oc.DeleteFromString(t, ns.Foo, istioProxyMonitor)
@@ -167,12 +168,12 @@ func TestOpenShiftMonitoring(t *testing.T) {
 	})
 }
 
-func waitKialiAndVerifyIsReconciled(t test.TestHelper) {
+func waitKialiAndVerifyIsReconciled(t TestHelper) {
 	t.LogStep("Wait until Kiali is ready")
 	oc.WaitCondition(t, meshNamespace, "Kiali", kialiName, "Successful")
 
 	t.LogStep("Verify that Kiali was reconciled by Istio Operator")
-	retry.UntilSuccess(t, func(t test.TestHelper) {
+	retry.UntilSuccess(t, func(t TestHelper) {
 		accessibleNamespaces := shell.Executef(t, "oc get kiali %s -n %s -o jsonpath='{.spec.deployment.accessible_namespaces}'", kialiName, meshNamespace)
 		if accessibleNamespaces != fmt.Sprintf(`["%s"]`, ns.Foo) {
 			t.Errorf(`unexpected accessible namespaces: got '%s', expected: '["%s"]'`, accessibleNamespaces, ns.Foo)
@@ -196,13 +197,13 @@ func waitKialiAndVerifyIsReconciled(t test.TestHelper) {
 	})
 }
 
-func generateTrafficAndcheckMetrics(t test.TestHelper, thanosToken string) {
+func generateTrafficAndcheckMetrics(t TestHelper, thanosToken string) {
 	t.LogStep("Generate some ingress traffic")
 	oc.ApplyFile(t, ns.Foo, "https://raw.githubusercontent.com/maistra/istio/maistra-2.6/samples/httpbin/httpbin-gateway.yaml")
 	httpbinURL := fmt.Sprintf("http://%s/headers", istio.GetIngressGatewayHost(t, meshNamespace))
 
 	for i := 0; i < 5; i++ {
-		retry.UntilSuccess(t, func(t test.TestHelper) {
+		retry.UntilSuccess(t, func(t TestHelper) {
 			curl.Request(t, httpbinURL, nil, assert.ResponseStatus(http.StatusOK))
 		})
 	}
@@ -214,8 +215,8 @@ func generateTrafficAndcheckMetrics(t test.TestHelper, thanosToken string) {
 	checkMetricExists(t, ns.Foo, "istio_requests_total", thanosToken)
 }
 
-func checkMetricExists(t test.TestHelper, ns, metricName, token string) {
-	retry.UntilSuccess(t, func(t test.TestHelper) {
+func checkMetricExists(t TestHelper, ns, metricName, token string) {
+	retry.UntilSuccess(t, func(t TestHelper) {
 		oc.Exec(t,
 			pod.MatchingSelectorFirst("app.kubernetes.io/instance=thanos-querier", monitoringNs),
 			"thanos-query",
@@ -228,13 +229,13 @@ func checkMetricExists(t test.TestHelper, ns, metricName, token string) {
 	})
 }
 
-func waitUntilAllPrometheusTargetReady(t test.TestHelper, token string) {
+func waitUntilAllPrometheusTargetReady(t TestHelper, token string) {
 	waitUntilPrometheusTargetReady(t, "serviceMonitor", meshNamespace, "istiod-monitor", token)
 	waitUntilPrometheusTargetReady(t, "podMonitor", ns.Foo, "istio-proxies-monitor", token)
 }
 
-func waitUntilPrometheusTargetReady(t test.TestHelper, monitorType string, ns string, targetName string, token string) {
-	retry.UntilSuccess(t, func(t test.TestHelper) {
+func waitUntilPrometheusTargetReady(t TestHelper, monitorType string, ns string, targetName string, token string) {
+	retry.UntilSuccess(t, func(t TestHelper) {
 		oc.Exec(t,
 			pod.MatchingSelectorFirst("app.kubernetes.io/instance=thanos-querier", monitoringNs),
 			"thanos-query",
@@ -258,9 +259,9 @@ func prometheusActiveTargetQuery(token string) string {
 		`curl -X GET -kG "https://localhost:9091/api/v1/targets?state=active" --data-urlencode "query=up" -H "Authorization: Bearer %s"`, token)
 }
 
-func fetchKialiToken(t test.TestHelper) string {
+func fetchKialiToken(t TestHelper) string {
 	var kialiToken string
-	retry.UntilSuccess(t, func(t test.TestHelper) {
+	retry.UntilSuccess(t, func(t TestHelper) {
 		kialiToken = shell.Executef(t, "oc exec -n %s $(oc get pods -n %s -l app=kiali -o jsonpath='{.items[].metadata.name}') "+
 			"-- cat /var/run/secrets/kubernetes.io/serviceaccount/token", meshNamespace, meshNamespace)
 		if strings.Contains(kialiToken, "Error") {

@@ -23,12 +23,13 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
-	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
+
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestRoutePreventAdditionalIngress(t *testing.T) {
-	NewTest(t).Id("T48").Groups(Full, ARM).MaxVersion(version.SMCP_2_5).Run(func(t TestHelper) {
+	NewTest(t).Id("T48").Groups(Full, ARM, Disconnected).MaxVersion(version.SMCP_2_5).Run(func(t TestHelper) {
 
 		meshValues := map[string]interface{}{
 			"Version": env.GetSMCPVersion().String(),

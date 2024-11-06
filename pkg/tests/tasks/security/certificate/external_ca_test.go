@@ -27,11 +27,12 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
+
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestExternalCertificate(t *testing.T) {
-	test.NewTest(t).Id("T17").Groups(test.Full, test.ARM, test.InterOp).Run(func(t test.TestHelper) {
+	NewTest(t).Id("T17").Groups(Full, ARM, InterOp, Disconnected).Run(func(t TestHelper) {
 		const ns = "bookinfo"
 
 		t.Cleanup(func() {
@@ -65,7 +66,7 @@ func TestExternalCertificate(t *testing.T) {
 		app.InstallAndWaitReady(t, app.BookinfoWithMTLS(ns))
 
 		t.LogStep("Wait for response from productpage app")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
+		retry.UntilSuccess(t, func(t TestHelper) {
 			curl.Request(t,
 				app.BookinfoProductPageURL(t, meshNamespace), nil,
 				assert.ResponseStatus(200))
@@ -74,7 +75,7 @@ func TestExternalCertificate(t *testing.T) {
 		t.LogStep("Retrieve certificates from bookinfo details service")
 
 		var returnedCerts []*x509.Certificate
-		retry.UntilSuccess(t, func(t test.TestHelper) {
+		retry.UntilSuccess(t, func(t TestHelper) {
 			opensslOutput := oc.Exec(t,
 				pod.MatchingSelector("app=productpage", ns), "istio-proxy",
 				`openssl s_client -showcerts -connect details:9080 || true`) // the "|| true" is needed until oc.Exec can ignore return codes
@@ -93,7 +94,7 @@ func TestExternalCertificate(t *testing.T) {
 	})
 }
 
-func verifyContainsCerts(t test.TestHelper, actualCerts, expectedCerts []*x509.Certificate, successMsg, failureMsg string) {
+func verifyContainsCerts(t TestHelper, actualCerts, expectedCerts []*x509.Certificate, successMsg, failureMsg string) {
 	t.T().Helper()
 
 	// Make a copy of expectedCerts because we will clobber it
@@ -118,7 +119,7 @@ func verifyContainsCerts(t test.TestHelper, actualCerts, expectedCerts []*x509.C
 	t.Error(failureMsg)
 }
 
-func verifyCertificate(t test.TestHelper, cert *x509.Certificate, rootCerts, intermediateCerts []*x509.Certificate, successMsg, failureMsg string) {
+func verifyCertificate(t TestHelper, cert *x509.Certificate, rootCerts, intermediateCerts []*x509.Certificate, successMsg, failureMsg string) {
 	t.T().Helper()
 	rootCertPool := x509.NewCertPool()
 	for _, c := range rootCerts {
@@ -149,7 +150,7 @@ func verifyCertificate(t test.TestHelper, cert *x509.Certificate, rootCerts, int
 	}
 }
 
-func readPemCertificatesFromFile(t test.TestHelper, path string) []*x509.Certificate {
+func readPemCertificatesFromFile(t TestHelper, path string) []*x509.Certificate {
 	t.T().Helper()
 	bytes, err := os.ReadFile(path)
 	if err != nil {
@@ -158,13 +159,13 @@ func readPemCertificatesFromFile(t test.TestHelper, path string) []*x509.Certifi
 	return readPemCertificates(t, bytes)
 }
 
-func readPemCertificatesFromText(t test.TestHelper, text string) []*x509.Certificate {
+func readPemCertificatesFromText(t TestHelper, text string) []*x509.Certificate {
 	t.T().Helper()
 
 	return readPemCertificates(t, []byte(text))
 }
 
-func readPemCertificates(t test.TestHelper, pemData []byte) []*x509.Certificate {
+func readPemCertificates(t TestHelper, pemData []byte) []*x509.Certificate {
 	t.T().Helper()
 	var certificates []*x509.Certificate
 	for {

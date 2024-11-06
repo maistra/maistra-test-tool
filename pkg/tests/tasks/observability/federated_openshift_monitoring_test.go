@@ -29,13 +29,14 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/prometheus"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
+
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 // TestFederatedOpenShiftMonitoring requires OpenShift Monitoring stack to be enabled.
 // See the comment on TestOpenShiftMonitoring for help setting up on crc
 func TestFederatedOpenShiftMonitoring(t *testing.T) {
-	test.NewTest(t).Id("federated-openshift-monitoring-integration").Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
+	NewTest(t).Id("federated-openshift-monitoring-integration").Groups(Full, ARM, Disconnected).Run(func(t TestHelper) {
 		meshValues := map[string]interface{}{
 			"Name":    smcpName,
 			"Version": env.GetSMCPVersion().String(),
@@ -67,7 +68,7 @@ func TestFederatedOpenShiftMonitoring(t *testing.T) {
 		oc.ApplyString(t, meshNamespace, federatedMonitor)
 
 		t.LogStep("Wait until istio targets appear in the Prometheus")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
+		retry.UntilSuccess(t, func(t TestHelper) {
 			resp := prometheus.ThanosTargets(t, monitoringNs)
 			if !strings.Contains(resp, "serviceMonitor/istio-system/istio-federation") {
 				t.Error("Istio Prometheus target serviceMonitor/istio-system/istio-federation are not ready")
@@ -77,12 +78,12 @@ func TestFederatedOpenShiftMonitoring(t *testing.T) {
 		t.LogStep("Generate some ingress traffic")
 		oc.ApplyFile(t, ns.Foo, "https://raw.githubusercontent.com/maistra/istio/maistra-2.6/samples/httpbin/httpbin-gateway.yaml")
 		httpbinURL := fmt.Sprintf("http://%s/headers", istio.GetIngressGatewayHost(t, meshNamespace))
-		retry.UntilSuccess(t, func(t test.TestHelper) {
+		retry.UntilSuccess(t, func(t TestHelper) {
 			curl.Request(t, httpbinURL, nil, assert.ResponseStatus(http.StatusOK))
 		})
 
 		t.LogStep("Check istiod metrics")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
+		retry.UntilSuccess(t, func(t TestHelper) {
 			resp := prometheus.ThanosQuery(t, monitoringNs, `pilot_info{mesh_id="unique-mesh-id"}`)
 			if len(resp.Data.Result) == 0 {
 				t.Errorf("No data points received from Prometheus API. Response status: %s", resp.Status)
@@ -90,7 +91,7 @@ func TestFederatedOpenShiftMonitoring(t *testing.T) {
 		})
 
 		t.LogStep("Check httpbin metrics")
-		retry.UntilSuccess(t, func(t test.TestHelper) {
+		retry.UntilSuccess(t, func(t TestHelper) {
 			resp := prometheus.ThanosQuery(t, monitoringNs, `istio_requests_total{mesh_id="unique-mesh-id"}`)
 			if len(resp.Data.Result) == 0 {
 				t.Errorf("No data points received from Prometheus API. Response status: %s", resp.Status)

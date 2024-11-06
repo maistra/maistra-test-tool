@@ -23,12 +23,13 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
+
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 // TestAuthorizationHTTPTraffic validates authorization policies for HTTP traffic.
 func TestAuthorizationHTTPTraffic(t *testing.T) {
-	test.NewTest(t).Id("T20").Groups(test.Full, test.ARM, test.InterOp).Run(func(t test.TestHelper) {
+	NewTest(t).Id("T20").Groups(Full, ARM, InterOp, Disconnected).Run(func(t TestHelper) {
 		ns := "bookinfo"
 		t.Cleanup(func() {
 			oc.Patch(t,
@@ -56,7 +57,7 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 
 		productPageURL := app.BookinfoProductPageURL(t, meshNamespace)
 
-		t.NewSubTest("deny all http traffic to bookinfo").Run(func(t test.TestHelper) {
+		t.NewSubTest("deny all http traffic to bookinfo").Run(func(t TestHelper) {
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, ns, DenyAllPolicy)
 			})
@@ -64,7 +65,7 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 			oc.ApplyString(t, ns, DenyAllPolicy)
 
 			t.LogStep("Verify that GET request is denied")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				curl.Request(t,
 					productPageURL,
 					nil,
@@ -73,7 +74,7 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("only allow HTTP GET request to the productpage workload").Run(func(t test.TestHelper) {
+		t.NewSubTest("only allow HTTP GET request to the productpage workload").Run(func(t TestHelper) {
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, ns, ProductpageGETPolicy)
 				oc.DeleteFromString(t, ns, DenyAllPolicy)
@@ -83,7 +84,7 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 			oc.ApplyString(t, ns, ProductpageGETPolicy)
 
 			t.LogStep("Verify that GET request to the productpage is allowed and fetching other services is denied")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				curl.Request(t,
 					productPageURL,
 					nil,
@@ -93,7 +94,7 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 			})
 		})
 
-		t.NewSubTest("allow HTTP GET requests to all bookinfo workloads").Run(func(t test.TestHelper) {
+		t.NewSubTest("allow HTTP GET requests to all bookinfo workloads").Run(func(t TestHelper) {
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, ns, RatingsGETPolicy)
 				oc.DeleteFromString(t, ns, ReviewsGETPolicy)
@@ -109,7 +110,7 @@ func TestAuthorizationHTTPTraffic(t *testing.T) {
 			oc.ApplyString(t, ns, RatingsGETPolicy)
 
 			t.LogStep("Verify that GET requests are allowed to all bookinfo workloads")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				curl.Request(t,
 					productPageURL,
 					nil,

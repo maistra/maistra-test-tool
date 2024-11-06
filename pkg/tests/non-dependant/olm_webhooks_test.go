@@ -28,7 +28,7 @@ import (
 )
 
 func TestOlmWebhookCreation(t *testing.T) {
-	NewTest(t).Groups(Full, ARM).Run(func(t TestHelper) {
+	NewTest(t).Groups(Full, ARM, Disconnected).Run(func(t TestHelper) {
 		t.Log("This test verifies that OLM creates all validating/mutating webhooks")
 		t.Log("See https://issues.redhat.com/browse/OSSM-6762")
 		if env.GetOperatorVersion().LessThan(version.OPERATOR_2_6_0) {

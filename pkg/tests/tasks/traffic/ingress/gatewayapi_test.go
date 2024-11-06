@@ -39,7 +39,7 @@ type EnvVar struct {
 }
 
 func TestGatewayApi(t *testing.T) {
-	NewTest(t).Id("T41").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	NewTest(t).Id("T41").Groups(Full, InterOp, ARM, Disconnected).Run(func(t TestHelper) {
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_3) {
 			t.Skip("TestGatewayApi was added in v2.3")
 		}

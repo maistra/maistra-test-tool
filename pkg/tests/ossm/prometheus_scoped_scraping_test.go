@@ -31,14 +31,15 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
+
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 var prometheusPodSelector oc.PodLocatorFunc = pod.MatchingSelector("app=prometheus,maistra-control-plane="+meshNamespace, meshNamespace)
 
 func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
-	test.NewTest(t).Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
+	NewTest(t).Groups(Full, ARM, Disconnected).Run(func(t TestHelper) {
 		t.Log("This test checks if the operator can update Prometheus ConfigMap when the SMMR is updated")
 
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
@@ -53,7 +54,7 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 
 		checkPermissionError(t)
 
-		t.NewSubTest("when the default SMMR with no member").Run(func(t test.TestHelper) {
+		t.NewSubTest("when the default SMMR with no member").Run(func(t TestHelper) {
 			t.Cleanup(func() {
 				restoreDefaultSMMR(t)
 			})
@@ -66,7 +67,7 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			checkPermissionError(t)
 		})
 
-		t.NewSubTest("when creating a SMMR").Run(func(t test.TestHelper) {
+		t.NewSubTest("when creating a SMMR").Run(func(t TestHelper) {
 			ns := generateNamespace()
 
 			t.Cleanup(func() {
@@ -82,7 +83,7 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			testPrometheusConfigWithAsserts(t, assertConfigMapContainsNamespace(ns))
 		})
 
-		t.NewSubTest("when adding a new namespace into existing SMMR").Run(func(t test.TestHelper) {
+		t.NewSubTest("when adding a new namespace into existing SMMR").Run(func(t TestHelper) {
 			ns := generateNamespace()
 			anotherNs := generateNamespace()
 
@@ -103,7 +104,7 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			testPrometheusConfigWithAsserts(t, assertConfigMapContainsNamespace(ns), assertConfigMapContainsNamespace(anotherNs))
 		})
 
-		t.NewSubTest("when removing a namespace from existing SMMR").Run(func(t test.TestHelper) {
+		t.NewSubTest("when removing a namespace from existing SMMR").Run(func(t TestHelper) {
 			ns := generateNamespace()
 			anotherNs := generateNamespace()
 
@@ -123,7 +124,7 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			testPrometheusConfigWithAsserts(t, assertConfigMapContainsNamespace(ns), assertConfigMapDoesNotContainNamespace(anotherNs))
 		})
 
-		t.NewSubTest("when the default SMMR with nonexistent namespace").Run(func(t test.TestHelper) {
+		t.NewSubTest("when the default SMMR with nonexistent namespace").Run(func(t TestHelper) {
 			t.Cleanup(func() {
 				restoreDefaultSMMR(t)
 			})
@@ -141,7 +142,7 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			checkPermissionError(t)
 		})
 
-		t.NewSubTest("query istio_request_total").Run(func(t test.TestHelper) {
+		t.NewSubTest("query istio_request_total").Run(func(t TestHelper) {
 			t.Log("This test checks if Prometheus is scraping data from mesh member application when SMCP is MultiTenant mode")
 			t.Cleanup(func() {
 				oc.RecreateNamespace(t, ns.Bookinfo)
@@ -153,7 +154,7 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			testBookinfoAppReportIstioRequestsTotal(t)
 		})
 
-		t.NewSubTest("when removing SMMR").Run(func(t test.TestHelper) {
+		t.NewSubTest("when removing SMMR").Run(func(t TestHelper) {
 			t.Cleanup(func() {
 				restoreDefaultSMMR(t)
 			})
@@ -171,15 +172,11 @@ func TestOperatorCanUpdatePrometheusConfigMap(t *testing.T) {
 			checkConfigurationReloadingTriggered(t, start)
 			checkPermissionError(t)
 		})
-
-		t.NewSubTest("[TODO] test under cluster scoped").Run(func(t test.TestHelper) {
-			t.Skip()
-		})
 	})
 }
 
 func TestPrometheusScrapingAppDataWithClusterWideSmcp(t *testing.T) {
-	test.NewTest(t).Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
+	NewTest(t).Groups(Full, ARM, Disconnected).Run(func(t TestHelper) {
 		t.Log("This test checks if Prometheus is scraping data from mesh member application when SMCP is ClusterWide mode")
 		t.Log("Related issue: https://issues.redhat.com/browse/OSSM-8205")
 
@@ -203,7 +200,7 @@ func TestPrometheusScrapingAppDataWithClusterWideSmcp(t *testing.T) {
 	})
 }
 
-func testBookinfoAppReportIstioRequestsTotal(t test.TestHelper) {
+func testBookinfoAppReportIstioRequestsTotal(t TestHelper) {
 	t.LogStep("Test that the `istio_requests_total` metric exist for bookinfo")
 	generateBookinfoTraffic(t)
 	checkIstioRequestsTotalInPrometheus(t, "productpage")
@@ -212,7 +209,7 @@ func testBookinfoAppReportIstioRequestsTotal(t test.TestHelper) {
 	checkIstioRequestsTotalInPrometheus(t, "ratings")
 }
 
-func checkPermissionError(t test.TestHelper) {
+func checkPermissionError(t TestHelper) {
 	t.LogStep("Check the Prometheus log to see if there is any permission error")
 	oc.Logs(t,
 		prometheusPodSelector,
@@ -225,11 +222,11 @@ func checkPermissionError(t test.TestHelper) {
 	)
 }
 
-func checkConfigurationReloadingTriggered(t test.TestHelper, start time.Time) {
+func checkConfigurationReloadingTriggered(t TestHelper, start time.Time) {
 	// By default, any changes in the `ConfigMap`, the kubelet will sync them to the mapped volume on one minute interval.
 	t.Log("Wait one minute on the kubelet to update the volume to reflect the changes")
 	time.Sleep(1 * time.Minute)
-	retry.UntilSuccessWithOptions(t, retry.Options().DelayBetweenAttempts(5*time.Second).MaxAttempts(25), func(t test.TestHelper) {
+	retry.UntilSuccessWithOptions(t, retry.Options().DelayBetweenAttempts(5*time.Second).MaxAttempts(25), func(t TestHelper) {
 		oc.LogsSince(t,
 			start,
 			prometheusPodSelector, "config-reloader",
@@ -241,20 +238,20 @@ func checkConfigurationReloadingTriggered(t test.TestHelper, start time.Time) {
 	})
 }
 
-func testPrometheusConfigWithAsserts(t test.TestHelper, asserts ...common.CheckFunc) {
-	retry.UntilSuccess(t, func(t test.TestHelper) {
+func testPrometheusConfigWithAsserts(t TestHelper, asserts ...common.CheckFunc) {
+	retry.UntilSuccess(t, func(t TestHelper) {
 		shell.Execute(t,
 			fmt.Sprintf("oc -n %s get configmap prometheus -o jsonpath='{.data.prometheus\\.yml}'", meshNamespace),
 			asserts...)
 	})
 }
 
-func restoreDefaultSMMR(t test.TestHelper) {
+func restoreDefaultSMMR(t TestHelper) {
 	oc.ApplyString(t, meshNamespace, smmr)
 	oc.WaitSMMRReady(t, meshNamespace)
 }
 
-func updateDefaultSMMRWithNamespace(t test.TestHelper, names ...string) {
+func updateDefaultSMMRWithNamespace(t TestHelper, names ...string) {
 	s := buildSMMR(names...)
 
 	t.LogStepf("Update SMMR %s", s)
@@ -297,7 +294,7 @@ func generateNamespace() string {
 	return fmt.Sprintf("namespace-%d", rand.Int())
 }
 
-func generateBookinfoTraffic(t test.TestHelper) {
+func generateBookinfoTraffic(t TestHelper) {
 	count := 10
 	t.LogStepf("Generate %d requests to product page", count)
 	productPageURL := app.BookinfoProductPageURL(t, meshNamespace)
@@ -306,11 +303,11 @@ func generateBookinfoTraffic(t test.TestHelper) {
 	}
 }
 
-func checkIstioRequestsTotalInPrometheus(t test.TestHelper, app string) {
+func checkIstioRequestsTotalInPrometheus(t TestHelper, app string) {
 	query := "istio_requests_total"
 	expectedOutput := fmt.Sprintf(`"app":"%s"`, app)
 	t.LogStep(`Check if the "istio_request_total metric is in Prometheus"`)
-	retry.UntilSuccess(t, func(t test.TestHelper) {
+	retry.UntilSuccess(t, func(t TestHelper) {
 		oc.Exec(t,
 			prometheusPodSelector,
 			"prometheus-proxy",
@@ -323,9 +320,9 @@ func checkIstioRequestsTotalInPrometheus(t test.TestHelper, app string) {
 	})
 }
 
-func waitUntilPrometheusTargetReady(t test.TestHelper, app string) {
+func waitUntilPrometheusTargetReady(t TestHelper, app string) {
 	t.LogStep(`Wait till targets are available in Prometheus"`)
-	retry.UntilSuccess(t, func(t test.TestHelper) {
+	retry.UntilSuccess(t, func(t TestHelper) {
 		oc.Exec(t,
 			prometheusPodSelector,
 			"prometheus-proxy",

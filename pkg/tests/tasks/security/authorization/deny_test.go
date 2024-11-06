@@ -20,11 +20,12 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
+
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 func TestAuthorizationDenyAllow(t *testing.T) {
-	test.NewTest(t).Id("T23").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
+	NewTest(t).Id("T23").Groups(Full, InterOp, ARM, Disconnected).Run(func(t TestHelper) {
 		ns := "foo"
 		curlOptsAdmin := app.CurlOpts{Headers: []string{"x-token: admin"}}
 		curlOptsGuest := app.CurlOpts{Headers: []string{"x-token: guest"}}
@@ -42,7 +43,7 @@ func TestAuthorizationDenyAllow(t *testing.T) {
 		t.LogStep("Check if httpbin returns 200 OK when no authorization policies are in place")
 		app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/ip")
 
-		t.NewSubTest("explicitly deny request").Run(func(t test.TestHelper) {
+		t.NewSubTest("explicitly deny request").Run(func(t TestHelper) {
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, ns, DenyGETPolicy)
 			})
@@ -56,7 +57,7 @@ func TestAuthorizationDenyAllow(t *testing.T) {
 			app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/post", app.CurlOpts{Method: "POST"})
 		})
 
-		t.NewSubTest("deny request header").Run(func(t test.TestHelper) {
+		t.NewSubTest("deny request header").Run(func(t TestHelper) {
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, ns, DenyHeaderNotAdminPolicy)
 			})
@@ -70,7 +71,7 @@ func TestAuthorizationDenyAllow(t *testing.T) {
 			app.AssertSleepPodRequestForbidden(t, ns, "http://httpbin:8000/get", curlOptsGuest)
 		})
 
-		t.NewSubTest("allow request path").Run(func(t test.TestHelper) {
+		t.NewSubTest("allow request path").Run(func(t TestHelper) {
 			t.Cleanup(func() {
 				oc.DeleteFromString(t, ns, DenyHeaderNotAdminPolicy)
 				oc.DeleteFromString(t, ns, AllowPathIPPolicy)

@@ -30,7 +30,7 @@ import (
 )
 
 func TestRequestRouting(t *testing.T) {
-	NewTest(t).Id("T1").Groups(Smoke, Full, InterOp, ARM).Run(func(t TestHelper) {
+	NewTest(t).Id("T1").Groups(Smoke, Full, InterOp, ARM, Disconnected).Run(func(t TestHelper) {
 
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Bookinfo)

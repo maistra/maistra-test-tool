@@ -29,7 +29,7 @@ import (
 )
 
 func TestDiscoverySelectors(t *testing.T) {
-	NewTest(t).Groups(Full, ARM).Run(func(t TestHelper) {
+	NewTest(t).Groups(Full, ARM, Disconnected).Run(func(t TestHelper) {
 		t.Log("This test checks if discoverySelectors are being honored")
 		t.Log("See https://issues.redhat.com/browse/OSSM-3802")
 		t.Log("Test case is based on https://istio.io/latest/blog/2021/discovery-selectors/")

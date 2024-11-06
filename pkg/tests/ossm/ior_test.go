@@ -20,6 +20,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"gopkg.in/yaml.v2"
 
@@ -32,8 +33,9 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
 	"github.com/maistra/maistra-test-tool/pkg/util/shell"
-	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
+
+	. "github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
 type RouteMetadata struct {
@@ -54,7 +56,7 @@ const (
 
 // TestIOR tests IOR error regarding routes recreated: https://issues.redhat.com/browse/OSSM-1974. IOR will be deprecated on 2.4 and willl be removed on 3.0
 func TestIOR(t *testing.T) {
-	test.NewTest(t).Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
+	NewTest(t).Groups(Full, ARM, Disconnected).Run(func(t TestHelper) {
 		t.Log("This test verifies the behavior of IOR.")
 
 		meshNamespace := env.GetDefaultMeshNamespace()
@@ -67,19 +69,19 @@ func TestIOR(t *testing.T) {
 		host := "www.test.ocp"
 		gatewayName := "gw"
 
-		createSimpleGateway := func(t test.TestHelper) {
+		createSimpleGateway := func(t TestHelper) {
 			t.Logf("Creating Gateway for %s host", host)
 			oc.ApplyString(t, "", generateGateway(gatewayName, meshNamespace, host))
 		}
 
-		deleteSimpleGateway := func(t test.TestHelper) {
+		deleteSimpleGateway := func(t TestHelper) {
 			t.Logf("Deleting Gateway for %s host", host)
 			oc.DeleteFromString(t, "", generateGateway(gatewayName, meshNamespace, host))
 		}
 
-		checkSimpleGateway := func(t test.TestHelper) {
+		checkSimpleGateway := func(t TestHelper) {
 			t.Logf("Checking whether a Route is generated for %s", host)
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				routes := getRoutes(t, meshNamespace)
 				if len(routes) != 1 {
 					t.Fatalf("Expect a single route set for %s host, but got %s instead", host, len(routes))
@@ -98,7 +100,7 @@ func TestIOR(t *testing.T) {
 
 		DeployControlPlane(t)
 
-		t.NewSubTest("check IOR off by default from v2.5").Run(func(t test.TestHelper) {
+		t.NewSubTest("check IOR off by default from v2.5").Run(func(t TestHelper) {
 			if env.GetSMCPVersion().LessThan(version.SMCP_2_5) {
 				t.Skip("Skipping until 2.5")
 			} else {
@@ -110,7 +112,7 @@ func TestIOR(t *testing.T) {
 			}
 		})
 
-		t.NewSubTest("check IOR basic functionalities").Run(func(t test.TestHelper) {
+		t.NewSubTest("check IOR basic functionalities").Run(func(t TestHelper) {
 			t.Cleanup(func() {
 				if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
 					removeIORCustomSetting(t, meshNamespace, meshName)
@@ -128,7 +130,7 @@ func TestIOR(t *testing.T) {
 			checkSimpleGateway(t)
 		})
 
-		t.NewSubTest("check routes aren't deleted during v2.3 to v2.4 upgrade").Run(func(t test.TestHelper) {
+		t.NewSubTest("check routes aren't deleted during v2.3 to v2.4 upgrade").Run(func(t TestHelper) {
 			if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
 				t.Skip("This test only applies for v2.3 to v2.4 upgrade")
 			}
@@ -169,7 +171,7 @@ func TestIOR(t *testing.T) {
 			}
 		})
 
-		t.NewSubTest("check IOR does not delete routes after deleting Istio pod").Run(func(t test.TestHelper) {
+		t.NewSubTest("check IOR does not delete routes after deleting Istio pod").Run(func(t TestHelper) {
 			total := 3
 			nsNames := []string{}
 			gateways := []string{}
@@ -210,7 +212,7 @@ func TestIOR(t *testing.T) {
 			oc.ApplyString(t, meshNamespace, AppendDefaultSMMR(nsNames...))
 			oc.WaitSMMRReady(t, meshNamespace)
 
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				routes := getRoutes(t, meshNamespace)
 				if len(routes) != total {
 					t.Fatalf("Expect to find %d Routes but found %d instead", total, len(routes))
@@ -240,7 +242,7 @@ func TestIOR(t *testing.T) {
 			})
 
 			before := buildManagedRouteYamlDocument(t, meshNamespace)
-			detectRouteChanges := func(t test.TestHelper) {
+			detectRouteChanges := func(t TestHelper) {
 				after := buildManagedRouteYamlDocument(t, meshNamespace)
 				if err := util.Compare(
 					[]byte(before),
@@ -267,7 +269,7 @@ func TestIOR(t *testing.T) {
 			detectRouteChanges(t)
 		})
 
-		t.NewSubTest("Check argocd.argoproj.io labels from Gateways to Routes except argocd.argoproj.io/instance").Run(func(t test.TestHelper) {
+		t.NewSubTest("Check argocd.argoproj.io labels from Gateways to Routes except argocd.argoproj.io/instance").Run(func(t TestHelper) {
 			if env.GetArch() == "arm64" && env.GetSMCPVersion().LessThan(version.SMCP_2_5) {
 				t.Skip("2.4 is not supported in arm, from 2.5 GA in arm")
 			}
@@ -297,17 +299,17 @@ metadata:
 `)
 
 			t.LogStep("Check the argocd.argoproj.io/secret label was copied to the Route")
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			retry.UntilSuccess(t, func(t TestHelper) {
 				if oc.ResourceByLabelExists(t, "istio-system", "route", "argocd.argoproj.io/secret-type=cluster") {
 					t.LogSuccess("argocd.argoproj.io/secret-type=cluster label was copied to the Route")
 				} else {
-					t.Fatalf("argocd.argoproj.io/secret-type=cluster label was not copied to the Route")
+					t.Errorf("argocd.argoproj.io/secret-type=cluster label was not copied to the Route")
 				}
 			})
 
 			t.LogStep("Check the argocd.argoproj.io/instance label was not copied to the Route")
 			if oc.ResourceByLabelExists(t, "istio-system", "route", "argocd.argoproj.io/instance=app") {
-				t.Fatalf("argocd.argoproj.io/instance=app label was copied to the Route")
+				t.Errorf("argocd.argoproj.io/instance=app label was copied to the Route")
 			} else {
 				t.LogSuccess("argocd.argoproj.io/instance=app label was not copied to the Route")
 			}
@@ -319,7 +321,7 @@ metadata:
 			checkAnnotationCopiedToRoute(t, meshNamespace, "argocd.argoproj.io/instance", "app", gatewayName)
 		})
 
-		t.NewSubTest("Check Headless service in istio namespace does not break IOR").Run(func(t test.TestHelper) {
+		t.NewSubTest("Check Headless service in istio namespace does not break IOR").Run(func(t TestHelper) {
 			if env.GetSMCPVersion().LessThan(version.SMCP_2_5) {
 				t.Skip("Issue fixed from SMCP 2.5")
 			}
@@ -351,21 +353,22 @@ spec:
 			testAttempts := 5
 			t.LogStepf("Try to delete istiod pod and check the bookinfo route few times (%d)", testAttempts)
 			for i := 0; i < testAttempts; i++ {
-				shell.Execute(t,
-					fmt.Sprintf(`
-oc delete pod -l app=istiod -n %[1]s;
-oc rollout status deployment -l app=istiod -n %[1]s;
-sleep 5;
-oc get route -l maistra.io/gateway-name=bookinfo-gateway -n %[1]s -o jsonpath='{.items[].spec.to.name}'`, meshNamespace),
-					assert.OutputContains("istio-ingressgateway",
-						fmt.Sprintf("%d: Headless service in istio namespace did not broke IOR", i+1),
-						fmt.Sprintf("%d: Headless service in istio namespace broke IOR", i+1)))
+				oc.DeletePod(t, pod.MatchingSelector("app=istiod", meshNamespace))
+				oc.WaitPodReady(t, pod.MatchingSelector("app=istiod", meshNamespace))
+				retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(10).DelayBetweenAttempts(2*time.Second), func(t TestHelper) {
+					shell.Execute(t,
+						fmt.Sprintf(`oc get route -n %s -l 'maistra.io/gateway-name=bookinfo-gateway' -o jsonpath='{.items[*].spec.to.name}'`, meshNamespace),
+						assert.OutputContains(
+							"istio-ingressgateway",
+							fmt.Sprintf("%d: Headless service in istio namespace did not broke IOR", i+1),
+							fmt.Sprintf("%d: Headless service in istio namespace broke IOR", i+1)))
+				})
 			}
 		})
 	})
 }
 
-func addAdditionalIngressGateway(t test.TestHelper, meshName, meshNamespace, gatewayName string) {
+func addAdditionalIngressGateway(t TestHelper, meshName, meshNamespace, gatewayName string) {
 	oc.Patch(t, meshNamespace,
 		"smcp", meshName,
 		"merge", fmt.Sprintf(`
@@ -382,7 +385,7 @@ func addAdditionalIngressGateway(t test.TestHelper, meshName, meshNamespace, gat
 	oc.WaitSMCPReady(t, meshNamespace, meshName)
 }
 
-func getRoutes(t test.TestHelper, ns string) []Route {
+func getRoutes(t TestHelper, ns string) []Route {
 	res := shell.Executef(t, "oc -n %s get --selector 'maistra.io/generated-by=ior' --output 'jsonpath={.items}' route", ns)
 	var routes []Route
 	err := json.Unmarshal([]byte(res), &routes)
@@ -393,11 +396,11 @@ func getRoutes(t test.TestHelper, ns string) []Route {
 	return routes
 }
 
-func getRouteNames(t test.TestHelper, ns string) []string {
+func getRouteNames(t TestHelper, ns string) []string {
 	return oc.GetAllResoucesNamesByLabel(t, ns, "route", "maistra.io/generated-by=ior")
 }
 
-func buildManagedRouteYamlDocument(t test.TestHelper, ns string) string {
+func buildManagedRouteYamlDocument(t TestHelper, ns string) string {
 	names := getRouteNames(t, ns)
 	sort.Strings(names)
 
@@ -422,12 +425,12 @@ func buildManagedRouteYamlDocument(t test.TestHelper, ns string) string {
 	return doc
 }
 
-func setupDefaultSMCP(t test.TestHelper, ns string) {
+func setupDefaultSMCP(t TestHelper, ns string) {
 	InstallSMCP(t, ns)
 	oc.WaitSMCPReady(t, ns, env.GetDefaultSMCPName())
 }
 
-func setupV23SMCP(t test.TestHelper, ns, name string) {
+func setupV23SMCP(t TestHelper, ns, name string) {
 	InstallSMCPVersion(t, ns, version.SMCP_2_3)
 	oc.WaitSMCPReady(t, ns, name)
 
@@ -435,27 +438,27 @@ func setupV23SMCP(t test.TestHelper, ns, name string) {
 	oc.WaitSMMRReady(t, ns)
 }
 
-func updateToV24SMCP(t test.TestHelper, ns, name string) {
+func updateToV24SMCP(t TestHelper, ns, name string) {
 	oc.Patch(t, ns,
 		"smcp", name,
 		"json", `[{"op": "add", "path": "/spec/version", "value": "v2.4"}]`)
 	oc.WaitSMCPReady(t, ns, name)
 }
 
-func getIORSetting(t test.TestHelper, ns, name string) string {
+func getIORSetting(t TestHelper, ns, name string) string {
 	return shell.Executef(t,
 		`oc -n %s get smcp/%s -o jsonpath='{.status.appliedValues.istio.gateways.istio-ingressgateway.ior_enabled}'`,
 		ns, name)
 }
 
-func enableIOR(t test.TestHelper, ns, name string) {
+func enableIOR(t TestHelper, ns, name string) {
 	oc.Patch(t,
 		ns, "smcp", name, "json",
 		`[{"op": "add", "path": "/spec/gateways", "value": {"openshiftRoute": {"enabled": true}}}]`,
 	)
 }
 
-func removeIORCustomSetting(t test.TestHelper, ns, name string) {
+func removeIORCustomSetting(t TestHelper, ns, name string) {
 	oc.Patch(t,
 		ns, "smcp", name, "json",
 		`[{"op": "remove", "path": "/spec/gateways"}]`,
@@ -484,8 +487,8 @@ spec:
 	)
 }
 
-func checkAnnotationCopiedToRoute(t test.TestHelper, meshNamespace, annotationKey, annotationValue, expectedOutput string) {
-	retry.UntilSuccess(t, func(t test.TestHelper) {
+func checkAnnotationCopiedToRoute(t TestHelper, meshNamespace, annotationKey, annotationValue, expectedOutput string) {
+	retry.UntilSuccess(t, func(t TestHelper) {
 		shell.Execute(t,
 			fmt.Sprintf(`oc get route -n %s -o json | jq -r '.items[] | select(.metadata.annotations["%s"] == "%s") | .metadata.name'`, meshNamespace, annotationKey, annotationValue),
 			assert.OutputContains(expectedOutput,
