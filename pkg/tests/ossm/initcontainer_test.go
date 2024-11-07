@@ -41,7 +41,7 @@ func TestInitContainerNotRemovedDuringInjection(t *testing.T) {
 		oc.RecreateNamespace(t, ns.Bookinfo)
 
 		t.LogStep("Deploying test pod.")
-		oc.ApplyString(t, ns.Bookinfo, testInitContainerYAML)
+		oc.ApplyTemplate(t, ns.Bookinfo, testInitContainerYAML, nil)
 		oc.WaitDeploymentRolloutComplete(t, ns.Bookinfo, "sleep-init")
 
 		t.LogStep("Checking pod logs for init message.")
@@ -76,13 +76,13 @@ spec:
 
       initContainers:
       - name: init
-        image: curlimages/curl:8.4.0
+        image: {{ image "sleep" }}
         command: ["/bin/echo", "[init worked]"]
         imagePullPolicy: IfNotPresent
 
       containers:
       - name: sleep
-        image: curlimages/curl:8.4.0
+        image: {{ image "sleep" }}
         command: ["/bin/sleep", "3650d"]
         imagePullPolicy: IfNotPresent`
 )
