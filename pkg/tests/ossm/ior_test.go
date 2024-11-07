@@ -115,9 +115,10 @@ func TestIOR(t *testing.T) {
 		t.NewSubTest("check IOR basic functionalities").Run(func(t TestHelper) {
 			t.Cleanup(func() {
 				if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_5) {
+					deleteSimpleGateway(t)
 					removeIORCustomSetting(t, meshNamespace, meshName)
+					deleteAllRoutes(t, meshNamespace)
 				}
-				deleteSimpleGateway(t)
 			})
 
 			t.LogStep("Ensure the IOR enabled")
@@ -135,7 +136,7 @@ func TestIOR(t *testing.T) {
 				t.Skip("This test only applies for v2.3 to v2.4 upgrade")
 			}
 			if env.GetArch() == "arm64" {
-				t.Skip("2.3 & 2.4 is not supported in arm, from 2.5 GA in arm")
+				t.Skip("2.3 & 2.4 is not supported in arm (arm is supported from ossm 2.5+)")
 			}
 
 			t.Cleanup(func() {
@@ -277,8 +278,9 @@ func TestIOR(t *testing.T) {
 			t.Log("Reference: https://issues.redhat.com/browse/OSSM-6295")
 
 			t.Cleanup(func() {
-				removeIORCustomSetting(t, meshNamespace, meshName)
 				deleteSimpleGateway(t)
+				removeIORCustomSetting(t, meshNamespace, meshName)
+				deleteAllRoutes(t, meshNamespace)
 			})
 
 			t.LogStep("Ensure the IOR enabled")
@@ -386,18 +388,31 @@ func addAdditionalIngressGateway(t TestHelper, meshName, meshNamespace, gatewayN
 }
 
 func getRoutes(t TestHelper, ns string) []Route {
-	res := shell.Executef(t, "oc -n %s get --selector 'maistra.io/generated-by=ior' --output 'jsonpath={.items}' route", ns)
+	res := shell.Executef(t, "oc -n %s get --selector 'maistra.io/generated-by=ior' --output 'jsonpath={.items}' route --ignore-not-found", ns)
 	var routes []Route
-	err := json.Unmarshal([]byte(res), &routes)
-	if err != nil {
-		t.Fatalf("Error parsing data %s: %v", res, err)
+	if res != "" {
+		err := json.Unmarshal([]byte(res), &routes)
+		if err != nil {
+			t.Fatalf("Error parsing data %s: %v", res, err)
+		}
 	}
-
 	return routes
 }
 
 func getRouteNames(t TestHelper, ns string) []string {
-	return oc.GetAllResoucesNamesByLabel(t, ns, "route", "maistra.io/generated-by=ior")
+	routes := getRoutes(t, ns)
+	var names []string
+	for _, route := range routes {
+		names = append(names, route.Metadata.Name)
+	}
+	return names
+}
+
+// Sometimes, the IOR routes are not deleted after the Gateway is deleted. Do it explicitly
+func deleteAllRoutes(t TestHelper, ns string) {
+	for _, name := range getRouteNames(t, ns) {
+		oc.DeleteResource(t, ns, "Route", name)
+	}
 }
 
 func buildManagedRouteYamlDocument(t TestHelper, ns string) string {
@@ -452,17 +467,21 @@ func getIORSetting(t TestHelper, ns, name string) string {
 }
 
 func enableIOR(t TestHelper, ns, name string) {
+	t.Log("Enabling IOR")
 	oc.Patch(t,
 		ns, "smcp", name, "json",
 		`[{"op": "add", "path": "/spec/gateways", "value": {"openshiftRoute": {"enabled": true}}}]`,
 	)
+	oc.WaitSMCPReady(t, meshNamespace, DefaultSMCP().Name)
 }
 
 func removeIORCustomSetting(t TestHelper, ns, name string) {
+	t.Log("Disabling IOR")
 	oc.Patch(t,
 		ns, "smcp", name, "json",
 		`[{"op": "remove", "path": "/spec/gateways"}]`,
 	)
+	oc.WaitSMCPReady(t, meshNamespace, DefaultSMCP().Name)
 }
 
 func generateGateway(name, ns, host string) string {
