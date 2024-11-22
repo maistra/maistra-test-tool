@@ -29,7 +29,7 @@ import (
 
 // TestAuthorizationHTTPTraffic validates authorization policies for HTTP traffic.
 func TestAuthorizationHTTPTraffic(t *testing.T) {
-	NewTest(t).Id("T20").Groups(Full, ARM, InterOp, Disconnected).Run(func(t TestHelper) {
+	NewTest(t).Id("T20").Groups(Full, ARM, InterOp, Disconnected, Patching).Run(func(t TestHelper) {
 		ns := "bookinfo"
 		t.Cleanup(func() {
 			oc.Patch(t,

@@ -25,7 +25,7 @@ import (
 )
 
 func TestTLSOriginationSDS(t *testing.T) {
-	NewTest(t).Id("T15").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	NewTest(t).Id("T15").Groups(Full, InterOp, ARM, Patching).Run(func(t TestHelper) {
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Bookinfo)
 			oc.RecreateNamespace(t, ns.MeshExternal)

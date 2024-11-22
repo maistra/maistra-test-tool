@@ -21,7 +21,7 @@ import (
 )
 
 func TestTLSVersionSMCP(t *testing.T) {
-	NewTest(t).Id("T26").Groups(Full, ARM, InterOp, Disconnected).Run(func(t TestHelper) {
+	NewTest(t).Id("T26").Groups(Full, ARM, InterOp, Disconnected, Patching).Run(func(t TestHelper) {
 		t.Log("This test checks if the SMCP updated the tls.minProtocolVersion to TLSv1_0, TLSv1_1, and tls.maxProtocolVersion to TLSv1_3.")
 		t.Cleanup(func() {
 			oc.Patch(t, meshNamespace,

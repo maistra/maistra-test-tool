@@ -33,6 +33,7 @@ const (
 	Smoke        TestGroup = "smoke"
 	InterOp      TestGroup = "interop"
 	Disconnected TestGroup = "disconnected"
+	Patching     TestGroup = "patching"
 )
 
 type Test interface {

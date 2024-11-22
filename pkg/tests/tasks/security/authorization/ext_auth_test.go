@@ -29,7 +29,7 @@ import (
 )
 
 func TestEnvoyExtAuthzHttpExtensionProvider(t *testing.T) {
-	NewTest(t).Id("T37").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	NewTest(t).Id("T37").Groups(Full, InterOp, ARM, Patching).Run(func(t TestHelper) {
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_3) {
 			t.Skip("extensionProviders.envoyExtAuthzHttp was added in v2.3")
 		}
@@ -137,7 +137,7 @@ spec:
 }
 
 func TestEnvoyExtAuthzGrpcExtensionProvider(t *testing.T) {
-	NewTest(t).Id("T42").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	NewTest(t).Id("T42").Groups(Full, InterOp, ARM, Patching).Run(func(t TestHelper) {
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_3) {
 			t.Skip("extensionProviders.envoyExtAuthzGrpc is not supported in versions below v2.3")
 		}

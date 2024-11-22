@@ -25,7 +25,7 @@ import (
 )
 
 func TestEgressGateways(t *testing.T) {
-	NewTest(t).Id("T13").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	NewTest(t).Id("T13").Groups(Full, InterOp, ARM, Patching).Run(func(t TestHelper) {
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Bookinfo)
 		})

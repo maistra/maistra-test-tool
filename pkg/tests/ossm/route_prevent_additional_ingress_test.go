@@ -29,7 +29,7 @@ import (
 )
 
 func TestRoutePreventAdditionalIngress(t *testing.T) {
-	NewTest(t).Id("T48").Groups(Full, ARM, Disconnected).MaxVersion(version.SMCP_2_5).Run(func(t TestHelper) {
+	NewTest(t).Id("T48").Groups(Full, ARM, Disconnected, Patching).MaxVersion(version.SMCP_2_5).Run(func(t TestHelper) {
 
 		meshValues := map[string]interface{}{
 			"Version": env.GetSMCPVersion().String(),

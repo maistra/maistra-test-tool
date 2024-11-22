@@ -25,7 +25,7 @@ import (
 )
 
 func TestAuthorizationDenyAllow(t *testing.T) {
-	NewTest(t).Id("T23").Groups(Full, InterOp, ARM, Disconnected).Run(func(t TestHelper) {
+	NewTest(t).Id("T23").Groups(Full, InterOp, ARM, Disconnected, Patching).Run(func(t TestHelper) {
 		ns := "foo"
 		curlOptsAdmin := app.CurlOpts{Headers: []string{"x-token: admin"}}
 		curlOptsGuest := app.CurlOpts{Headers: []string{"x-token: guest"}}

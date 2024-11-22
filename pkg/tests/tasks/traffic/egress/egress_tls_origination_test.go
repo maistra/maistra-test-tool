@@ -25,7 +25,7 @@ import (
 )
 
 func TestEgressTLSOrigination(t *testing.T) {
-	test.NewTest(t).Id("T12").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
+	test.NewTest(t).Id("T12").Groups(test.Full, test.InterOp, test.ARM, test.Patching).Run(func(t test.TestHelper) {
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.MeshExternal)
 			app.Uninstall(t, app.Sleep(ns.Bookinfo))

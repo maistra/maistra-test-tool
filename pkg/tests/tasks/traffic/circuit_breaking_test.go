@@ -34,7 +34,7 @@ import (
 )
 
 func TestCircuitBreaking(t *testing.T) {
-	NewTest(t).Id("T6").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	NewTest(t).Id("T6").Groups(Full, InterOp, ARM, Patching).Run(func(t TestHelper) {
 		t.Log("This test checks whether the circuit breaker functions correctly. Check documentation: https://istio.io/latest/docs/tasks/traffic-management/circuit-breaking/")
 
 		t.Cleanup(func() {

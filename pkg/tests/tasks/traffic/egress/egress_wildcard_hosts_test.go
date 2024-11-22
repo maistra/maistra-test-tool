@@ -27,7 +27,7 @@ import (
 )
 
 func TestEgressWildcard(t *testing.T) {
-	NewTest(t).Id("T16").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
+	NewTest(t).Id("T16").Groups(Full, InterOp, ARM, Patching).Run(func(t TestHelper) {
 		t.Log("This test checks if the wildcard in the ServiceEntry and Gateway works as expected for Egress traffic.")
 
 		ossm.DeployControlPlane(t)
