@@ -26,7 +26,7 @@ import (
 )
 
 func TestSMCPAnnotations(t *testing.T) {
-	test.NewTest(t).Id("T29").Groups(test.Full, test.ARM, test.Patching).Run(func(t test.TestHelper) {
+	test.NewTest(t).Id("T29").Groups(test.Full, test.ARM, test.Persistent).Run(func(t test.TestHelper) {
 		t.Log("Test annotations: verify deployment with sidecar.maistra.io/proxyEnv annotations and Enable automatic injection in SMCP to propagate the annotations to the sidecar")
 		t.Log("See https://issues.redhat.com/browse/OSSM-1074")
 

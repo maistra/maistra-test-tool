@@ -35,7 +35,7 @@ import (
 )
 
 func TestAuthPolicy(t *testing.T) {
-	NewTest(t).Id("T18").Groups(Full, InterOp, ARM, Patching).Run(func(t TestHelper) {
+	NewTest(t).Id("T18").Groups(Full, InterOp, ARM, Persistent).Run(func(t TestHelper) {
 		meshNamespace := env.GetDefaultMeshNamespace()
 
 		t.Log("This test validates authentication policies.")

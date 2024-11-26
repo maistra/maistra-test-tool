@@ -34,7 +34,7 @@ import (
 )
 
 func TestMustGather(t *testing.T) {
-	NewTest(t).Id("T30").Groups(Full, ARM, Patching).Run(func(t TestHelper) {
+	NewTest(t).Id("T30").Groups(Full, ARM, Persistent).Run(func(t TestHelper) {
 		t.Log("This test verifies must-gather log collection")
 
 		t.Cleanup(func() {

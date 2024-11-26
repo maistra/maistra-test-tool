@@ -32,7 +32,7 @@ import (
 
 // TestTcpTrafficShifting validates TCP traffic shifting feature.
 func TestTcpTrafficShifting(t *testing.T) {
-	test.NewTest(t).Id("T4").Groups(test.Full, test.InterOp, test.ARM, test.Patching).Run(func(t test.TestHelper) {
+	test.NewTest(t).Id("T4").Groups(test.Full, test.InterOp, test.ARM, test.Persistent).Run(func(t test.TestHelper) {
 
 		t.Cleanup(func() {
 			app.Uninstall(t, app.Sleep(ns.Foo), app.EchoV1(ns.Foo), app.EchoV2(ns.Foo))

@@ -25,7 +25,7 @@ import (
 )
 
 func TestSMCPSecret(t *testing.T) {
-	NewTest(t).Id("T52").Groups(Full, Disconnected, ARM, Patching).Run(func(t TestHelper) {
+	NewTest(t).Id("T52").Groups(Full, Disconnected, ARM, Persistent).Run(func(t TestHelper) {
 		t.Log("Verify that secret begins with $2a$, indicating it's been hashed with bcrypt")
 		t.Log("Reference: https://issues.redhat.com/browse/OSSM-1094")
 

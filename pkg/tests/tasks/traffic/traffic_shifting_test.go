@@ -35,7 +35,7 @@ import (
 )
 
 func TestTrafficShifting(t *testing.T) {
-	NewTest(t).Id("T3").Groups(Full, InterOp, ARM, Disconnected, Patching).Run(func(t TestHelper) {
+	NewTest(t).Id("T3").Groups(Full, InterOp, ARM, Disconnected, Persistent).Run(func(t TestHelper) {
 
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Bookinfo)

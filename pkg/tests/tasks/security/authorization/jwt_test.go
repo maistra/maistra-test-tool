@@ -26,7 +26,7 @@ import (
 )
 
 func TestAuthorizationJWT(t *testing.T) {
-	test.NewTest(t).Id("T22").Groups(test.Full, test.InterOp, test.ARM, test.Patching).Run(func(t test.TestHelper) {
+	test.NewTest(t).Id("T22").Groups(test.Full, test.InterOp, test.ARM, test.Persistent).Run(func(t test.TestHelper) {
 		ns := "foo"
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns)

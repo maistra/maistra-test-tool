@@ -34,7 +34,7 @@ import (
 )
 
 func TestIstiodPodFailsAfterRestarts(t *testing.T) {
-	NewTest(t).Id("T35").Groups(Full, Disconnected, ARM, Patching).Run(func(t TestHelper) {
+	NewTest(t).Id("T35").Groups(Full, Disconnected, ARM, Persistent).Run(func(t TestHelper) {
 		t.Log("Verify that Istio pod not get stuck with probes failure after restart")
 		t.Log("References: \n- https://issues.redhat.com/browse/OSSM-2340\n- https://issues.redhat.com/browse/OSSM-2434")
 		namespaces := util.GenerateStrings("test-", 50)
@@ -61,7 +61,7 @@ func TestIstiodPodFailsAfterRestarts(t *testing.T) {
 }
 
 func TestControllerFailsToUpdatePod(t *testing.T) {
-	NewTest(t).Groups(Full, ARM, Patching).Run(func(t TestHelper) {
+	NewTest(t).Groups(Full, ARM, Persistent).Run(func(t TestHelper) {
 		t.Log("Verify that the controller does not fails to update the pod when the member controller couldn't add the member-of label")
 		t.Log("References: \n- https://issues.redhat.com/browse/OSSM-2169\n- https://issues.redhat.com/browse/OSSM-2420")
 
