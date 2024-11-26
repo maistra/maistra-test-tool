@@ -92,7 +92,7 @@ func TestTLSOrigination(t *testing.T) {
 				// TODO: this is a potential bug; investigate why the following is necessary
 				// ingressgateway needs to be restarted or it will continue reporting the following error:
 				// error	cache	resource:file-root:/etc/istio/nginx-ca-certs/example.com.crt failed to generate secret for proxy from file: open /etc/istio/nginx-ca-certs/example.com.crt: no such file or directory
-				oc.DeletePod(t, pod.MatchingSelector("app=istio-ingressgateway", meshNamespace))
+				oc.DeletePod(t, pod.MatchingSelector(fmt.Sprintf("app=istio-ingressgateway,maistra-control-plane=%s", meshNamespace), meshNamespace))
 			})
 
 			t.LogStep("Deploy nginx mTLS server and create secrets in the mesh namespace")

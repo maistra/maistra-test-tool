@@ -52,7 +52,7 @@ func TestIstiodPodFailsAfterRestarts(t *testing.T) {
 
 		t.LogStep("Delete Istio pod 10 times and check that it is running and ready after the deletions")
 		for i := 0; i < 10; i++ {
-			istiodPod := pod.MatchingSelector("app=istiod", meshNamespace)
+			istiodPod := pod.MatchingSelector(fmt.Sprintf("app=istiod,maistra-control-plane=%s", meshNamespace), meshNamespace)
 			oc.DeletePod(t, istiodPod)
 			oc.WaitPodRunning(t, istiodPod)
 			oc.WaitPodReady(t, istiodPod)
@@ -134,7 +134,7 @@ func TestIstiodPodFailsWithValidationMessages(t *testing.T) {
 			oc.RecreateNamespace(t, meshNamespace)
 		})
 
-		istiodPod := pod.MatchingSelector("app=istiod", meshNamespace)
+		istiodPod := pod.MatchingSelector(fmt.Sprintf("app=istiod,maistra-control-plane=%s", meshNamespace), meshNamespace)
 		oc.WaitPodRunning(t, istiodPod)
 		retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(10), func(t TestHelper) {
 			oc.LogsFromPods(t, meshNamespace, "app=istiod", assert.OutputContains(

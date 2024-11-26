@@ -21,7 +21,7 @@ import (
 
 func getPods(t test.TestHelper, oc *ocpackage.OC, selector string, ns string) []ocpackage.NamespacedName {
 	t.T().Helper()
-	pods := oc.GetAllResoucesNames(t, ns, "pods", selector)
+	pods := oc.GetAllResourcesNames(t, ns, "pods", selector)
 	var namespacedNames []ocpackage.NamespacedName
 	for _, pod := range pods {
 		namespacedNames = append(namespacedNames, ocpackage.NewNamespacedName(ns, pod))

@@ -1,0 +1,18 @@
+scripts/runtests.sh 
+OSSM Operator version is 2.6.0
+Output dir: /home/cgarriso/Documents/maistra/maistra-test-tool/tests/result-20241126100741
+
+Executing tests against all supported versions: v2.4 v2.5 v2.6
+    Note: To run tests against a specific version, set the SMCP_VERSION environment variable.
+
+Resetting cluster by deleting namespaces used in the test suite
+error: You must be logged in to the server (Unauthorized)
+error: You must be logged in to the server (Unauthorized)
+error: You must be logged in to the server (Unauthorized)
+error: You must be logged in to the server (Unauthorized)
+error: You must be logged in to the server (Unauthorized)
+error: You must be logged in to the server (Unauthorized)
+
+real	0m0.159s
+user	0m0.136s
+sys	0m0.029s
