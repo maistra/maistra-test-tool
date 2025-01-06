@@ -29,7 +29,7 @@ import (
 )
 
 func TestTLSOrigination(t *testing.T) {
-	NewTest(t).Id("T14").Groups(Full, InterOp, ARM, Persistent).Run(func(t TestHelper) {
+	NewTest(t).Id("T14").Groups(Full, InterOp, ARM).Run(func(t TestHelper) {
 		t.Log("This test verifies that TLS origination works in 2 scenarios:")
 		t.Log("  1) Egress gateway TLS Origination")
 		t.Log("  2) MTLS Origination with file mount (certificates mounted in egress gateway pod)")
