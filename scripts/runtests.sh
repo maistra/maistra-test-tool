@@ -103,8 +103,11 @@ runTestsAgainstVersion() {
 resetCluster() {
     echo
     echo "Resetting cluster by deleting namespaces used in the test suite"
-    # tmp?: no longer delete istio-system ns upon running tests
-    oc delete namespace bookinfo foo bar legacy mesh-external cert-manager --ignore-not-found
+    if [ "$TEST_GROUP" = "persistent" ]; then
+        oc delete namespace bookinfo foo bar legacy mesh-external cert-manager --ignore-not-found
+    else
+        oc delete namespace istio-system bookinfo foo bar legacy mesh-external cert-manager --ignore-not-found
+    fi
     echo
 }
 
