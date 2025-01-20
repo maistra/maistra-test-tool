@@ -37,9 +37,6 @@ func TestTempoTracing(t *testing.T) {
 		if env.GetSMCPVersion().LessThan(version.SMCP_2_5) {
 			t.Skip("Skipped because integration with tempo is available only in v2.5+")
 		}
-		if env.GetArch() == "z" {
-			t.Skip("Tempo tracing is not supported in IBM Z platform")
-		}
 
 		meshValues := map[string]interface{}{
 			"Name":          smcpName,
