@@ -183,7 +183,7 @@ func (o OC) WaitFor(t test.TestHelper, ns string, kind string, name string, forC
 		attemptT = retry.Attempt(t, func(t test.TestHelper) {
 			t.T().Helper()
 			shell.Execute(t,
-				fmt.Sprintf(`oc wait -n %s %s/%s --for %s --timeout %s`, ns, kind, name, forCondition, "10s"),
+				fmt.Sprintf(`oc wait %s %s/%s --for %s --timeout %s`, nsFlag(ns), kind, name, forCondition, "10s"),
 				require.OutputContains("condition met",
 					fmt.Sprintf("Condition %s met by %s %s/%s", forCondition, kind, ns, name),
 					fmt.Sprintf("Condition %s not met by %s %s/%s", forCondition, kind, ns, name)))
