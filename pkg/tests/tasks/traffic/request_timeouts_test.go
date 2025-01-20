@@ -35,7 +35,7 @@ import (
 var reviewTimeout string
 
 func TestRequestTimeouts(t *testing.T) {
-	NewTest(t).Id("T5").Groups(Full, InterOp, ARM, Disconnected).Run(func(t TestHelper) {
+	NewTest(t).Id("T5").Groups(Full, InterOp, ARM, Disconnected, Persistent).Run(func(t TestHelper) {
 
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Bookinfo)

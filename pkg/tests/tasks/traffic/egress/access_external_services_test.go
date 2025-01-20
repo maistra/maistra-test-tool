@@ -31,7 +31,7 @@ import (
 )
 
 func TestAccessExternalServices(t *testing.T) {
-	NewTest(t).Id("T11").Groups(Full, InterOp, ARM, Disconnected).Run(func(t TestHelper) {
+	NewTest(t).Id("T11").Groups(Full, InterOp, ARM, Disconnected, Persistent).Run(func(t TestHelper) {
 		smcpName := env.GetDefaultSMCPName()
 		t.Cleanup(func() {
 			app.Uninstall(t, app.Sleep(ns.Bookinfo))

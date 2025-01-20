@@ -26,7 +26,7 @@ import (
 )
 
 func TestOperatorCanReconcileSMCPWhenIstiodOffline(t *testing.T) {
-	test.NewTest(t).Groups(test.Full, test.Disconnected, test.ARM).Run(func(t test.TestHelper) {
+	test.NewTest(t).Groups(test.Full, test.Disconnected, test.ARM, test.Persistent).Run(func(t test.TestHelper) {
 		t.Log("This test checks if the operator can reconcile an SMCP even if the istiod pod is missing")
 		t.Log("See https://issues.redhat.com/browse/OSSM-3235")
 

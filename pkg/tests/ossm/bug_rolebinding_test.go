@@ -31,7 +31,7 @@ type namespaceResources struct {
 }
 
 func TestMissingRoleBinding(t *testing.T) {
-	NewTest(t).Groups(Full, ARM, Disconnected).Run(func(t TestHelper) {
+	NewTest(t).Groups(Full, ARM, Disconnected, Persistent).Run(func(t TestHelper) {
 		t.Log("Verify that role and role binding is detected with SMMR namespace with gateway")
 		t.Log("Reference: https://issues.redhat.com/browse/OSSM-2143")
 

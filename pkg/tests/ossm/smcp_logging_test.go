@@ -25,7 +25,7 @@ import (
 )
 
 func TestLogging(t *testing.T) {
-	NewTest(t).Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
+	NewTest(t).Groups(Full, Disconnected, ARM, Persistent).Run(func(t TestHelper) {
 		t.Log("This test verifies allowed logging levels for the control plane")
 		t.Log("See https://issues.redhat.com/browse/OSSM-6331")
 

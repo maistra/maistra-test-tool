@@ -33,7 +33,7 @@ import (
 )
 
 func TestIngressWithoutTlsTermination(t *testing.T) {
-	test.NewTest(t).Id("T10").Groups(test.Full, test.InterOp, test.ARM).Run(func(t test.TestHelper) {
+	test.NewTest(t).Id("T10").Groups(test.Full, test.InterOp, test.ARM, test.Persistent).Run(func(t test.TestHelper) {
 		t.Log("This test validates configuring an Gateway with TLS PassThrough")
 		t.Log("Doc reference: https://istio.io/v1.14/docs/tasks/traffic-management/ingress/ingress-sni-passthrough/")
 

@@ -41,7 +41,7 @@ var (
 )
 
 func TestRateLimiting(t *testing.T) {
-	NewTest(t).Id("T28").Groups(Full, ARM).MaxVersion(version.SMCP_2_2).Run(func(t TestHelper) {
+	NewTest(t).Id("T28").Groups(Full, ARM, Persistent).MaxVersion(version.SMCP_2_2).Run(func(t TestHelper) {
 		nsRedis := "redis"
 
 		DeployControlPlane(t)

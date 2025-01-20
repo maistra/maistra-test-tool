@@ -491,7 +491,7 @@ func (o OC) ResourceExists(t test.TestHelper, ns, kind, name string) bool {
 // Function returns names of all resources (kind input) in the namespace (ns input) that match a particular label (label input).
 // Label input can be an empty string, and then all resources in the namespace are returned
 // When you are looking for a global scoped resource (e.g. nodes), ns can be empty
-func (o OC) GetAllResoucesNames(t test.TestHelper, ns, kind, label string) []string {
+func (o OC) GetAllResourcesNames(t test.TestHelper, ns, kind, label string) []string {
 	t.T().Helper()
 	var values []string
 	o.withKubeconfig(t, func() {

@@ -32,7 +32,7 @@ import (
 )
 
 func TestNativeSidecars(t *testing.T) {
-	NewTest(t).Groups(Full, InterOp, ARM, Disconnected).Run(func(t TestHelper) {
+	NewTest(t).Groups(Full, InterOp, ARM, Disconnected, Persistent).Run(func(t TestHelper) {
 		if version.ParseVersion(oc.GetOCPVersion(t)).LessThan(version.OCP_4_16) || env.GetSMCPVersion().LessThan(version.SMCP_2_6) {
 			t.Skip("Native sidecars are only supported in OpenShift 4.16+ and OSSM 2.6+")
 		}

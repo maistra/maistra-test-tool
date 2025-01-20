@@ -29,7 +29,7 @@ import (
 )
 
 func TestOperatorPodHonorsReadinessProbe(t *testing.T) {
-	test.NewTest(t).Groups(test.Full, test.Disconnected, test.ARM).MinVersion(version.SMCP_2_4).Run(func(t test.TestHelper) {
+	test.NewTest(t).Groups(test.Full, test.Disconnected, test.ARM, test.Persistent).MinVersion(version.SMCP_2_4).Run(func(t test.TestHelper) {
 		t.Log("This test checks if the operator correctly reports its readiness status")
 
 		meshNamespace := env.GetDefaultMeshNamespace()

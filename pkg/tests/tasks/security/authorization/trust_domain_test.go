@@ -27,7 +27,7 @@ import (
 )
 
 func TestTrustDomainMigration(t *testing.T) {
-	NewTest(t).Id("T24").Groups(Full, InterOp, ARM, Disconnected).Run(func(t TestHelper) {
+	NewTest(t).Id("T24").Groups(Full, InterOp, ARM, Disconnected, Persistent).Run(func(t TestHelper) {
 		foo := "foo"
 		bar := "bar"
 		httpbinUrl := "http://httpbin.foo:8000/ip"

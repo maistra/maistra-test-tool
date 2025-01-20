@@ -29,7 +29,7 @@ import (
 )
 
 func TestSMMRAutoCreationAndDeletion(t *testing.T) {
-	NewTest(t).Id("T39").Groups(Full, Disconnected, ARM).Run(func(t TestHelper) {
+	NewTest(t).Id("T39").Groups(Full, Disconnected, ARM, Persistent).Run(func(t TestHelper) {
 		t.Log("This test verifies what happens to the SMMR when SMM is created and deleted")
 
 		t.Cleanup(func() {

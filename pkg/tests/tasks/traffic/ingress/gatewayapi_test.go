@@ -145,7 +145,7 @@ func TestGatewayApi(t *testing.T) {
 			t.LogStep("Verfiy the GatewayApi access the httpbin service using curl")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				oc.Exec(t,
-					pod.MatchingSelector("app=istio-ingressgateway", meshNamespace),
+					pod.MatchingSelector(fmt.Sprintf("app=istio-ingressgateway,maistra-control-plane=%s", meshNamespace), meshNamespace),
 					"istio-proxy",
 					fmt.Sprintf("curl http://%s.foo.svc.cluster.local:8080/get -H Host:httpbin.example.com -s -o /dev/null -w %%{http_code}", gatewayapi.GetDefaultServiceName(env.GetSMCPVersion(), "gateway", "istio")),
 					assert.OutputContains("200",
