@@ -15,10 +15,12 @@
 package migration
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
@@ -32,13 +34,22 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
+type ingressStatus struct {
+	IP       string `json:"ip,omitempty"`
+	Hostname string `json:"hostname,omitempty"`
+}
+
 func TestMigrationSimpleClusterWide(t *testing.T) {
-	test.NewTest(t).MinVersion(version.SMCP_2_6).Groups(test.Full).Run(func(t test.TestHelper) {
+	test.NewTest(t).MinVersion(version.SMCP_2_6).Groups(test.Full, test.Migration).Run(func(t test.TestHelper) {
+		istio := ossm.DefaultIstio()
 		t.Cleanup(func() {
-			oc.DeleteResource(t, "", "Istio", "example")
+			oc.DeleteResource(t, "", "Istio", istio.Name)
 			oc.DeleteResource(t, "", "IstioCNI", "default")
 		})
-		defaults := ossm.DefaultClusterWideSMCP()
+		t.LogStep("Install 2.6 controlplane")
+		smcp := ossm.DefaultClusterWideSMCP()
+		// These are defaulted to the same but better to be explicit.
+		istio.Namespace = smcp.Namespace
 		ossm.BasicSetup(t)
 		templ := `apiVersion: maistra.io/v2
 kind: ServiceMeshControlPlane
@@ -62,25 +73,26 @@ spec:
     prometheus:
       enabled: false
   mode: ClusterWide`
-		oc.ApplyTemplate(t, defaults.Namespace, templ, defaults)
+		oc.ApplyTemplate(t, smcp.Namespace, templ, smcp)
 
-		oc.WaitSMCPReady(t, defaults.Namespace, defaults.Name)
-		oc.WaitSMMRReady(t, defaults.Namespace)
+		oc.WaitSMCPReady(t, smcp.Namespace, smcp.Name)
+		// Need to add the injection label first so that the SMMR gets created.
+		// SMMR will only get created if a namespace has an injection label.
 		oc.Label(t, "", "Namespace", ns.Bookinfo, "istio-injection=enabled")
-		t.LogStep("Update SMMR to include bookinfo namespace")
+		oc.WaitSMMRReady(t, smcp.Namespace)
 		// Wait for SMMR to include bookinfo
-		oc.DefaultOC.WaitFor(t, defaults.Namespace, "ServiceMeshMemberRoll", "default", `jsonpath='{.status.configuredMembers[?(@=="bookinfo")]}'`)
+		oc.DefaultOC.WaitFor(t, smcp.Namespace, "ServiceMeshMemberRoll", "default", `jsonpath='{.status.configuredMembers[?(@=="bookinfo")]}'`)
 
 		t.LogStep("Create 3.0 controlplane and IstioCNI")
-		istio := `apiVersion: sailoperator.io/v1alpha1
+		istioTempl := `apiVersion: sailoperator.io/v1alpha1
 kind: Istio
 metadata:
-  name: example
+  name: {{ .Name }}
 spec:
-  namespace: istio-system
-  version: v1.24.1`
-		oc.ApplyString(t, "", istio)
-		oc.DefaultOC.WaitFor(t, "", "Istio", "example", "condition=Ready")
+  namespace: {{ .Namespace }}
+  version: {{ .Version }}`
+		oc.ApplyTemplate(t, "", istioTempl, istio)
+		oc.DefaultOC.WaitFor(t, "", "Istio", istio.Name, "condition=Ready")
 		oc.CreateNamespace(t, "istio-cni")
 		istioCNI := `apiVersion: sailoperator.io/v1alpha1
 kind: IstioCNI
@@ -88,24 +100,45 @@ metadata:
   name: default
 spec:
   namespace: istio-cni
-  version: v1.24.1`
-		oc.ApplyString(t, "", istioCNI)
+  version: {{ .Version }}`
+		oc.ApplyTemplate(t, "", istioCNI, istio)
 
 		t.LogStep("Install bookinfo and bookinfo gateway")
 		app.InstallAndWaitReady(t, app.Bookinfo(ns.Bookinfo))
 
 		oc.ApplyFile(t, ns.Bookinfo, "bookinfo-gateway.yaml")
 		oc.DefaultOC.WaitDeploymentRolloutComplete(t, "bookinfo", "bookinfo-gateway")
-		ip := oc.DefaultOC.Invokef(t, "kubectl get service -n %s %s -o jsonpath='{.status.loadBalancer.ingress[0].ip}'", ns.Bookinfo, "bookinfo-gateway")
-		bookinfoGatewayURL := fmt.Sprintf("http://%s/productpage", ip)
-		curl.Request(t, bookinfoGatewayURL, nil, assert.RequestSucceeds("productpage request succeeded", "productpage request failed"))
+		oc.DefaultOC.WaitFor(t, ns.Bookinfo, "Service", "bookinfo-gateway", `jsonpath='{.status.loadBalancer.ingress}'`)
+
+		resp := oc.GetJson(t, ns.Bookinfo, "Service", "bookinfo-gateway", "{.status.loadBalancer.ingress}")
+		var v []ingressStatus
+		if err := json.Unmarshal([]byte(resp), &v); err != nil {
+			t.Fatalf("Unable to unmarshal ingress status from Service response: %s", err)
+		}
+		if got := len(v); got != 1 {
+			t.Fatalf("Expected there to be a 1 ingress but there are: %d", got)
+		}
+		status := v[0]
+
+		var hostname string
+		if status.IP != "" {
+			hostname = status.IP
+		} else {
+			hostname = status.Hostname
+		}
+		bookinfoGatewayURL := fmt.Sprintf("http://%s/productpage", hostname)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		t.Cleanup(cancel)
+		continuallyRequest(ctx, t, bookinfoGatewayURL)
 
 		t.LogStep("Migrate bookinfo to 3.0 controlplane")
-		oc.Label(t, "", "Namespace", ns.Bookinfo, "istio-injection- istio.io/rev=example")
+		ossm3RevName := oc.GetJson(t, "", "Istio", istio.Name, "{.status.activeRevisionName}")
+		oc.Label(t, "", "Namespace", ns.Bookinfo, "istio-injection- istio.io/rev="+ossm3RevName)
 		// Wait for book info to be removed.
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			var members []string
-			output := oc.GetJson(t, defaults.Namespace, "ServiceMeshMemberRoll", "default", "{.status.configuredMembers}")
+			output := oc.GetJson(t, smcp.Namespace, "ServiceMeshMemberRoll", "default", "{.status.configuredMembers}")
 			if err := json.Unmarshal([]byte(output), &members); err != nil {
 				t.Error(err)
 			}
@@ -139,11 +172,33 @@ spec:
 			arr := strings.Split(workload, "-")
 			app, version := arr[0], arr[1]
 			annotations := oc.GetPodAnnotations(t, pod.MatchingSelector(fmt.Sprintf("app=%s,version=%s", app, version), ns.Bookinfo))
-			if actual := annotations["istio.io/rev"]; actual != "example" {
-				t.Fatalf("Expected example. Got: %s", actual)
+			if actual := annotations["istio.io/rev"]; actual != ossm3RevName {
+				t.Fatalf("Expected %s. Got: %s", ossm3RevName, actual)
 			}
 		}
 
+		// One last request to ensure bookinfo still works.
 		curl.Request(t, bookinfoGatewayURL, nil, assert.RequestSucceeds("productpage request succeeded", "productpage request failed"))
 	})
+}
+
+// Will continually request the URL until the context is cancelled and assert for success.
+func continuallyRequest(ctx context.Context, t test.TestHelper, url string) {
+	t.T().Helper()
+	go func(ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				t.Log("Ending continual requests. Context has been cancelled.")
+				return
+			case <-time.After(time.Second):
+				curl.Request(t, url, curl.WithContext(ctx), assert.RequestSucceeds("productpage request succeeded", "productpage request failed"))
+			default:
+				if t.Failed() {
+					t.Log("Ending continual requests. Test failed.")
+					return
+				}
+			}
+		}
+	}(ctx)
 }

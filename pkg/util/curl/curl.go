@@ -15,6 +15,7 @@
 package curl
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -107,4 +108,19 @@ func (n NilRequestOption) ApplyToClient(client *http.Client) error {
 
 func (n NilRequestOption) ApplyToRequest(req *http.Request) error {
 	return nil
+}
+
+type contextModifier struct {
+	Context context.Context
+	NilRequestOption
+}
+
+func (c contextModifier) ApplyToRequest(req *http.Request) error {
+	newReq := req.Clone(c.Context)
+	*req = *newReq
+	return nil
+}
+
+func WithContext(ctx context.Context) RequestOption {
+	return contextModifier{Context: ctx}
 }

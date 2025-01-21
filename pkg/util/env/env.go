@@ -55,6 +55,18 @@ func IsNightly() bool {
 	return getenv("NIGHTLY", "false") == "true"
 }
 
+func GetIstioName() string {
+	return getenv("ISTIO_NAME", "ossm3")
+}
+
+func GetIstioNamespace() string {
+	return getenv("ISTIO_NAMESPACE", "istio-system")
+}
+
+func GetIstioVersion() string {
+	return getenv("ISTIO_VERSION", "v1.24.1")
+}
+
 func GetDefaultSMCPName() string {
 	return getenv("SMCP_NAME", "basic")
 }

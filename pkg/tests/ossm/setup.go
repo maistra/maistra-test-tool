@@ -27,6 +27,12 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
+type Istio struct {
+	Name      string
+	Namespace string
+	Version   string
+}
+
 type SMCP struct {
 	Name          string
 	Namespace     string
@@ -90,6 +96,14 @@ func DefaultClusterWideSMCP() SMCP {
 		Version:       env.GetSMCPVersion(),
 		Rosa:          env.IsRosa(),
 		ClusterWideCp: true,
+	}
+}
+
+func DefaultIstio() Istio {
+	return Istio{
+		Name:      env.GetIstioName(),
+		Namespace: env.GetIstioNamespace(),
+		Version:   env.GetIstioVersion(),
 	}
 }
 
