@@ -145,3 +145,15 @@ spec:
             host: productpage
             port:
               number: 9080
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: bookinfo-gateway
+spec:
+  to:
+    name: bookinfo-gateway
+    weight: 100
+    kind: Service
+  port:
+    targetPort: http2

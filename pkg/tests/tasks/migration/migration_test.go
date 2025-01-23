@@ -34,19 +34,26 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
-type ingressStatus struct {
-	IP       string `json:"ip,omitempty"`
-	Hostname string `json:"hostname,omitempty"`
-}
-
 func TestMigrationSimpleClusterWide(t *testing.T) {
 	test.NewTest(t).MinVersion(version.SMCP_2_6).Groups(test.Full, test.Migration).Run(func(t test.TestHelper) {
+		
+		// delete mesh namespace from previous tests
+		t.LogStepf("Delete namespace %s", meshNamespace)
+		oc.RecreateNamespace(t, meshNamespace)
+
 		istio := ossm.DefaultIstio()
 		t.Cleanup(func() {
 			oc.DeleteResource(t, "", "Istio", istio.Name)
 			oc.DeleteResource(t, "", "IstioCNI", "default")
+			oc.DeleteNamespace(t, "istio-cni")
+			// clean up bookinfo
+			oc.DeleteFile(t, ns.Bookinfo, migrationGateway)
+			app.Uninstall(t, app.Bookinfo(ns.Bookinfo))
+			// need to delete SMCP since the next test can be in MultiTenant mode
+			oc.RecreateNamespace(t, meshNamespace)
 		})
-		t.LogStep("Install 2.6 controlplane")
+
+		t.LogStep("Install SMCP 2.6 in clusterwide mode")
 		smcp := ossm.DefaultClusterWideSMCP()
 		// These are defaulted to the same but better to be explicit.
 		istio.Namespace = smcp.Namespace
@@ -106,26 +113,11 @@ spec:
 		t.LogStep("Install bookinfo and bookinfo gateway")
 		app.InstallAndWaitReady(t, app.Bookinfo(ns.Bookinfo))
 
-		oc.ApplyFile(t, ns.Bookinfo, "bookinfo-gateway.yaml")
-		oc.DefaultOC.WaitDeploymentRolloutComplete(t, "bookinfo", "bookinfo-gateway")
-		oc.DefaultOC.WaitFor(t, ns.Bookinfo, "Service", "bookinfo-gateway", `jsonpath='{.status.loadBalancer.ingress}'`)
-
-		resp := oc.GetJson(t, ns.Bookinfo, "Service", "bookinfo-gateway", "{.status.loadBalancer.ingress}")
-		var v []ingressStatus
-		if err := json.Unmarshal([]byte(resp), &v); err != nil {
-			t.Fatalf("Unable to unmarshal ingress status from Service response: %s", err)
-		}
-		if got := len(v); got != 1 {
-			t.Fatalf("Expected there to be a 1 ingress but there are: %d", got)
-		}
-		status := v[0]
-
-		var hostname string
-		if status.IP != "" {
-			hostname = status.IP
-		} else {
-			hostname = status.Hostname
-		}
+		// update default gateway
+		oc.ApplyFile(t, ns.Bookinfo, migrationGateway)
+		oc.DefaultOC.WaitDeploymentRolloutComplete(t, ns.Bookinfo, "bookinfo-gateway")
+		oc.DefaultOC.WaitFor(t, ns.Bookinfo, "Route", "bookinfo-gateway", `jsonpath="{.status.ingress[].host}"`)
+		hostname := oc.GetJson(t, ns.Bookinfo, "Routes", "bookinfo-gateway", "{.spec.host}")
 		bookinfoGatewayURL := fmt.Sprintf("http://%s/productpage", hostname)
 
 		ctx, cancel := context.WithCancel(context.Background())
