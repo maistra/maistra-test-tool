@@ -68,13 +68,16 @@ func RequestSucceeds(successMsg, failureMsg string) curl.HTTPResponseCheckFunc {
 }
 
 // RequestSucceedsAndIgnoreContextCancelled ensures the request succeeded and ignores any context cancelled errors.
-func RequestSucceedsAndIgnoreContextCancelled(successMsg, failureMsg string) curl.HTTPResponseCheckFunc {
+func RequestSucceedsAndIgnoreContextCancelled(failureMsg string) curl.HTTPResponseCheckFunc {
 	return func(t test.TestHelper, resp *http.Response, responseBody []byte, responseErr error, duration time.Duration) {
 		t.T().Helper()
 		if errors.Is(responseErr, context.Canceled) {
 			return
 		}
-		common.CheckRequestSucceeds(t, resp, responseBody, successMsg, failureMsg, assertFailure)
+		// Does not log anything when resp succeeds.
+		if resp == nil {
+			assertFailure(t, failureMsg, "expected request to succeed, but it failed")
+		}
 	}
 }
 
