@@ -15,7 +15,7 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: secret-reader
+  name: bookinfo-gateway
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -29,14 +29,14 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: secret-reader
+  name: bookinfo-gateway-secret-reader
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: secret-reader
 subjects:
   - kind: ServiceAccount
-    name: secret-reader
+    name: bookinfo-gateway
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -57,30 +57,7 @@ spec:
       containers:
         - name: istio-proxy
           image: auto
-          securityContext:
-            capabilities:
-              drop:
-                - ALL
-            allowPrivilegeEscalation: false
-            privileged: false
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-          ports:
-            - containerPort: 15090
-              protocol: TCP
-              name: http-envoy-prom
-          resources:
-            limits:
-              cpu: 2000m
-              memory: 1024Mi
-            requests:
-              cpu: 100m
-              memory: 128Mi
-      securityContext:
-        sysctls:
-          - name: net.ipv4.ip_unprivileged_port_start
-            value: "0"
-      serviceAccountName: secret-reader
+      serviceAccountName: bookinfo-gateway
 ---
 apiVersion: v1
 kind: Service
