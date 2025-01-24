@@ -35,8 +35,7 @@ import (
 )
 
 func TestMigrationSimpleClusterWide(t *testing.T) {
-	test.NewTest(t).MinVersion(version.SMCP_2_6).Groups(test.Full, test.Migration).Run(func(t test.TestHelper) {
-		
+	test.NewTest(t).MinVersion(version.SMCP_2_6).Groups(test.Migration).Run(func(t test.TestHelper) {
 		// delete mesh namespace from previous tests
 		t.LogStepf("Delete namespace %s", meshNamespace)
 		oc.RecreateNamespace(t, meshNamespace)
