@@ -125,10 +125,7 @@ spec:
 		oc.DefaultOC.WaitFor(t, ns.Bookinfo, "Route", "bookinfo-gateway", `jsonpath="{.status.ingress[].host}"`)
 		hostname := oc.GetJson(t, ns.Bookinfo, "Routes", "bookinfo-gateway", "{.spec.host}")
 		bookinfoGatewayURL := fmt.Sprintf("http://%s/productpage", hostname)
-
-		ctx, cancel := context.WithCancel(context.Background())
-		t.Cleanup(cancel)
-		continuallyRequest(ctx, t, bookinfoGatewayURL)
+		continuallyRequest(t, bookinfoGatewayURL)
 
 		t.LogStep("Migrate bookinfo to 3.0 controlplane")
 		ossm3RevName := oc.GetJson(t, "", "Istio", istio.Name, "{.status.activeRevisionName}")
@@ -254,9 +251,7 @@ spec:
 		hostname := getLoadBalancerServiceHostname(t, "bookinfo-gateway", ns.Bookinfo)
 		bookinfoGatewayURL := fmt.Sprintf("http://%s/productpage", hostname)
 
-		ctx, cancel := context.WithCancel(context.Background())
-		t.Cleanup(cancel)
-		continuallyRequest(ctx, t, bookinfoGatewayURL)
+		continuallyRequest(t, bookinfoGatewayURL)
 
 		t.LogStep("Migrate bookinfo to 3.0 controlplane")
 		t.Log("Getting Istio active Rev name")
@@ -316,25 +311,41 @@ spec:
 	})
 }
 
-// Will continually request the URL until the context is cancelled and assert for success.
-func continuallyRequest(ctx context.Context, t test.TestHelper, url string) {
+// Will continually request the URL until the test has ended and assert for success.
+// Once the test is over, this func will clean itself up and wait until in flight
+// requests have finished.
+func continuallyRequest(t test.TestHelper, url string) {
 	t.T().Helper()
 	t.Logf("Continually requesting URL: %s", url)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	// 1. cancel
+	// 2. wait for in flight requests to finish so that the curl assertion doesn't fail the test if underlying resources have been deleted.
+	// 3. continue with other cleanups like deletion of resources.
+	stopped := make(chan struct{})
+	t.Cleanup(func() {
+		cancel()
+		t.Log("Waiting for continual requests to stop...")
+		<-stopped
+		t.Log("Continual requests stopped.")
+	})
 	go func(ctx context.Context) {
+	ReqLoop:
 		for {
 			if t.Failed() {
 				t.Log("Ending continual requests. Test failed.")
-				return
+				break
 			}
 
 			select {
 			case <-ctx.Done():
 				t.Log("Ending continual requests. Context has been cancelled.")
-				return
+				break ReqLoop
 			case <-time.After(time.Second):
 				curl.Request(t, url, curl.WithContext(ctx), assert.RequestSucceeds("productpage request succeeded", "productpage request failed"))
 			}
 		}
+		stopped <- struct{}{}
 	}(ctx)
 }
 
