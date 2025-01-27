@@ -123,6 +123,11 @@ func DeleteNamespace(t test.TestHelper, namespaces ...string) {
 	DefaultOC.DeleteNamespace(t, namespaces...)
 }
 
+func DeleteTestBoundNamespaces(t test.TestHelper) {
+	t.T().Helper()
+	DefaultOC.DeleteTestBoundNamespaces(t)
+}
+
 func CreateNamespace(t test.TestHelper, namespaces ...string) {
 	t.T().Helper()
 	DefaultOC.CreateNamespace(t, namespaces...)

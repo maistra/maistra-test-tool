@@ -132,6 +132,13 @@ func (o OC) WaitDeploymentRolloutComplete(t test.TestHelper, ns string, deployme
 	}
 }
 
+func (o OC) RestartDeployments(t test.TestHelper, ns string, deploymentNames ...string) {
+	t.T().Helper()
+	for _, name := range deploymentNames {
+		o.Invokef(t, "kubectl -n %s rollout restart deployment %s", ns, name)
+	}
+}
+
 func (o OC) RestartAllPodsAndWaitReady(t test.TestHelper, namespaces ...string) {
 	t.T().Helper()
 	o.RestartAllPods(t, namespaces...)
