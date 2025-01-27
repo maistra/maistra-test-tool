@@ -148,26 +148,30 @@ spec:
 				t.Error("bookinfo found in SMMR. Expected it to be removed.")
 			}
 		})
-		oc.RestartAllPodsAndWaitReady(t, ns.Bookinfo)
-		workloads := []string{
-			"productpage-v1",
-			"reviews-v1",
-			"reviews-v2",
-			"reviews-v3",
-			"ratings-v1",
-			"details-v1",
+
+		workloads := []workload{
+			{Name: "productpage-v1", Labels: map[string]string{"app": "productpage", "version": "v1"}},
+			{Name: "reviews-v1", Labels: map[string]string{"app": "reviews", "version": "v1"}},
+			{Name: "reviews-v2", Labels: map[string]string{"app": "reviews", "version": "v2"}},
+			{Name: "reviews-v3", Labels: map[string]string{"app": "reviews", "version": "v3"}},
+			{Name: "ratings-v1", Labels: map[string]string{"app": "ratings", "version": "v1"}},
+			{Name: "details-v1", Labels: map[string]string{"app": "details", "version": "v1"}},
+			{Name: "bookinfo-gateway", Labels: map[string]string{"istio": "bookinfo-gateway"}},
 		}
+		oc.DefaultOC.RestartDeployments(t, ns.Bookinfo, workloadNames(workloads)...)
 		// Waiting for the rollouts to complete ensures that old pods have been deleted.
 		// If there are old pods lying around then the assertion below to get the pod annotations
 		// will fail.
-
-		oc.WaitDeploymentRolloutComplete(t, ns.Bookinfo, workloads...)
+		oc.WaitDeploymentRolloutComplete(t, ns.Bookinfo, workloadNames(workloads)...)
+		retry.UntilSuccess(t, func(t test.TestHelper) {
+			if output := oc.DefaultOC.Invokef(t, `kubectl get pods -n %s -o jsonpath='{.items[?(@.metadata.deletionTimestamp!="")].metadata.name}'`, ns.Bookinfo); output != "" {
+				t.Errorf("Pods still being deleted: %s", output)
+			}
+		})
 
 		t.LogStep("Ensure all pods have migrated to 3.0 controlplane and curl requests succeed")
 		for _, workload := range workloads {
-			arr := strings.Split(workload, "-")
-			app, version := arr[0], arr[1]
-			annotations := oc.GetPodAnnotations(t, pod.MatchingSelector(fmt.Sprintf("app=%s,version=%s", app, version), ns.Bookinfo))
+			annotations := oc.GetPodAnnotations(t, pod.MatchingSelector(toSelector(workload.Labels), ns.Bookinfo))
 			if actual := annotations["istio.io/rev"]; actual != ossm3RevName {
 				t.Fatalf("Expected %s. Got: %s", ossm3RevName, actual)
 			}
