@@ -322,17 +322,17 @@ func continuallyRequest(ctx context.Context, t test.TestHelper, url string) {
 	t.Logf("Continually requesting URL: %s", url)
 	go func(ctx context.Context) {
 		for {
+			if t.Failed() {
+				t.Log("Ending continual requests. Test failed.")
+				return
+			}
+
 			select {
 			case <-ctx.Done():
 				t.Log("Ending continual requests. Context has been cancelled.")
 				return
 			case <-time.After(time.Second):
 				curl.Request(t, url, curl.WithContext(ctx), assert.RequestSucceeds("productpage request succeeded", "productpage request failed"))
-			default:
-				if t.Failed() {
-					t.Log("Ending continual requests. Test failed.")
-					return
-				}
 			}
 		}
 	}(ctx)
