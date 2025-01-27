@@ -24,8 +24,8 @@ import (
 )
 
 var (
-	meshNamespace               = env.GetDefaultMeshNamespace()
-	migrationGateway            = "bookinfo-gateway.yaml"
+	meshNamespace    = env.GetDefaultMeshNamespace()
+	migrationGateway = "bookinfo-gateway.yaml"
 )
 
 func TestMain(m *testing.M) {
