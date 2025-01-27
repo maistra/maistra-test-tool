@@ -30,6 +30,7 @@ type TestGroup string
 const (
 	ARM          TestGroup = "arm64"
 	Full         TestGroup = "full"
+	Migration    TestGroup = "migration"
 	Smoke        TestGroup = "smoke"
 	InterOp      TestGroup = "interop"
 	Disconnected TestGroup = "disconnected"
