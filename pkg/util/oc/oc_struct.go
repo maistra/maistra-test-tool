@@ -30,6 +30,16 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 )
 
+const (
+	mttLabel = "maistra.io/maistra-test-tool"
+	// A test bound namespace is one that is expected to be deleted after each test run.
+	// Probably all namespaces fall into this category.
+	testBoundNSLabelValue = "test-bound-ns"
+	// testBoundNamespacesSelector match namespaces created by Maistra Test Tool that should be
+	// deleted before/after each test.
+	testBoundNamespacesSelector = mttLabel + "=" + testBoundNSLabelValue
+)
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
@@ -237,6 +247,17 @@ func (o OC) DeleteNamespace(t test.TestHelper, namespaces ...string) {
 	})
 }
 
+// DeleteTestBoundNamespaces deletes namespaces with the maistra test label that should be
+// deleted/recreated between each test.
+func (o OC) DeleteTestBoundNamespaces(t test.TestHelper) {
+	t.T().Helper()
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		t.Logf("Deleting namespaces matching selector: %v", testBoundNamespacesSelector)
+		o.Invokef(t, "kubectl delete ns -l %s", testBoundNamespacesSelector)
+	})
+}
+
 func (o OC) CreateNamespace(t test.TestHelper, namespaces ...string) {
 	t.T().Helper()
 	o.withKubeconfig(t, func() {
@@ -249,8 +270,10 @@ func (o OC) CreateNamespace(t test.TestHelper, namespaces ...string) {
 apiVersion: v1
 kind: Namespace
 metadata:
+  labels:
+    %s: %s
   name: %s
----`, ns)
+---`, mttLabel, testBoundNSLabelValue, ns)
 		}
 		o.ApplyString(t, "", yaml)
 	})
