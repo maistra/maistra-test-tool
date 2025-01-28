@@ -378,9 +378,8 @@ func continuallyRequest(t test.TestHelper, url string) {
 			case <-ctx.Done():
 				t.Log("Ending continual requests. Context has been cancelled.")
 				break ReqLoop
-			case <-time.After(time.Second):
+			case <-time.After(time.Millisecond * 500):
 				curl.Request(t, url, curl.WithContext(ctx), assert.RequestSucceedsAndIgnoreContextCancelled("productpage request succeeded", "productpage request failed"))
-				break ReqLoop
 			}
 		}
 		stopped <- struct{}{}
