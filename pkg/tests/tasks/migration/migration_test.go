@@ -270,13 +270,16 @@ spec:
 		ingress := getLoadBalancerServiceHostname(t, "bookinfo-gateway", ns.Bookinfo)
 		// In some clouds, namely AWS, it can take a minute for the DNS name to propagate after it's assigned to the LB.
 		if hostname := ingress.Hostname; hostname != "" {
-			retry.UntilSuccess(t, func(t test.TestHelper) {
+			// Wait 8 minutes altogether... it can take awhile.
+			retry.UntilSuccessWithOptions(t, retry.Options().DelayBetweenAttempts(time.Second*4).MaxAttempts(120), func(t test.TestHelper) {
 				addrs, err := net.LookupHost(hostname)
 				if err != nil {
 					t.Error(err)
+					return
 				}
 				if len(addrs) == 0 {
-					t.Error("No addresses found for host: %s", hostname)
+					t.Errorf("No addresses found for host: %s", hostname)
+					return
 				}
 			})
 		}
