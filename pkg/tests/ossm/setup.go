@@ -30,7 +30,6 @@ import (
 type Istio struct {
 	Name      string
 	Namespace string
-	Version   string
 }
 
 type SMCP struct {
@@ -103,7 +102,6 @@ func DefaultIstio() Istio {
 	return Istio{
 		Name:      env.GetIstioName(),
 		Namespace: env.GetIstioNamespace(),
-		Version:   env.GetIstioVersion(),
 	}
 }
 

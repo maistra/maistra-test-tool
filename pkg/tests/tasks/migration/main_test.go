@@ -28,6 +28,9 @@ var (
 	migrationGateway = "bookinfo-gateway.yaml"
 )
 
+//go:embed enable-strict-mtls-peer-auth.yaml
+var enableMTLSPeerAuth string
+
 func TestMain(m *testing.M) {
 	test.NewSuite(m).
 		Setup(ossm.BasicSetup).

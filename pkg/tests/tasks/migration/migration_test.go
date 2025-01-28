@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"strings"
 	"testing"
 	"time"
@@ -35,9 +36,20 @@ import (
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
+const maistraIgnoreLabel = `maistra.io/ignore-namespace="true"`
+
 type ingressStatus struct {
 	IP       string `json:"ip,omitempty"`
 	Hostname string `json:"hostname,omitempty"`
+}
+
+func (i ingressStatus) GetHostname() string {
+	if i.IP != "" {
+		return i.IP
+	} else if i.Hostname != "" {
+		return i.Hostname
+	}
+	return ""
 }
 
 func workloadNames(workloads []workload) []string {
@@ -113,8 +125,8 @@ spec:
 		// Wait for SMMR to include bookinfo
 		oc.DefaultOC.WaitFor(t, smcp.Namespace, "ServiceMeshMemberRoll", "default", `jsonpath='{.status.configuredMembers[?(@=="bookinfo")]}'`)
 
-		t.LogStep("Create 3.0 controlplane and IstioCNI")
-		setupIstio(t, istio)
+		t.Log("Enable strict mTLS for the whole mesh")
+		oc.ApplyString(t, smcp.Namespace, enableMTLSPeerAuth)
 
 		t.LogStep("Install bookinfo and bookinfo gateway")
 		app.InstallAndWaitReady(t, app.Bookinfo(ns.Bookinfo))
@@ -127,9 +139,12 @@ spec:
 		bookinfoGatewayURL := fmt.Sprintf("http://%s/productpage", hostname)
 		continuallyRequest(t, bookinfoGatewayURL)
 
+		t.LogStep("Create 3.0 controlplane and IstioCNI")
+		setupIstio(t, istio)
+
 		t.LogStep("Migrate bookinfo to 3.0 controlplane")
 		ossm3RevName := oc.GetJson(t, "", "Istio", istio.Name, "{.status.activeRevisionName}")
-		oc.Label(t, "", "Namespace", ns.Bookinfo, "istio-injection- istio.io/rev="+ossm3RevName)
+		oc.Label(t, "", "Namespace", ns.Bookinfo, maistraIgnoreLabel+" istio-injection- istio.io/rev="+ossm3RevName)
 		// Wait for book info to be removed.
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			var members []string
@@ -164,7 +179,7 @@ spec:
 		// will fail.
 		oc.WaitDeploymentRolloutComplete(t, ns.Bookinfo, workloadNames(workloads)...)
 		retry.UntilSuccess(t, func(t test.TestHelper) {
-			if output := oc.DefaultOC.Invokef(t, `kubectl get pods -n %s -o jsonpath='{.items[?(@.metadata.deletionTimestamp!="")].metadata.name}'`, ns.Bookinfo); output != "" {
+			if output := oc.DefaultOC.Invokef(t, `oc get pods -n %s -o jsonpath='{.items[?(@.metadata.deletionTimestamp!="")].metadata.name}'`, ns.Bookinfo); output != "" {
 				t.Errorf("Pods still being deleted: %s", output)
 			}
 		})
@@ -241,8 +256,8 @@ spec:
 		// Wait for SMMR to include bookinfo
 		oc.DefaultOC.WaitFor(t, smcp.Namespace, "ServiceMeshMemberRoll", "default", `jsonpath='{.status.configuredMembers[?(@=="bookinfo")]}'`)
 
-		t.LogStep("Create 3.0 controlplane and IstioCNI")
-		setupIstio(t, istio)
+		t.Log("Enable strict mTLS for the whole mesh")
+		oc.ApplyString(t, smcp.Namespace, enableMTLSPeerAuth)
 
 		t.LogStep("Install bookinfo and bookinfo gateway")
 		app.InstallAndWaitReady(t, app.Bookinfo(ns.Bookinfo))
@@ -252,16 +267,31 @@ spec:
 		oc.DefaultOC.WaitDeploymentRolloutComplete(t, ns.Bookinfo, "bookinfo-gateway")
 		oc.DefaultOC.WaitFor(t, ns.Bookinfo, "Service", "bookinfo-gateway", `jsonpath='{.status.loadBalancer.ingress}'`)
 
-		hostname := getLoadBalancerServiceHostname(t, "bookinfo-gateway", ns.Bookinfo)
-		bookinfoGatewayURL := fmt.Sprintf("http://%s/productpage", hostname)
+		ingress := getLoadBalancerServiceHostname(t, "bookinfo-gateway", ns.Bookinfo)
+		// In some clouds, namely AWS, it can take a minute for the DNS name to propagate after it's assigned to the LB.
+		if hostname := ingress.Hostname; hostname != "" {
+			retry.UntilSuccess(t, func(t test.TestHelper) {
+				addrs, err := net.LookupHost(hostname)
+				if err != nil {
+					t.Error(err)
+				}
+				if len(addrs) == 0 {
+					t.Error("No addresses found for host: %s", hostname)
+				}
+			})
+		}
+		bookinfoGatewayURL := fmt.Sprintf("http://%s/productpage", ingress.GetHostname())
 
 		continuallyRequest(t, bookinfoGatewayURL)
+
+		t.LogStep("Create 3.0 controlplane and IstioCNI")
+		setupIstio(t, istio)
 
 		t.LogStep("Migrate bookinfo to 3.0 controlplane")
 		t.Log("Getting Istio active Rev name")
 		ossm3RevName := oc.GetJson(t, "", "Istio", istio.Name, "{.status.activeRevisionName}")
 		t.Log("Relabeling bookinfo namespace")
-		oc.Label(t, "", "Namespace", ns.Bookinfo, "istio-injection- istio.io/rev="+ossm3RevName)
+		oc.Label(t, "", "Namespace", ns.Bookinfo, maistraIgnoreLabel+" istio-injection- istio.io/rev="+ossm3RevName)
 		// Wait for book info to be removed.
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			var members []string
@@ -297,7 +327,7 @@ spec:
 		// will fail.
 		oc.WaitDeploymentRolloutComplete(t, ns.Bookinfo, workloadNames(workloads)...)
 		retry.UntilSuccess(t, func(t test.TestHelper) {
-			if output := oc.DefaultOC.Invokef(t, `kubectl get pods -n %s -o jsonpath='{.items[?(@.metadata.deletionTimestamp!="")].metadata.name}'`, ns.Bookinfo); output != "" {
+			if output := oc.DefaultOC.Invokef(t, `oc get pods -n %s -o jsonpath='{.items[?(@.metadata.deletionTimestamp!="")].metadata.name}'`, ns.Bookinfo); output != "" {
 				t.Errorf("Pods still being deleted: %s", output)
 			}
 		})
@@ -384,8 +414,7 @@ kind: Istio
 metadata:
   name: {{ .Name }}
 spec:
-  namespace: {{ .Namespace }}
-  version: {{ .Version }}`
+  namespace: {{ .Namespace }}`
 	oc.ApplyTemplate(t, "", istioTempl, istio)
 	oc.DefaultOC.WaitFor(t, "", "Istio", istio.Name, "condition=Ready")
 	oc.CreateNamespace(t, "istio-cni")
@@ -394,15 +423,14 @@ kind: IstioCNI
 metadata:
   name: default
 spec:
-  namespace: istio-cni
-  version: {{ .Version }}`
+  namespace: istio-cni`
 	oc.ApplyTemplate(t, "", istioCNI, istio)
 	oc.DefaultOC.WaitFor(t, "", "IstioCNI", "default", "condition=Ready")
 }
 
 // Returns either the ip address or the hostname of the LoadBalancer from the Service status.
 // Fails if neither exist.
-func getLoadBalancerServiceHostname(t test.TestHelper, name string, namespace string) string {
+func getLoadBalancerServiceHostname(t test.TestHelper, name string, namespace string) ingressStatus {
 	t.T().Helper()
 	resp := oc.GetJson(t, ns.Bookinfo, "Service", "bookinfo-gateway", "{.status.loadBalancer.ingress}")
 	var v []ingressStatus
@@ -414,14 +442,9 @@ func getLoadBalancerServiceHostname(t test.TestHelper, name string, namespace st
 	}
 	status := v[0]
 
-	var hostname string
-	if status.IP != "" {
-		hostname = status.IP
-	} else if status.Hostname != "" {
-		hostname = status.Hostname
-	} else {
+	if status.GetHostname() == "" {
 		t.Fatalf("Service: %s/%s has neither an ip or hostname", name, namespace)
 	}
 
-	return hostname
+	return status
 }
