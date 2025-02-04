@@ -91,7 +91,7 @@ func (c cmd) Uninstall(t test.TestHelper) {
 	if c.namespace == "" {
 		t.Fatalf("namespace must be specified to uninstall helm release")
 	}
-	shell.Executef(t, "helm uninstall %s -n %s --ignore-not-found", c.release, c.namespace)
+	shell.Executef(t, "helm uninstall %s -n %s", c.release, c.namespace)
 }
 
 type repo struct {
