@@ -46,6 +46,7 @@ func TestCertManagerMigration(t *testing.T) {
 			app.Uninstall(t, app.Bookinfo(ns.Bookinfo))
 		})
 		ossm.BasicSetup(t)
+                // this also installs root-ca
 		certmanageroperator.InstallIfNotExist(t)
 
 		t.LogStep("Create intermediate certificate for Istio")
