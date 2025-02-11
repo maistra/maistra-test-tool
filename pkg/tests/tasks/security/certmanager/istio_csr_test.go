@@ -37,8 +37,8 @@ import (
 
 func TestIstioCsr(t *testing.T) {
 	test.NewTest(t).Id("T38").Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
-		//Validate OCP version, this test setup can't be executed in OCP versions less than 4.12
-		//More information in: https://57747--docspreview.netlify.app/openshift-enterprise/latest/service_mesh/v2x/ossm-security.html#ossm-cert-manager-integration-istio_ossm-security
+		// Validate OCP version, this test setup can't be executed in OCP versions less than 4.12
+		// More information in: https://57747--docspreview.netlify.app/openshift-enterprise/latest/service_mesh/v2x/ossm-security.html#ossm-cert-manager-integration-istio_ossm-security
 		smcpVer := env.GetSMCPVersion()
 		if smcpVer.LessThan(version.SMCP_2_4) {
 			t.Skip("istio-csr is not supported in SMCP older than v2.4")

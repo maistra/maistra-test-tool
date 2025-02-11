@@ -30,6 +30,9 @@ import (
 type Istio struct {
 	Name      string
 	Namespace string
+
+	// Template will override the default template.
+	Template string
 }
 
 type SMCP struct {
