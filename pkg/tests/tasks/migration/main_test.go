@@ -143,7 +143,7 @@ func setupIstio(t test.TestHelper, istio ossm.Istio) {
 		oc.DeleteResource(t, "", "IstioCNI", "default")
 	})
 	if istio.Template == "" {
-		istio.Template = `apiVersion: sailoperator.io/v1alpha1
+		istio.Template = `apiVersion: sailoperator.io/v1
 kind: Istio
 metadata:
   name: {{ .Name }}
@@ -153,7 +153,7 @@ spec:
 	oc.ApplyTemplate(t, "", istio.Template, istio)
 	oc.DefaultOC.WaitFor(t, "", "Istio", istio.Name, "condition=Ready")
 	oc.CreateNamespace(t, "istio-cni")
-	istioCNI := `apiVersion: sailoperator.io/v1alpha1
+	istioCNI := `apiVersion: sailoperator.io/v1
 kind: IstioCNI
 metadata:
   name: default
