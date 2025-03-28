@@ -34,10 +34,6 @@ import (
 	"testing"
 )
 
-const (
-	tokenURL = "https://raw.githubusercontent.com/istio/istio/release-1.19/security/tools/jwt/samples/demo.jwt"
-)
-
 func TestThreeScaleWasmPlugin(t *testing.T) {
 	test.NewTest(t).Groups(test.Full, test.ARM).Run(func(t test.TestHelper) {
 
@@ -84,6 +80,7 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 		oc.ApplyTemplate(t, meshNamespace, jwtAuthnTmpl, map[string]interface{}{
 			"AppLabel":     "istio-ingressgateway",
 			"ForwardToken": true,
+			"JwksUri":      jwksUrl,
 		})
 
 		t.LogStep("Apply 3scale WASM plugin to the ingress gateway")
@@ -103,7 +100,10 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 		})
 
 		t.LogStep("Apply JWT config and 3scale plugin to httpbin")
-		oc.ApplyTemplate(t, ns.Foo, jwtAuthnTmpl, map[string]interface{}{"AppLabel": "httpbin"})
+		oc.ApplyTemplate(t, ns.Foo, jwtAuthnTmpl, map[string]interface{}{
+			"AppLabel": "httpbin",
+			"JwksUri":  jwksUrl,
+		})
 		oc.ApplyTemplate(t, ns.Foo, wasmPluginTmpl, map[string]interface{}{"AppLabel": "httpbin"})
 
 		// This step would fail if the ingress gateway did not forward Authorization header to httpbin
@@ -121,7 +121,10 @@ func TestThreeScaleWasmPlugin(t *testing.T) {
 		app.AssertSleepPodRequestSuccess(t, ns.Foo, httpbinUrl, CurlOpts)
 
 		t.LogStep("Apply JWT config and 3scale plugin to sleep")
-		oc.ApplyTemplate(t, ns.Foo, jwtAuthnTmpl, map[string]interface{}{"AppLabel": "sleep"})
+		oc.ApplyTemplate(t, ns.Foo, jwtAuthnTmpl, map[string]interface{}{
+			"AppLabel": "sleep",
+			"JwksUri":  jwksUrl,
+		})
 		oc.ApplyTemplate(t, ns.Foo, wasmPluginTmpl, map[string]interface{}{"AppLabel": "sleep"})
 
 		if env.GetSMCPVersion().GreaterThanOrEqual(version.SMCP_2_3) {

@@ -42,18 +42,18 @@ func TestAuthorizationJWT(t *testing.T) {
 		t.LogStep("Check if httpbin returns 200 OK when no authorization policies are in place")
 		app.AssertSleepPodRequestSuccess(t, ns, "http://httpbin:8000/ip")
 
-		jwtURL := "https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/demo.jwt"
+		jwtURL := jwtDemoUrl
 		token := string(curl.Request(t, jwtURL, nil))
 
-		groupURL := "https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/groups-scope.jwt"
+		groupURL := jwtGroupUrl
 		tokenGroup := string(curl.Request(t, groupURL, nil))
 
 		headersUrl := "http://httpbin:8000/headers"
 
 		t.Cleanup(func() {
-			oc.DeleteFromString(t, ns, JWTExampleRule)
+			oc.DeleteFromTemplate(t, ns, JWTExampleRule, map[string]string{"JwksUri": jwksUrl})
 		})
-		oc.ApplyString(t, ns, JWTExampleRule)
+		oc.ApplyTemplate(t, ns, JWTExampleRule, map[string]string{"JwksUri": jwksUrl})
 
 		t.NewSubTest("Allow requests with valid JWT and list-typed claims").Run(func(t test.TestHelper) {
 			t.LogStep("Verify that a request with an invalid JWT is denied")
@@ -105,7 +105,7 @@ spec:
       app: httpbin
   jwtRules:
   - issuer: testing@secure.istio.io
-    jwksUri: https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/jwks.json
+    jwksUri: {{ .JwksUri }}
 `
 	JWTRequireRule = `
 apiVersion: security.istio.io/v1beta1

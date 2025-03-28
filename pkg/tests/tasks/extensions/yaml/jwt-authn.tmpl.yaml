@@ -22,7 +22,7 @@ spec:
       app: {{ .AppLabel }}
   jwtRules:
   - issuer: "testing@secure.istio.io"
-    jwksUri: "https://raw.githubusercontent.com/istio/istio/release-1.19/security/tools/jwt/samples/jwks.json"
+    jwksUri: {{ .JwksUri }}
     {{ if .FowardToken }}
     forwardOriginalToken: true
     {{ end }}

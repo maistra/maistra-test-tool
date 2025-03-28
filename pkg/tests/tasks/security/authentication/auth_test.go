@@ -168,9 +168,9 @@ func TestAuthPolicy(t *testing.T) {
 			})
 
 			t.LogStep("Apply a JWT policy")
-			oc.ApplyString(t, meshNamespace, JWTAuthPolicy)
+			oc.ApplyTemplate(t, meshNamespace, JWTAuthPolicy, map[string]string{"JwksUri": env.GetJwksUrl()})
 			t.Cleanup(func() {
-				oc.DeleteFromString(t, meshNamespace, JWTAuthPolicy)
+				oc.DeleteFromTemplate(t, meshNamespace, JWTAuthPolicy, map[string]string{"JwksUri": env.GetJwksUrl()})
 			})
 
 			t.LogStep("Check whether request without token returns 200")
@@ -184,7 +184,7 @@ func TestAuthPolicy(t *testing.T) {
 			})
 
 			t.LogStep("Check whether request with a valid token returns 200")
-			token := string(curl.Request(t, "https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/demo.jwt", nil))
+			token := string(curl.Request(t, env.GetJwtDemoUrl(), nil))
 			token = strings.Trim(token, "\n")
 			retry.UntilSuccess(t, func(t TestHelper) {
 				requireResponseStatus(t, headersURL, request.WithHeader("Authorization", "Bearer "+token), http.StatusOK)
@@ -353,7 +353,7 @@ spec:
       istio: ingressgateway
   jwtRules:
   - issuer: testing@secure.istio.io
-    jwksUri: https://raw.githubusercontent.com/istio/istio/release-1.9/security/tools/jwt/samples/jwks.json
+    jwksUri: {{ .JwksUri }}
 `
 
 	RequireTokenPolicy = `
