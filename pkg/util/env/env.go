@@ -137,3 +137,27 @@ func GetKialiVersion() string {
 		return "v1.73"
 	}
 }
+
+func GetJwksUrl() string {
+	if GetArch() == "z" || GetArch() == "p" {
+		return "https://gitlab.com/-/snippets/4829480/raw/main/jwks.json"
+	} else {
+		return "https://raw.githubusercontent.com/istio/istio/release-1.19/security/tools/jwt/samples/jwks.json"
+	}
+}
+
+func GetGroupsScopeJwtUrl() string {
+	if GetArch() == "z" || GetArch() == "p" {
+		return "https://gitlab.com/-/snippets/4829479/raw/main/groups-scope.jwt"
+	} else {
+		return "https://raw.githubusercontent.com/istio/istio/release-1.19/security/tools/jwt/samples/groups-scope.jwt"
+	}
+}
+
+func GetJwtDemoUrl() string {
+	if GetArch() == "z" || GetArch() == "p" {
+		return "https://gitlab.com/-/snippets/4829478/raw/main/demo.jwt"
+	} else {
+		return "https://raw.githubusercontent.com/istio/istio/release-1.19/security/tools/jwt/samples/demo.jwt"
+	}
+}

@@ -21,4 +21,7 @@ import (
 var (
 	smcpName      = env.GetDefaultSMCPName()
 	meshNamespace = env.GetDefaultMeshNamespace()
+	jwksUrl       = env.GetJwksUrl()
+	jwtDemoUrl    = env.GetJwtDemoUrl()
+	jwtGroupUrl   = env.GetGroupsScopeJwtUrl()
 )

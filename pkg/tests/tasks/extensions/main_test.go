@@ -28,6 +28,8 @@ var (
 	smcpName      = env.GetDefaultSMCPName()
 	meshNamespace = env.GetDefaultMeshNamespace()
 	threeScaleNs  = "3scale"
+	tokenURL      = env.GetJwtDemoUrl()
+	jwksUrl       = env.GetJwksUrl()
 
 	//go:embed yaml/3scale-system.yaml
 	threeScaleSystem string
