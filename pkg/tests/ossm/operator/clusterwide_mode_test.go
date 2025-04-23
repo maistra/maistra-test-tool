@@ -137,7 +137,10 @@ spec:
 			t.LogStep("Install Gateway API CRD's")
 			gatewayapi.InstallSupportedVersion(t, env.GetSMCPVersion())
 			t.Cleanup(func() {
-				gatewayapi.UninstallSupportedVersion(t, env.GetSMCPVersion())
+				// OCP 4.19+ has gateway api crds build in, do not uninstall them
+				if version.ParseVersion(oc.GetOCPVersion(t)).LessThan(version.OCP_4_19) {
+					gatewayapi.UninstallSupportedVersion(t, env.GetSMCPVersion())
+				}
 			})
 
 			t.LogStep("Install httpbin")
