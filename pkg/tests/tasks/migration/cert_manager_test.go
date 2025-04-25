@@ -55,7 +55,7 @@ func TestCertManagerMigration(t *testing.T) {
 		t.LogStep("Add jetstack repo to helm")
 		helm.Repo("https://charts.jetstack.io").Add(t, "jetstack")
 
-		smcp := ossm.DefaultClusterWideSMCP()
+		smcp := ossm.DefaultClusterWideSMCP(t)
 		smcp.Namespace = meshNamespace
 		istio := ossm.DefaultIstio()
 		istio.Template = istioWithCertManager

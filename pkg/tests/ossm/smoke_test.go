@@ -283,7 +283,8 @@ func assertRoutesExist(t TestHelper) {
 				"Still waiting for route prometheus to be created in namespace"))
 	})
 
-	if env.GetSMCPVersion().LessThanOrEqual(version.SMCP_2_5) {
+	// jaeger is not available on SMCP 2.6 or OCP 4.19+, so use Jaeger tracing only for SMCP 2.5 and lower and OCP 4.18 and lower
+	if env.GetSMCPVersion().LessThanOrEqual(version.SMCP_2_5) && version.ParseVersion(oc.GetOCPVersion(t)).LessThanOrEqual(version.OCP_4_18) {
 		retry.UntilSuccess(t, func(t TestHelper) {
 			oc.Get(t,
 				meshNamespace,

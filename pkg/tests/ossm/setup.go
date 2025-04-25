@@ -41,6 +41,7 @@ type SMCP struct {
 	Version       version.Version
 	Rosa          bool
 	ClusterWideCp bool
+	TracingType   string
 
 	ClusterWideProxy bool
 	HttpProxy        string
@@ -81,23 +82,25 @@ var (
 	profileFile   = rootDir + "/pkg/tests/ossm/yaml/profiles/"
 )
 
-func DefaultSMCP() SMCP {
+func DefaultSMCP(t test.TestHelper) SMCP {
 	return SMCP{
 		Name:          env.GetDefaultSMCPName(),
 		Namespace:     env.GetDefaultMeshNamespace(),
 		Version:       env.GetSMCPVersion(),
 		Rosa:          env.IsRosa(),
 		ClusterWideCp: false,
+		TracingType:   getDefaultTracingType(t),
 	}
 }
 
-func DefaultClusterWideSMCP() SMCP {
+func DefaultClusterWideSMCP(t test.TestHelper) SMCP {
 	return SMCP{
 		Name:          env.GetDefaultSMCPName(),
 		Namespace:     env.GetDefaultMeshNamespace(),
 		Version:       env.GetSMCPVersion(),
 		Rosa:          env.IsRosa(),
 		ClusterWideCp: true,
+		TracingType:   getDefaultTracingType(t),
 	}
 }
 
@@ -126,10 +129,10 @@ func BasicSetup(t test.TestHelper) {
 	oc.CreateNamespace(t, meshNamespace, ns.Bookinfo, ns.Foo, ns.Bar, ns.Legacy, ns.MeshExternal)
 }
 
-func DeployControlPlane(t test.TestHelper) {
+func DeployControlPlane(t test.TestHelper) SMCP {
 	t.T().Helper()
 	t.LogStep("Apply default SMCP and SMMR manifests")
-	smcpValues := DefaultSMCP()
+	smcpValues := DefaultSMCP(t)
 	clusterWideProxy := oc.GetProxy(t)
 	if clusterWideProxy != nil {
 		smcpValues.ClusterWideProxy = true
@@ -139,15 +142,17 @@ func DeployControlPlane(t test.TestHelper) {
 	}
 	InstallSMCPCustom(t, meshNamespace, smcpValues)
 	oc.ApplyString(t, meshNamespace, smmr)
-	oc.WaitSMCPReady(t, meshNamespace, DefaultSMCP().Name)
+	oc.WaitSMCPReady(t, meshNamespace, smcpValues.Name)
 	oc.WaitSMMRReady(t, meshNamespace)
+	return smcpValues
 }
 
 func DeployClusterWideControlPlane(t test.TestHelper) {
 	t.T().Helper()
 	t.LogStep("Apply ClusterWide SMCP")
-	InstallSMCPCustom(t, meshNamespace, DefaultClusterWideSMCP())
-	oc.WaitSMCPReady(t, meshNamespace, DefaultClusterWideSMCP().Name)
+	smcp := DefaultClusterWideSMCP(t)
+	InstallSMCPCustom(t, meshNamespace, smcp)
+	oc.WaitSMCPReady(t, meshNamespace, smcp.Name)
 }
 
 func InstallSMCP(t test.TestHelper, ns string) {
@@ -155,7 +160,7 @@ func InstallSMCP(t test.TestHelper, ns string) {
 }
 
 func InstallSMCPVersion(t test.TestHelper, ns string, ver version.Version) {
-	InstallSMCPCustom(t, ns, DefaultSMCP().WithVersion(ver))
+	InstallSMCPCustom(t, ns, DefaultSMCP(t).WithVersion(ver))
 }
 
 func InstallSMCPCustom(t test.TestHelper, ns string, smcp SMCP) {
@@ -163,7 +168,7 @@ func InstallSMCPCustom(t test.TestHelper, ns string, smcp SMCP) {
 }
 
 func DeleteSMCPVersion(t test.TestHelper, ns string, ver version.Version) {
-	DeleteSMCPCustom(t, ns, DefaultSMCP().WithVersion(ver))
+	DeleteSMCPCustom(t, ns, DefaultSMCP(t).WithVersion(ver))
 }
 
 func DeleteSMCPCustom(t test.TestHelper, ns string, smcp SMCP) {
@@ -187,4 +192,13 @@ func AppendDefaultSMMR(namespaces ...string) string {
 
 func GetProfileFile() string {
 	return profileFile
+}
+
+func getDefaultTracingType(t test.TestHelper) string {
+	// jaeger is not available on SMCP 2.6 or OCP 4.19+, so use Jaeger tracing only for SMCP 2.5 and lower and OCP 4.18 and lower
+	if env.GetSMCPVersion().LessThanOrEqual(version.SMCP_2_5) && version.ParseVersion(oc.GetOCPVersion(t)).LessThanOrEqual(version.OCP_4_18) {
+		return "Jaeger"
+	} else {
+		return "None"
+	}
 }

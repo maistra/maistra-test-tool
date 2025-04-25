@@ -49,7 +49,7 @@ func TestMigrationSimpleClusterWide(t *testing.T) {
 		})
 
 		t.LogStep("Install SMCP 2.6 in clusterwide mode")
-		smcp := ossm.DefaultClusterWideSMCP()
+		smcp := ossm.DefaultClusterWideSMCP(t)
 		istio := ossm.DefaultIstio()
 		// These are defaulted to the same but better to be explicit.
 		istio.Namespace = smcp.Namespace
@@ -169,7 +169,7 @@ func TestMigrationSimpleClusterWideLoadBalancer(t *testing.T) {
 		})
 
 		t.LogStep("Install SMCP 2.6 in clusterwide mode")
-		smcp := ossm.DefaultClusterWideSMCP()
+		smcp := ossm.DefaultClusterWideSMCP(t)
 		istio := ossm.DefaultIstio()
 		// These are defaulted to the same but better to be explicit.
 		istio.Namespace = smcp.Namespace

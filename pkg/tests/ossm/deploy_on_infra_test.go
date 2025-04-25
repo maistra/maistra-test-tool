@@ -131,7 +131,8 @@ spec:
 
 			t.LogStep("Verify that the following control plane pods are running on the infra node: istiod, istio-ingressgateway, istio-egressgateway, jaeger, grafana, prometheus")
 			istioPodLabelSelectors := []string{"app=istiod", "app=istio-ingressgateway", "app=istio-egressgateway", "app=grafana", "app=prometheus"}
-			if env.GetSMCPVersion().LessThanOrEqual(version.SMCP_2_5) {
+			// jaeger is not available on SMCP 2.6 or OCP 4.19+, so use Jaeger tracing only for SMCP 2.5 and lower and OCP 4.18 and lower
+			if env.GetSMCPVersion().LessThanOrEqual(version.SMCP_2_5) && version.ParseVersion(oc.GetOCPVersion(t)).LessThanOrEqual(version.OCP_4_18) {
 				istioPodLabelSelectors = append(istioPodLabelSelectors, "app=jaeger")
 			}
 			for _, pLabel := range istioPodLabelSelectors {

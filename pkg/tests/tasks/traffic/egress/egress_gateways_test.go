@@ -29,8 +29,7 @@ func TestEgressGateways(t *testing.T) {
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Bookinfo)
 		})
-
-		ossm.DeployControlPlane(t)
+		smcp := ossm.DeployControlPlane(t)
 
 		t.LogStep("Install sleep pod")
 		app.InstallAndWaitReady(t, app.Sleep(ns.Bookinfo))
