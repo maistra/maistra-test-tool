@@ -472,7 +472,7 @@ func enableIOR(t TestHelper, ns, name string) {
 		ns, "smcp", name, "json",
 		`[{"op": "add", "path": "/spec/gateways", "value": {"openshiftRoute": {"enabled": true}}}]`,
 	)
-	oc.WaitSMCPReady(t, meshNamespace, DefaultSMCP().Name)
+	oc.WaitSMCPReady(t, meshNamespace, name)
 }
 
 func removeIORCustomSetting(t TestHelper, ns, name string) {
@@ -481,7 +481,7 @@ func removeIORCustomSetting(t TestHelper, ns, name string) {
 		ns, "smcp", name, "json",
 		`[{"op": "remove", "path": "/spec/gateways"}]`,
 	)
-	oc.WaitSMCPReady(t, meshNamespace, DefaultSMCP().Name)
+	oc.WaitSMCPReady(t, meshNamespace, name)
 }
 
 func generateGateway(name, ns, host string) string {

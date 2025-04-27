@@ -56,7 +56,7 @@ func TestSMCPMultiple(t *testing.T) {
 		oc.RecreateNamespace(t, meshNamespace)
 
 		t.LogStep("Create the first SMCP")
-		smcp1 := ossm.DefaultSMCP().WithName("smcp1")
+		smcp1 := ossm.DefaultSMCP(t).WithName("smcp1")
 		ossm.InstallSMCPCustom(t, meshNamespace, smcp1)
 
 		t.LogStep("Check whether the first SMCP gets reconciled and becomes ready")
@@ -74,7 +74,7 @@ func TestSMCPMultiple(t *testing.T) {
 			t.LogStep("Delete the operator's ValidationWebhookConfiguration to be able to install the second SMCP")
 			oc.DeleteResource(t, "", "validatingwebhookconfiguration", "openshift-operators.servicemesh-resources.maistra.io")
 			t.LogStep("Create the second SMCP")
-			smcp2 := ossm.DefaultSMCP().WithName("smcp2")
+			smcp2 := ossm.DefaultSMCP(t).WithName("smcp2")
 			ossm.InstallSMCPCustom(t, meshNamespace, smcp2)
 			ossm.InstallSMCPCustom(t, meshNamespace, smcp2)
 

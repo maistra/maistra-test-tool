@@ -26,6 +26,9 @@ import (
 
 func TestTLSOriginationSDS(t *testing.T) {
 	NewTest(t).Id("T15").Groups(Full, InterOp, ARM, Persistent).Run(func(t TestHelper) {
+		t.Log("Perform mTLS origination with an egress gateway")
+		smcp := ossm.DeployControlPlane(t)
+
 		t.Cleanup(func() {
 			oc.RecreateNamespace(t, ns.Bookinfo)
 			oc.RecreateNamespace(t, ns.MeshExternal)
@@ -33,9 +36,6 @@ func TestTLSOriginationSDS(t *testing.T) {
 			oc.DeleteFromTemplate(t, ns.Bookinfo, nginxTlsIstioMutualGateway, smcp)
 			oc.DeleteFromString(t, meshNamespace, nginxServiceEntry, originateMtlsSdsSToNginx)
 		})
-
-		t.Log("Perform mTLS origination with an egress gateway")
-		ossm.DeployControlPlane(t)
 
 		t.LogStep("Install sleep pod")
 		app.InstallAndWaitReady(t, app.Sleep(ns.Bookinfo))

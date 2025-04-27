@@ -69,9 +69,10 @@ func TestRateLimiting(t *testing.T) {
 				"ERROR: rls pod expected to be running, but it is not"))
 
 		t.LogStep("Create EnvoyFilter for rate limiting")
-		oc.ApplyTemplate(t, meshNamespace, rateLimitFilterTemplate, DefaultSMCP())
+		smcp := DefaultSMCP(t)
+		oc.ApplyTemplate(t, meshNamespace, rateLimitFilterTemplate, smcp)
 		t.Cleanup(func() {
-			oc.DeleteFromTemplate(t, meshNamespace, rateLimitFilterTemplate, DefaultSMCP())
+			oc.DeleteFromTemplate(t, meshNamespace, rateLimitFilterTemplate, smcp)
 		})
 
 		productPageURL := app.BookinfoProductPageURL(t, meshNamespace)

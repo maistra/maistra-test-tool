@@ -17,7 +17,6 @@ package egress
 import (
 	_ "embed"
 
-	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
 )
 
@@ -29,7 +28,6 @@ var (
 
 var (
 	meshNamespace = env.GetDefaultMeshNamespace()
-	smcp          = ossm.DefaultSMCP()
 
 	//go:embed yaml/external-httpbin.yaml
 	httpbinServiceEntry string

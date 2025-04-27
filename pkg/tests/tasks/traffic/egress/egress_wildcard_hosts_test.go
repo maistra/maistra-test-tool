@@ -30,7 +30,7 @@ func TestEgressWildcard(t *testing.T) {
 	NewTest(t).Id("T16").Groups(Full, InterOp, ARM, Persistent).Run(func(t TestHelper) {
 		t.Log("This test checks if the wildcard in the ServiceEntry and Gateway works as expected for Egress traffic.")
 
-		ossm.DeployControlPlane(t)
+		smcp := ossm.DeployControlPlane(t)
 
 		t.LogStep("Install the sleep pod")
 		app.InstallAndWaitReady(t, app.Sleep(ns.Bookinfo))

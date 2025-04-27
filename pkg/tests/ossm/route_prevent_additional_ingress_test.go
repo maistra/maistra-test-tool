@@ -31,9 +31,14 @@ import (
 func TestRoutePreventAdditionalIngress(t *testing.T) {
 	NewTest(t).Id("T48").Groups(Full, ARM, Disconnected, Persistent).MaxVersion(version.SMCP_2_5).Run(func(t TestHelper) {
 
+		tracingType := "None"
+		if env.GetSMCPVersion().LessThanOrEqual(version.SMCP_2_5) && version.ParseVersion(oc.GetOCPVersion(t)).LessThanOrEqual(version.OCP_4_18) {
+			tracingType = "Jaeger"
+		}
 		meshValues := map[string]interface{}{
-			"Version": env.GetSMCPVersion().String(),
-			"Rosa":    env.IsRosa(),
+			"Version":     env.GetSMCPVersion().String(),
+			"Rosa":        env.IsRosa(),
+			"TracingType": tracingType,
 		}
 
 		ER := "extra-routes"
@@ -97,6 +102,7 @@ spec:
   version: {{ .Version }}
   tracing:
     sampling: 10000
+    type: {{ .TracingType }}
   policy:
     type: Istiod
   telemetry:
@@ -121,6 +127,9 @@ metadata:
   name: basic
 spec:
   version: {{ .Version }}
+  tracing:
+    sampling: 10000
+    type: {{ .TracingType }}
   gateways: 
     additionalIngress: 
       test-ingress: 

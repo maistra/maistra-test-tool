@@ -38,7 +38,7 @@ func TestTLSOrigination(t *testing.T) {
 			app.Uninstall(t, app.Sleep(ns.Bookinfo))
 		})
 
-		ossm.DeployControlPlane(t)
+		smcp := ossm.DeployControlPlane(t)
 
 		t.LogStep("Install sleep pod")
 		app.InstallAndWaitReady(t, app.Sleep(ns.Bookinfo))

@@ -20,6 +20,7 @@ spec:
   version: {{ .Version }}
   tracing:
     sampling: 10000
+    type: {{ .TracingType }}
   policy:
     type: Istiod
   addons:
