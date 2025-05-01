@@ -145,9 +145,10 @@ func setupIstio(t test.TestHelper, istios ...ossm.Istio) {
 		t.Log("Cleaning up IstioCNI")
 		oc.DeleteResource(t, "", "IstioCNI", "default")
 	})
-	t.Log("Cleaning up Istio(s)")
 	for _, istio := range istios {
+		istio := istio
 		t.Cleanup(func() {
+			t.Logf("Cleaning up Istio %s", istio.Name)
 			oc.DeleteResource(t, "", "Istio", istio.Name)
 		})
 		if istio.Template == "" {
