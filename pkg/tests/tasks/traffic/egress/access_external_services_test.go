@@ -46,7 +46,8 @@ func TestAccessExternalServices(t *testing.T) {
 		ossm.DeployControlPlane(t)
 
 		t.LogStepf("Install sleep into %s", ns.Bookinfo)
-		app.InstallAndWaitReady(t, app.Sleep(ns.Bookinfo))
+		sleep := app.Sleep(ns.Bookinfo)
+		app.InstallAndWaitReady(t, sleep)
 
 		t.LogStepf("Install httpbin in %s", ns.MeshExternal)
 		httpbin := app.HttpbinNoSidecar(ns.MeshExternal)
@@ -80,6 +81,32 @@ func TestAccessExternalServices(t *testing.T) {
 
 		t.LogStep("Make request to external httpbin from sleep again, and expect it denied")
 		app.AssertSleepPodRequestFailure(t, ns.Bookinfo, httpbinHeadersUrl)
+
+		t.NewSubTest("deny request to external httpbin after supplying a custom sidecar container definition").Run(func(t TestHelper) {
+			t.Cleanup(func() {
+				oc.Patch(t,
+					ns.Bookinfo,
+					"deployment", sleep.Name(),
+					"json", `
+- op: remove 
+  path: /spec/template/spec/containers/1`,
+				)
+			})
+
+			oc.Patch(t,
+				ns.Bookinfo,
+				"deployment", sleep.Name(),
+				"json", `
+- op: add
+  path: /spec/template/spec/containers/1
+  value:
+    name: istio-proxy
+    image: "auto"`,
+			)
+
+			t.LogStep("Make request to external httpbin from sleep again, and expect it denied")
+			app.AssertSleepPodRequestFailure(t, ns.Bookinfo, httpbinHeadersUrl)
+		})
 
 		t.NewSubTest("allow request to external httpbin after applying ServiceEntry").Run(func(t TestHelper) {
 			t.Cleanup(func() {
