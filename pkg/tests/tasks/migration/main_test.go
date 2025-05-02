@@ -53,9 +53,6 @@ var (
 
 	//go:embed yaml/istio-cert-manager.yaml
 	istioWithCertManager string
-
-	//go:embed yaml/smmr.yaml
-	smmr string
 )
 
 func TestMain(m *testing.M) {
@@ -160,6 +157,7 @@ spec:
   namespace: {{ .Namespace }}`
 		}
 		oc.ApplyTemplate(t, "", istio.Template, istio)
+		oc.Label(t, "", "Istio", istio.Name, oc.MaistraTestLabel+`=""`)
 		oc.DefaultOC.WaitFor(t, "", "Istio", istio.Name, "condition=Ready")
 	}
 	oc.CreateNamespace(t, "istio-cni")

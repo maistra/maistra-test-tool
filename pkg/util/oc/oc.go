@@ -89,6 +89,11 @@ func DeleteResource(t test.TestHelper, ns string, kind string, name ...string) {
 	DefaultOC.DeleteResource(t, ns, kind, name...)
 }
 
+func DeleteResourcesByLabel(t test.TestHelper, ns string, kind string, label string) {
+	t.T().Helper()
+	DefaultOC.DeleteResourcesByLabel(t, ns, kind, label)
+}
+
 // Function returns names of all resources (kind input) in the namespace (ns input) that match a particular label (label input).
 // When you are looking for a global scoped resource (e.g. nodes), ns can be empty
 func GetAllResoucesNamesByLabel(t test.TestHelper, ns string, kind string, label string) []string {
