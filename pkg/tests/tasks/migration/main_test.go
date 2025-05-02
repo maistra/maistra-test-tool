@@ -136,22 +136,30 @@ func continuallyRequest(t test.TestHelper, url string) {
 	}(ctx)
 }
 
-func setupIstio(t test.TestHelper, istio ossm.Istio) {
+func setupIstio(t test.TestHelper, istios ...ossm.Istio) {
 	t.T().Helper()
 	t.Cleanup(func() {
-		oc.DeleteResource(t, "", "Istio", istio.Name)
+		t.Log("Cleaning up IstioCNI")
 		oc.DeleteResource(t, "", "IstioCNI", "default")
 	})
-	if istio.Template == "" {
-		istio.Template = `apiVersion: sailoperator.io/v1
+	for _, istio := range istios {
+		istio := istio
+		t.Cleanup(func() {
+			t.Logf("Cleaning up Istio %s", istio.Name)
+			oc.DeleteResource(t, "", "Istio", istio.Name)
+		})
+		if istio.Template == "" {
+			istio.Template = `apiVersion: sailoperator.io/v1
 kind: Istio
 metadata:
   name: {{ .Name }}
 spec:
   namespace: {{ .Namespace }}`
+		}
+		oc.ApplyTemplate(t, "", istio.Template, istio)
+		oc.Label(t, "", "Istio", istio.Name, oc.MaistraTestLabel+`=""`)
+		oc.DefaultOC.WaitFor(t, "", "Istio", istio.Name, "condition=Ready")
 	}
-	oc.ApplyTemplate(t, "", istio.Template, istio)
-	oc.DefaultOC.WaitFor(t, "", "Istio", istio.Name, "condition=Ready")
 	oc.CreateNamespace(t, "istio-cni")
 	istioCNI := `apiVersion: sailoperator.io/v1
 kind: IstioCNI
@@ -159,7 +167,7 @@ metadata:
   name: default
 spec:
   namespace: istio-cni`
-	oc.ApplyTemplate(t, "", istioCNI, istio)
+	oc.ApplyString(t, "", istioCNI)
 	oc.DefaultOC.WaitFor(t, "", "IstioCNI", "default", "condition=Ready")
 }
 
