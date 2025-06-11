@@ -28,6 +28,9 @@ var (
 
 	//go:embed yaml/mesh.tmpl.yaml
 	meshTmpl string
+
+	//go:embed yaml/tproxy-scc.yaml
+	tproxySCC string
 )
 
 func TestMain(m *testing.M) {
