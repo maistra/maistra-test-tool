@@ -40,15 +40,17 @@ func TestTproxy(t *testing.T) {
 		}
 
 		t.Cleanup(func() {
-			t.LogStep("Remove privileged SCC from the app namespace")
-			shell.Executef(t, "oc adm policy remove-scc-from-group privileged system:serviceaccounts:%s", ns.Foo)
+			t.LogStep("Remove istio-tproxy SCC from the app namespace")
+			shell.Executef(t, "oc adm policy remove-scc-from-group istio-tproxy system:serviceaccounts:%s", ns.Foo)
+			oc.DeleteFromString(t, "", tproxySCC)
 			oc.RecreateNamespace(t, ns.Foo)
 		})
 
+		oc.ApplyString(t, "", tproxySCC)
 		ossm.DeployControlPlane(t)
 
-		t.LogStep("Add privileged SCC to the app namespace")
-		shell.Executef(t, "oc adm policy add-scc-to-group privileged system:serviceaccounts:%s", ns.Foo)
+		t.LogStep("Add istio-tproxy SCC to the app namespace")
+		shell.Executef(t, "oc adm policy add-scc-to-group istio-tproxy system:serviceaccounts:%s", ns.Foo)
 
 		t.LogStep("Install httpbin and sleep in tproxy mode")
 		app.InstallAndWaitReady(t, app.HttpbinTproxy(ns.Foo), app.SleepTroxy(ns.Foo))
