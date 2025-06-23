@@ -27,7 +27,7 @@ RUN microdnf install -y --nodocs tar gzip openssl findutils make git && \
 COPY . $HOME
 WORKDIR $HOME
 
-RUN go install gotest.tools/gotestsum@latest \
+RUN go install gotest.tools/gotestsum@v1.12.2 \
     && go mod download
 
 # Set required permissions for OpenShift usage
