@@ -16,6 +16,7 @@ package ossm
 import (
 	_ "embed"
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
@@ -79,36 +80,26 @@ func TestTempoTracing(t *testing.T) {
 		curl.Request(t, app.BookinfoProductPageURL(t, meshNamespace), nil)
 
 		t.LogStepf("Check that Tempostack contain traces")
+		frontEndQueryUrl := tempo.GetFrontEndQueryRouteUrl(t)
 		retry.UntilSuccess(t, func(t test.TestHelper) {
-			checkThatTracesForServiceExist(t, "productpage."+ns.Bookinfo)
+			checkThatTracesForServiceExist(t, "productpage."+ns.Bookinfo, frontEndQueryUrl)
 		})
-		checkThatTracesForServiceExist(t, "details."+ns.Bookinfo)
-		checkThatTracesForServiceExist(t, "reviews."+ns.Bookinfo)
-		checkThatTracesForServiceExist(t, "istio-ingressgateway."+meshNamespace)
+		checkThatTracesForServiceExist(t, "details."+ns.Bookinfo, frontEndQueryUrl)
+		checkThatTracesForServiceExist(t, "reviews."+ns.Bookinfo, frontEndQueryUrl)
+		checkThatTracesForServiceExist(t, "istio-ingressgateway."+meshNamespace, frontEndQueryUrl)
 	})
 }
 
-func checkThatTracesForServiceExist(t test.TestHelper, service string) {
+func checkThatTracesForServiceExist(t test.TestHelper, service string, frontEndQueryUrl string) {
 	// check traces directly in the query frontend pod
-	oc.Exec(t,
-		pod.MatchingSelector("app.kubernetes.io/component=query-frontend", tempo.GetTracingNamespace()),
-		"tempo-query",
-		fmt.Sprintf("curl -sS \"localhost:16686/api/traces?limit=5&lookback=10m&service=%s\"", service),
-		assert.OutputDoesNotContain(
-			"\"data\":[]",
-			fmt.Sprintf("Response contains traces for the service %s", service),
-			fmt.Sprintf("Response doesn't contain any traces for the service %s", service),
-		),
-		assert.OutputContains(
-			fmt.Sprintf("\"serviceName\":\"%s\"", service),
-			"Response contains traces with expected message",
-			"Response doesn't contain trace with expected mesage",
-		),
-		assert.OutputContains(
-			"outbound|9080||",
-			"Response contains traces with expected message",
-			"Response doesn't contain trace with expected mesage",
-		))
+	curl.Request(t,
+		fmt.Sprintf("http://%s/api/traces?limit=5&lookback=10m&service=%s", frontEndQueryUrl, service),
+		nil,
+		assert.ResponseStatus(http.StatusOK),
+		assert.ResponseContains(fmt.Sprintf("\"serviceName\":\"%s\"", service)),
+		assert.ResponseContains("outbound|9080||"),
+		assert.ResponseDoesNotContain("\"data\":[]"),
+	)
 }
 
 const (

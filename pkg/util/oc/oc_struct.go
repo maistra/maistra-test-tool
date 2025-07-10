@@ -359,6 +359,15 @@ func (o OC) TouchSMCP(t test.TestHelper, ns string, name string) {
 	o.Patch(t, ns, "smcp", name, "merge", fmt.Sprintf(`{"spec":{"techPreview":{"foo":"foo%d"}}}`, rand.Int()))
 }
 
+func (o OC) ExposeSvc(t test.TestHelper, ns string, svcName string, servicePort string, routeName string) {
+	t.T().Helper()
+	o.withKubeconfig(t, func() {
+		t.T().Helper()
+		t.Logf("Exposing svc: %v", svcName)
+		o.Invokef(t, "oc -n %s expose svc %s --port=%s --name=%s", ns, svcName, servicePort, routeName)
+	})
+}
+
 func (o OC) GetRouteURL(t test.TestHelper, ns string, name string) string {
 	t.T().Helper()
 	url := ""
