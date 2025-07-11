@@ -79,6 +79,7 @@ func InstallIfNotExist(t test.TestHelper) {
 
 func Uninstall(t test.TestHelper) {
 	t.Log("Uninstalling TempoStack")
+	oc.DeleteResource(t, tracingNamespace, "Route", "tracing-ui")
 	oc.DeleteFromTemplate(t, tracingNamespace, tempoStack, nil)
 	app.Uninstall(t, app.Minio(tracingNamespace))
 	oc.DeleteNamespace(t, tracingNamespace)
@@ -103,6 +104,10 @@ func GetTracingNamespace() string {
 	return tracingNamespace
 }
 
+func GetFrontEndQueryRouteUrl(t test.TestHelper) string {
+	return oc.DefaultOC.GetRouteURL(t, tracingNamespace, "tracing-ui")
+}
+
 func installTempoStack(t test.TestHelper) {
 	oc.RecreateNamespace(t, tracingNamespace)
 	app.InstallAndWaitReady(t, app.Minio(tracingNamespace))
@@ -111,4 +116,7 @@ func installTempoStack(t test.TestHelper) {
 	oc.DefaultOC.WaitFor(t, tracingNamespace, "TempoStack", "sample", "condition=Ready")
 	t.Log("Waiting for TempoStack to be ready")
 	oc.WaitDeploymentRolloutComplete(t, tracingNamespace, "tempo-sample-compactor")
+	// just to be sure that no hanging tracing ui route exists
+	oc.DeleteResource(t, tracingNamespace, "Route", "tracing-ui")
+	oc.ExposeSvc(t, tracingNamespace, "tempo-sample-query-frontend", "jaeger-ui", "tracing-ui")
 }

@@ -284,6 +284,11 @@ func TouchSMCP(t test.TestHelper, ns string, name string) {
 	DefaultOC.TouchSMCP(t, ns, name)
 }
 
+func ExposeSvc(t test.TestHelper, ns string, svcName string, servicePort string, routeName string) {
+	t.T().Helper()
+	DefaultOC.ExposeSvc(t, ns, svcName, servicePort, routeName)
+}
+
 func RemoveLabel(t test.TestHelper, ns string, kind string, name string, label string) {
 	t.T().Helper()
 	DefaultOC.RemoveLabel(t, ns, kind, name, label)
