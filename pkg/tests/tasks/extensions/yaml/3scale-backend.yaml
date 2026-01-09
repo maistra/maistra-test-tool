@@ -30,7 +30,7 @@ spec:
     spec:
       containers:
       - name: wiremock
-        image: wiremock/wiremock:3.2.0
+        image: docker.io/wiremock/wiremock:3.2.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
