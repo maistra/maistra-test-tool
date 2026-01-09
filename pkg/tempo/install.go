@@ -33,6 +33,9 @@ var (
 	//go:embed yaml/tempoStack.yaml
 	tempoStack string
 
+	//go:embed yaml/jaegerUi.yaml
+	tempoUiRoute string
+
 	tempoOperatorsNamespace = "openshift-tempo-operator"
 	otelOperatorsNamespace  = "openshift-opentelemetry-operator"
 
@@ -118,5 +121,5 @@ func installTempoStack(t test.TestHelper) {
 	oc.WaitDeploymentRolloutComplete(t, tracingNamespace, "tempo-sample-compactor")
 	// just to be sure that no hanging tracing ui route exists
 	oc.DeleteResource(t, tracingNamespace, "Route", "tracing-ui")
-	oc.ExposeSvc(t, tracingNamespace, "tempo-sample-query-frontend", "jaeger-ui", "tracing-ui")
+	oc.ApplyTemplate(t, tracingNamespace, tempoUiRoute, nil)
 }
