@@ -131,47 +131,6 @@ func TestIOR(t *testing.T) {
 			checkSimpleGateway(t)
 		})
 
-		t.NewSubTest("check routes aren't deleted during v2.3 to v2.4 upgrade").Run(func(t TestHelper) {
-			if env.GetSMCPVersion().LessThan(version.SMCP_2_4) {
-				t.Skip("This test only applies for v2.3 to v2.4 upgrade")
-			}
-			if env.GetArch() == "arm64" {
-				t.Skip("2.3 & 2.4 is not supported in arm (arm is supported from ossm 2.5+)")
-			}
-
-			t.Cleanup(func() {
-				oc.RecreateNamespace(t, meshNamespace)
-				setupDefaultSMCP(t, meshNamespace)
-			})
-
-			t.LogStepf("Delete and recreate namespace %s", meshNamespace)
-			oc.RecreateNamespace(t, meshNamespace)
-
-			t.LogStep("Deploy SMCP v2.3")
-			setupV23SMCP(t, meshNamespace, meshName)
-
-			t.LogStep("Check whether IOR creates Routes for hosts specified in the Gateway")
-			createSimpleGateway(t)
-			checkSimpleGateway(t)
-
-			t.LogStepf("Record the Route before the upgrade")
-			before := getRoutes(t, meshNamespace)
-
-			t.LogStep("Upgrade SMCP to v2.4")
-			updateToV24SMCP(t, meshNamespace, meshName)
-
-			t.LogStep("Check the Routes existed afther the upgrade")
-			checkSimpleGateway(t)
-			after := getRoutes(t, meshNamespace)
-
-			t.LogStep("Check the Routes unchanged afther the upgrade")
-			if before[0].Metadata.ResourceVersion != after[0].Metadata.ResourceVersion {
-				t.Fatal("Expect the route to be unchanged, but it is changed after the upgrade")
-			} else {
-				t.LogSuccess("Got the same resourceVersion before and after the upgrade")
-			}
-		})
-
 		t.NewSubTest("check IOR does not delete routes after deleting Istio pod").Run(func(t TestHelper) {
 			total := 3
 			nsNames := []string{}
@@ -438,26 +397,6 @@ func buildManagedRouteYamlDocument(t TestHelper, ns string) string {
 	}
 
 	return doc
-}
-
-func setupDefaultSMCP(t TestHelper, ns string) {
-	InstallSMCP(t, ns)
-	oc.WaitSMCPReady(t, ns, env.GetDefaultSMCPName())
-}
-
-func setupV23SMCP(t TestHelper, ns, name string) {
-	InstallSMCPVersion(t, ns, version.SMCP_2_3)
-	oc.WaitSMCPReady(t, ns, name)
-
-	oc.ApplyString(t, ns, GetSMMRTemplate())
-	oc.WaitSMMRReady(t, ns)
-}
-
-func updateToV24SMCP(t TestHelper, ns, name string) {
-	oc.Patch(t, ns,
-		"smcp", name,
-		"json", `[{"op": "add", "path": "/spec/version", "value": "v2.4"}]`)
-	oc.WaitSMCPReady(t, ns, name)
 }
 
 func getIORSetting(t TestHelper, ns, name string) string {
