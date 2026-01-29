@@ -53,6 +53,12 @@ var (
 
 	//go:embed yaml/istio-cert-manager.yaml
 	istioWithCertManager string
+
+	//go:embed yaml/mesh-custom-ca.yaml
+	serviceMeshCustomCATmpl string
+
+	//go:embed yaml/istio-custom-ca.yaml
+	istioCustomCATmpl string
 )
 
 func TestMain(m *testing.M) {
