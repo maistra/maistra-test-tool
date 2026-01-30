@@ -107,12 +107,10 @@ func TestCustomCAMigration(t *testing.T) {
 		t.LogStep("Ensure OSSM 3.0 validating webhook uses the custom CA root cert")
 		ossm3ValidatingWebhookName := fmt.Sprintf("istio-validator-%s-%s", istio.Name, meshNamespace)
 		cacertsRootCert := oc.GetJson(t, meshNamespace, "secrets", "cacerts", `{.data.root-cert\.pem}`)
-		retry.UntilSuccess(t, func(t test.TestHelper) {
-			ossm3ValidatingWebhookCABundle := oc.GetJson(t, "", "validatingwebhookconfigurations", ossm3ValidatingWebhookName, "{.webhooks[0].clientConfig.caBundle}")
-			if ossm3ValidatingWebhookCABundle != cacertsRootCert {
-				t.Errorf("Validating Webhook '%s' caBundle does not match cacerts root-cert.pem.\nwebhookBundle: %s\ncacertsRootCert: %s\n", ossm3ValidatingWebhookName, ossm3ValidatingWebhookCABundle, cacertsRootCert)
-			}
-		})
+		ossm3ValidatingWebhookCABundle := oc.GetJson(t, "", "validatingwebhookconfigurations", ossm3ValidatingWebhookName, "{.webhooks[0].clientConfig.caBundle}")
+		if ossm3ValidatingWebhookCABundle != cacertsRootCert {
+			t.Errorf("Validating Webhook '%s' caBundle does not match cacerts root-cert.pem.\nwebhookBundle: %s\ncacertsRootCert: %s\n", ossm3ValidatingWebhookName, ossm3ValidatingWebhookCABundle, cacertsRootCert)
+		}
 		t.Log("OSSM 3.0 validating webhook caBundle matches cacerts root-cert.pem")
 
 		managedLabel = oc.GetJson(t, "", "validatingwebhookconfigurations", ossm3ValidatingWebhookName, `{.metadata.labels.maistra\.io/managed}`)
