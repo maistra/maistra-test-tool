@@ -137,7 +137,7 @@ func TestCertManagerMigration(t *testing.T) {
 		// Wait for book info to be removed.
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			t.Log("Checking if \"bookinfo\" has been removed from default SMMR...")
-			if bookinfoInSMMR(t, "default", smcp.Namespace) {
+			if bookinfoInDefaultSMMR(t, smcp.Namespace) {
 				t.Error("bookinfo found in SMMR. Expected it to be removed.")
 			}
 		})
