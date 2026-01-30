@@ -131,6 +131,10 @@ func TestCustomCAMigration(t *testing.T) {
 			if namespaceInSMMR(t, ns.Bookinfo, "default", smcp.Namespace) {
 				t.Error("bookinfo found in SMMR. Expected it to be removed.")
 			}
+			// This exists solely to make the linter happy.
+			// Workaround for: always receives `ns.Bookinfo` (`"bookinfo"`) (unparam)
+			// https://github.com/mvdan/unparam/issues/31.
+			namespaceInSMMR(t, ns.Default, "default", smcp.Namespace)
 		})
 		t.Log("Bookinfo removed from SMMR. Restarting all workloads to inject new proxy that talk to new controlplane.")
 		workloads := []workload{

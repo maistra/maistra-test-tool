@@ -198,6 +198,13 @@ func getLoadBalancerServiceHostname(t test.TestHelper, name string, namespace st
 	return status
 }
 
+// This exists solely to make the linter happy.
+// Workaround for: always receives `ns.Bookinfo` (`"bookinfo"`) (unparam)
+// https://github.com/mvdan/unparam/issues/31.
+func bookinfoInSMMR(t test.TestHelper, smmrName string, smmrNamespace string) bool {
+	return namespaceInSMMR(t, ns.Bookinfo, smmrName, smmrNamespace)
+}
+
 func namespaceInSMMR(t test.TestHelper, namespace string, smmrName string, smmrNamespace string) bool {
 	t.T().Helper()
 	var members []string
