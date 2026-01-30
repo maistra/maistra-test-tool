@@ -1,4 +1,4 @@
-// Copyright 2025 Red Hat, Inc.
+// Copyright 2026 Red Hat, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,85 +16,69 @@ package migration
 
 import (
 	"fmt"
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
-	"github.com/maistra/maistra-test-tool/pkg/certmanageroperator"
 	"github.com/maistra/maistra-test-tool/pkg/tests/ossm"
+	"github.com/maistra/maistra-test-tool/pkg/util/cert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
-	"github.com/maistra/maistra-test-tool/pkg/util/helm"
 	"github.com/maistra/maistra-test-tool/pkg/util/ns"
 	"github.com/maistra/maistra-test-tool/pkg/util/oc"
 	"github.com/maistra/maistra-test-tool/pkg/util/pod"
 	"github.com/maistra/maistra-test-tool/pkg/util/retry"
-	"github.com/maistra/maistra-test-tool/pkg/util/template"
 	"github.com/maistra/maistra-test-tool/pkg/util/test"
 	"github.com/maistra/maistra-test-tool/pkg/util/version"
 )
 
-func TestCertManagerMigration(t *testing.T) {
+// This test ensures that the istio operator does not try to reconcile
+// the ossm3 validating webhook. The istio operator and ossm3 istiod patch
+// different CA bundles (intermediate for 2.6, root for 3.0) into the webhook
+// causing the two controllers to fight over the webhook if they both try to manage it.
+func TestCustomCAMigration(t *testing.T) {
 	test.NewTest(t).MinVersion(version.SMCP_2_6).Groups(test.Migration).Run(func(t test.TestHelper) {
 		t.Cleanup(func() {
-			t.Log("Uninstalling cert-manager operator")
-			certmanageroperator.Uninstall(t)
 			oc.DeleteTestBoundNamespaces(t)
-			// clean up bookinfo
 			oc.DeleteFile(t, ns.Bookinfo, migrationGateway)
 			app.Uninstall(t, app.Bookinfo(ns.Bookinfo))
 		})
 		ossm.BasicSetup(t)
-		// this also installs root-ca
-		certmanageroperator.InstallIfNotExist(t)
 
-		t.LogStep("Create intermediate certificate for Istio")
-		oc.ApplyString(t, meshNamespace, istioCA)
-
-		t.LogStep("Add jetstack repo to helm")
-		helm.Repo("https://charts.jetstack.io").Add(t, "jetstack")
+		t.LogStep("Create cacerts secret for SMCP")
+		oc.CreateGenericSecretFromFiles(t, meshNamespace, "cacerts",
+			"ca-cert.pem="+cert.SampleCACert,
+			"ca-key.pem="+cert.SampleCAKey,
+			"root-cert.pem="+cert.SampleCARoot,
+			"cert-chain.pem="+cert.SampleCAChain)
 
 		smcp := ossm.DefaultClusterWideSMCP(t)
 		smcp.Namespace = meshNamespace
 		istio := ossm.DefaultIstio()
-		istio.Template = istioWithCertManager
+		istio.Template = istioCustomCATmpl
 		istio.Namespace = meshNamespace
 
-		istioCSRValues := map[string]any{
-			"Namespace": meshNamespace,
-			// The template doesn't apply slices as comma separated values
-			// so we need to format the string ahead of time.
-			"Revisions": strings.Join([]string{smcp.Name, istio.Name}, ","),
-		}
-		istioCSRTempl := template.Run(t, istioCSRTmpl, istioCSRValues)
-
-		t.LogStepf("Install cert-manager-istio-csr with values:\n%s", istioCSRTempl)
-		t.Cleanup(func() {
-			t.Log("Uninstalling istio-csr helm chart")
-			helm.Namespace(meshNamespace).Release("istio-csr").Uninstall(t)
-		})
-		helm.Namespace(meshNamespace).
-			Chart("jetstack/cert-manager-istio-csr").
-			Release("istio-csr").
-			ValuesString(istioCSRTempl).
-			Install(t)
-		oc.WaitDeploymentRolloutComplete(t, meshNamespace, "cert-manager-istio-csr")
-
-		t.LogStep("Deploy SMCP " + smcp.Version.String() + " and SMMR")
-		oc.ApplyTemplate(t, meshNamespace, serviceMeshIstioCSRTmpl, smcp)
+		t.LogStep("Deploy SMCP " + smcp.Version.String() + " with custom CA and SMMR")
+		oc.ApplyTemplate(t, meshNamespace, serviceMeshCustomCATmpl, smcp)
 		oc.WaitSMCPReady(t, meshNamespace, smcp.Name)
 
-		t.LogStep("Verify that istio-ca-root-cert created in Istio namespace")
-		// Can take awhile for istio-csr to create all the configmaps.
-		retry.UntilSuccessWithOptions(t, retry.Options().DelayBetweenAttempts(time.Second*4).MaxAttempts(80), func(t test.TestHelper) {
-			oc.Get(t, meshNamespace, "ConfigMap", "istio-ca-root-cert")
-		})
+		t.LogStep("Verify that SMCP validating webhook uses the custom CA")
+		validatingWebhookName := fmt.Sprintf("istio-validator-%s-%s", smcp.Name, meshNamespace)
+		validatingWebhookCABundle := oc.GetJson(t, "", "validatingwebhookconfigurations", validatingWebhookName, "{.webhooks[0].clientConfig.caBundle}")
+		cacertsIntermediateCert := oc.GetJson(t, meshNamespace, "secrets", "cacerts", `{.data.ca-cert\.pem}`)
+		if validatingWebhookCABundle != cacertsIntermediateCert {
+			t.Errorf("Validating Webhook '%s' caBundle does not match cacerts ca-cert.pem.\nwebhookBundle: %s\ncacertsCACert: %s\n", validatingWebhookName, validatingWebhookCABundle, cacertsIntermediateCert)
+		}
+		t.Log("SMCP validating webhook caBundle matches cacerts ca-cert.pem")
+
+		managedLabel := oc.GetJson(t, "", "validatingwebhookconfigurations", validatingWebhookName, `{.metadata.labels.maistra\.io/managed}`)
+		if managedLabel != "true" {
+			t.Errorf("Validating Webhook '%s' does not have maistra.io/managed=true label. Got: %s", validatingWebhookName, managedLabel)
+		}
+		t.Log("SMCP validating webhook has maistra.io/managed=true label")
 
 		t.LogStep(`Add injection label to "bookinfo" namespace`)
 		oc.Label(t, "", "Namespace", ns.Bookinfo, "istio-injection=enabled")
 
-		// Wait for SMMR to exist and include bookinfo
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			oc.Get(t, smcp.Namespace, "servicemeshmemberroll", "default")
 		})
@@ -117,24 +101,31 @@ func TestCertManagerMigration(t *testing.T) {
 		t.LogStep("Deploy Istio and IstioCNI")
 		setupIstio(t, istio)
 
-		t.LogStep("Ensure caBundle on webhooks match the CA in the istiod-tls secret")
-		validatingWebhookName := fmt.Sprintf("istio-validator-%s-%s", istio.Name, meshNamespace)
-		validatingWebhookCABundle := oc.GetJson(t, "", "validatingwebhookconfigurations", validatingWebhookName, "{.webhooks[0].clientConfig.caBundle}")
-		istiodTLSCA := oc.GetJson(t, meshNamespace, "secrets", "istiod-tls", `{.data.ca\.crt}`)
-
-		if validatingWebhookCABundle != istiodTLSCA {
-			t.Fatalf("Validating Webhook '%s' caBundle is not equal to the istiod-tls CA.\nwebhookBundle: %s\nistiodTLSCA: %s\n", validatingWebhookName, validatingWebhookCABundle, istiodTLSCA)
+		// 3.0 uses the root cert for the validating webhook whereas 2.6 uses the intermediate cert.
+		// When the 3.0 istiod begins to manage the webhook instead of the 2.6 operator,
+		// the root cert should be used instead of the intermediate cert.
+		t.LogStep("Ensure OSSM 3.0 validating webhook uses the custom CA root cert")
+		ossm3ValidatingWebhookName := fmt.Sprintf("istio-validator-%s-%s", istio.Name, meshNamespace)
+		cacertsRootCert := oc.GetJson(t, meshNamespace, "secrets", "cacerts", `{.data.root-cert\.pem}`)
+		ossm3ValidatingWebhookCABundle := oc.GetJson(t, "", "validatingwebhookconfigurations", ossm3ValidatingWebhookName, "{.webhooks[0].clientConfig.caBundle}")
+		if ossm3ValidatingWebhookCABundle != cacertsRootCert {
+			t.Errorf("Validating Webhook '%s' caBundle does not match cacerts root-cert.pem.\nwebhookBundle: %s\ncacertsRootCert: %s\n", ossm3ValidatingWebhookName, ossm3ValidatingWebhookCABundle, cacertsRootCert)
 		}
-		t.Log("webhook caBundle matches istiod-tls ca cert")
+		t.Log("OSSM 3.0 validating webhook caBundle matches cacerts root-cert.pem")
 
-		ensureResourceStable(t, validatingWebhookName, meshNamespace, "validatingwebhookconfigurations")
+		managedLabel = oc.GetJson(t, "", "validatingwebhookconfigurations", ossm3ValidatingWebhookName, `{.metadata.labels.maistra\.io/managed}`)
+		if managedLabel != "" {
+			t.Errorf("Validating Webhook '%s' has maistra.io/managed label. Expected no label.", ossm3ValidatingWebhookName, managedLabel)
+		}
+		t.Log("OSSM 3.0 validating webhook has no maistra.io/managed label")
+
+		ensureResourceStable(t, ossm3ValidatingWebhookName, meshNamespace, "validatingwebhookconfigurations")
 
 		t.LogStep("Migrate bookinfo to 3.0 controlplane")
 		t.Log("Getting Istio active Rev name")
 		ossm3RevName := oc.GetJson(t, "", "Istio", istio.Name, "{.status.activeRevisionName}")
 		t.Log("Relabeling bookinfo namespace")
 		oc.Label(t, "", "Namespace", ns.Bookinfo, maistraIgnoreLabel+" istio-injection- istio.io/rev="+ossm3RevName)
-		// Wait for book info to be removed.
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			t.Log("Checking if \"bookinfo\" has been removed from default SMMR...")
 			if bookinfoInDefaultSMMR(t, smcp.Namespace) {
@@ -152,9 +143,6 @@ func TestCertManagerMigration(t *testing.T) {
 			{Name: "bookinfo-gateway", Labels: map[string]string{"istio": "bookinfo-gateway"}},
 		}
 		oc.DefaultOC.RestartDeployments(t, ns.Bookinfo, workloadNames(workloads)...)
-		// Waiting for the rollouts to complete ensures that old pods have been deleted.
-		// If there are old pods lying around then the assertion below to get the pod annotations
-		// will fail.
 		oc.WaitDeploymentRolloutComplete(t, ns.Bookinfo, workloadNames(workloads)...)
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			if output := oc.DefaultOC.Invokef(t, `oc get pods -n %s -o jsonpath='{.items[?(@.metadata.deletionTimestamp!="")].metadata.name}'`, ns.Bookinfo); output != "" {
@@ -170,7 +158,6 @@ func TestCertManagerMigration(t *testing.T) {
 			}
 		}
 
-		// One last request to ensure bookinfo still works.
 		curl.Request(t, bookinfoGatewayURL, nil, assert.RequestSucceeds("productpage request succeeded", "productpage request failed"))
 	})
 }

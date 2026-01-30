@@ -53,6 +53,12 @@ var (
 
 	//go:embed yaml/istio-cert-manager.yaml
 	istioWithCertManager string
+
+	//go:embed yaml/mesh-custom-ca.yaml
+	serviceMeshCustomCATmpl string
+
+	//go:embed yaml/istio-custom-ca.yaml
+	istioCustomCATmpl string
 )
 
 func TestMain(m *testing.M) {
@@ -192,10 +198,12 @@ func getLoadBalancerServiceHostname(t test.TestHelper, name string, namespace st
 	return status
 }
 
-func namespaceInSMMR(t test.TestHelper, namespace string, smmrName string, smmrNamespace string) bool {
+func bookinfoInDefaultSMMR(t test.TestHelper, smmrNamespace string) bool {
 	t.T().Helper()
+	namespace := ns.Bookinfo
+	smmrName := "default"
 	var members []string
-	t.Log("Checking if \"bookinfo\" has been removed from default SMMR...")
+	t.Logf("Checking if \"%s\" has been removed from %s SMMR...", namespace, smmrName)
 	output := oc.GetJson(t, smmrNamespace, "ServiceMeshMemberRoll", smmrName, "{.status.configuredMembers}")
 	if err := json.Unmarshal([]byte(output), &members); err != nil {
 		t.Error(err)
