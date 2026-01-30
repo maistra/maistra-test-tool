@@ -201,7 +201,7 @@ func getLoadBalancerServiceHostname(t test.TestHelper, name string, namespace st
 func namespaceInSMMR(t test.TestHelper, namespace string, smmrName string, smmrNamespace string) bool {
 	t.T().Helper()
 	var members []string
-	t.Log("Checking if \"bookinfo\" has been removed from default SMMR...")
+	t.Logf("Checking if \"%s\" has been removed from %s SMMR...", namespace, smmrName)
 	output := oc.GetJson(t, smmrNamespace, "ServiceMeshMemberRoll", smmrName, "{.status.configuredMembers}")
 	if err := json.Unmarshal([]byte(output), &members); err != nil {
 		t.Error(err)
