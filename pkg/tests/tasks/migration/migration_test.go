@@ -111,7 +111,7 @@ spec:
 		// Wait for book info to be removed.
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			t.Log("Checking if \"bookinfo\" has been removed from default SMMR...")
-			if namespaceInSMMR(t, ns.Bookinfo, "default", smcp.Namespace) {
+			if bookinfoInSMMR(t, "default", smcp.Namespace) {
 				t.Error("bookinfo found in SMMR. Expected it to be removed.")
 			}
 		})
@@ -431,7 +431,7 @@ spec:
 		// Wait for book info to be removed.
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			t.Log("Checking if \"bookinfo\" has been removed from default SMMR...")
-			if namespaceInSMMR(t, ns.Bookinfo, "default", smcp.Namespace) {
+			if bookinfoInSMMR(t, "default", smcp.Namespace) {
 				t.Error("bookinfo found in SMMR. Expected it to be removed.")
 			}
 		})

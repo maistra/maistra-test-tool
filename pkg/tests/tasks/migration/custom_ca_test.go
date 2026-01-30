@@ -128,13 +128,9 @@ func TestCustomCAMigration(t *testing.T) {
 		oc.Label(t, "", "Namespace", ns.Bookinfo, maistraIgnoreLabel+" istio-injection- istio.io/rev="+ossm3RevName)
 		retry.UntilSuccess(t, func(t test.TestHelper) {
 			t.Log("Checking if \"bookinfo\" has been removed from default SMMR...")
-			if namespaceInSMMR(t, ns.Bookinfo, "default", smcp.Namespace) {
+			if bookinfoInSMMR(t, "default", smcp.Namespace) {
 				t.Error("bookinfo found in SMMR. Expected it to be removed.")
 			}
-			// This exists solely to make the linter happy.
-			// Workaround for: always receives `ns.Bookinfo` (`"bookinfo"`) (unparam)
-			// https://github.com/mvdan/unparam/issues/31.
-			_ = namespaceInSMMR(t, ns.Default, "default", smcp.Namespace)
 		})
 		t.Log("Bookinfo removed from SMMR. Restarting all workloads to inject new proxy that talk to new controlplane.")
 		workloads := []workload{
