@@ -19,6 +19,13 @@ import (
 )
 
 var (
+	sampleCACert  = env.GetRootDir() + "/sampleCerts/ca-cert.pem"
+	sampleCAKey   = env.GetRootDir() + "/sampleCerts/ca-key.pem"
+	sampleCARoot  = env.GetRootDir() + "/sampleCerts/root-cert.pem"
+	sampleCAChain = env.GetRootDir() + "/sampleCerts/cert-chain.pem"
+)
+
+var (
 	smcpName      = env.GetDefaultSMCPName()
 	meshNamespace = env.GetDefaultMeshNamespace()
 	ROSA          = env.IsRosa()
