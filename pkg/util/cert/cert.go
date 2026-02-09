@@ -24,16 +24,6 @@ import (
 	"math/big"
 	"net"
 	"time"
-
-	"github.com/maistra/maistra-test-tool/pkg/util/env"
-)
-
-// Sample certificate paths for testing with external CA
-var (
-	SampleCACert  = env.GetRootDir() + "/sampleCerts/ca-cert.pem"
-	SampleCAKey   = env.GetRootDir() + "/sampleCerts/ca-key.pem"
-	SampleCARoot  = env.GetRootDir() + "/sampleCerts/root-cert.pem"
-	SampleCAChain = env.GetRootDir() + "/sampleCerts/cert-chain.pem"
 )
 
 // CertBuilder constructs a new set of keys and certificate.

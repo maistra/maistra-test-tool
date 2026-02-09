@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/maistra/maistra-test-tool/pkg/app"
-	"github.com/maistra/maistra-test-tool/pkg/util/cert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/curl"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
@@ -52,12 +51,12 @@ func TestExternalCertificate(t *testing.T) {
 
 		t.LogStep("Create cacerts secret")
 		oc.CreateGenericSecretFromFiles(t, meshNamespace, "cacerts",
-			"ca-cert.pem="+cert.SampleCACert,
-			"ca-key.pem="+cert.SampleCAKey,
-			"root-cert.pem="+cert.SampleCARoot,
-			"cert-chain.pem="+cert.SampleCAChain)
-		rootCert := readPemCertificatesFromFile(t, cert.SampleCARoot)[0]
-		chainCerts := readPemCertificatesFromFile(t, cert.SampleCAChain)
+			"ca-cert.pem="+sampleCACert,
+			"ca-key.pem="+sampleCAKey,
+			"root-cert.pem="+sampleCARoot,
+			"cert-chain.pem="+sampleCAChain)
+		rootCert := readPemCertificatesFromFile(t, sampleCARoot)[0]
+		chainCerts := readPemCertificatesFromFile(t, sampleCAChain)
 
 		t.LogStep("Apply SMCP to configure certificate authority to use cacerts secret")
 		oc.ApplyTemplate(t, meshNamespace, SMCPWithCustomCA, meshValues)
