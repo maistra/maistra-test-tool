@@ -129,7 +129,7 @@ func TestCertManagerMigration(t *testing.T) {
 
 		ensureResourceStable(t, validatingWebhookName, meshNamespace, "validatingwebhookconfigurations")
 
-		t.LogStep("Migrate bookinfo to 3.0 controlplane")
+		t.LogStep("Migrate bookinfo to 3.y controlplane")
 		t.Log("Getting Istio active Rev name")
 		ossm3RevName := oc.GetJson(t, "", "Istio", istio.Name, "{.status.activeRevisionName}")
 		t.Log("Relabeling bookinfo namespace")
@@ -162,7 +162,7 @@ func TestCertManagerMigration(t *testing.T) {
 			}
 		})
 
-		t.LogStep("Ensure all pods have migrated to 3.0 controlplane and curl requests succeed")
+		t.LogStep("Ensure all pods have migrated to 3.y controlplane and curl requests succeed")
 		for _, workload := range workloads {
 			annotations := oc.GetPodAnnotations(t, pod.MatchingSelector(toSelector(workload.Labels), ns.Bookinfo))
 			if actual := annotations["istio.io/rev"]; actual != ossm3RevName {

@@ -18,6 +18,7 @@ metadata:
   name: {{ .Name }}
 spec:
   namespace: {{ .Namespace }}
+  version: v1.24-latest
   values:
     global:
       caAddress: cert-manager-istio-csr.{{ .Namespace }}.svc:443

@@ -160,7 +160,8 @@ kind: Istio
 metadata:
   name: {{ .Name }}
 spec:
-  namespace: {{ .Namespace }}`
+  namespace: {{ .Namespace }}
+  version: v1.24-latest`
 		}
 		oc.ApplyTemplate(t, "", istio.Template, istio)
 		oc.Label(t, "", "Istio", istio.Name, oc.MaistraTestLabel+`=""`)
@@ -172,7 +173,8 @@ kind: IstioCNI
 metadata:
   name: default
 spec:
-  namespace: istio-cni`
+  namespace: istio-cni
+  version: v1.24-latest`
 	oc.ApplyString(t, "", istioCNI)
 	oc.DefaultOC.WaitFor(t, "", "IstioCNI", "default", "condition=Ready")
 }
