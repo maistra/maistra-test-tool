@@ -192,6 +192,7 @@ metadata:
   name: {{ .Name }}
 spec:
   namespace: {{ .Namespace }}
+  version: v1.24-latest
   values:
     meshConfig:
       outboundTrafficPolicy:
@@ -205,6 +206,7 @@ metadata:
   name: {{ .Name }}
 spec:
   namespace: {{ .Namespace }}
+  version: v1.24-latest
   values:
     meshConfig:
       outboundTrafficPolicy:
