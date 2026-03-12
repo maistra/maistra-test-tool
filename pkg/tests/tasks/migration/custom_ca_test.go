@@ -33,7 +33,7 @@ import (
 
 // This test ensures that the istio operator does not try to reconcile
 // the ossm3 validating webhook. The istio operator and ossm3 istiod patch
-// different CA bundles (intermediate for 2.6, root for 3.0) into the webhook
+// different CA bundles (intermediate for 2.6, root for 3.y) into the webhook
 // causing the two controllers to fight over the webhook if they both try to manage it.
 func TestCustomCAMigration(t *testing.T) {
 	test.NewTest(t).MinVersion(version.SMCP_2_6).Groups(test.Migration).Run(func(t test.TestHelper) {
@@ -101,27 +101,27 @@ func TestCustomCAMigration(t *testing.T) {
 		t.LogStep("Deploy Istio and IstioCNI")
 		setupIstio(t, istio)
 
-		// 3.0 uses the root cert for the validating webhook whereas 2.6 uses the intermediate cert.
-		// When the 3.0 istiod begins to manage the webhook instead of the 2.6 operator,
+		// 3.y uses the root cert for the validating webhook whereas 2.6 uses the intermediate cert.
+		// When the 3.y istiod begins to manage the webhook instead of the 2.6 operator,
 		// the root cert should be used instead of the intermediate cert.
-		t.LogStep("Ensure OSSM 3.0 validating webhook uses the custom CA root cert")
+		t.LogStep("Ensure OSSM 3.y validating webhook uses the custom CA root cert")
 		ossm3ValidatingWebhookName := fmt.Sprintf("istio-validator-%s-%s", istio.Name, meshNamespace)
 		cacertsRootCert := oc.GetJson(t, meshNamespace, "secrets", "cacerts", `{.data.root-cert\.pem}`)
 		ossm3ValidatingWebhookCABundle := oc.GetJson(t, "", "validatingwebhookconfigurations", ossm3ValidatingWebhookName, "{.webhooks[0].clientConfig.caBundle}")
 		if ossm3ValidatingWebhookCABundle != cacertsRootCert {
 			t.Errorf("Validating Webhook '%s' caBundle does not match cacerts root-cert.pem.\nwebhookBundle: %s\ncacertsRootCert: %s\n", ossm3ValidatingWebhookName, ossm3ValidatingWebhookCABundle, cacertsRootCert)
 		}
-		t.Log("OSSM 3.0 validating webhook caBundle matches cacerts root-cert.pem")
+		t.Log("OSSM 3.y validating webhook caBundle matches cacerts root-cert.pem")
 
 		managedLabel = oc.GetJson(t, "", "validatingwebhookconfigurations", ossm3ValidatingWebhookName, `{.metadata.labels.maistra\.io/managed}`)
 		if managedLabel != "" {
 			t.Errorf("Validating Webhook '%s' has maistra.io/managed label. Expected no label.", ossm3ValidatingWebhookName, managedLabel)
 		}
-		t.Log("OSSM 3.0 validating webhook has no maistra.io/managed label")
+		t.Log("OSSM 3.y validating webhook has no maistra.io/managed label")
 
 		ensureResourceStable(t, ossm3ValidatingWebhookName, meshNamespace, "validatingwebhookconfigurations")
 
-		t.LogStep("Migrate bookinfo to 3.0 controlplane")
+		t.LogStep("Migrate bookinfo to 3.y controlplane")
 		t.Log("Getting Istio active Rev name")
 		ossm3RevName := oc.GetJson(t, "", "Istio", istio.Name, "{.status.activeRevisionName}")
 		t.Log("Relabeling bookinfo namespace")
@@ -150,7 +150,7 @@ func TestCustomCAMigration(t *testing.T) {
 			}
 		})
 
-		t.LogStep("Ensure all pods have migrated to 3.0 controlplane and curl requests succeed")
+		t.LogStep("Ensure all pods have migrated to 3.y controlplane and curl requests succeed")
 		for _, workload := range workloads {
 			annotations := oc.GetPodAnnotations(t, pod.MatchingSelector(toSelector(workload.Labels), ns.Bookinfo))
 			if actual := annotations["istio.io/rev"]; actual != ossm3RevName {

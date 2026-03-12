@@ -102,10 +102,10 @@ spec:
 		bookinfoGatewayURL := fmt.Sprintf("http://%s/productpage", hostname)
 		continuallyRequest(t, bookinfoGatewayURL)
 
-		t.LogStep("Create 3.0 controlplane and IstioCNI")
+		t.LogStep("Create 3.y controlplane and IstioCNI")
 		setupIstio(t, istio)
 
-		t.LogStep("Migrate bookinfo to 3.0 controlplane")
+		t.LogStep("Migrate bookinfo to 3.y controlplane")
 		ossm3RevName := oc.GetJson(t, "", "Istio", istio.Name, "{.status.activeRevisionName}")
 		oc.Label(t, "", "Namespace", ns.Bookinfo, maistraIgnoreLabel+" istio-injection- istio.io/rev="+ossm3RevName)
 		// Wait for book info to be removed.
@@ -136,7 +136,7 @@ spec:
 			}
 		})
 
-		t.LogStep("Ensure all pods have migrated to 3.0 controlplane and curl requests succeed")
+		t.LogStep("Ensure all pods have migrated to 3.y controlplane and curl requests succeed")
 		for _, workload := range workloads {
 			annotations := oc.GetPodAnnotations(t, pod.MatchingSelector(toSelector(workload.Labels), ns.Bookinfo))
 			if actual := annotations["istio.io/rev"]; actual != ossm3RevName {
@@ -185,7 +185,7 @@ func TestMigrationSimpleMultiTenant(t *testing.T) {
 		installSMCPWithBookinfo(t, smcpA, bookinfoA)
 		installSMCPWithBookinfo(t, smcpB, bookinfoB)
 
-		t.LogStep("Create 3.0 controlplane and IstioCNI")
+		t.LogStep("Create 3.y controlplane and IstioCNI")
 		istioA.Template = `apiVersion: sailoperator.io/v1
 kind: Istio
 metadata:
@@ -214,10 +214,10 @@ spec:
             tenant: tenant-b`
 		setupIstio(t, istioA, istioB)
 
-		t.LogStep("Migrate bookinfo A to 3.0 controlplane")
+		t.LogStep("Migrate bookinfo A to 3.y controlplane")
 		migrateBookinfo(t, istioA, bookinfoA)
 
-		t.LogStep("Migrate bookinfo B to 3.0 controlplane")
+		t.LogStep("Migrate bookinfo B to 3.y controlplane")
 		migrateBookinfo(t, istioB, bookinfoB)
 	})
 }
@@ -246,7 +246,7 @@ func migrateBookinfo(t test.TestHelper, istio ossm.Istio, bookinfoNamespace stri
 		}
 	})
 
-	t.LogStep("Ensure all pods have migrated to 3.0 controlplane and curl requests succeed")
+	t.LogStep("Ensure all pods have migrated to 3.y controlplane and curl requests succeed")
 	for _, workload := range workloads {
 		annotations := oc.GetPodAnnotations(t, pod.MatchingSelector(toSelector(workload.Labels), bookinfoNamespace))
 		if actual := annotations["istio.io/rev"]; actual != ossm3RevName {
@@ -420,10 +420,10 @@ spec:
 
 		continuallyRequest(t, bookinfoGatewayURL)
 
-		t.LogStep("Create 3.0 controlplane and IstioCNI")
+		t.LogStep("Create 3.y controlplane and IstioCNI")
 		setupIstio(t, istio)
 
-		t.LogStep("Migrate bookinfo to 3.0 controlplane")
+		t.LogStep("Migrate bookinfo to 3.y controlplane")
 		t.Log("Getting Istio active Rev name")
 		ossm3RevName := oc.GetJson(t, "", "Istio", istio.Name, "{.status.activeRevisionName}")
 		t.Log("Relabeling bookinfo namespace")
@@ -456,7 +456,7 @@ spec:
 			}
 		})
 
-		t.LogStep("Ensure all pods have migrated to 3.0 controlplane and curl requests succeed")
+		t.LogStep("Ensure all pods have migrated to 3.y controlplane and curl requests succeed")
 		for _, workload := range workloads {
 			annotations := oc.GetPodAnnotations(t, pod.MatchingSelector(toSelector(workload.Labels), ns.Bookinfo))
 			if actual := annotations["istio.io/rev"]; actual != ossm3RevName {
