@@ -1,0 +1,19 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: remote-gateway-network-west-mesh
+  labels:
+    topology.istio.io/network: west-network
+spec:
+  gatewayClassName: istio-remote
+  addresses:
+  - value: "{{ .Address }}"
+    type: Hostname
+  listeners:
+  - name: cross-network
+    port: 15443
+    protocol: TLS
+    tls:
+      mode: Passthrough
+      options:
+        gateway.istio.io/listener-protocol: auto-passthrough

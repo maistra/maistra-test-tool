@@ -1,0 +1,63 @@
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: basic
+spec:
+  mode: ClusterWide
+  version: {{ .Version }}
+  addons:
+    grafana:
+      enabled: false
+    kiali:
+      enabled: false
+    prometheus:
+      enabled: false
+  tracing:
+    type: None
+  general:
+    logging:
+      componentLevels:
+        default: info
+  proxy:
+    accessLogging:
+      file:
+        name: /dev/stdout
+  security:
+    identity:
+      type: ThirdParty
+    trust:
+      domain: west.local
+  gateways:
+    ingress:
+      enabled: false
+    egress:
+      enabled: false
+    additionalEgress:
+      federation-egress:
+        enabled: true
+        requestedNetworkView:
+        - network-east-mesh
+        service:
+          metadata:
+            labels:
+              federation.maistra.io/egress-for: east-mesh
+          ports:
+          - port: 15443
+            name: tls
+          - port: 8188
+            name: http-discovery
+    additionalIngress:
+      federation-ingress:
+        enabled: true
+        service:
+          type: LoadBalancer
+          metadata:
+            labels:
+              federation.maistra.io/ingress-for: west-mesh
+            annotations:
+              service.beta.kubernetes.io/aws-load-balancer-type: nlb
+          ports:
+          - port: 15443
+            name: tls
+          - port: 8188
+            name: https-discovery

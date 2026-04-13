@@ -1,0 +1,17 @@
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: httpbin-a-svc-west-mesh-imports-local
+spec:
+  hosts:
+  - httpbin.a.svc.west-mesh-imports.local
+  location: MESH_INTERNAL
+  ports:
+  - number: 8000
+    name: http
+    protocol: HTTP
+    targetPort: 8080
+  resolution: STATIC
+  workloadSelector:
+    labels:
+      app: httpbin

@@ -1,0 +1,30 @@
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: httpbin-west-mesh-imports
+spec:
+  exportTo:
+  - client
+  hosts:
+  - httpbin.a.svc.west-mesh-imports.local
+  location: MESH_INTERNAL
+  ports:
+  - number: 8000
+    name: http
+    protocol: HTTP
+  resolution: STATIC
+  subjectAltNames:
+  - "spiffe://west.local/ns/a/sa/httpbin"
+  workloadSelector:
+    labels:
+      app: httpbin-west-imports
+---
+apiVersion: networking.istio.io/v1beta1
+kind: WorkloadEntry
+metadata:
+  name: httpbin-west-mesh-imports
+  labels:
+    app: httpbin-west-imports
+    security.istio.io/tlsMode: istio
+spec:
+  network: west-network

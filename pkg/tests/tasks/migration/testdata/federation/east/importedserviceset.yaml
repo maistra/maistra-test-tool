@@ -1,0 +1,15 @@
+apiVersion: federation.maistra.io/v1
+kind: ImportedServiceSet
+metadata:
+  name: west-mesh
+spec:
+  importRules:
+  - type: NameSelector
+    nameSelector:
+      namespace: a
+  - type: NameSelector
+    nameSelector:
+      namespace: b
+      alias:
+        namespace: b
+    importAsLocal: true
