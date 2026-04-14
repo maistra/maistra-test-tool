@@ -433,18 +433,17 @@ spec:
 
 func removeFederationResources(t test.TestHelper, east, west smcpConfig) {
 	// Remove ImportedServiceSet and ExportedServiceSet
-	east.oc.Invokef(t, "oc delete importedserviceset west-mesh -n %s --ignore-not-found", east.namespace)
-	west.oc.Invokef(t, "oc delete exportedserviceset east-mesh -n %s --ignore-not-found", west.namespace)
+	east.oc.DeleteResource(t, east.namespace, "importedserviceset", "west-mesh")
+	west.oc.DeleteResource(t, west.namespace, "exportedserviceset", "east-mesh")
 
 	// Remove ServiceMeshPeers
-	east.oc.Invokef(t, "oc delete servicemeshpeer west-mesh -n %s --ignore-not-found", east.namespace)
-	west.oc.Invokef(t, "oc delete servicemeshpeer east-mesh -n %s --ignore-not-found", west.namespace)
+	east.oc.DeleteResource(t, east.namespace, "servicemeshpeer", "west-mesh")
+	west.oc.DeleteResource(t, west.namespace, "servicemeshpeer", "east-mesh")
 
 	// Remove federation gateways from SMCPs
-	east.oc.Invokef(t, `oc patch smcp %s -n %s --type=json -p='[{"op": "remove", "path": "/spec/gateways/additionalIngress"}, {"op": "remove", "path": "/spec/gateways/additionalEgress"}]'`,
-		east.name, east.namespace)
-	west.oc.Invokef(t, `oc patch smcp %s -n %s --type=json -p='[{"op": "remove", "path": "/spec/gateways/additionalIngress"}, {"op": "remove", "path": "/spec/gateways/additionalEgress"}]'`,
-		west.name, west.namespace)
+	gatewaysPatch := `[{"op": "remove", "path": "/spec/gateways/additionalIngress"}, {"op": "remove", "path": "/spec/gateways/additionalEgress"}]`
+	east.oc.Patch(t, east.namespace, "smcp", east.name, "json", gatewaysPatch)
+	west.oc.Patch(t, west.namespace, "smcp", west.name, "json", gatewaysPatch)
 }
 
 func migrateWorkloadsToOSSM3(t test.TestHelper, east, west smcpConfig) {
