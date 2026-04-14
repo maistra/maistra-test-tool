@@ -326,61 +326,37 @@ func verifyFederationConnectivity(t test.TestHelper, ocEast *oc.OC, clientNs str
 }
 
 func configureSMCPForMigration(t test.TestHelper, east, west smcpConfig) {
-	eastPatch := `{
-		"spec": {
-			"techPreview": {
-				"meshConfig": {
-					"trustDomainAliases": ["west.local"]
-				}
-			},
-			"runtime": {
-				"components": {
-					"pilot": {
-						"container": {
-							"env": {
-								"PILOT_MULTI_NETWORK_DISCOVER_GATEWAY_API": "true"
-							}
+	generatePatch := func(trustDomainAlias, networkName string) string {
+		return fmt.Sprintf(`{
+	"spec": {
+		"techPreview": {
+			"meshConfig": {
+				"trustDomainAliases": ["%s"]
+			}
+		},
+		"runtime": {
+			"components": {
+				"pilot": {
+					"container": {
+						"env": {
+							"PILOT_MULTI_NETWORK_DISCOVER_GATEWAY_API": "true"
 						}
 					}
 				}
-			},
-			"cluster": {
-				"network": "network-east-mesh"
-			},
-			"security": {
-				"manageNetworkPolicy": false
 			}
+		},
+		"cluster": {
+			"network": "%s"
+		},
+		"security": {
+			"manageNetworkPolicy": false
 		}
-	}`
-	east.oc.Invokef(t, `oc patch smcp %s -n %s --type=merge -p '%s'`, east.name, east.namespace, eastPatch)
+	}
+}`, trustDomainAlias, networkName)
+	}
 
-	westPatch := `{
-		"spec": {
-			"techPreview": {
-				"meshConfig": {
-					"trustDomainAliases": ["east.local"]
-				}
-			},
-			"runtime": {
-				"components": {
-					"pilot": {
-						"container": {
-							"env": {
-								"PILOT_MULTI_NETWORK_DISCOVER_GATEWAY_API": "true"
-							}
-						}
-					}
-				}
-			},
-			"cluster": {
-				"network": "network-west-mesh"
-			},
-			"security": {
-				"manageNetworkPolicy": false
-			}
-		}
-	}`
-	west.oc.Invokef(t, `oc patch smcp %s -n %s --type=merge -p '%s'`, west.name, west.namespace, westPatch)
+	east.oc.Patch(t, east.namespace, "smcp", east.name, "merge", generatePatch("west.local", "network-east-mesh"))
+	west.oc.Patch(t, west.namespace, "smcp", west.name, "merge", generatePatch("east.local", "network-west-mesh"))
 
 	east.oc.WaitSMCPReady(t, east.namespace, east.name)
 	west.oc.WaitSMCPReady(t, west.namespace, west.name)
