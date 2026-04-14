@@ -257,10 +257,10 @@ func configureFederation(t test.TestHelper, east, west smcpConfig) {
 	// Wait for peers to connect
 	t.LogStep("Wait for ServiceMeshPeers to connect")
 	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(10*time.Second), func(t test.TestHelper) {
-		east.oc.Invoke(t, fmt.Sprintf("oc -n %s get servicemeshpeer west-mesh -o json", east.namespace),
-			assert.OutputContains(`"connected": true`, "east-mesh connected to west-mesh", "east-mesh not connected to west-mesh"))
-		west.oc.Invoke(t, fmt.Sprintf("oc -n %s get servicemeshpeer east-mesh -o json", west.namespace),
-			assert.OutputContains(`"connected": true`, "west-mesh connected to east-mesh", "west-mesh not connected to east-mesh"))
+		east.oc.GetYaml(t, east.namespace, "servicemeshpeer", "west-mesh",
+			assert.OutputContains("connected: true", "east-mesh connected to west-mesh", "east-mesh not connected to west-mesh"))
+		west.oc.GetYaml(t, west.namespace, "servicemeshpeer", "east-mesh",
+			assert.OutputContains("connected: true", "west-mesh connected to east-mesh", "west-mesh not connected to east-mesh"))
 	})
 }
 
