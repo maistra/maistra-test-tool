@@ -198,14 +198,12 @@ func TestFederationMigration(t *testing.T) {
 }
 
 func createCACertsSecrets(t test.TestHelper, oc *oc.OC, namespace, certDir string) {
-	// Create cacerts secret using embedded certificates
-	oc.Invokef(t, `oc create secret generic cacerts -n %s \
-		--from-file=root-cert.pem=%s/root-cert.pem \
-		--from-file=ca-cert.pem=%s/ca-cert.pem \
-		--from-file=ca-key.pem=%s/ca-key.pem \
-		--from-file=cert-chain.pem=%s/cert-chain.pem \
-		--dry-run=client -o yaml | oc apply -f -`,
-		namespace, certDir, certDir, certDir, certDir)
+	oc.CreateGenericSecretFromFiles(t, namespace, "cacerts",
+		fmt.Sprintf("root-cert.pem=%s/root-cert.pem", certDir),
+		fmt.Sprintf("ca-cert.pem=%s/ca-cert.pem", certDir),
+		fmt.Sprintf("ca-key.pem=%s/ca-key.pem", certDir),
+		fmt.Sprintf("cert-chain.pem=%s/cert-chain.pem", certDir),
+	)
 }
 
 func configureFederation(t test.TestHelper, east, west smcpConfig) {
