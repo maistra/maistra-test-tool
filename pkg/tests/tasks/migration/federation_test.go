@@ -182,7 +182,7 @@ func TestFederationMigration(t *testing.T) {
 		configureMultiClusterResources(t, ocEast, ocWest)
 
 		t.LogStep("Verify connectivity via new gateway (before migrating proxies)")
-		ocEast.Invoke(t, fmt.Sprintf("oc rollout restart deployment/curl -n %s", clientNamespace))
+		ocEast.RestartDeployments(t, clientNamespace, "curl")
 		ocEast.WaitDeploymentRolloutComplete(t, clientNamespace, "curl")
 		verifyFederationConnectivity(t, ocEast, clientNamespace)
 
@@ -460,7 +460,7 @@ func migrateWorkloadsToOSSM3(t test.TestHelper, east, west smcpConfig) {
 	// Migrate client namespace in east cluster
 	east.oc.Label(t, "", "Namespace", clientNamespace,
 		fmt.Sprintf("%s istio-injection- istio.io/rev=%s", maistraIgnoreLabel, eastRevName))
-	east.oc.Invoke(t, fmt.Sprintf("oc rollout restart deployment/curl -n %s", clientNamespace))
+	east.oc.RestartDeployments(t, clientNamespace, "curl")
 	east.oc.WaitDeploymentRolloutComplete(t, clientNamespace, "curl")
 
 	// Verify curl pod has new revision
@@ -474,12 +474,12 @@ func migrateWorkloadsToOSSM3(t test.TestHelper, east, west smcpConfig) {
 	// Migrate httpbin namespaces in west cluster
 	west.oc.Label(t, "", "Namespace", httpbinANamespace,
 		fmt.Sprintf("%s istio-injection- istio.io/rev=%s", maistraIgnoreLabel, westRevName))
-	west.oc.Invoke(t, fmt.Sprintf("oc rollout restart deployment/httpbin -n %s", httpbinANamespace))
+	west.oc.RestartDeployments(t, httpbinANamespace, "httpbin")
 	west.oc.WaitDeploymentRolloutComplete(t, httpbinANamespace, "httpbin")
 
 	west.oc.Label(t, "", "Namespace", httpbinBNamespace,
 		fmt.Sprintf("%s istio-injection- istio.io/rev=%s", maistraIgnoreLabel, westRevName))
-	west.oc.Invoke(t, fmt.Sprintf("oc rollout restart deployment/httpbin -n %s", httpbinBNamespace))
+	west.oc.RestartDeployments(t, httpbinBNamespace, "httpbin")
 	west.oc.WaitDeploymentRolloutComplete(t, httpbinBNamespace, "httpbin")
 
 	// Migrate east-west gateway
