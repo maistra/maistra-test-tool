@@ -69,12 +69,12 @@ func (a *sleep) Namespace() string {
 
 func (a *sleep) Install(t TestHelper) {
 	t.T().Helper()
-	oc.ApplyTemplate(t, a.ns, sleepTemplate, a.values(t))
+	oc.ApplyTemplate(t, a.ns, SleepTemplate, a.values(t))
 }
 
 func (a *sleep) Uninstall(t TestHelper) {
 	t.T().Helper()
-	oc.DeleteFromTemplate(t, a.ns, sleepTemplate, a.values(t))
+	oc.DeleteFromTemplate(t, a.ns, SleepTemplate, a.values(t))
 }
 
 func (a *sleep) values(t TestHelper) map[string]interface{} {
@@ -168,7 +168,9 @@ func buildCurlCmd(url string, opts ...CurlOpts) string {
 
 const curlFailedMessage = "CURL_FAILED"
 
-const sleepTemplate = `
+// Template values: InjectSidecar (bool), HttpProxy (string), HttpsProxy (string),
+// NoProxy (string), Tproxy (bool), securityContext (bool), runAsUser (int), runAsGroup (int)
+const SleepTemplate = `
 apiVersion: v1
 kind: ServiceAccount
 metadata:

@@ -10,7 +10,6 @@ spec:
   - number: 8000
     name: http
     protocol: HTTP
-    targetPort: 8080
   resolution: STATIC
   workloadSelector:
     labels:

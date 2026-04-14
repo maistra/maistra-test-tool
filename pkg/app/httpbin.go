@@ -85,12 +85,12 @@ func (a *httpbin) Namespace() string {
 
 func (a *httpbin) Install(t test.TestHelper) {
 	t.T().Helper()
-	oc.ApplyTemplate(t, a.ns, httpbinTemplate, a.values())
+	oc.ApplyTemplate(t, a.ns, HttpbinTemplate, a.values())
 }
 
 func (a *httpbin) Uninstall(t test.TestHelper) {
 	t.T().Helper()
-	oc.DeleteFromTemplate(t, a.ns, httpbinTemplate, a.values())
+	oc.DeleteFromTemplate(t, a.ns, HttpbinTemplate, a.values())
 }
 
 func (a *httpbin) values() map[string]interface{} {
@@ -107,7 +107,8 @@ func (a *httpbin) WaitReady(t test.TestHelper) {
 	oc.WaitDeploymentRolloutComplete(t, a.ns, a.deploymentName)
 }
 
-const httpbinTemplate = `
+// Template values: InjectSidecar (bool), Name (string), Version (string), Tproxy (bool)
+const HttpbinTemplate = `
 apiVersion: v1
 kind: ServiceAccount
 metadata:

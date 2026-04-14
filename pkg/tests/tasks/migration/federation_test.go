@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/maistra/maistra-test-tool/pkg/app"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/assert"
 	"github.com/maistra/maistra-test-tool/pkg/util/check/require"
 	"github.com/maistra/maistra-test-tool/pkg/util/env"
@@ -182,8 +183,8 @@ func TestFederationMigration(t *testing.T) {
 		configureMultiClusterResources(t, ocEast, ocWest)
 
 		t.LogStep("Verify connectivity via new gateway (before migrating proxies)")
-		ocEast.RestartDeployments(t, clientNamespace, "curl")
-		ocEast.WaitDeploymentRolloutComplete(t, clientNamespace, "curl")
+		ocEast.RestartDeployments(t, clientNamespace, "sleep")
+		ocEast.WaitDeploymentRolloutComplete(t, clientNamespace, "sleep")
 		verifyFederationConnectivity(t, ocEast, clientNamespace)
 
 		t.LogStep("Remove federation resources")
@@ -264,21 +265,25 @@ func getRootCertFromConfigMap(t test.TestHelper, oc *oc.OC, namespace string) st
 }
 
 func deployFederationApplications(t test.TestHelper, ocEast, ocWest *oc.OC) {
-	sidecarPatch := `{"spec":{"template":{"metadata":{"annotations":{"sidecar.istio.io/inject":"true"}}}}}`
+	httpbinValues := map[string]interface{}{
+		"InjectSidecar": true,
+		"Name":          "httpbin",
+		"Version":       "v1",
+	}
+	sleepValues := map[string]interface{}{
+		"InjectSidecar": true,
+	}
 
 	ocEast.Label(t, "", "Namespace", clientNamespace, "istio-injection=enabled")
-	ocEast.ApplyFile(t, clientNamespace, "https://raw.githubusercontent.com/istio/istio/master/samples/curl/curl.yaml")
-	ocEast.Patch(t, clientNamespace, "deploy", "curl", "merge", sidecarPatch)
-	ocEast.WaitDeploymentRolloutComplete(t, clientNamespace, "curl")
+	ocEast.ApplyTemplateString(t, clientNamespace, app.SleepTemplate, sleepValues)
+	ocEast.WaitDeploymentRolloutComplete(t, clientNamespace, "sleep")
 
 	ocWest.Label(t, "", "Namespace", httpbinANamespace, "istio-injection=enabled")
-	ocWest.ApplyFile(t, httpbinANamespace, "https://raw.githubusercontent.com/istio/istio/master/samples/httpbin/httpbin.yaml")
-	ocWest.Patch(t, httpbinANamespace, "deploy", "httpbin", "merge", sidecarPatch)
+	ocWest.ApplyTemplateString(t, httpbinANamespace, app.HttpbinTemplate, httpbinValues)
 	ocWest.WaitDeploymentRolloutComplete(t, httpbinANamespace, "httpbin")
 
 	ocWest.Label(t, "", "Namespace", httpbinBNamespace, "istio-injection=enabled")
-	ocWest.ApplyFile(t, httpbinBNamespace, "https://raw.githubusercontent.com/istio/istio/master/samples/httpbin/httpbin.yaml")
-	ocWest.Patch(t, httpbinBNamespace, "deploy", "httpbin", "merge", sidecarPatch)
+	ocWest.ApplyTemplateString(t, httpbinBNamespace, app.HttpbinTemplate, httpbinValues)
 	ocWest.WaitDeploymentRolloutComplete(t, httpbinBNamespace, "httpbin")
 }
 
@@ -305,14 +310,14 @@ func configureServiceExportImport(t test.TestHelper, east, west smcpConfig) {
 
 func verifyFederationConnectivity(t test.TestHelper, ocEast *oc.OC, clientNs string) {
 	retry.UntilSuccess(t, func(t test.TestHelper) {
-		curlPod := pod.MatchingSelector("app=curl", clientNs)
+		sleepPod := pod.MatchingSelector("app=sleep", clientNs)
 
 		// Test connectivity to httpbin.a via west-mesh-imports
-		ocEast.Exec(t, curlPod, "curl", "curl -s httpbin.a.svc.west-mesh-imports.local:8000/headers",
+		ocEast.Exec(t, sleepPod, "sleep", "curl -s httpbin.a.svc.west-mesh-imports.local:8000/headers",
 			require.OutputContains("Host", "Request to httpbin.a succeeded", "Request to httpbin.a failed"))
 
 		// Test connectivity to httpbin.b via cluster.local (importAsLocal: true)
-		ocEast.Exec(t, curlPod, "curl", "curl -s httpbin.b.svc.cluster.local:8000/headers",
+		ocEast.Exec(t, sleepPod, "sleep", "curl -s httpbin.b.svc.cluster.local:8000/headers",
 			require.OutputContains("Host", "Request to httpbin.b succeeded", "Request to httpbin.b failed"))
 	})
 }
@@ -439,11 +444,11 @@ func migrateWorkloadsToOSSM3(t test.TestHelper, east, west smcpConfig) {
 	// Migrate client namespace in east cluster
 	east.oc.Label(t, "", "Namespace", clientNamespace,
 		fmt.Sprintf("%s istio-injection- istio.io/rev=%s", maistraIgnoreLabel, eastRevName))
-	east.oc.RestartDeployments(t, clientNamespace, "curl")
-	east.oc.WaitDeploymentRolloutComplete(t, clientNamespace, "curl")
+	east.oc.RestartDeployments(t, clientNamespace, "sleep")
+	east.oc.WaitDeploymentRolloutComplete(t, clientNamespace, "sleep")
 
 	retry.UntilSuccess(t, func(t test.TestHelper) {
-		annotations := oc.GetPodAnnotations(t, pod.MatchingSelector("app=curl", clientNamespace))
+		annotations := oc.GetPodAnnotations(t, pod.MatchingSelector("app=sleep", clientNamespace))
 		if actual := annotations["istio.io/rev"]; actual != eastRevName {
 			t.Errorf("Expected revision %s, got %s", eastRevName, actual)
 		}
