@@ -269,21 +269,23 @@ func getRootCertFromConfigMap(t test.TestHelper, oc *oc.OC, namespace string) st
 }
 
 func deployFederationApplications(t test.TestHelper, ocEast, ocWest *oc.OC) {
+	sidecarPatch := `{"spec":{"template":{"metadata":{"annotations":{"sidecar.istio.io/inject":"true"}}}}}`
+
 	// Deploy curl client in east cluster
 	ocEast.Label(t, "", "Namespace", clientNamespace, "istio-injection=enabled")
-	ocEast.Invoke(t, fmt.Sprintf("oc apply -f https://raw.githubusercontent.com/istio/istio/master/samples/curl/curl.yaml -n %s", clientNamespace))
-	ocEast.Invokef(t, `oc patch deploy curl -n %s -p '{"spec":{"template":{"metadata":{"annotations":{"sidecar.istio.io/inject":"true"}}}}}'`, clientNamespace)
+	ocEast.ApplyFile(t, clientNamespace, "https://raw.githubusercontent.com/istio/istio/master/samples/curl/curl.yaml")
+	ocEast.Patch(t, clientNamespace, "deploy", "curl", "merge", sidecarPatch)
 	ocEast.WaitDeploymentRolloutComplete(t, clientNamespace, "curl")
 
 	// Deploy httpbin in west cluster (namespaces a and b)
 	ocWest.Label(t, "", "Namespace", httpbinANamespace, "istio-injection=enabled")
-	ocWest.Invoke(t, fmt.Sprintf("oc apply -f https://raw.githubusercontent.com/istio/istio/master/samples/httpbin/httpbin.yaml -n %s", httpbinANamespace))
-	ocWest.Invokef(t, `oc patch deploy httpbin -n %s -p '{"spec":{"template":{"metadata":{"annotations":{"sidecar.istio.io/inject":"true"}}}}}'`, httpbinANamespace)
+	ocWest.ApplyFile(t, httpbinANamespace, "https://raw.githubusercontent.com/istio/istio/master/samples/httpbin/httpbin.yaml")
+	ocWest.Patch(t, httpbinANamespace, "deploy", "httpbin", "merge", sidecarPatch)
 	ocWest.WaitDeploymentRolloutComplete(t, httpbinANamespace, "httpbin")
 
 	ocWest.Label(t, "", "Namespace", httpbinBNamespace, "istio-injection=enabled")
-	ocWest.Invoke(t, fmt.Sprintf("oc apply -f https://raw.githubusercontent.com/istio/istio/master/samples/httpbin/httpbin.yaml -n %s", httpbinBNamespace))
-	ocWest.Invokef(t, `oc patch deploy httpbin -n %s -p '{"spec":{"template":{"metadata":{"annotations":{"sidecar.istio.io/inject":"true"}}}}}'`, httpbinBNamespace)
+	ocWest.ApplyFile(t, httpbinBNamespace, "https://raw.githubusercontent.com/istio/istio/master/samples/httpbin/httpbin.yaml")
+	ocWest.Patch(t, httpbinBNamespace, "deploy", "httpbin", "merge", sidecarPatch)
 	ocWest.WaitDeploymentRolloutComplete(t, httpbinBNamespace, "httpbin")
 }
 
