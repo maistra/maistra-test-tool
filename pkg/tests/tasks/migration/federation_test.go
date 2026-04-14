@@ -207,7 +207,6 @@ func createCACertsSecrets(t test.TestHelper, oc *oc.OC, namespace, certDir strin
 }
 
 func configureFederation(t test.TestHelper, east, west smcpConfig) {
-	// Get ingress addresses
 	var eastIngressAddr, westIngressAddr string
 	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(10*time.Second), func(t test.TestHelper) {
 		eastIngressAddr = east.oc.GetLoadBalancerAddress(t, east.namespace, "federation-ingress")
@@ -226,13 +225,11 @@ func configureFederation(t test.TestHelper, east, west smcpConfig) {
 	t.Logf("East ingress address: %s", eastIngressAddr)
 	t.Logf("West ingress address: %s", westIngressAddr)
 
-	// Create CA root cert ConfigMaps in the peer clusters
 	west.oc.CreateConfigMapFromFiles(t, west.namespace, "east-mesh-ca-root-cert",
 		federationTestdataPath+"/east/root-cert.pem")
 	east.oc.CreateConfigMapFromFiles(t, east.namespace, "west-mesh-ca-root-cert",
 		federationTestdataPath+"/west/root-cert.pem")
 
-	// Configure ServiceMeshPeer in west cluster (to connect to east)
 	westPeerInfo := peerInfo{
 		Address:          eastIngressAddr,
 		PeerTrustDomain:  "east.local",
@@ -243,7 +240,6 @@ func configureFederation(t test.TestHelper, east, west smcpConfig) {
 	}
 	west.oc.ApplyTemplateString(t, west.namespace, westServiceMeshPeerTmpl, westPeerInfo)
 
-	// Configure ServiceMeshPeer in east cluster (to connect to west)
 	eastPeerInfo := peerInfo{
 		Address:          westIngressAddr,
 		PeerTrustDomain:  "west.local",
@@ -254,7 +250,6 @@ func configureFederation(t test.TestHelper, east, west smcpConfig) {
 	}
 	east.oc.ApplyTemplateString(t, east.namespace, eastServiceMeshPeerTmpl, eastPeerInfo)
 
-	// Wait for peers to connect
 	t.LogStep("Wait for ServiceMeshPeers to connect")
 	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(10*time.Second), func(t test.TestHelper) {
 		east.oc.GetYaml(t, east.namespace, "servicemeshpeer", "west-mesh",
@@ -271,13 +266,11 @@ func getRootCertFromConfigMap(t test.TestHelper, oc *oc.OC, namespace string) st
 func deployFederationApplications(t test.TestHelper, ocEast, ocWest *oc.OC) {
 	sidecarPatch := `{"spec":{"template":{"metadata":{"annotations":{"sidecar.istio.io/inject":"true"}}}}}`
 
-	// Deploy curl client in east cluster
 	ocEast.Label(t, "", "Namespace", clientNamespace, "istio-injection=enabled")
 	ocEast.ApplyFile(t, clientNamespace, "https://raw.githubusercontent.com/istio/istio/master/samples/curl/curl.yaml")
 	ocEast.Patch(t, clientNamespace, "deploy", "curl", "merge", sidecarPatch)
 	ocEast.WaitDeploymentRolloutComplete(t, clientNamespace, "curl")
 
-	// Deploy httpbin in west cluster (namespaces a and b)
 	ocWest.Label(t, "", "Namespace", httpbinANamespace, "istio-injection=enabled")
 	ocWest.ApplyFile(t, httpbinANamespace, "https://raw.githubusercontent.com/istio/istio/master/samples/httpbin/httpbin.yaml")
 	ocWest.Patch(t, httpbinANamespace, "deploy", "httpbin", "merge", sidecarPatch)
@@ -290,13 +283,9 @@ func deployFederationApplications(t test.TestHelper, ocEast, ocWest *oc.OC) {
 }
 
 func configureServiceExportImport(t test.TestHelper, east, west smcpConfig) {
-	// Export services from west to east
 	west.oc.ApplyString(t, west.namespace, westExportedServiceSet)
-
-	// Import services in east from west
 	east.oc.ApplyString(t, east.namespace, eastImportedServiceSetTmpl)
 
-	// Wait for exported services to appear
 	t.Log("Wait for exported services to be available")
 	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(10*time.Second), func(t test.TestHelper) {
 		west.oc.GetYaml(t, west.namespace, "exportedserviceset", "east-mesh",
@@ -305,7 +294,6 @@ func configureServiceExportImport(t test.TestHelper, east, west smcpConfig) {
 			assert.OutputContains("httpbin.b.svc.east-mesh-exports.local", "httpbin.b exported", "httpbin.b not exported"))
 	})
 
-	// Wait for imported services to appear
 	t.Log("Wait for imported services to be available")
 	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(10*time.Second), func(t test.TestHelper) {
 		east.oc.GetYaml(t, east.namespace, "importedserviceset", "west-mesh",
@@ -402,7 +390,6 @@ func deployOSSM3ControlPlanes(t test.TestHelper, ocEast, ocWest *oc.OC) {
 	westRootCert := getRootCertFromConfigMap(t, ocWest, westMeshNamespace)
 	eastRootCert := getRootCertFromConfigMap(t, ocEast, eastMeshNamespace)
 
-	// Deploy IstioCNI in both clusters
 	istioCNI := `apiVersion: sailoperator.io/v1
 kind: IstioCNI
 metadata:
@@ -416,31 +403,24 @@ spec:
 	ocEast.ApplyString(t, "", istioCNI)
 	ocWest.ApplyString(t, "", istioCNI)
 
-	// Wait for IstioCNI to be ready
 	ocEast.WaitFor(t, "", "IstioCNI", "default", "condition=Ready")
 	ocWest.WaitFor(t, "", "IstioCNI", "default", "condition=Ready")
 
-	// Deploy Istio in east cluster
 	ocEast.ApplyTemplateString(t, "", eastIstioTmpl, map[string]string{
 		"WestRootCert": westRootCert,
 	})
-
-	// Deploy Istio in west cluster
 	ocWest.ApplyTemplateString(t, "", westIstioTmpl, map[string]string{
 		"EastRootCert": eastRootCert,
 	})
 
-	// Wait for Istio to be ready
 	ocEast.WaitFor(t, "", "Istio", "default", "condition=Ready")
 	ocWest.WaitFor(t, "", "Istio", "default", "condition=Ready")
 }
 
 func removeFederationResources(t test.TestHelper, east, west smcpConfig) {
-	// Remove ImportedServiceSet and ExportedServiceSet
 	east.oc.DeleteResource(t, east.namespace, "importedserviceset", "west-mesh")
 	west.oc.DeleteResource(t, west.namespace, "exportedserviceset", "east-mesh")
 
-	// Remove ServiceMeshPeers
 	east.oc.DeleteResource(t, east.namespace, "servicemeshpeer", "west-mesh")
 	west.oc.DeleteResource(t, west.namespace, "servicemeshpeer", "east-mesh")
 
@@ -451,7 +431,6 @@ func removeFederationResources(t test.TestHelper, east, west smcpConfig) {
 }
 
 func migrateWorkloadsToOSSM3(t test.TestHelper, east, west smcpConfig) {
-	// Get OSSM 3 revision names
 	eastRevName := east.oc.GetJson(t, "", "Istio", "default", "{.status.activeRevisionName}")
 	westRevName := west.oc.GetJson(t, "", "Istio", "default", "{.status.activeRevisionName}")
 
@@ -463,7 +442,6 @@ func migrateWorkloadsToOSSM3(t test.TestHelper, east, west smcpConfig) {
 	east.oc.RestartDeployments(t, clientNamespace, "curl")
 	east.oc.WaitDeploymentRolloutComplete(t, clientNamespace, "curl")
 
-	// Verify curl pod has new revision
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		annotations := oc.GetPodAnnotations(t, pod.MatchingSelector("app=curl", clientNamespace))
 		if actual := annotations["istio.io/rev"]; actual != eastRevName {
@@ -485,11 +463,8 @@ func migrateWorkloadsToOSSM3(t test.TestHelper, east, west smcpConfig) {
 	// Migrate east-west gateway
 	west.oc.Label(t, "", "gateways.gateway.networking.k8s.io", "eastwestgateway",
 		fmt.Sprintf("-n %s istio.io/rev=%s maistra.io/ignore=true", istioIngressNs, westRevName))
-
-	// Wait for gateway to be redeployed
 	west.oc.WaitDeploymentRolloutComplete(t, istioIngressNs, "eastwestgateway-istio")
 
-	// Verify httpbin pods have new revision
 	retry.UntilSuccess(t, func(t test.TestHelper) {
 		annotationsA := west.oc.GetPodAnnotations(t, pod.MatchingSelector("app=httpbin", httpbinANamespace))
 		if actual := annotationsA["istio.io/rev"]; actual != westRevName {
