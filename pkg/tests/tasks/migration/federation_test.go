@@ -299,18 +299,18 @@ func configureServiceExportImport(t test.TestHelper, east, west smcpConfig) {
 	// Wait for exported services to appear
 	t.Log("Wait for exported services to be available")
 	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(10*time.Second), func(t test.TestHelper) {
-		west.oc.Invoke(t, fmt.Sprintf("oc -n %s get exportedserviceset east-mesh -o json", west.namespace),
+		west.oc.GetYaml(t, west.namespace, "exportedserviceset", "east-mesh",
 			assert.OutputContains("httpbin.a.svc.east-mesh-exports.local", "httpbin.a exported", "httpbin.a not exported"))
-		west.oc.Invoke(t, fmt.Sprintf("oc -n %s get exportedserviceset east-mesh -o json", west.namespace),
+		west.oc.GetYaml(t, west.namespace, "exportedserviceset", "east-mesh",
 			assert.OutputContains("httpbin.b.svc.east-mesh-exports.local", "httpbin.b exported", "httpbin.b not exported"))
 	})
 
 	// Wait for imported services to appear
 	t.Log("Wait for imported services to be available")
 	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(10*time.Second), func(t test.TestHelper) {
-		east.oc.Invoke(t, fmt.Sprintf("oc -n %s get importedserviceset west-mesh -o json", east.namespace),
+		east.oc.GetYaml(t, east.namespace, "importedserviceset", "west-mesh",
 			assert.OutputContains("httpbin.a.svc.west-mesh-imports.local", "httpbin.a imported", "httpbin.a not imported"))
-		east.oc.Invoke(t, fmt.Sprintf("oc -n %s get importedserviceset west-mesh -o json", east.namespace),
+		east.oc.GetYaml(t, east.namespace, "importedserviceset", "west-mesh",
 			assert.OutputContains("httpbin.b.svc.cluster.local", "httpbin.b imported as local", "httpbin.b not imported"))
 	})
 }
