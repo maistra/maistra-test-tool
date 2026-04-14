@@ -317,13 +317,15 @@ func configureServiceExportImport(t test.TestHelper, east, west smcpConfig) {
 
 func verifyFederationConnectivity(t test.TestHelper, ocEast *oc.OC, clientNs string) {
 	retry.UntilSuccess(t, func(t test.TestHelper) {
+		curlPod := pod.MatchingSelector("app=curl", clientNs)
+
 		// Test connectivity to httpbin.a via west-mesh-imports
-		cmd := fmt.Sprintf("oc exec -n %s deploy/curl -c curl -- curl -s httpbin.a.svc.west-mesh-imports.local:8000/headers", clientNs)
-		ocEast.Invoke(t, cmd, require.OutputContains("Host", "Request to httpbin.a succeeded", "Request to httpbin.a failed"))
+		ocEast.Exec(t, curlPod, "curl", "curl -s httpbin.a.svc.west-mesh-imports.local:8000/headers",
+			require.OutputContains("Host", "Request to httpbin.a succeeded", "Request to httpbin.a failed"))
 
 		// Test connectivity to httpbin.b via cluster.local (importAsLocal: true)
-		cmd = fmt.Sprintf("oc exec -n %s deploy/curl -c curl -- curl -s httpbin.b.svc.cluster.local:8000/headers", clientNs)
-		ocEast.Invoke(t, cmd, require.OutputContains("Host", "Request to httpbin.b succeeded", "Request to httpbin.b failed"))
+		ocEast.Exec(t, curlPod, "curl", "curl -s httpbin.b.svc.cluster.local:8000/headers",
+			require.OutputContains("Host", "Request to httpbin.b succeeded", "Request to httpbin.b failed"))
 	})
 }
 
