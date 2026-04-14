@@ -210,14 +210,14 @@ func configureFederation(t test.TestHelper, east, west smcpConfig) {
 	// Get ingress addresses
 	var eastIngressAddr, westIngressAddr string
 	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(10*time.Second), func(t test.TestHelper) {
-		eastIngressAddr = getLoadBalancerAddress(t, east.oc, east.namespace, "federation-ingress")
+		eastIngressAddr = east.oc.GetLoadBalancerAddress(t, east.namespace, "federation-ingress")
 		if eastIngressAddr == "" {
 			t.Error("East ingress address not available yet")
 		}
 	})
 
 	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(10*time.Second), func(t test.TestHelper) {
-		westIngressAddr = getLoadBalancerAddress(t, west.oc, west.namespace, "federation-ingress")
+		westIngressAddr = west.oc.GetLoadBalancerAddress(t, west.namespace, "federation-ingress")
 		if westIngressAddr == "" {
 			t.Error("West ingress address not available yet")
 		}
@@ -262,16 +262,6 @@ func configureFederation(t test.TestHelper, east, west smcpConfig) {
 		west.oc.Invoke(t, fmt.Sprintf("oc -n %s get servicemeshpeer east-mesh -o json", west.namespace),
 			assert.OutputContains(`"connected": true`, "west-mesh connected to east-mesh", "west-mesh not connected to east-mesh"))
 	})
-}
-
-func getLoadBalancerAddress(t test.TestHelper, oc *oc.OC, namespace, serviceName string) string {
-	// Try IP first
-	addr := oc.Invokef(t, `oc -n %s get svc %s -o jsonpath="{.status.loadBalancer.ingress[0].ip}"`, namespace, serviceName)
-	if addr != "" {
-		return addr
-	}
-	// Try hostname
-	return oc.Invokef(t, `oc -n %s get svc %s -o jsonpath="{.status.loadBalancer.ingress[0].hostname}"`, namespace, serviceName)
 }
 
 func getRootCertFromConfigMap(t test.TestHelper, oc *oc.OC, namespace string) string {
@@ -410,7 +400,7 @@ func configureMultiClusterResources(t test.TestHelper, ocEast, ocWest *oc.OC) {
 	// Get E/W gateway address from west cluster
 	var westEWGWAddr string
 	retry.UntilSuccessWithOptions(t, retry.Options().MaxAttempts(60).DelayBetweenAttempts(10*time.Second), func(t test.TestHelper) {
-		westEWGWAddr = getLoadBalancerAddress(t, ocWest, istioIngressNs, "eastwestgateway-istio")
+		westEWGWAddr = ocWest.GetLoadBalancerAddress(t, istioIngressNs, "eastwestgateway-istio")
 		if westEWGWAddr == "" {
 			t.Error("West E/W gateway address not available yet")
 		}
