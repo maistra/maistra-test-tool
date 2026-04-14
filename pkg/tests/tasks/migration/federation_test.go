@@ -226,15 +226,11 @@ func configureFederation(t test.TestHelper, east, west smcpConfig) {
 	t.Logf("East ingress address: %s", eastIngressAddr)
 	t.Logf("West ingress address: %s", westIngressAddr)
 
-	// Get root certificates
-	eastRootCert := getRootCertFromConfigMap(t, east.oc, east.namespace)
-	westRootCert := getRootCertFromConfigMap(t, west.oc, west.namespace)
-
 	// Create CA root cert ConfigMaps in the peer clusters
-	west.oc.Invokef(t, `oc create configmap east-mesh-ca-root-cert -n %s --from-literal=root-cert.pem="%s" --dry-run=client -o yaml | oc apply -f -`,
-		west.namespace, eastRootCert)
-	east.oc.Invokef(t, `oc create configmap west-mesh-ca-root-cert -n %s --from-literal=root-cert.pem="%s" --dry-run=client -o yaml | oc apply -f -`,
-		east.namespace, westRootCert)
+	west.oc.CreateConfigMapFromFiles(t, west.namespace, "east-mesh-ca-root-cert",
+		federationTestdataPath+"/east/root-cert.pem")
+	east.oc.CreateConfigMapFromFiles(t, east.namespace, "west-mesh-ca-root-cert",
+		federationTestdataPath+"/west/root-cert.pem")
 
 	// Configure ServiceMeshPeer in west cluster (to connect to east)
 	westPeerInfo := peerInfo{
