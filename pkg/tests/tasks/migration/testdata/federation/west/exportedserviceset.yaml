@@ -1,0 +1,14 @@
+apiVersion: federation.maistra.io/v1
+kind: ExportedServiceSet
+metadata:
+  name: east-mesh
+spec:
+  exportRules:
+  - type: NameSelector
+    nameSelector:
+      namespace: a
+      name: httpbin
+  - type: NameSelector
+    nameSelector:
+      namespace: b
+      name: httpbin

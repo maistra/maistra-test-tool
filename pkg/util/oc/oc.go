@@ -74,6 +74,11 @@ func CreateGenericSecretFromFiles(t test.TestHelper, ns, name string, files ...s
 	DefaultOC.CreateGenericSecretFromFiles(t, ns, name, files...)
 }
 
+func GetLoadBalancerAddress(t test.TestHelper, ns, serviceName string) string {
+	t.T().Helper()
+	return DefaultOC.GetLoadBalancerAddress(t, ns, serviceName)
+}
+
 func DeleteSecret(t test.TestHelper, ns string, name ...string) {
 	t.T().Helper()
 	DefaultOC.DeleteSecret(t, ns, name...)

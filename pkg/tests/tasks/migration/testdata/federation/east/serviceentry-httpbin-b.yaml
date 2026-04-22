@@ -1,0 +1,30 @@
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: httpbin-b-svc-cluster-local
+spec:
+  exportTo:
+  - client
+  hosts:
+  - httpbin.b.svc.cluster.local
+  location: MESH_INTERNAL
+  ports:
+  - number: 8000
+    name: http
+    protocol: HTTP
+  resolution: STATIC
+  subjectAltNames:
+  - "spiffe://west.local/ns/b/sa/httpbin"
+  workloadSelector:
+    labels:
+      app: httpbin-cluster-local
+---
+apiVersion: networking.istio.io/v1beta1
+kind: WorkloadEntry
+metadata:
+  name: httpbin-cluster-local-west-mesh
+  labels:
+    app: httpbin-cluster-local
+    security.istio.io/tlsMode: istio
+spec:
+  network: west-network

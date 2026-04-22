@@ -1,0 +1,28 @@
+apiVersion: sailoperator.io/v1
+kind: Istio
+metadata:
+  name: default
+spec:
+  namespace: istio-system
+  version: v1.24-latest
+  updateStrategy:
+    type: RevisionBased
+  values:
+    meshConfig:
+      accessLogFile: /dev/stdout
+      defaultConfig:
+        proxyMetadata:
+          ISTIO_META_DNS_CAPTURE: "true"
+          PROXY_CONFIG_XDS_AGENT: "true"
+      caCertificates:
+      - pem: |
+          {{ .WestRootCert | indent 10 }}
+      trustDomain: east.local
+      trustDomainAliases:
+      - west.local
+    pilot:
+      env:
+        ISTIO_MULTIROOT_MESH: "true"
+        PILOT_ENABLE_IP_AUTOALLOCATE: "true"
+    global:
+      network: network-east-mesh

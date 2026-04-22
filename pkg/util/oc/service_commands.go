@@ -24,3 +24,16 @@ func (o OC) GetServiceClusterIP(t test.TestHelper, ns, serviceName string) strin
 	t.T().Helper()
 	return o.Invoke(t, fmt.Sprintf("kubectl get service -n %s %s -o jsonpath='{.spec.clusterIP}'", ns, serviceName))
 }
+
+// GetLoadBalancerAddress returns the external address of a LoadBalancer service.
+// Depending on the cloud provider and load balancer type, this may be an IP address or a hostname.
+func (o OC) GetLoadBalancerAddress(t test.TestHelper, ns, serviceName string) string {
+	t.T().Helper()
+	// Try IP first
+	addr := o.Invokef(t, `oc -n %s get svc %s -o jsonpath="{.status.loadBalancer.ingress[0].ip}"`, ns, serviceName)
+	if addr != "" {
+		return addr
+	}
+	// Try hostname
+	return o.Invokef(t, `oc -n %s get svc %s -o jsonpath="{.status.loadBalancer.ingress[0].hostname}"`, ns, serviceName)
+}

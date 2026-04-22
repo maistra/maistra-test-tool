@@ -1,0 +1,17 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: expose-services
+spec:
+  selector:
+    istio.io/gateway-name: eastwestgateway
+  servers:
+  - port:
+      number: 15443
+      name: tls
+      protocol: TLS
+    tls:
+      mode: AUTO_PASSTHROUGH
+    hosts:
+      - "httpbin.a.svc.west-mesh-imports.local"
+      - "httpbin.b.svc.cluster.local"

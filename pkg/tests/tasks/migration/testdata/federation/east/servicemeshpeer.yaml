@@ -1,0 +1,21 @@
+apiVersion: federation.maistra.io/v1
+kind: ServiceMeshPeer
+metadata:
+  name: west-mesh
+spec:
+  remote:
+    addresses:
+    - {{ .Address }}
+    discoveryPort: 8188
+    servicePort: 15443
+  gateways:
+    ingress:
+      name: {{ .LocalIngressName }}
+    egress:
+      name: {{ .LocalEgressName }}
+  security:
+    trustDomain: {{ .PeerTrustDomain }}
+    clientID: {{ .PeerEgressSA }}
+    certificateChain:
+      kind: ConfigMap
+      name: west-mesh-ca-root-cert
