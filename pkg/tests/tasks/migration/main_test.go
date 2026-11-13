@@ -161,7 +161,7 @@ metadata:
   name: {{ .Name }}
 spec:
   namespace: {{ .Namespace }}
-  version: v1.24-latest`
+  version: v1.26-latest`
 		}
 		oc.ApplyTemplate(t, "", istio.Template, istio)
 		oc.Label(t, "", "Istio", istio.Name, oc.MaistraTestLabel+`=""`)
@@ -174,7 +174,7 @@ metadata:
   name: default
 spec:
   namespace: istio-cni
-  version: v1.24-latest`
+  version: v1.26-latest`
 	oc.ApplyString(t, "", istioCNI)
 	oc.DefaultOC.WaitFor(t, "", "IstioCNI", "default", "condition=Ready")
 }

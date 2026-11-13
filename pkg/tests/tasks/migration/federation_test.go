@@ -105,7 +105,7 @@ type peerInfo struct {
 	LocalMeshName    string
 }
 
-// TestFederationMigration tests migration from OSSM 2.6 federation to OSSM 3.0 multi-cluster.
+// TestFederationMigration tests migration from OSSM 2.6 federation to OSSM 3.y multi-cluster.
 // This test follows the migration guide from:
 // https://github.com/openshift-service-mesh/sail-operator/tree/main/docs/ossm/ossm2-migration/federation
 func TestFederationMigration(t *testing.T) {
@@ -173,7 +173,7 @@ func TestFederationMigration(t *testing.T) {
 		t.LogStep("Configure SMCP for migration - add trustDomainAliases and network settings")
 		configureSMCPForMigration(t, eastConfig, westConfig)
 
-		t.LogStep("Deploy OSSM 3.0 control planes")
+		t.LogStep("Deploy OSSM 3.y control planes")
 		deployOSSM3ControlPlanes(t, ocEast, ocWest)
 
 		t.LogStep("Deploy east-west gateway and expose services in west cluster")
@@ -190,7 +190,7 @@ func TestFederationMigration(t *testing.T) {
 		t.LogStep("Remove federation resources")
 		removeFederationResources(t, eastConfig, westConfig)
 
-		t.LogStep("Migrate workloads to OSSM 3.0 control plane")
+		t.LogStep("Migrate workloads to OSSM 3.y control plane")
 		migrateWorkloadsToOSSM3(t, eastConfig, westConfig)
 
 		t.LogStep("Verify connectivity after migration")
@@ -400,7 +400,7 @@ kind: IstioCNI
 metadata:
   name: default
 spec:
-  version: v1.24-latest
+  version: v1.26-latest
   namespace: istio-cni`
 
 	ocEast.CreateNamespace(t, "istio-cni")

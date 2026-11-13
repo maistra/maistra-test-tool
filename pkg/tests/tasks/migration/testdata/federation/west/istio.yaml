@@ -4,7 +4,7 @@ metadata:
   name: default
 spec:
   namespace: istio-system
-  version: v1.24-latest
+  version: v1.26-latest
   updateStrategy:
     type: RevisionBased
   values:
