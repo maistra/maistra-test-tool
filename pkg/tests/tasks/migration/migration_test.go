@@ -265,7 +265,8 @@ func migrateBookinfo(t test.TestHelper, istio ossm.Istio, bookinfoNamespace stri
 		require.OutputContains(fmt.Sprintf(`"details.%s.svc.cluster.local"`, bookinfoNamespace), "Registry contains details app", "Registry missing details app"),
 		require.OutputContains(fmt.Sprintf(`"ratings.%s.svc.cluster.local"`, bookinfoNamespace), "Registry contains ratings app", "Registry missing ratings app"),
 	}
-	oc.Exec(t, pod.MatchingSelectorFirst("istio.io/rev="+istio.Name, istio.Namespace), "discovery", "curl localhost:15014/debug/registryz", checks...)
+	// The istiod image does not ship curl, so use pilot-discovery to query the debug endpoint.
+	oc.Exec(t, pod.MatchingSelectorFirst("istio.io/rev="+istio.Name, istio.Namespace), "discovery", "pilot-discovery request GET /debug/registryz", checks...)
 
 	hostname := oc.GetJson(t, bookinfoNamespace, "Routes", "bookinfo-gateway", "{.spec.host}")
 	bookinfoGatewayURL := fmt.Sprintf("http://%s/productpage", hostname)
